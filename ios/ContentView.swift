@@ -458,7 +458,7 @@ struct PatientAppContainerView: View {
         CartItem(
             id: "c_1",
             title: "Aarogyam Complete 1.3 (Full Body)",
-            subtitle = "104 Biomarkers • Free Home Collection",
+            subtitle: "104 Biomarkers • Free Home Collection",
             provider: "Thyrocare Central Lab",
             price: 1499,
             mrp: 3500,
@@ -1040,7 +1040,7 @@ struct PatientScansTab: View {
 
     let scansList = [
         ScanServiceItem(
-            id = "s_1",
+            id: "s_1",
             name: "MRI Brain (Plain + Neuro Imaging)",
             category: "Brain & Spine",
             centerName: "Aarthi Scans & Radiology, Tirupati",
@@ -1052,7 +1052,7 @@ struct PatientScansTab: View {
             fastingRequired: false
         ),
         ScanServiceItem(
-            id = "s_2",
+            id: "s_2",
             name: "MRI Lumbar Spine (Lower Back)",
             category: "Brain & Spine",
             centerName: "MedMarg Advanced Imaging Hub",
@@ -1064,7 +1064,7 @@ struct PatientScansTab: View {
             fastingRequired: false
         ),
         ScanServiceItem(
-            id = "s_3",
+            id: "s_3",
             name: "CT Coronary Angiography (128-Slice)",
             category: "Cardiac Imaging",
             centerName: "Apollo Scan Center, Tirupati",
@@ -1218,7 +1218,7 @@ struct PatientPharmacyTab: View {
 
     let genericMedicines = [
         GenericMedicineItem(
-            id = "med_1",
+            id: "med_1",
             brandName: "Lipaglyn 4mg (Zydus)",
             genericName: "Saroglitazar 4mg",
             category: "Diabetes & Lipid",
@@ -1229,7 +1229,7 @@ struct PatientPharmacyTab: View {
             savingsPercent: 53
         ),
         GenericMedicineItem(
-            id = "med_2",
+            id: "med_2",
             brandName: "Telma 40mg (Glenmark)",
             genericName: "Telmisartan 40mg IP",
             category: "Blood Pressure & Cardiac",
@@ -1240,7 +1240,7 @@ struct PatientPharmacyTab: View {
             savingsPercent: 71
         ),
         GenericMedicineItem(
-            id = "med_3",
+            id: "med_3",
             brandName: "Rosuvas 10mg (Sun Pharma)",
             genericName: "Rosuvastatin 10mg IP",
             category: "Cholesterol Reducer",
