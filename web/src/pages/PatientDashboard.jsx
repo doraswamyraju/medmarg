@@ -114,11 +114,14 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', display: 'flex', flexDirection: 'column' }}>
       {/* Top Navigation */}
-      <nav style={{ backgroundColor: '#004D40', color: '#FFF', padding: '0.85rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <nav style={{ backgroundColor: '#004D40', color: '#FFF', padding: '0.65rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>M</div>
-            <span style={{ fontSize: '1.25rem', fontWeight: '800', letterSpacing: '-0.02em' }}>MedMarg</span>
+            <img 
+              src="/logo.png" 
+              alt="MedMarg" 
+              style={{ height: '36px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} 
+            />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', backgroundColor: 'rgba(255,255,255,0.12)', padding: '0.4rem 0.85rem', borderRadius: '20px', fontSize: '0.85rem' }}>

@@ -69,16 +69,14 @@ export default function LandingPage({ onNavigateLogin, onSelectCategory }) {
     <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', color: '#0F172A' }}>
       {/* 1. TOP HEADER & NAVIGATION */}
       <header style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-        <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '0.85rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '0.65rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div style={{ width: '42px', height: '42px', borderRadius: '12px', backgroundColor: '#006B70', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontWeight: '800', fontSize: '1.35rem', boxShadow: '0 4px 10px rgba(0,107,112,0.3)' }}>
-              M
-            </div>
-            <div>
-              <span style={{ fontSize: '1.35rem', fontWeight: '800', color: '#006B70', letterSpacing: '-0.02em', display: 'block', lineHeight: 1 }}>MedMarg</span>
-              <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '600' }}>Multi-Lab Healthcare Marketplace</span>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="MedMarg" 
+              style={{ height: '42px', objectFit: 'contain' }} 
+            />
           </div>
 
           {/* Nav Links */}
@@ -508,9 +506,12 @@ export default function LandingPage({ onNavigateLogin, onSelectCategory }) {
       <footer style={{ backgroundColor: '#0F172A', color: '#94A3B8', padding: '4rem 1.5rem 2rem', borderTop: '1px solid #1E293B' }}>
         <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '2.5rem', marginBottom: '3rem' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#FFF', fontWeight: '800', fontSize: '1.25rem', marginBottom: '0.75rem' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#006B70', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem' }}>M</div>
-              MedMarg
+            <div style={{ marginBottom: '1rem' }}>
+              <img 
+                src="/logo.png" 
+                alt="MedMarg" 
+                style={{ height: '38px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} 
+              />
             </div>
             <p style={{ fontSize: '0.85rem', lineHeight: 1.6 }}>
               India's transparent multi-lab diagnostic marketplace and healthcare ecosystem.
