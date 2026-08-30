@@ -826,7 +826,7 @@ struct PatientHomeTab: View {
                         .padding(.horizontal, 20)
                     }
 
-                    Spacer(modifier = Modifier.height(20))
+                    Spacer().frame(height: 20)
                 }
             }
             .background(MedMargTheme.slate50)
