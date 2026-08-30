@@ -132,15 +132,6 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
             style={{ height: '40px', objectFit: 'contain' }} 
           />
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-          <span style={{ fontSize: '0.85rem', color: '#64748B' }}>Hospital / Lab Partner?</span>
-          <button 
-            onClick={() => handleQuickDemoLogin(DEMO_ACCOUNTS[1])}
-            style={{ padding: '0.4rem 0.8rem', border: '1px solid #006B70', borderRadius: '8px', color: '#006B70', backgroundColor: '#FFF', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer' }}
-          >
-            Partner Portal
-          </button>
-        </div>
       </header>
 
       {/* Main Container */}
