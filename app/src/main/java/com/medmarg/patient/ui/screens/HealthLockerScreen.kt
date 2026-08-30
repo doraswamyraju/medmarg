@@ -52,7 +52,7 @@ fun HealthLockerScreen(
             .fillMaxSize()
             .background(Slate50)
     ) {
-        // ABHA Card Header
+        // Digital Health Locker Header
         item {
             Card(
                 modifier = Modifier
@@ -72,7 +72,7 @@ fun HealthLockerScreen(
                             shape = RoundedCornerShape(6.dp)
                         ) {
                             Text(
-                                text = "ABHA HEALTH LOCKER (Ayushman Bharat)",
+                                text = "DIGITAL HEALTH LOCKER (HIPAA Compliant)",
                                 color = EmeraldAccent,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
@@ -81,7 +81,7 @@ fun HealthLockerScreen(
                         }
                         Icon(
                             imageVector = Icons.Default.QrCode2,
-                            contentDescription = "ABHA QR",
+                            contentDescription = "Health Locker QR",
                             tint = PureWhite,
                             modifier = Modifier.size(24.dp)
                         )
@@ -90,13 +90,13 @@ fun HealthLockerScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = "ABHA ID: rahul.sharma@abdm",
+                        text = "Cloud Sync ID: MM-SECURE-9842",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = PureWhite
                     )
                     Text(
-                        text = "Linked with 14 Diagnostic Labs & 3 Hospital Networks",
+                        text = "Direct Google Drive Sync with NABL Labs & Tirupati Clinics",
                         style = MaterialTheme.typography.bodyMedium,
                         color = Slate400
                     )

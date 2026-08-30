@@ -36,9 +36,10 @@ fun LocationPickerBottomSheet(
     var searchPincode by remember { mutableStateOf("") }
 
     val savedAddresses = listOf(
-        SavedAddress("1", "Home", "Flat 402, Green Glen Layout, Indiranagar, Bangalore - 560038", true),
-        SavedAddress("2", "Office", "Tower B, 4th Floor, Tech Park, Outer Ring Road, Bangalore - 560103", false),
-        SavedAddress("3", "Parents", "12, 5th Cross, Malleshwaram, Bangalore - 560003", false)
+        SavedAddress("1", "Home", "Plot 42, Air Bypass Road, Tirupati, Andhra Pradesh - 517501", true),
+        SavedAddress("2", "Office", "Renigunta Main Road, Tirupati, Andhra Pradesh - 517506", false),
+        SavedAddress("3", "Parents", "Near Padmavathi Temple, Tiruchanoor Road, Tirupati - 517503", false),
+        SavedAddress("4", "Clinic", "SVIMS Staff Quarters, Alipiri Road, Tirupati - 517507", false)
     )
 
     ModalBottomSheet(
@@ -58,7 +59,7 @@ fun LocationPickerBottomSheet(
                 color = Slate900
             )
             Text(
-                text = "Diagnostic labs and home sample collection slots will be shown based on your area.",
+                text = "Diagnostic labs and home sample collection slots will be shown based on your area in Tirupati.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Slate500
             )
@@ -72,7 +73,7 @@ fun LocationPickerBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        onSelectAddress("Indiranagar, Bangalore (Auto-detected)")
+                        onSelectAddress("Tirupati, Andhra Pradesh (Auto-detected GPS)")
                         onDismissRequest()
                     }
             ) {
@@ -103,7 +104,7 @@ fun LocationPickerBottomSheet(
                             color = MedTealPrimary
                         )
                         Text(
-                            text = "Indiranagar, Bangalore - 560038",
+                            text = "Tirupati, Andhra Pradesh - 517501",
                             style = MaterialTheme.typography.labelSmall,
                             color = Slate600
                         )
