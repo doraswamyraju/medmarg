@@ -35,6 +35,19 @@ export default function LandingPage({ onNavigateLogin }) {
   const [isLocating, setIsLocating] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [activeTestModal, setActiveTestModal] = useState(null);
+  
+  // Partner Onboarding Modal
+  const [showPartnerModal, setShowPartnerModal] = useState(false);
+  const [partnerType, setPartnerType] = useState('DIAGNOSTIC_LAB'); // 'DIAGNOSTIC_LAB' | 'SCAN_CENTER' | 'DOCTOR' | 'PHARMACY'
+  const [partnerForm, setPartnerForm] = useState({
+    orgName: '',
+    regNo: '',
+    contactPerson: '',
+    phone: '',
+    email: '',
+    city: 'Tirupati, Andhra Pradesh'
+  });
+  const [partnerSuccessToken, setPartnerSuccessToken] = useState(null);
 
   // 1. AUTO-ACCESS GPS LOCATION ON FIRST LOAD
   useEffect(() => {
@@ -123,13 +136,7 @@ export default function LandingPage({ onNavigateLogin }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
             <button
               onClick={() => onNavigateLogin()}
-              style={{ padding: '0.6rem 1.1rem', border: '2px solid #006B70', borderRadius: '12px', color: '#006B70', backgroundColor: '#FFF', fontSize: '0.88rem', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-            >
-              <Shield size={16} /> Partner Portal
-            </button>
-            <button
-              onClick={() => onNavigateLogin()}
-              style={{ padding: '0.65rem 1.4rem', background: 'linear-gradient(135deg, #006B70 0%, #004D40 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 6px 16px rgba(0,107,112,0.3)', transition: 'all 0.2s' }}
+              style={{ padding: '0.7rem 1.5rem', background: 'linear-gradient(135deg, #006B70 0%, #004D40 100%)', color: '#FFF', border: 'none', borderRadius: '14px', fontSize: '0.92rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 6px 18px rgba(0,107,112,0.35)', transition: 'all 0.2s ease' }}
             >
               Sign In / Login <ArrowRight size={16} />
             </button>
@@ -697,10 +704,13 @@ export default function LandingPage({ onNavigateLogin }) {
 
           <div>
             <button
-              onClick={() => onNavigateLogin('DIAGNOSTIC_LAB')}
-              style={{ padding: '0.95rem 1.8rem', background: 'linear-gradient(135deg, #006B70 0%, #004D40 100%)', color: '#FFF', border: 'none', borderRadius: '14px', fontWeight: '800', fontSize: '0.95rem', cursor: 'pointer' }}
+              onClick={() => {
+                setPartnerType('DIAGNOSTIC_LAB');
+                setShowPartnerModal(true);
+              }}
+              style={{ padding: '0.95rem 1.9rem', background: 'linear-gradient(135deg, #006B70 0%, #004D40 100%)', color: '#FFF', border: 'none', borderRadius: '14px', fontWeight: '800', fontSize: '0.95rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(0,107,112,0.35)' }}
             >
-              Register Your Lab / Clinic
+              <Shield size={18} /> Register Your Lab / Clinic <ArrowRight size={16} />
             </button>
           </div>
         </div>
@@ -767,10 +777,10 @@ export default function LandingPage({ onNavigateLogin }) {
             <div>
               <h4 style={{ color: '#FFFFFF', fontWeight: '800', marginBottom: '1.25rem', fontSize: '1rem', letterSpacing: '-0.01em' }}>For Healthcare Partners</h4>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.88rem' }}>
-                <button onClick={() => onNavigateLogin()} style={{ background: 'none', border: 'none', color: '#FBBF24', textAlign: 'left', cursor: 'pointer', fontSize: '0.88rem', fontWeight: '700', padding: 0 }}>Register Diagnostic Lab Portal</button>
-                <button onClick={() => onNavigateLogin()} style={{ background: 'none', border: 'none', color: '#94A3B8', textAlign: 'left', cursor: 'pointer', fontSize: '0.88rem', padding: 0 }}>Register 3.0T MRI Scan Center</button>
-                <button onClick={() => onNavigateLogin()} style={{ background: 'none', border: 'none', color: '#94A3B8', textAlign: 'left', cursor: 'pointer', fontSize: '0.88rem', padding: 0 }}>Register Clinic / Doctor Practice</button>
-                <button onClick={() => onNavigateLogin()} style={{ background: 'none', border: 'none', color: '#94A3B8', textAlign: 'left', cursor: 'pointer', fontSize: '0.88rem', padding: 0 }}>Register Retail / Generic Pharmacy</button>
+                <button onClick={() => { setPartnerType('DIAGNOSTIC_LAB'); setShowPartnerModal(true); }} style={{ background: 'none', border: 'none', color: '#FBBF24', textAlign: 'left', cursor: 'pointer', fontSize: '0.88rem', fontWeight: '700', padding: 0 }}>Register Diagnostic Lab Portal</button>
+                <button onClick={() => { setPartnerType('SCAN_CENTER'); setShowPartnerModal(true); }} style={{ background: 'none', border: 'none', color: '#94A3B8', textAlign: 'left', cursor: 'pointer', fontSize: '0.88rem', padding: 0 }}>Register 3.0T MRI Scan Center</button>
+                <button onClick={() => { setPartnerType('DOCTOR'); setShowPartnerModal(true); }} style={{ background: 'none', border: 'none', color: '#94A3B8', textAlign: 'left', cursor: 'pointer', fontSize: '0.88rem', padding: 0 }}>Register Clinic / Doctor Practice</button>
+                <button onClick={() => { setPartnerType('PHARMACY'); setShowPartnerModal(true); }} style={{ background: 'none', border: 'none', color: '#94A3B8', textAlign: 'left', cursor: 'pointer', fontSize: '0.88rem', padding: 0 }}>Register Retail / Generic Pharmacy</button>
                 <div style={{ marginTop: '0.75rem', padding: '0.85rem', backgroundColor: '#1E293B', borderRadius: '12px', border: '1px solid #334155' }}>
                   <div style={{ fontSize: '0.75rem', color: '#FBBF24', fontWeight: '800' }}>⚡ FAST PARTNER ONBOARDING</div>
                   <div style={{ fontSize: '0.78rem', color: '#CBD5E1', marginTop: '0.2rem' }}>Get verified & start receiving bookings in 24 hours.</div>
@@ -972,6 +982,185 @@ export default function LandingPage({ onNavigateLogin }) {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 11. INTERACTIVE HEALTHCARE PARTNER REGISTRATION & ONBOARDING MODAL */}
+      {showPartnerModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem', overflowY: 'auto' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '640px', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '2.2rem', boxShadow: '0 25px 60px -15px rgba(0,0,0,0.35)', border: '2px solid #006B70' }}>
+            
+            {!partnerSuccessToken ? (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: '900' }}>
+                      FAST 24-HOUR PARTNER ONBOARDING
+                    </span>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#0F172A', marginTop: '0.35rem' }}>
+                      Register Healthcare Establishment
+                    </h2>
+                  </div>
+                  <button onClick={() => setShowPartnerModal(false)} style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#F1F5F9', border: 'none', fontSize: '1.1rem', cursor: 'pointer', color: '#64748B', fontWeight: 'bold' }}>✕</button>
+                </div>
+
+                <p style={{ fontSize: '0.88rem', color: '#64748B', marginBottom: '1.5rem' }}>
+                  Join India's unified open healthcare marketplace. List test catalogs, accept direct bookings, and sync with patients across Tirupati & pan-India.
+                </p>
+
+                {/* Partner Category Selector */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label style={{ fontSize: '0.82rem', fontWeight: '800', color: '#0F172A', display: 'block', marginBottom: '0.5rem' }}>
+                    Select Partner Type
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                    {[
+                      { key: 'DIAGNOSTIC_LAB', label: 'Diagnostic Pathology Lab', icon: FlaskConical, desc: 'NABL / CAP Processing Lab' },
+                      { key: 'SCAN_CENTER', label: '3.0T MRI & Scan Center', icon: Building2, desc: 'Radiology & Imaging Hub' },
+                      { key: 'DOCTOR', label: 'In-Clinic Doctor / OPD', icon: Stethoscope, desc: 'Verified Specialist Practice' },
+                      { key: 'PHARMACY', label: 'Retail / Generic Chemist', icon: Pill, desc: 'Prescription Dispenser' }
+                    ].map(type => {
+                      const isSel = partnerType === type.key;
+                      const IconC = type.icon;
+                      return (
+                        <div
+                          key={type.key}
+                          onClick={() => setPartnerType(type.key)}
+                          style={{
+                            padding: '0.85rem',
+                            borderRadius: '12px',
+                            border: isSel ? '2px solid #006B70' : '1px solid #E2E8F0',
+                            backgroundColor: isSel ? '#E0F2F1' : '#F8FAFC',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: isSel ? '#006B70' : '#0F172A', fontWeight: '800', fontSize: '0.88rem' }}>
+                            <IconC size={18} /> {type.label}
+                          </div>
+                          <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: '0.2rem' }}>{type.desc}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Registration Form */}
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  setPartnerSuccessToken(`MM-ONBOARD-${Math.floor(1000 + Math.random() * 9000)}`);
+                }} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  
+                  <div>
+                    <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#334155' }}>Clinic / Center / Entity Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Star Diagnostics / Tirupati Scan Center"
+                      value={partnerForm.orgName}
+                      onChange={(e) => setPartnerForm({ ...partnerForm, orgName: e.target.value })}
+                      required
+                      style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '0.9rem', outline: 'none', marginTop: '0.25rem' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#334155' }}>NABL / Reg / License No.</label>
+                      <input
+                        type="text"
+                        placeholder="NABL-AP-2026 / MCI-Reg"
+                        value={partnerForm.regNo}
+                        onChange={(e) => setPartnerForm({ ...partnerForm, regNo: e.target.value })}
+                        required
+                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '0.9rem', outline: 'none', marginTop: '0.25rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#334155' }}>City / Hub Location</label>
+                      <input
+                        type="text"
+                        value={partnerForm.city}
+                        onChange={(e) => setPartnerForm({ ...partnerForm, city: e.target.value })}
+                        required
+                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '0.9rem', outline: 'none', marginTop: '0.25rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#334155' }}>Authorized Person</label>
+                      <input
+                        type="text"
+                        placeholder="Dr. / Manager"
+                        value={partnerForm.contactPerson}
+                        onChange={(e) => setPartnerForm({ ...partnerForm, contactPerson: e.target.value })}
+                        required
+                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '0.9rem', outline: 'none', marginTop: '0.25rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#334155' }}>Mobile Number</label>
+                      <input
+                        type="tel"
+                        placeholder="+91 98765..."
+                        value={partnerForm.phone}
+                        onChange={(e) => setPartnerForm({ ...partnerForm, phone: e.target.value })}
+                        required
+                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '0.9rem', outline: 'none', marginTop: '0.25rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#334155' }}>Official Email</label>
+                      <input
+                        type="email"
+                        placeholder="lab@domain.com"
+                        value={partnerForm.email}
+                        onChange={(e) => setPartnerForm({ ...partnerForm, email: e.target.value })}
+                        required
+                        style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '0.9rem', outline: 'none', marginTop: '0.25rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    style={{ marginTop: '0.5rem', padding: '0.95rem', background: 'linear-gradient(135deg, #006B70 0%, #004D40 100%)', color: '#FFF', border: 'none', borderRadius: '14px', fontWeight: '900', fontSize: '1rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,107,112,0.3)' }}
+                  >
+                    Submit Partner Registration for Verification <ArrowRight size={18} />
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#D1FAE5', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem' }}>
+                  <CheckCircle2 size={36} />
+                </div>
+                <h2 style={{ fontSize: '1.6rem', fontWeight: '900', color: '#0F172A' }}>
+                  Registration Application Submitted!
+                </h2>
+                <div style={{ fontSize: '1rem', fontWeight: '800', color: '#006B70', margin: '0.5rem 0' }}>
+                  Tracking Token: {partnerSuccessToken}
+                </div>
+                <p style={{ color: '#64748B', fontSize: '0.9rem', maxWidth: '440px', margin: '0 auto 1.75rem', lineHeight: 1.5 }}>
+                  Our Super Admin verification desk is reviewing your licensing credentials. You will receive activation confirmation on <strong>{partnerForm.phone || '+91 98765...'}</strong> within 24 hours.
+                </p>
+
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                  <button
+                    onClick={() => {
+                      setShowPartnerModal(false);
+                      setPartnerSuccessToken(null);
+                    }}
+                    style={{ padding: '0.75rem 1.75rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', cursor: 'pointer' }}
+                  >
+                    Back to Marketplace
+                  </button>
+                </div>
+              </div>
+            )}
+
           </div>
         </div>
       )}

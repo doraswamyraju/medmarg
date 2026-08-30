@@ -35,16 +35,88 @@ import {
   Sparkles,
   RefreshCw,
   LogOut,
-  FolderHeart
+  FolderHeart,
+  Package,
+  Layers,
+  Percent,
+  Plus
 } from 'lucide-react';
 import { THYROCARE_TESTS, THYROCARE_CATEGORIES } from '../data/thyrocareTests';
 
 export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   // Navigation State
-  const [activeTab, setActiveTab] = useState('OVERVIEW'); // 'OVERVIEW' | 'LABS' | 'SCANS' | 'DOCTORS' | 'PHARMACY' | 'FLEET' | 'PATIENTS' | 'FINANCIALS' | 'SETTINGS'
-  const [subTab, setSubTab] = useState('DEFAULT');
+  const [activeTab, setActiveTab] = useState('OVERVIEW'); // 'OVERVIEW' | 'LABS' | 'TESTS_MGMT' | 'PACKAGE_BUILDER' | 'SCANS' | 'DOCTORS' | 'PHARMACY' | 'FLEET' | 'PATIENTS' | 'FINANCIALS' | 'SETTINGS'
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterCategory, setFilterCategory] = useState('ALL');
+
+  // Dynamic Test Catalog State (Supports in-memory creation/editing)
+  const [testsList, setTestsList] = useState(THYROCARE_TESTS);
+
+  // Dynamic Packages State
+  const [packagesList, setPackagesList] = useState([
+    {
+      id: 'pkg_aarogyam_comp_13',
+      name: 'Aarogyam Complete 1.3 (Master Health Checkup)',
+      category: 'Aarogyam Full Body Profiles',
+      includedCount: 12,
+      params: 104,
+      thyrocarePrice: 1499,
+      originalPrice: 3500,
+      discountPercent: 57,
+      yellowTag: 'MEGA 57% OFF',
+      fasting: '10-12 hrs Fasting',
+      tat: '24 Hours',
+      description: 'Comprehensive health panel covering Liver (11), Kidney (8), Lipid (8), Thyroid Total (3), Iron (4), Vitamin D & B12, Cardiac Risk (5), and Complete Hemogram (28).'
+    },
+    {
+      id: 'pkg_aarogyam_basic_11',
+      name: 'Aarogyam Basic 1.1 (Essential Health Profile)',
+      category: 'Aarogyam Full Body Profiles',
+      includedCount: 8,
+      params: 63,
+      thyrocarePrice: 899,
+      originalPrice: 1800,
+      discountPercent: 50,
+      yellowTag: 'POPULAR',
+      fasting: '10-12 hrs Fasting',
+      tat: '12 Hours',
+      description: 'Essential wellness checkup covering Complete Hemogram, Thyroid Total, Lipid Profile, Liver Function, and Kidney Screen.'
+    }
+  ]);
+
+  // Modal State for New Single Test Creation
+  const [showCreateTestModal, setShowCreateTestModal] = useState(false);
+  const [newTestForm, setNewTestForm] = useState({
+    name: '',
+    category: 'Thyroid & Hormones',
+    params: 1,
+    sample: 'Blood (Serum)',
+    fasting: '10-12 hrs Fasting',
+    tat: '12 Hours',
+    thyrocarePrice: '',
+    originalPrice: '',
+    apolloPrice: '',
+    lalPrice: '',
+    yellowTag: 'SPECIAL RATE',
+    description: ''
+  });
+
+  // Package Builder State
+  const [packageBuilderForm, setPackageBuilderForm] = useState({
+    name: '',
+    yellowTag: 'MEGA 55% OFF',
+    selectedTests: [
+      'th_thyroid_total',
+      'th_lipid_profile',
+      'th_lft_11',
+      'th_kft_renal'
+    ],
+    packagePrice: '',
+    fasting: '10-12 hrs Overnight Fasting',
+    tat: '24 Hours',
+    description: ''
+  });
 
   // Sample dynamic data for Super Admin
   const [stats, setStats] = useState({
@@ -54,7 +126,8 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     activeScans: '18',
     activeDoctors: '36',
     activePhlebotomists: '28',
-    fleetCity: 'Tirupati & AP Cluster'
+    totalTests: testsList.length,
+    totalPackages: packagesList.length
   });
 
   // Lab Partners Queue
@@ -86,25 +159,110 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { id: 'PH-03', name: 'Venkat Reddy', phone: '+91 98765 99881', area: 'Chandragiri & SVIMS', samplesToday: 8, temp: '4.5°C', status: 'AT_LAB', rating: 5.0 }
   ]);
 
-  // Generic Pharmacy Formulary
-  const [genericFormulary, setGenericFormulary] = useState([
-    { brand: 'Lipaglyn 4mg', generic: 'Saroglitazar 4mg', brandPrice: 289, genericPrice: 135, margin: '22%', cdsco: 'APPROVED' },
-    { brand: 'Augmentin 625mg', generic: 'Amoxicillin + Clavulanic Acid 625mg', brandPrice: 210, genericPrice: 75, margin: '28%', cdsco: 'APPROVED' },
-    { brand: 'Januvia 100mg', generic: 'Sitagliptin Phosphate 100mg', brandPrice: 340, genericPrice: 110, margin: '30%', cdsco: 'APPROVED' }
-  ]);
+  // Handle Single Test Creation
+  const handleSaveNewTest = (e) => {
+    e.preventDefault();
+    const created = {
+      id: `th_custom_${Date.now()}`,
+      name: newTestForm.name,
+      category: newTestForm.category,
+      params: Number(newTestForm.params) || 1,
+      sample: newTestForm.sample,
+      fasting: newTestForm.fasting,
+      tat: newTestForm.tat,
+      thyrocarePrice: Number(newTestForm.thyrocarePrice),
+      originalPrice: Number(newTestForm.originalPrice || Number(newTestForm.thyrocarePrice) * 1.5),
+      apolloPrice: Number(newTestForm.apolloPrice || Number(newTestForm.thyrocarePrice) * 1.4),
+      lalPrice: Number(newTestForm.lalPrice || Number(newTestForm.thyrocarePrice) * 1.6),
+      yellowTag: newTestForm.yellowTag,
+      description: newTestForm.description || `${newTestForm.name} diagnostic biomarker profile.`
+    };
 
-  // Helper actions
-  const approveLab = (id) => {
-    setLabPartners(labPartners.map(l => l.id === id ? { ...l, status: 'ACTIVE' } : l));
-    alert('Lab accreditation verified and activated on MedMarg Marketplace!');
+    setTestsList([created, ...testsList]);
+    setShowCreateTestModal(false);
+    setNewTestForm({
+      name: '',
+      category: 'Thyroid & Hormones',
+      params: 1,
+      sample: 'Blood (Serum)',
+      fasting: '10-12 hrs Fasting',
+      tat: '12 Hours',
+      thyrocarePrice: '',
+      originalPrice: '',
+      apolloPrice: '',
+      lalPrice: '',
+      yellowTag: 'SPECIAL RATE',
+      description: ''
+    });
+    alert(`Test "${created.name}" created successfully and published to Live Marketplace!`);
   };
+
+  // Handle Package Builder Save
+  const handleSavePackage = (e) => {
+    e.preventDefault();
+    const selectedItems = testsList.filter(t => packageBuilderForm.selectedTests.includes(t.id));
+    const totalIndividualMRP = selectedItems.reduce((sum, item) => sum + item.originalPrice, 0);
+    const totalParamsCount = selectedItems.reduce((sum, item) => sum + item.params, 0);
+    const pkgPrice = Number(packageBuilderForm.packagePrice || 1499);
+    const discount = totalIndividualMRP > 0 ? Math.round(((totalIndividualMRP - pkgPrice) / totalIndividualMRP) * 100) : 50;
+
+    const newPkg = {
+      id: `pkg_custom_${Date.now()}`,
+      name: packageBuilderForm.name,
+      category: 'Aarogyam Full Body Profiles',
+      includedCount: selectedItems.length,
+      params: totalParamsCount,
+      thyrocarePrice: pkgPrice,
+      originalPrice: totalIndividualMRP,
+      discountPercent: discount,
+      yellowTag: packageBuilderForm.yellowTag || `MEGA ${discount}% OFF`,
+      fasting: packageBuilderForm.fasting,
+      tat: packageBuilderForm.tat,
+      description: packageBuilderForm.description || `Specialized health bundle combining ${selectedItems.length} core test profiles (${totalParamsCount} parameters).`
+    };
+
+    setPackagesList([newPkg, ...packagesList]);
+    alert(`Custom Package "${newPkg.name}" created successfully with ${discount}% discount and published to Marketplace!`);
+    setActiveTab('TESTS_MGMT');
+  };
+
+  const deleteTest = (id) => {
+    if (confirm('Are you sure you want to remove this test from the catalog?')) {
+      setTestsList(testsList.filter(t => t.id !== id));
+    }
+  };
+
+  const deletePackage = (id) => {
+    if (confirm('Are you sure you want to remove this package?')) {
+      setPackagesList(packagesList.filter(p => p.id !== id));
+    }
+  };
+
+  // Filtered Tests
+  const displayedTests = testsList.filter(t => {
+    const matchesCat = filterCategory === 'ALL' || t.category === filterCategory;
+    const matchesSearch = searchTerm === '' || t.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesCat && matchesSearch;
+  });
+
+  // Package builder calculations
+  const selectedTestsObjects = testsList.filter(t => packageBuilderForm.selectedTests.includes(t.id));
+  const cumulativeIndividualMRP = selectedTestsObjects.reduce((sum, t) => sum + t.originalPrice, 0);
+  const cumulativeParams = selectedTestsObjects.reduce((sum, t) => sum + t.params, 0);
+  const enteredPackagePrice = Number(packageBuilderForm.packagePrice) || 0;
+  const calculatedSavings = cumulativeIndividualMRP > enteredPackagePrice ? cumulativeIndividualMRP - enteredPackagePrice : 0;
+  const calculatedDiscountPercent = cumulativeIndividualMRP > 0 && enteredPackagePrice > 0 
+    ? Math.round(((cumulativeIndividualMRP - enteredPackagePrice) / cumulativeIndividualMRP) * 100)
+    : 0;
 
   const navMenuItems = [
     { key: 'OVERVIEW', label: 'Overview & KPI Metrics', icon: BarChart3 },
-    { key: 'LABS', label: 'Pathology & Labs Hub', icon: FlaskConical, badge: labPartners.length },
-    { key: 'SCANS', label: '3.0T MRI & Radiology', icon: Building2, badge: scanCenters.length },
+    { key: 'TESTS_MGMT', label: 'Tests Catalog & Pricing', icon: FlaskConical, badge: testsList.length },
+    { key: 'PACKAGE_BUILDER', label: 'Health Package Builder', icon: Package, badge: packagesList.length },
+    { key: 'LABS', label: 'Partner Labs Directory', icon: Building2, badge: labPartners.length },
+    { key: 'SCANS', label: '3.0T MRI & Radiology', icon: Layers, badge: scanCenters.length },
     { key: 'DOCTORS', label: 'In-Clinic Doctors', icon: Stethoscope, badge: doctorsList.length },
-    { key: 'PHARMACY', label: 'Generic Pharmacy & Rx', icon: Pill, badge: genericFormulary.length },
+    { key: 'PHARMACY', label: 'Generic Pharmacy & Rx', icon: Pill, badge: 3 },
     { key: 'FLEET', label: 'Tirupati Phlebo Fleet', icon: Truck, badge: phleboFleet.length },
     { key: 'PATIENTS', label: 'Patients & Health Logs', icon: Users },
     { key: 'FINANCIALS', label: 'Settlements & Revenue', icon: CreditCard },
@@ -160,10 +318,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             return (
               <button
                 key={item.key}
-                onClick={() => {
-                  setActiveTab(item.key);
-                  setSubTab('DEFAULT');
-                }}
+                onClick={() => setActiveTab(item.key)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -241,10 +396,10 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             </div>
 
             <button
-              onClick={() => alert('Refreshing real-time platform metrics from Hostinger VPS 147.93.107.21...')}
+              onClick={() => alert('Refreshing live test catalog and package matrix from database...')}
               style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', backgroundColor: '#006B70', color: '#FFF', padding: '0.45rem 0.85rem', borderRadius: '8px', border: 'none', fontWeight: '700', fontSize: '0.82rem', cursor: 'pointer' }}
             >
-              <RefreshCw size={14} /> Refresh Logs
+              <RefreshCw size={14} /> Sync Catalog
             </button>
           </div>
         </header>
@@ -260,8 +415,8 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                 {[
                   { title: "Today's Gross GMV", val: stats.todayGmv, sub: '+24.5% vs yesterday', icon: DollarSign, color: '#10B981', bg: 'rgba(16,185,129,0.1)' },
                   { title: 'Total Bookings', val: stats.totalBookings, sub: 'Pathology & Radiology', icon: Activity, color: '#06B6D4', bg: 'rgba(6,182,212,0.1)' },
-                  { title: 'Active Phlebotomists', val: stats.activePhlebotomists, sub: 'Tirupati Local Fleet', icon: Truck, color: '#F59E0B', bg: 'rgba(245,158,11,0.1)' },
-                  { title: 'Connected Healthcare Labs', val: stats.activeLabs, sub: 'Thyrocare, Apollo, Dr. Lal', icon: FlaskConical, color: '#8B5CF6', bg: 'rgba(139,92,246,0.1)' }
+                  { title: 'Pathology Tests Catalog', val: `${testsList.length} Tests`, sub: `${packagesList.length} Health Bundles`, icon: FlaskConical, color: '#F59E0B', bg: 'rgba(245,158,11,0.1)' },
+                  { title: 'Active Phlebotomists', val: stats.activePhlebotomists, sub: 'Tirupati Local Fleet', icon: Truck, color: '#8B5CF6', bg: 'rgba(139,92,246,0.1)' }
                 ].map((stat, idx) => {
                   const StatIcon = stat.icon;
                   return (
@@ -281,69 +436,291 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                 })}
               </div>
 
-              {/* Grid with Live Actions */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem' }}>
-                
-                {/* Real-time Order Stream */}
-                <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1px solid #334155', padding: '1.75rem' }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#FFFFFF', marginBottom: '1.25rem' }}>
-                    Live Diagnostic Orders Stream (Tirupati & AP)
-                  </h3>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {[
-                      { id: 'MM-LAB-9842', test: 'Aarogyam Complete 1.3 (104 Tests)', patient: 'Rahul Sharma', city: 'Air Bypass Rd, Tirupati', lab: 'Thyrocare Central', status: 'PHLEBO ASSIGNED', amount: '₹1,499' },
-                      { id: 'MM-RAD-4102', test: 'Siemens 3.0T MRI Brain (Plain)', patient: 'K. Srinivasa Rao', city: 'SVIMS Road, Tirupati', lab: 'Aarthi Scans', status: 'SLOT CONFIRMED', amount: '₹3,499' },
-                      { id: 'MM-LAB-9841', test: 'Thyroid Total (T3/T4/TSH) + Lipid', patient: 'Lakshmi Narayana', city: 'Renigunta Rd, Tirupati', lab: 'Thyrocare Central', status: 'SAMPLE COLLECTED', amount: '₹799' }
-                    ].map((order, idx) => (
-                      <div key={idx} style={{ padding: '1rem 1.2rem', backgroundColor: '#0F172A', borderRadius: '14px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <strong style={{ color: '#FDE047', fontSize: '0.92rem' }}>{order.id}</strong>
-                            <span style={{ fontSize: '0.72rem', backgroundColor: '#10B981', color: '#FFF', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>{order.status}</span>
-                          </div>
-                          <div style={{ fontSize: '0.88rem', fontWeight: '700', color: '#FFFFFF', marginTop: '0.25rem' }}>{order.test}</div>
-                          <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>{order.patient} • {order.city} • {order.lab}</div>
-                        </div>
-
-                        <div style={{ textAlign: 'right' }}>
-                          <span style={{ fontSize: '1.2rem', fontWeight: '900', color: '#FBBF24' }}>{order.amount}</span>
-                        </div>
-                      </div>
-                    ))}
+              {/* Quick Action Hub */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+                <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '2px dashed #006B70', padding: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#FFF' }}>Create Individual Pathology Test</h3>
+                    <p style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: '0.25rem' }}>Add new diagnostic biomarker, sample requirements, and multi-lab price matrix.</p>
                   </div>
+                  <button onClick={() => setShowCreateTestModal(true)} style={{ padding: '0.75rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+                    <Plus size={16} /> Add Test
+                  </button>
                 </div>
 
-                {/* Platform Health & Server Status */}
+                <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '2px dashed #F59E0B', padding: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#FFF' }}>Create Health Checkup Package</h3>
+                    <p style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: '0.25rem' }}>Bundle multiple individual tests into discounted master profiles (Aarogyam, Senior, Diabetes).</p>
+                  </div>
+                  <button onClick={() => setActiveTab('PACKAGE_BUILDER')} style={{ padding: '0.75rem 1.4rem', backgroundColor: '#F59E0B', color: '#0F172A', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+                    <Package size={16} /> Package Builder
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ===================== TAB 2: TESTS CATALOG & PRICING MANAGEMENT ===================== */}
+          {activeTab === 'TESTS_MGMT' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#FFFFFF' }}>Pathology Tests Catalog ({testsList.length} Tests)</h2>
+                  <p style={{ color: '#94A3B8', fontSize: '0.88rem' }}>Create, update pricing, configure sample types, and manage live marketplace visibility.</p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button onClick={() => setShowCreateTestModal(true)} style={{ padding: '0.65rem 1.2rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <PlusCircle size={16} /> Create New Test
+                  </button>
+                  <button onClick={() => setActiveTab('PACKAGE_BUILDER')} style={{ padding: '0.65rem 1.2rem', backgroundColor: '#F59E0B', color: '#0F172A', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Package size={16} /> Package Studio
+                  </button>
+                </div>
+              </div>
+
+              {/* Filters Bar */}
+              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: 1, minWidth: '280px' }}>
+                  <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '12px' }} />
+                  <input
+                    type="text"
+                    placeholder="Search test name or category..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{ width: '100%', padding: '0.7rem 1rem 0.7rem 2.4rem', backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.88rem', outline: 'none' }}
+                  />
+                </div>
+
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  style={{ padding: '0.7rem 1rem', backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.88rem', outline: 'none' }}
+                >
+                  <option value="ALL">All Categories ({THYROCARE_CATEGORIES.length})</option>
+                  {THYROCARE_CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Tests Table */}
+              <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8' }}>
+                      <th style={{ padding: '1rem 1.25rem' }}>TEST NAME</th>
+                      <th style={{ padding: '1rem' }}>CATEGORY</th>
+                      <th style={{ padding: '1rem' }}>PARAMS</th>
+                      <th style={{ padding: '1rem' }}>THYROCARE DEAL</th>
+                      <th style={{ padding: '1rem' }}>APOLLO RATE</th>
+                      <th style={{ padding: '1rem' }}>DR. LAL RATE</th>
+                      <th style={{ padding: '1rem' }}>SAMPLE & TAT</th>
+                      <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayedTests.map((test) => (
+                      <tr key={test.id} style={{ borderBottom: '1px solid #334155' }}>
+                        <td style={{ padding: '1rem 1.25rem' }}>
+                          <strong style={{ color: '#FFFFFF', fontSize: '0.92rem' }}>{test.name}</strong>
+                          <span style={{ fontSize: '0.7rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '800', marginLeft: '0.5rem' }}>
+                            {test.yellowTag}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem', color: '#94A3B8' }}>{test.category}</td>
+                        <td style={{ padding: '1rem', color: '#67E8F9', fontWeight: '700' }}>{test.params} Biomarkers</td>
+                        <td style={{ padding: '1rem', color: '#FBBF24', fontWeight: '900' }}>₹{test.thyrocarePrice} <span style={{ fontSize: '0.75rem', color: '#64748B', textDecoration: 'line-through' }}>₹{test.originalPrice}</span></td>
+                        <td style={{ padding: '1rem', color: '#94A3B8' }}>₹{test.apolloPrice}</td>
+                        <td style={{ padding: '1rem', color: '#94A3B8' }}>₹{test.lalPrice}</td>
+                        <td style={{ padding: '1rem', color: '#CBD5E1', fontSize: '0.8rem' }}>{test.sample} • {test.tat}</td>
+                        <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
+                          <button onClick={() => deleteTest(test.id)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '0.3rem' }} title="Delete Test">
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* ===================== TAB 3: HEALTH PACKAGE BUILDER (BUNDLE CREATOR) ===================== */}
+          {activeTab === 'PACKAGE_BUILDER' && (
+            <div>
+              <div style={{ marginBottom: '1.75rem' }}>
+                <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#FFFFFF' }}>Health Checkup Package Builder Studio</h2>
+                <p style={{ color: '#94A3B8', fontSize: '0.88rem' }}>
+                  Select from available individual tests, auto-compute biomarker counts & cumulative MRP, and set custom package deal prices.
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '2rem', alignItems: 'start' }}>
+                
+                {/* Left Form: Select Tests & Package Configurations */}
                 <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1px solid #334155', padding: '1.75rem' }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#FFFFFF', marginBottom: '1.25rem' }}>
-                    Server & Microservices Infrastructure
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#FBBF24', marginBottom: '1.25rem' }}>
+                    1. Select Tests to Include in Bundle
                   </h3>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div style={{ padding: '0.85rem 1rem', backgroundColor: '#0F172A', borderRadius: '12px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <strong style={{ color: '#FFFFFF', fontSize: '0.9rem' }}>Web Frontend (PM2 SPA)</strong>
-                        <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Port 5085 • Hostinger VPS (147.93.107.21)</div>
-                      </div>
-                      <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: '900', backgroundColor: 'rgba(16,185,129,0.2)', padding: '0.2rem 0.55rem', borderRadius: '6px' }}>ONLINE (99.9%)</span>
+                  {/* Search individual tests */}
+                  <div style={{ marginBottom: '1rem' }}>
+                    <input
+                      type="text"
+                      placeholder="Search tests to include..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      style={{ width: '100%', padding: '0.65rem 1rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.85rem' }}
+                    />
+                  </div>
+
+                  {/* Multi-select checklist */}
+                  <div style={{ maxHeight: '340px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', paddingRight: '0.5rem', marginBottom: '1.5rem' }} className="custom-scrollbar">
+                    {testsList.map(test => {
+                      const isSelected = packageBuilderForm.selectedTests.includes(test.id);
+                      return (
+                        <div
+                          key={test.id}
+                          onClick={() => {
+                            if (isSelected) {
+                              setPackageBuilderForm({
+                                ...packageBuilderForm,
+                                selectedTests: packageBuilderForm.selectedTests.filter(id => id !== test.id)
+                              });
+                            } else {
+                              setPackageBuilderForm({
+                                ...packageBuilderForm,
+                                selectedTests: [...packageBuilderForm.selectedTests, test.id]
+                              });
+                            }
+                          }}
+                          style={{
+                            padding: '0.75rem 1rem',
+                            borderRadius: '10px',
+                            backgroundColor: isSelected ? 'rgba(0,107,112,0.3)' : '#0F172A',
+                            border: isSelected ? '1.5px solid #006B70' : '1px solid #334155',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <div style={{ width: '20px', height: '20px', borderRadius: '5px', border: isSelected ? '2px solid #006B70' : '1.5px solid #64748B', backgroundColor: isSelected ? '#006B70' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                              {isSelected ? '✓' : ''}
+                            </div>
+                            <div>
+                              <strong style={{ color: '#FFF', fontSize: '0.88rem' }}>{test.name}</strong>
+                              <div style={{ fontSize: '0.74rem', color: '#94A3B8' }}>{test.category} • {test.params} Params</div>
+                            </div>
+                          </div>
+                          <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#FBBF24' }}>₹{test.originalPrice}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#FBBF24', marginBottom: '1rem' }}>
+                    2. Package Details & Pricing
+                  </h3>
+
+                  <form onSubmit={handleSavePackage} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: '700' }}>Package Name</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Aarogyam Executive Health Check (104 Tests)"
+                        value={packageBuilderForm.name}
+                        onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, name: e.target.value })}
+                        required
+                        style={{ width: '100%', padding: '0.75rem 1rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.9rem', marginTop: '0.25rem' }}
+                      />
                     </div>
 
-                    <div style={{ padding: '0.85rem 1rem', backgroundColor: '#0F172A', borderRadius: '12px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                       <div>
-                        <strong style={{ color: '#FFFFFF', fontSize: '0.9rem' }}>Backend API & Gateway</strong>
-                        <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Port 5080 • Node.js / Express Server</div>
+                        <label style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: '700' }}>Package Deal Price (₹)</label>
+                        <input
+                          type="number"
+                          placeholder="e.g. 1499"
+                          value={packageBuilderForm.packagePrice}
+                          onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, packagePrice: e.target.value })}
+                          required
+                          style={{ width: '100%', padding: '0.75rem 1rem', backgroundColor: '#0F172A', border: '1.5px solid #F59E0B', borderRadius: '10px', color: '#FBBF24', fontSize: '1.1rem', fontWeight: '900', marginTop: '0.25rem' }}
+                        />
                       </div>
-                      <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: '900', backgroundColor: 'rgba(16,185,129,0.2)', padding: '0.2rem 0.55rem', borderRadius: '6px' }}>ONLINE (0 errors)</span>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: '700' }}>Highlight Tag Badge</label>
+                        <input
+                          type="text"
+                          value={packageBuilderForm.yellowTag}
+                          onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, yellowTag: e.target.value })}
+                          style={{ width: '100%', padding: '0.75rem 1rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.9rem', marginTop: '0.25rem' }}
+                        />
+                      </div>
                     </div>
 
-                    <div style={{ padding: '0.85rem 1rem', backgroundColor: '#0F172A', borderRadius: '12px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <button
+                      type="submit"
+                      disabled={packageBuilderForm.selectedTests.length === 0 || !packageBuilderForm.name || !packageBuilderForm.packagePrice}
+                      style={{ padding: '0.9rem', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', color: '#0F172A', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '1rem', cursor: 'pointer', marginTop: '0.5rem', boxShadow: '0 4px 14px rgba(245,158,11,0.3)' }}
+                    >
+                      Publish Package to Live Marketplace (₹{packageBuilderForm.packagePrice || 0})
+                    </button>
+                  </form>
+                </div>
+
+                {/* Right: Live Package Preview & Discount Calculation */}
+                <div>
+                  <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '2px solid #F59E0B', padding: '1.75rem', position: 'sticky', top: '90px' }}>
+                    <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.55rem', borderRadius: '4px', fontWeight: '900' }}>
+                      {packageBuilderForm.yellowTag || 'LIVE PREVIEW'}
+                    </span>
+                    
+                    <h3 style={{ fontSize: '1.35rem', fontWeight: '900', color: '#FFF', margin: '0.6rem 0 0.4rem' }}>
+                      {packageBuilderForm.name || 'New Health Checkup Package'}
+                    </h3>
+
+                    <p style={{ fontSize: '0.82rem', color: '#94A3B8', marginBottom: '1.25rem' }}>
+                      Contains {packageBuilderForm.selectedTests.length} major profiles with <strong>{cumulativeParams} total clinical biomarkers</strong>.
+                    </p>
+
+                    {/* Calculated Metrics Summary */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', padding: '1rem', backgroundColor: '#0F172A', borderRadius: '14px', marginBottom: '1.25rem' }}>
                       <div>
-                        <strong style={{ color: '#FFFFFF', fontSize: '0.9rem' }}>Cold-Chain IoT Temperature Tracker</strong>
-                        <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>28 Active Vials in Tirupati Range</div>
+                        <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>CUMULATIVE MRP</span>
+                        <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#94A3B8', textDecoration: 'line-through' }}>
+                          ₹{cumulativeIndividualMRP}
+                        </div>
                       </div>
-                      <span style={{ fontSize: '0.75rem', color: '#FBBF24', fontWeight: '900', backgroundColor: 'rgba(245,158,11,0.2)', padding: '0.2rem 0.55rem', borderRadius: '6px' }}>OPTIMAL (2°-8°C)</span>
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: '#FBBF24' }}>PACKAGE OFFER PRICE</span>
+                        <div style={{ fontSize: '1.5rem', fontWeight: '900', color: '#FBBF24' }}>
+                          ₹{enteredPackagePrice}
+                        </div>
+                      </div>
                     </div>
+
+                    <div style={{ padding: '0.85rem', backgroundColor: 'rgba(16,185,129,0.15)', border: '1px solid #10B981', borderRadius: '12px', textAlign: 'center', marginBottom: '1.25rem' }}>
+                      <span style={{ fontSize: '0.8rem', color: '#10B981', fontWeight: '800' }}>
+                        PATIENT SAVINGS: ₹{calculatedSavings} ({calculatedDiscountPercent}% OFF)
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: '0.78rem', color: '#94A3B8', borderTop: '1px solid #334155', paddingTop: '1rem' }}>
+                      <strong>Included Profiles ({packageBuilderForm.selectedTests.length}):</strong>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.4rem' }}>
+                        {selectedTestsObjects.map(t => (
+                          <span key={t.id} style={{ fontSize: '0.72rem', backgroundColor: '#0F172A', padding: '0.2rem 0.5rem', borderRadius: '6px', color: '#CBD5E1' }}>
+                            {t.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
                   </div>
                 </div>
 
@@ -351,24 +728,17 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             </div>
           )}
 
-          {/* ===================== TAB 2: PATHOLOGY & LABS HUB ===================== */}
+          {/* ===================== TAB 4: PARTNER LABS DIRECTORY ===================== */}
           {activeTab === 'LABS' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <div>
-                  <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#FFFFFF' }}>Diagnostic Lab Partners & Test Matrix</h2>
-                  <p style={{ color: '#94A3B8', fontSize: '0.88rem' }}>Manage NABL accreditations, Thyrocare API sync, and marketplace margins.</p>
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={() => alert('New Partner Lab onboarding modal triggered')} style={{ padding: '0.65rem 1.1rem', backgroundColor: '#F59E0B', color: '#0F172A', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <PlusCircle size={16} /> Onboard New Lab
-                  </button>
+                  <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#FFFFFF' }}>Partner Diagnostic Labs ({labPartners.length})</h2>
+                  <p style={{ color: '#94A3B8', fontSize: '0.88rem' }}>Accredited reference labs and processing hubs connected across Tirupati and Pan-India.</p>
                 </div>
               </div>
 
-              {/* Lab Partners Table */}
-              <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden', marginBottom: '2rem' }}>
+              <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8' }}>
@@ -378,7 +748,6 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                       <th style={{ padding: '1rem' }}>TESTS LISTED</th>
                       <th style={{ padding: '1rem' }}>COMMISSION</th>
                       <th style={{ padding: '1rem' }}>STATUS</th>
-                      <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>ACTIONS</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -394,17 +763,6 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                             {lab.status}
                           </span>
                         </td>
-                        <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
-                          {lab.status === 'PENDING_APPROVAL' ? (
-                            <button onClick={() => approveLab(lab.id)} style={{ padding: '0.4rem 0.8rem', backgroundColor: '#10B981', color: '#FFF', border: 'none', borderRadius: '6px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer' }}>
-                              Approve NABL
-                            </button>
-                          ) : (
-                            <button onClick={() => alert(`Editing catalog for ${lab.name}`)} style={{ padding: '0.4rem 0.8rem', backgroundColor: '#334155', color: '#FFF', border: 'none', borderRadius: '6px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer' }}>
-                              Manage Catalog
-                            </button>
-                          )}
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -413,7 +771,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             </div>
           )}
 
-          {/* ===================== TAB 3: RADIOLOGY & SCANS ===================== */}
+          {/* ===================== TAB 5: RADIOLOGY & SCANS ===================== */}
           {activeTab === 'SCANS' && (
             <div>
               <div style={{ marginBottom: '1.5rem' }}>
@@ -455,7 +813,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             </div>
           )}
 
-          {/* ===================== TAB 4: IN-CLINIC DOCTORS ===================== */}
+          {/* ===================== TAB 6: IN-CLINIC DOCTORS ===================== */}
           {activeTab === 'DOCTORS' && (
             <div>
               <div style={{ marginBottom: '1.5rem' }}>
@@ -496,48 +854,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             </div>
           )}
 
-          {/* ===================== TAB 5: GENERIC PHARMACY ===================== */}
-          {activeTab === 'PHARMACY' && (
-            <div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#FFFFFF' }}>Generic Formulary & Prescription Cost-Saver</h2>
-                <p style={{ color: '#94A3B8', fontSize: '0.88rem' }}>CDSCO approved generic substitutions saving patients up to 70%.</p>
-              </div>
-
-              <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8' }}>
-                      <th style={{ padding: '1rem 1.25rem' }}>PRESCRIBED BRANDED DRUG</th>
-                      <th style={{ padding: '1rem' }}>GENERIC EQUIVALENT SALT</th>
-                      <th style={{ padding: '1rem' }}>BRAND MRP</th>
-                      <th style={{ padding: '1rem' }}>MEDMARG GENERIC</th>
-                      <th style={{ padding: '1rem' }}>PATIENT SAVINGS</th>
-                      <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>CDSCO STATUS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {genericFormulary.map((drug, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid #334155' }}>
-                        <td style={{ padding: '1rem 1.25rem', fontWeight: '700', color: '#EF4444' }}>{drug.brand}</td>
-                        <td style={{ padding: '1rem', fontWeight: '800', color: '#10B981' }}>{drug.generic}</td>
-                        <td style={{ padding: '1rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{drug.brandPrice}</td>
-                        <td style={{ padding: '1rem', fontWeight: '900', color: '#FBBF24' }}>₹{drug.genericPrice}</td>
-                        <td style={{ padding: '1rem', color: '#10B981', fontWeight: '800' }}>Save {Math.round(((drug.brandPrice - drug.genericPrice) / drug.brandPrice) * 100)}%</td>
-                        <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
-                          <span style={{ fontSize: '0.72rem', backgroundColor: 'rgba(16,185,129,0.2)', color: '#10B981', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '800' }}>
-                            {drug.cdsco}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* ===================== TAB 6: PHLEBOTOMIST FLEET ===================== */}
+          {/* ===================== TAB 7: PHLEBOTOMIST FLEET ===================== */}
           {activeTab === 'FLEET' && (
             <div>
               <div style={{ marginBottom: '1.5rem' }}>
@@ -579,7 +896,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             </div>
           )}
 
-          {/* ===================== TAB 7: SETTINGS & HOSTINGER VPS ===================== */}
+          {/* ===================== TAB 8: SETTINGS & HOSTINGER VPS ===================== */}
           {activeTab === 'SETTINGS' && (
             <div>
               <div style={{ marginBottom: '1.5rem' }}>
@@ -613,7 +930,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
           )}
 
           {/* ===================== OTHER TABS FALLBACK ===================== */}
-          {(activeTab === 'PATIENTS' || activeTab === 'FINANCIALS') && (
+          {(activeTab === 'PHARMACY' || activeTab === 'PATIENTS' || activeTab === 'FINANCIALS') && (
             <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', padding: '2.5rem', textAlign: 'center' }}>
               <Users size={48} color="#FBBF24" style={{ margin: '0 auto 1rem' }} />
               <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#FFF' }}>{navMenuItems.find(m => m.key === activeTab)?.label} Console Active</h3>
@@ -625,6 +942,146 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
 
         </main>
       </div>
+
+      {/* MODAL: CREATE NEW SINGLE PATHOLOGY TEST */}
+      {showCreateTestModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 150, backgroundColor: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem', overflowY: 'auto' }}>
+          <div style={{ backgroundColor: '#1E293B', borderRadius: '24px', maxWidth: '620px', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', border: '2px solid #006B70', boxShadow: '0 25px 60px -15px rgba(0,0,0,0.5)' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', backgroundColor: '#006B70', color: '#FFF', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '800' }}>
+                  CATALOG CREATOR
+                </span>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF', marginTop: '0.3rem' }}>
+                  Add New Pathology Test
+                </h3>
+              </div>
+              <button onClick={() => setShowCreateTestModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.25rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleSaveNewTest} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: '700' }}>Test Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Vitamin B12 Serum Analysis"
+                  value={newTestForm.name}
+                  onChange={(e) => setNewTestForm({ ...newTestForm, name: e.target.value })}
+                  required
+                  style={{ width: '100%', padding: '0.7rem 1rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.9rem', marginTop: '0.25rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: '700' }}>Category</label>
+                  <select
+                    value={newTestForm.category}
+                    onChange={(e) => setNewTestForm({ ...newTestForm, category: e.target.value })}
+                    style={{ width: '100%', padding: '0.7rem 1rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.88rem', marginTop: '0.25rem' }}
+                  >
+                    {THYROCARE_CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: '700' }}>Biomarkers (Count)</label>
+                  <input
+                    type="number"
+                    value={newTestForm.params}
+                    onChange={(e) => setNewTestForm({ ...newTestForm, params: e.target.value })}
+                    style={{ width: '100%', padding: '0.7rem 1rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.9rem', marginTop: '0.25rem' }}
+                  />
+                </div>
+              </div>
+
+              {/* Pricing Matrix */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', padding: '1rem', backgroundColor: '#0F172A', borderRadius: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '800' }}>Thyrocare Deal Price (₹)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 499"
+                    value={newTestForm.thyrocarePrice}
+                    onChange={(e) => setNewTestForm({ ...newTestForm, thyrocarePrice: e.target.value })}
+                    required
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', backgroundColor: '#1E293B', border: '1.5px solid #F59E0B', borderRadius: '8px', color: '#FBBF24', fontSize: '1rem', fontWeight: '900', marginTop: '0.2rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Market MRP (₹)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 900"
+                    value={newTestForm.originalPrice}
+                    onChange={(e) => setNewTestForm({ ...newTestForm, originalPrice: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '1rem', marginTop: '0.2rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Apollo Diagnostics (₹)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 750"
+                    value={newTestForm.apolloPrice}
+                    onChange={(e) => setNewTestForm({ ...newTestForm, apolloPrice: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.9rem', marginTop: '0.2rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Dr. Lal PathLabs (₹)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 800"
+                    value={newTestForm.lalPrice}
+                    onChange={(e) => setNewTestForm({ ...newTestForm, lalPrice: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.85rem', backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.9rem', marginTop: '0.2rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Sample Type</label>
+                  <input
+                    type="text"
+                    value={newTestForm.sample}
+                    onChange={(e) => setNewTestForm({ ...newTestForm, sample: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.85rem', marginTop: '0.2rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Fasting</label>
+                  <input
+                    type="text"
+                    value={newTestForm.fasting}
+                    onChange={(e) => setNewTestForm({ ...newTestForm, fasting: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.85rem', marginTop: '0.2rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Report TAT</label>
+                  <input
+                    type="text"
+                    value={newTestForm.tat}
+                    onChange={(e) => setNewTestForm({ ...newTestForm, tat: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.85rem', marginTop: '0.2rem' }}
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                style={{ padding: '0.9rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '1rem', cursor: 'pointer', marginTop: '0.5rem' }}
+              >
+                Save & Publish Test to Catalog
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -150,30 +150,81 @@ app.get('/api/v1/scans', (req, res) => {
     ]);
 });
 
-// DOCTORS IN-CLINIC APPOINTMENTS API (NO VIDEO CALLS)
-app.get('/api/v1/doctors', (req, res) => {
-    res.json([
-        {
-            id: 'doc_1',
-            name: 'Dr. Ananya Sharma',
-            specialty: 'General Physician & Diabetologist',
-            qualification: 'MBBS, MD (Internal Medicine)',
-            clinic: 'MedMarg Care Clinic, Indiranagar',
-            consultFee: 499,
-            availableModes: ['IN_CLINIC_APPOINTMENT'],
-            nextSlot: 'Today, 4:30 PM (Clinic Visit)'
-        },
-        {
-            id: 'doc_2',
-            name: 'Dr. Rajeshwar Rao',
-            specialty: 'Cardiologist',
-            qualification: 'MBBS, MD, DM (Cardiology)',
-            clinic: 'Heart Wellness Institute, Koramangala',
-            consultFee: 800,
-            availableModes: ['IN_CLINIC_APPOINTMENT'],
-            nextSlot: 'Tomorrow, 10:00 AM (Clinic Visit)'
-        }
-    ]);
+// IN-MEMORY PATHOLOGY TESTS & PACKAGES STORE
+let customTestsCatalog = [];
+let customPackagesStore = [];
+
+// TESTS & PACKAGES CATALOG API
+app.get('/api/v1/tests', (req, res) => {
+    res.json({
+        success: true,
+        tests: customTestsCatalog,
+        packages: customPackagesStore
+    });
+});
+
+// CREATE NEW INDIVIDUAL TEST API
+app.post('/api/v1/tests', (req, res) => {
+    const { name, category, params, sample, fasting, tat, thyrocarePrice, originalPrice, apolloPrice, lalPrice, description, yellowTag } = req.body;
+    
+    if (!name || !thyrocarePrice) {
+        return res.status(400).json({ error: 'Test name and price are required.' });
+    }
+
+    const newTest = {
+        id: `custom_test_${Date.now()}`,
+        name,
+        category: category || 'General Pathology',
+        params: Number(params) || 1,
+        sample: sample || 'Blood (Serum)',
+        fasting: fasting || '10-12 hrs Fasting',
+        tat: tat || '12 Hours',
+        thyrocarePrice: Number(thyrocarePrice),
+        originalPrice: Number(originalPrice || thyrocarePrice * 1.5),
+        apolloPrice: Number(apolloPrice || thyrocarePrice * 1.4),
+        lalPrice: Number(lalPrice || thyrocarePrice * 1.6),
+        description: description || `${name} diagnostic pathology biomarker test.`,
+        yellowTag: yellowTag || 'NEW'
+    };
+
+    customTestsCatalog.unshift(newTest);
+    return res.status(201).json({ success: true, message: 'Test created successfully', test: newTest });
+});
+
+// CREATE NEW HEALTH PACKAGE (BUNDLE CREATOR) API
+app.post('/api/v1/packages', (req, res) => {
+    const { name, selectedTestIds, packagePrice, originalPrice, yellowTag, description, fasting, tat } = req.body;
+
+    if (!name || !packagePrice) {
+        return res.status(400).json({ error: 'Package name and package price are required.' });
+    }
+
+    const newPackage = {
+        id: `pkg_${Date.now()}`,
+        name,
+        category: 'Aarogyam Full Body Profiles',
+        includedItems: selectedTestIds || [],
+        params: (selectedTestIds || []).length * 5 + 10,
+        thyrocarePrice: Number(packagePrice),
+        originalPrice: Number(originalPrice || packagePrice * 2),
+        discountPercent: originalPrice ? Math.round(((originalPrice - packagePrice) / originalPrice) * 100) : 50,
+        yellowTag: yellowTag || 'SPECIAL BUNDLE',
+        description: description || `Comprehensive health checkup bundle including ${(selectedTestIds || []).length} major test profiles.`,
+        sample: 'Blood (Serum) & Urine',
+        fasting: fasting || '10-12 hrs Overnight Fasting',
+        tat: tat || '24 Hours'
+    };
+
+    customPackagesStore.unshift(newPackage);
+    return res.status(201).json({ success: true, message: 'Health package created successfully', package: newPackage });
+});
+
+// DELETE TEST OR PACKAGE
+app.delete('/api/v1/tests/:id', (req, res) => {
+    const { id } = req.params;
+    customTestsCatalog = customTestsCatalog.filter(t => t.id !== id);
+    customPackagesStore = customPackagesStore.filter(p => p.id !== id);
+    return res.json({ success: true, message: `Item ${id} deleted successfully.` });
 });
 
 // Start Server
