@@ -76,7 +76,7 @@ export const DEMO_ACCOUNTS = [
   }
 ];
 
-export default function LoginPage({ onLoginSuccess }) {
+export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
   const [identifier, setIdentifier] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState('IDENTIFIER'); // 'IDENTIFIER' | 'OTP'
