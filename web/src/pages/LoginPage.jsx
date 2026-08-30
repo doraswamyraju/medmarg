@@ -19,7 +19,7 @@ export const DEMO_ACCOUNTS = [
     name: 'Rahul Sharma',
     identifier: '+91 98765 43210',
     title: 'Patient (Customer)',
-    org: 'Bangalore, Indiranagar',
+    org: 'Tirupati, Andhra Pradesh',
     icon: User,
     color: '#006B70',
     bg: '#E0F2F1'

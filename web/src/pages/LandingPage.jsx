@@ -29,7 +29,7 @@ import { THYROCARE_CATEGORIES, THYROCARE_TESTS } from '../data/thyrocareTests';
 export default function LandingPage({ onNavigateLogin }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Tests & Packages');
-  const [userCity, setUserCity] = useState('Indiranagar, Bangalore');
+  const [userCity, setUserCity] = useState('Tirupati, Andhra Pradesh');
   const [isLocating, setIsLocating] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
 
@@ -40,12 +40,12 @@ export default function LandingPage({ onNavigateLogin }) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setIsLocating(false);
-          // Simulated reverse geocode
-          setUserCity('Indiranagar, Bangalore (Auto-Detected GPS)');
+          // Auto detected
+          setUserCity('Tirupati, Andhra Pradesh (Auto-Detected GPS)');
         },
         (error) => {
           setIsLocating(false);
-          setUserCity('Indiranagar, Bangalore');
+          setUserCity('Tirupati, Andhra Pradesh');
         },
         { timeout: 8000 }
       );
@@ -652,14 +652,18 @@ export default function LandingPage({ onNavigateLogin }) {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {[
+                'Tirupati, Andhra Pradesh (All Areas)',
+                'Tiruchanoor Road, Tirupati',
+                'Alipiri / SVIMS Area, Tirupati',
+                'Renigunta Road, Tirupati',
+                'Air Bypass Road, Tirupati',
+                'Chandragiri, Tirupati Dist',
+                'Nellore, Andhra Pradesh',
+                'Vijayawada, Andhra Pradesh',
+                'Visakhapatnam, Andhra Pradesh',
                 'Indiranagar, Bangalore',
-                'Koramangala, Bangalore',
-                'Whitefield, Bangalore',
-                'HSR Layout, Bangalore',
                 'Jubilee Hills, Hyderabad',
-                'Gachibowli, Hyderabad',
-                'Bandra West, Mumbai',
-                'Gurgaon / Cyber City, Delhi NCR'
+                'Chennai Central, Tamil Nadu'
               ].map((city) => (
                 <div
                   key={city}
