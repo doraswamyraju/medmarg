@@ -127,7 +127,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', backgroundColor: 'rgba(255,255,255,0.12)', padding: '0.4rem 0.85rem', borderRadius: '20px', fontSize: '0.85rem' }}>
             <MapPin size={16} color="#10B981" />
             <span style={{ color: '#E0F2F1' }}>Delivering to:</span>
-            <strong style={{ color: '#FFF' }}>Indiranagar, Bangalore</strong>
+            <strong style={{ color: '#FFF' }}>Tirupati, Andhra Pradesh</strong>
             <ChevronDown size={14} color="#E0F2F1" />
           </div>
         </div>
