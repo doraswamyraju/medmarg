@@ -1,11 +1,16 @@
 package com.medmarg.patient
 
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -13,18 +18,16 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.medmarg.patient.model.CartItem
 import com.medmarg.patient.model.ServiceType
+import com.medmarg.patient.model.UserRole
 import com.medmarg.patient.navigation.Screen
 import com.medmarg.patient.navigation.bottomNavScreens
 import com.medmarg.patient.ui.components.LocationPickerBottomSheet
 import com.medmarg.patient.ui.components.MedMargTopHeader
 import com.medmarg.patient.ui.screens.*
-import com.medmarg.patient.ui.theme.EmeraldAccent
-import com.medmarg.patient.ui.theme.MedTealDark
-import com.medmarg.patient.ui.theme.MedTealPrimary
-import com.medmarg.patient.ui.theme.PureWhite
-import com.medmarg.patient.ui.theme.Slate500
+import com.medmarg.patient.ui.theme.*
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MedMargApp() {
     val navController = rememberNavController()
@@ -38,7 +41,7 @@ fun MedMargApp() {
     var showLocationSheet by remember { mutableStateOf(false) }
     
     // Multi-role state
-    var activeRole by remember { mutableStateOf(com.medmarg.patient.model.UserRole.PATIENT) }
+    var activeRole by remember { mutableStateOf(UserRole.PATIENT) }
     var showRoleSwitchSheet by remember { mutableStateOf(false) }
 
     // Global Cart State
@@ -76,24 +79,28 @@ fun MedMargApp() {
             onDismissRequest = { showRoleSwitchSheet = false },
             containerColor = PureWhite
         ) {
-            Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
                 Text(
-                    "Switch User Workspace",
+                    text = "Switch User Workspace",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = Slate900
                 )
                 Text(
-                    "Select which MedMarg module console to open:",
+                    text = "Select which MedMarg module console to open:",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Slate500
                 )
                 Spacer(modifier = Modifier.height(14.dp))
-                com.medmarg.patient.model.UserRole.entries.forEach { role ->
+                UserRole.entries.forEach { role ->
                     Surface(
                         color = if (activeRole == role) MedTealLight else Slate50,
                         shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (activeRole == role) MedTealPrimary else Slate200),
+                        border = BorderStroke(1.dp, if (activeRole == role) MedTealPrimary else Slate200),
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(bottom = 8.dp)
@@ -104,7 +111,7 @@ fun MedMargApp() {
                     ) {
                         Row(
                             modifier = Modifier.padding(14.dp),
-                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = role.displayName,
@@ -113,7 +120,12 @@ fun MedMargApp() {
                                 modifier = Modifier.weight(1f)
                             )
                             if (activeRole == role) {
-                                Text("ACTIVE", color = MedTealPrimary, fontWeight = FontWeight.Black, fontSize = 11.sp)
+                                Text(
+                                    text = "ACTIVE",
+                                    color = MedTealPrimary,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 11.sp
+                                )
                             }
                         }
                     }
@@ -124,9 +136,9 @@ fun MedMargApp() {
     }
 
     // Direct View for Super Admin and Doctor Roles
-    if (activeRole == com.medmarg.patient.model.UserRole.SUPER_ADMIN) {
+    if (activeRole == UserRole.SUPER_ADMIN) {
         AdminDashboardScreen(onSwitchRole = { showRoleSwitchSheet = true })
-    } else if (activeRole == com.medmarg.patient.model.UserRole.DOCTOR) {
+    } else if (activeRole == UserRole.DOCTOR) {
         DoctorDashboardScreen(onSwitchRole = { showRoleSwitchSheet = true })
     } else {
         Scaffold(
@@ -193,144 +205,145 @@ fun MedMargApp() {
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-            composable(Screen.Home.route) {
-                HomeScreen(
-                    onNavigate = { route -> navController.navigate(route) },
-                    onSelectLabTest = { test, labPricing ->
-                        cartItems.add(
-                            CartItem(
-                                id = "cart_${System.currentTimeMillis()}",
-                                title = test.name,
-                                subtitle = "${test.parametersCount} Parameters • ${labPricing.tatHours}h TAT",
-                                providerName = labPricing.labName,
-                                price = labPricing.discountedPrice,
-                                originalPrice = labPricing.originalPrice,
-                                serviceType = ServiceType.LAB_TEST,
-                                appointmentDate = "Tomorrow, 08:00 AM",
-                                isHomeCollection = labPricing.homeCollectionAvailable
+                composable(Screen.Home.route) {
+                    HomeScreen(
+                        onNavigate = { route -> navController.navigate(route) },
+                        onSelectLabTest = { test, labPricing ->
+                            cartItems.add(
+                                CartItem(
+                                    id = "cart_${System.currentTimeMillis()}",
+                                    title = test.name,
+                                    subtitle = "${test.parametersCount} Parameters • ${labPricing.tatHours}h TAT",
+                                    providerName = labPricing.labName,
+                                    price = labPricing.discountedPrice,
+                                    originalPrice = labPricing.originalPrice,
+                                    serviceType = ServiceType.LAB_TEST,
+                                    appointmentDate = "Tomorrow, 08:00 AM",
+                                    isHomeCollection = labPricing.homeCollectionAvailable
+                                )
                             )
-                        )
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Added ${test.name} (${labPricing.labName}) to Cart")
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Added ${test.name} (${labPricing.labName}) to Cart")
+                            }
                         }
-                    }
-                )
-            }
+                    )
+                }
 
-            composable(Screen.Diagnostics.route) {
-                DiagnosticsScreen(
-                    onSelectLabTest = { test, labPricing ->
-                        cartItems.add(
-                            CartItem(
-                                id = "cart_${System.currentTimeMillis()}",
-                                title = test.name,
-                                subtitle = "${test.parametersCount} Parameters",
-                                providerName = labPricing.labName,
-                                price = labPricing.discountedPrice,
-                                originalPrice = labPricing.originalPrice,
-                                serviceType = ServiceType.LAB_TEST
+                composable(Screen.Diagnostics.route) {
+                    DiagnosticsScreen(
+                        onSelectLabTest = { test, labPricing ->
+                            cartItems.add(
+                                CartItem(
+                                    id = "cart_${System.currentTimeMillis()}",
+                                    title = test.name,
+                                    subtitle = "${test.parametersCount} Parameters",
+                                    providerName = labPricing.labName,
+                                    price = labPricing.discountedPrice,
+                                    originalPrice = labPricing.originalPrice,
+                                    serviceType = ServiceType.LAB_TEST
+                                )
                             )
-                        )
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Added ${test.name} (${labPricing.labName}) to Cart")
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Added ${test.name} (${labPricing.labName}) to Cart")
+                            }
                         }
-                    }
-                )
-            }
+                    )
+                }
 
-            composable(Screen.Scans.route) {
-                ScansScreen(
-                    onSelectScanCenter = { scan, pricing ->
-                        cartItems.add(
-                            CartItem(
-                                id = "cart_scan_${System.currentTimeMillis()}",
-                                title = scan.name,
-                                subtitle = pricing.machineSpec,
-                                providerName = pricing.centerName,
-                                price = pricing.price,
-                                originalPrice = pricing.originalPrice,
-                                serviceType = ServiceType.SCAN_RADIOLOGY,
-                                appointmentDate = pricing.nextSlot,
-                                isHomeCollection = false
+                composable(Screen.Scans.route) {
+                    ScansScreen(
+                        onSelectScanCenter = { scan, pricing ->
+                            cartItems.add(
+                                CartItem(
+                                    id = "cart_scan_${System.currentTimeMillis()}",
+                                    title = scan.name,
+                                    subtitle = pricing.machineSpec,
+                                    providerName = pricing.centerName,
+                                    price = pricing.price,
+                                    originalPrice = pricing.originalPrice,
+                                    serviceType = ServiceType.SCAN_RADIOLOGY,
+                                    appointmentDate = pricing.nextSlot,
+                                    isHomeCollection = false
+                                )
                             )
-                        )
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Scan slot booked at ${pricing.centerName}")
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Scan slot booked at ${pricing.centerName}")
+                            }
                         }
-                    }
-                )
-            }
+                    )
+                }
 
-            composable(Screen.Doctors.route) {
-                DoctorsScreen(
-                    onBookDoctor = { doctor ->
-                        cartItems.add(
-                            CartItem(
-                                id = "cart_doc_${System.currentTimeMillis()}",
-                                title = "Consultation: ${doctor.name}",
-                                subtitle = doctor.specialty,
-                                providerName = doctor.clinicOrHospital,
-                                price = doctor.fee,
-                                originalPrice = doctor.fee,
-                                serviceType = ServiceType.DOCTOR_CONSULT,
-                                appointmentDate = doctor.nextSlot,
-                                isHomeCollection = false
+                composable(Screen.Doctors.route) {
+                    DoctorsScreen(
+                        onBookDoctor = { doctor ->
+                            cartItems.add(
+                                CartItem(
+                                    id = "cart_doc_${System.currentTimeMillis()}",
+                                    title = "Consultation: ${doctor.name}",
+                                    subtitle = doctor.specialty,
+                                    providerName = doctor.clinicOrHospital,
+                                    price = doctor.fee,
+                                    originalPrice = doctor.fee,
+                                    serviceType = ServiceType.DOCTOR_CONSULT,
+                                    appointmentDate = doctor.nextSlot,
+                                    isHomeCollection = false
+                                )
                             )
-                        )
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Consultation booked with ${doctor.name}")
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Consultation booked with ${doctor.name}")
+                            }
                         }
-                    }
-                )
-            }
+                    )
+                }
 
-            composable(Screen.Pharmacy.route) {
-                PharmacyScreen(
-                    onAddToCart = { medicine, isGeneric ->
-                        val (title, price, origPrice) = if (isGeneric && medicine.genericAlternative != null) {
-                            Triple(medicine.genericAlternative.name, medicine.genericAlternative.discountedPrice, medicine.genericAlternative.mrp)
-                        } else {
-                            Triple(medicine.name, medicine.price, medicine.mrp)
-                        }
-                        cartItems.add(
-                            CartItem(
-                                id = "cart_med_${System.currentTimeMillis()}",
-                                title = title,
-                                subtitle = medicine.packSize,
-                                providerName = if (isGeneric) "MedMarg Generics" else medicine.manufacturer,
-                                price = price,
-                                originalPrice = origPrice,
-                                serviceType = ServiceType.PHARMACY,
-                                isHomeCollection = true
+                composable(Screen.Pharmacy.route) {
+                    PharmacyScreen(
+                        onAddToCart = { medicine, isGeneric ->
+                            val (title, price, origPrice) = if (isGeneric && medicine.genericAlternative != null) {
+                                Triple(medicine.genericAlternative.name, medicine.genericAlternative.discountedPrice, medicine.genericAlternative.mrp)
+                            } else {
+                                Triple(medicine.name, medicine.price, medicine.mrp)
+                            }
+                            cartItems.add(
+                                CartItem(
+                                    id = "cart_med_${System.currentTimeMillis()}",
+                                    title = title,
+                                    subtitle = medicine.packSize,
+                                    providerName = if (isGeneric) "MedMarg Generics" else medicine.manufacturer,
+                                    price = price,
+                                    originalPrice = origPrice,
+                                    serviceType = ServiceType.PHARMACY,
+                                    isHomeCollection = true
+                                )
                             )
-                        )
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Added $title to Cart")
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Added $title to Cart")
+                            }
                         }
-                    }
-                )
-            }
+                    )
+                }
 
-            composable(Screen.HealthLocker.route) {
-                HealthLockerScreen()
-            }
+                composable(Screen.HealthLocker.route) {
+                    HealthLockerScreen()
+                }
 
-            composable(Screen.Insurance.route) {
-                InsuranceScreen()
-            }
+                composable(Screen.Insurance.route) {
+                    InsuranceScreen()
+                }
 
-            composable(Screen.Booking.route) {
-                BookingScreen(
-                    cartItems = cartItems,
-                    onRemoveItem = { cartItems.remove(it) },
-                    onConfirmBooking = {
-                        cartItems.clear()
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("🎉 Booking Confirmed! Phlebotomist/Appointment details sent via SMS & WhatsApp.")
+                composable(Screen.Booking.route) {
+                    BookingScreen(
+                        cartItems = cartItems,
+                        onRemoveItem = { cartItems.remove(it) },
+                        onConfirmBooking = {
+                            cartItems.clear()
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("🎉 Booking Confirmed! Phlebotomist/Appointment details sent via SMS & WhatsApp.")
+                            }
+                            navController.navigate(Screen.Home.route)
                         }
-                        navController.navigate(Screen.Home.route)
-                    }
-                )
+                    )
+                }
             }
         }
     }
