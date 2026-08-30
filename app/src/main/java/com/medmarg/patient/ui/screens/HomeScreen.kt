@@ -51,7 +51,7 @@ fun HomeScreen(
         QuickActionItem("Book Doctor", "Clinic Appointments", Icons.Default.CalendarMonth, Color(0xFF8B5CF6), "doctors"),
         QuickActionItem("Pharmacy", "Generic Savings", Icons.Default.Medication, EmeraldAccent, "pharmacy"),
         QuickActionItem("Health Insurance", "Cashless Pre-Auth", Icons.Default.HealthAndSafety, AmberWarning, "insurance"),
-        QuickActionItem("Health Locker", "Biomarkers & ABHA", Icons.Default.FolderShared, Color(0xFFEC4899), "health_locker")
+        QuickActionItem("Health Locker", "Biomarkers & Drive Sync", Icons.Default.FolderShared, Color(0xFFEC4899), "health_locker")
     )
 
     LazyColumn(
