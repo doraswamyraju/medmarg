@@ -256,23 +256,47 @@ export default function LandingPage({ onNavigateLogin }) {
       {/* 4. COMPREHENSIVE THYROCARE & MULTI-LAB TESTS MARKETPLACE */}
       <section id="thyrocare" style={{ maxWidth: '1240px', margin: '0 auto 5rem', padding: '0 1.5rem' }}>
         
-        {/* Section Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+        {/* Section Header with Left/Right Controls */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.25rem 0.65rem', backgroundColor: '#FEF3C7', color: '#B45309', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '800', marginBottom: '0.4rem' }}>
-              ⭐ COMPLETE TEST CATALOG
+              ⭐ COMPLETE TEST CATALOG • SINGLE ROW BROWSE
             </div>
             <h2 style={{ fontSize: '2.25rem', fontWeight: '900', color: '#0F172A', letterSpacing: '-0.02em' }}>
               All Pathology Tests & Packages Available with Thyrocare
             </h2>
-            <p style={{ color: '#64748B', fontSize: '0.98rem', maxWidth: '800px' }}>
-              Compare rates across Thyrocare, Apollo Diagnostics, and Dr. Lal PathLabs. 100% Free Home Sample Collection with temperature-controlled cold-chain vial verification.
+            <p style={{ color: '#64748B', fontSize: '0.95rem', maxWidth: '750px' }}>
+              Compare rates across Thyrocare, Apollo Diagnostics, and Dr. Lal PathLabs. Scroll horizontally to explore all 100+ tests.
             </p>
+          </div>
+
+          {/* Horizontal Scroll Arrows */}
+          <div style={{ display: 'flex', gap: '0.6rem' }}>
+            <button
+              onClick={() => {
+                const track = document.getElementById('tests-single-row-track');
+                if (track) track.scrollBy({ left: -340, behavior: 'smooth' });
+              }}
+              style={{ width: '42px', height: '42px', borderRadius: '12px', border: '1.5px solid #E2E8F0', backgroundColor: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', fontSize: '1.1rem', fontWeight: 'bold' }}
+              title="Previous Tests"
+            >
+              ←
+            </button>
+            <button
+              onClick={() => {
+                const track = document.getElementById('tests-single-row-track');
+                if (track) track.scrollBy({ left: 340, behavior: 'smooth' });
+              }}
+              style={{ width: '42px', height: '42px', borderRadius: '12px', border: '1.5px solid #006B70', backgroundColor: '#006B70', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,107,112,0.25)', fontSize: '1.1rem', fontWeight: 'bold' }}
+              title="Next Tests"
+            >
+              →
+            </button>
           </div>
         </div>
 
         {/* Category Pills Slider */}
-        <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', paddingBottom: '1rem', marginBottom: '1.5rem' }} className="custom-scrollbar">
+        <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', paddingBottom: '0.85rem', marginBottom: '1.25rem' }} className="custom-scrollbar">
           {THYROCARE_CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat;
             return (
@@ -280,13 +304,13 @@ export default function LandingPage({ onNavigateLogin }) {
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
                 style={{
-                  padding: '0.6rem 1.1rem',
+                  padding: '0.55rem 1.05rem',
                   borderRadius: '12px',
                   border: isSelected ? '2px solid #F59E0B' : '1px solid #E2E8F0',
                   backgroundColor: isSelected ? '#FEF3C7' : '#FFFFFF',
                   color: isSelected ? '#B45309' : '#475569',
                   fontWeight: isSelected ? '800' : '600',
-                  fontSize: '0.88rem',
+                  fontSize: '0.86rem',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   transition: 'all 0.15s ease'
@@ -298,13 +322,17 @@ export default function LandingPage({ onNavigateLogin }) {
           })}
         </div>
 
-        {/* Dynamic Multi-Column Test Cards Grid (Beside each other) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(295px, 1fr))', gap: '1.25rem' }}>
+        {/* SINGLE ROW ONLY AUTO-FLOATING HORIZONTAL TRACK */}
+        <div 
+          id="tests-single-row-track"
+          style={{ display: 'flex', gap: '1.25rem', overflowX: 'auto', scrollSnapType: 'x mandatory', padding: '0.5rem 0.25rem 1.5rem', scrollBehavior: 'smooth' }}
+          className="custom-scrollbar"
+        >
           {filteredTests.map((test) => (
             <div 
               key={test.id} 
               onClick={() => setActiveTestModal(test)}
-              style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '1.4rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
+              style={{ minWidth: '315px', maxWidth: '315px', flexShrink: 0, scrollSnapAlign: 'start', backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1.5px solid #E2E8F0', padding: '1.4rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
               className="card-interactive"
             >
               {/* Card Top Info */}
@@ -318,7 +346,7 @@ export default function LandingPage({ onNavigateLogin }) {
                   </span>
                 </div>
 
-                <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0F172A', lineHeight: 1.3, minHeight: '44px' }}>
+                <h3 style={{ fontSize: '1.12rem', fontWeight: '800', color: '#0F172A', lineHeight: 1.3, minHeight: '44px' }}>
                   {test.name}
                 </h3>
                 
