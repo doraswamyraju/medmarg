@@ -34,7 +34,7 @@ import {
 import { THYROCARE_CATEGORIES, THYROCARE_TESTS } from '../data/thyrocareTests';
 
 export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
-  const [activeTab, setActiveTab] = useState('TESTS'); // 'TESTS' | 'SCANS' | 'DOCTORS' | 'PHARMACY' | 'ABHA' | 'ORDERS'
+  const [activeTab, setActiveTab] = useState('TESTS'); // 'TESTS' | 'SCANS' | 'DOCTORS' | 'PHARMACY' | 'RECORDS' | 'ORDERS'
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Tests & Packages');
   const [cart, setCart] = useState([
@@ -180,7 +180,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
             { key: 'SCANS', label: '3.0T MRI & Scans', icon: Building2, count: 'Hourly Slots' },
             { key: 'DOCTORS', label: 'In-Clinic Doctors', icon: Stethoscope, count: 'OPD Verified' },
             { key: 'PHARMACY', label: 'Generic Pharmacy (70% Off)', icon: Pill, count: 'OCR Scanner' },
-            { key: 'ABHA', label: 'ABHA Health Locker & Trends', icon: FolderHeart, count: 'Drive Sync' },
+            { key: 'RECORDS', label: 'Health Records & Trends', icon: FolderHeart, count: 'Drive Sync' },
             { key: 'ORDERS', label: 'My Bookings & Sample Track', icon: Activity, count: 'Live Track' }
           ].map(tab => {
             const IconComp = tab.icon;
@@ -545,22 +545,22 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
           </div>
         )}
 
-        {/* ===================== TAB 5: ABHA HEALTH LOCKER & DRIVE ===================== */}
-        {activeTab === 'ABHA' && (
+        {/* ===================== TAB 5: DIGITAL HEALTH RECORDS & DRIVE ===================== */}
+        {activeTab === 'RECORDS' && (
           <div>
             <div style={{ marginBottom: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
                 <h1 style={{ fontSize: '1.75rem', fontWeight: '900', color: '#0F172A' }}>
-                  ABHA Digital Health Locker & Biomarker Trends
+                  Digital Health Records & Biomarker Trends
                 </h1>
                 <p style={{ color: '#64748B', fontSize: '0.9rem' }}>
-                  All pathology lab reports & scans are securely unified under your Ayushman Bharat Digital ID with Google Drive shareable links.
+                  All pathology lab reports & scans are securely unified with Google Drive shareable links and automated trend analysis.
                 </p>
               </div>
 
               <div style={{ backgroundColor: '#0F172A', color: '#FFF', padding: '0.6rem 1rem', borderRadius: '12px', fontSize: '0.85rem' }}>
-                <span style={{ color: '#94A3B8' }}>ABHA Address: </span>
-                <strong style={{ color: '#FBBF24' }}>rahul.sharma@abdm</strong>
+                <span style={{ color: '#94A3B8' }}>Health ID: </span>
+                <strong style={{ color: '#FBBF24' }}>rahul.sharma@medmarg.com</strong>
               </div>
             </div>
 

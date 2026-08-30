@@ -165,7 +165,7 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
               <form onSubmit={handleProceedToOtp}>
                 <div style={{ marginBottom: '1.25rem' }}>
                   <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '0.4rem' }}>
-                    Mobile Number / Email / ABHA ID
+                    Mobile Number / Email
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
@@ -295,7 +295,7 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
 
       {/* Footer */}
       <footer style={{ padding: '1rem 2rem', textAlign: 'center', fontSize: '0.8rem', color: '#94A3B8', borderTop: '1px solid #E2E8F0', backgroundColor: '#FFF' }}>
-        © 2026 MedMarg Healthcare Platform (https://www.medmarg.com/). All rights reserved. NABL, CAP & ABHA Certified.
+        © 2026 MedMarg Healthcare Platform (https://www.medmarg.com/). All rights reserved. NABL, CAP & ISO 9001 Certified.
       </footer>
     </div>
   );
