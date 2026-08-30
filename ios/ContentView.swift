@@ -1,18 +1,101 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var identifier: String = ""
+    // Universal User Accounts State (Managed & Editable by Super Admin)
+    @State private var users: [UserProfile] = [
+        UserProfile(
+            id: "usr_admin",
+            name: "MedMarg Super Admin",
+            username: "admin",
+            email: "admin@medmarg.com",
+            phone: "+91 98765 00000",
+            password: "password123",
+            role: .admin,
+            organization: "MedMarg Central Hub & Governance",
+            status: "Active",
+            createdAt: "30-Aug-2026"
+        ),
+        UserProfile(
+            id: "usr_doc",
+            name: "Dr. Ananya Sharma, MD",
+            username: "doctor",
+            email: "doctor@medmarg.com",
+            phone: "+91 98765 11111",
+            password: "password123",
+            role: .doctor,
+            organization: "MedMarg Care Clinic, Air Bypass Road, Tirupati",
+            status: "Active",
+            createdAt: "30-Aug-2026"
+        ),
+        UserProfile(
+            id: "usr_pat",
+            name: "Rahul Sharma",
+            username: "patient",
+            email: "patient@medmarg.com",
+            phone: "+91 98765 43210",
+            password: "password123",
+            role: .patient,
+            organization: "Air Bypass Road, Tirupati - 517501",
+            status: "Active",
+            createdAt: "30-Aug-2026"
+        ),
+        UserProfile(
+            id: "usr_lab",
+            name: "Thyrocare & Dr. Lal Hub",
+            username: "lab",
+            email: "lab@medmarg.com",
+            phone: "+91 98765 22222",
+            password: "password123",
+            role: .diagnosticLab,
+            organization: "NABL Processing Lab, Renigunta Rd, Tirupati",
+            status: "Active",
+            createdAt: "30-Aug-2026"
+        ),
+        UserProfile(
+            id: "usr_scan",
+            name: "Aarthi Scans & Radiology",
+            username: "scans",
+            email: "scans@medmarg.com",
+            phone: "+91 98765 33333",
+            password: "password123",
+            role: .scanCenter,
+            organization: "Siemens 3.0T MRI Center, Tirupati",
+            status: "Active",
+            createdAt: "30-Aug-2026"
+        ),
+        UserProfile(
+            id: "usr_pharma",
+            name: "MedPlus Generic Chemist",
+            username: "pharmacy",
+            email: "pharmacy@medmarg.com",
+            phone: "+91 98765 44444",
+            password: "password123",
+            role: .pharmacy,
+            organization: "Generic Pharmacy Hub, Tirupati",
+            status: "Active",
+            createdAt: "30-Aug-2026"
+        ),
+        UserProfile(
+            id: "usr_agent",
+            name: "Ramesh Kumar (Phlebo AG-01)",
+            username: "agent",
+            email: "agent@medmarg.com",
+            phone: "+91 98765 55555",
+            password: "password123",
+            role: .collectionAgent,
+            organization: "Tirupati Field Collection Fleet",
+            status: "Active",
+            createdAt: "30-Aug-2026"
+        )
+    ]
+
+    // Login Form State
+    @State private var usernameInput: String = ""
+    @State private var passwordInput: String = ""
+    @State private var errorMessage: String = ""
+    @State private var isPasswordVisible: Bool = false
     @State private var loggedInUser: UserProfile? = nil
     @State private var currentCity: String = "Tirupati, Andhra Pradesh"
-
-    let demoAccounts: [UserProfile] = [
-        UserProfile(id: "1", name: "Rahul Sharma", identifier: "+91 98765 43210", role: .patient, organization: "Tirupati (Air Bypass Rd)"),
-        UserProfile(id: "2", name: "Dr. Ananya Sharma", identifier: "doctor@medmarg.com", role: .doctor, organization: "MedMarg Care Clinic, Tirupati"),
-        UserProfile(id: "3", name: "Super Admin (Central Lab)", identifier: "admin@medmarg.com", role: .admin, organization: "Central Lab & Platform Governance"),
-        UserProfile(id: "4", name: "Dr. Lal PathLabs Hub", identifier: "lab@medmarg.com", role: .diagnosticLab, organization: "NABL Processing Hub, Tirupati"),
-        UserProfile(id: "5", name: "Aarthi Scans & Labs", identifier: "scans@medmarg.com", role: .scanCenter, organization: "Siemens 3.0T MRI Center"),
-        UserProfile(id: "6", name: "MedPlus Generic Chemist", identifier: "pharmacy@medmarg.com", role: .pharmacy, organization: "Generic Pharmacy Partner")
-    ]
 
     var body: some View {
         if let user = loggedInUser {
@@ -23,31 +106,40 @@ struct ContentView: View {
                 case .doctor:
                     DoctorHomeView(user: user, onLogout: { loggedInUser = nil })
                 case .admin:
-                    SuperAdminHomeView(user: user, onLogout: { loggedInUser = nil })
+                    SuperAdminHomeView(user: user, users: $users, onLogout: { loggedInUser = nil })
                 case .diagnosticLab:
                     LabHomeView(user: user, onLogout: { loggedInUser = nil })
                 case .scanCenter:
                     ScanCenterHomeView(user: user, onLogout: { loggedInUser = nil })
                 case .pharmacy:
                     PharmacyHomeView(user: user, onLogout: { loggedInUser = nil })
+                case .collectionAgent:
+                    AgentHomeView(user: user, onLogout: { loggedInUser = nil })
                 }
             }
         } else {
             NavigationStack {
                 ScrollView {
-                    VStack(spacing: 20) {
-                        // Brand Logo
-                        VStack(spacing: 8) {
-                            HStack(spacing: 8) {
+                    VStack(spacing: 24) {
+                        // Header & Brand Logo
+                        VStack(spacing: 10) {
+                            HStack(spacing: 10) {
                                 Text("M")
-                                    .font(.system(size: 28, weight: .black))
+                                    .font(.system(size: 32, weight: .black))
                                     .foregroundColor(.white)
-                                    .frame(width: 52, height: 52)
-                                    .background(Color(red: 0.0, green: 0.42, blue: 0.44))
-                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                    .frame(width: 58, height: 58)
+                                    .background(
+                                        LinearGradient(
+                                            colors: [Color(red: 0.0, green: 0.42, blue: 0.44), Color(red: 0.0, green: 0.3, blue: 0.32)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    .shadow(color: Color(red: 0.0, green: 0.42, blue: 0.44).opacity(0.3), radius: 8, x: 0, y: 4)
 
                                 Text("MedMarg")
-                                    .font(.system(size: 32, weight: .heavy))
+                                    .font(.system(size: 36, weight: .heavy))
                                     .foregroundColor(Color(red: 0.0, green: 0.42, blue: 0.44))
                             }
 
@@ -58,93 +150,215 @@ struct ContentView: View {
                         }
                         .padding(.top, 30)
 
-                        // Location Badge
-                        HStack {
+                        // Serving Location Pill
+                        HStack(spacing: 6) {
                             Image(systemName: "mappin.and.ellipse")
                                 .foregroundColor(Color(red: 0.0, green: 0.42, blue: 0.44))
                             Text(currentCity)
                                 .font(.subheadline)
                                 .fontWeight(.bold)
+                                .foregroundColor(Color(red: 0.0, green: 0.42, blue: 0.44))
                         }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 6)
-                        .background(Color(red: 0.0, green: 0.42, blue: 0.44).opacity(0.1))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(Color(red: 0.0, green: 0.42, blue: 0.44).opacity(0.08))
                         .clipShape(Capsule())
 
-                        // Universal Login Card
-                        VStack(alignment: .leading, spacing: 14) {
-                            Text("Universal Sign-In")
-                                .font(.headline)
-                                .fontWeight(.bold)
+                        // ================= COMMON UNIVERSAL LOGIN CARD =================
+                        VStack(alignment: .leading, spacing: 16) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Universal Sign-In")
+                                    .font(.title3)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.primary)
 
-                            Text("Enter your mobile number or email. The system automatically routes to your workspace.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                Text("Enter your credentials. MedMarg automatically detects your role & launches your personalized dashboard.")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
 
-                            TextField("Phone or Email", text: $identifier)
-                                .textFieldStyle(.roundedBorder)
-                                .padding(.vertical, 4)
-
-                            Button(action: {
-                                if let match = demoAccounts.first(where: { $0.identifier == identifier }) {
-                                    loggedInUser = match
-                                } else {
-                                    loggedInUser = demoAccounts[0]
-                                }
-                            }) {
+                            if !errorMessage.isEmpty {
                                 HStack {
-                                    Text("Sign In with Secure OTP")
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .foregroundColor(.red)
+                                    Text(errorMessage)
+                                        .font(.caption)
+                                        .foregroundColor(.red)
+                                        .fontWeight(.semibold)
+                                }
+                                .padding(10)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.red.opacity(0.1))
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+
+                            // Username / Phone / Email Input
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Username, Email or Phone")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.secondary)
+
+                                HStack {
+                                    Image(systemName: "person.fill")
+                                        .foregroundColor(.secondary)
+                                    TextField("e.g. admin, doctor, patient, 9876543210", text: $usernameInput)
+                                        .autocapitalization(.none)
+                                        .disableAutocorrection(true)
+                                }
+                                .padding(12)
+                                .background(Color(.systemGray6))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+
+                            // Password Input
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Password")
+                                    .font(.caption)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.secondary)
+
+                                HStack {
+                                    Image(systemName: "lock.fill")
+                                        .foregroundColor(.secondary)
+                                    if isPasswordVisible {
+                                        TextField("Enter password", text: $passwordInput)
+                                            .autocapitalization(.none)
+                                    } else {
+                                        SecureField("Enter password", text: $passwordInput)
+                                    }
+                                    Button(action: { isPasswordVisible.toggle() }) {
+                                        Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
+                                            .foregroundColor(.secondary)
+                                    }
+                                }
+                                .padding(12)
+                                .background(Color(.systemGray6))
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+
+                            // Login Button with Smart Role Detection
+                            Button(action: performLogin) {
+                                HStack {
+                                    Text("Sign In to MedMarg")
                                         .fontWeight(.bold)
                                     Image(systemName: "arrow.right")
                                 }
                                 .frame(maxWidth: .infinity)
-                                .padding()
+                                .padding(.vertical, 14)
                                 .background(Color(red: 0.0, green: 0.42, blue: 0.44))
                                 .foregroundColor(.white)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .shadow(color: Color(red: 0.0, green: 0.42, blue: 0.44).opacity(0.3), radius: 5, y: 3)
                             }
                         }
-                        .padding()
+                        .padding(20)
                         .background(Color(.systemBackground))
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .shadow(color: .black.opacity(0.06), radius: 10, x: 0, y: 4)
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .shadow(color: .black.opacity(0.06), radius: 15, x: 0, y: 6)
                         .padding(.horizontal)
 
-                        // Role Previews
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("INSTANT ROLE WORKSPACES")
-                                .font(.caption2)
-                                .fontWeight(.bold)
-                                .foregroundColor(.secondary)
+                        // ================= 1-TAP DEMO ACCOUNTS (ALL CATEGORIES) =================
+                        VStack(alignment: .leading, spacing: 12) {
+                            HStack {
+                                Text("DEMO CREDENTIALS (1-TAP AUTO-FILL & LOGIN)")
+                                    .font(.caption2)
+                                    .fontWeight(.heavy)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Text("Pass: password123")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
 
-                            ForEach(demoAccounts) { account in
-                                Button(action: { loggedInUser = account }) {
-                                    HStack {
+                            ForEach(users) { user in
+                                Button(action: {
+                                    usernameInput = user.username
+                                    passwordInput = user.password
+                                    loggedInUser = user
+                                }) {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: user.role.iconName)
+                                            .font(.title3)
+                                            .foregroundColor(Color(red: 0.0, green: 0.42, blue: 0.44))
+                                            .frame(width: 38, height: 38)
+                                            .background(Color(red: 0.0, green: 0.42, blue: 0.44).opacity(0.1))
+                                            .clipShape(Circle())
+
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text(account.role.displayName)
-                                                .font(.subheadline)
-                                                .fontWeight(.bold)
-                                                .foregroundColor(.primary)
-                                            Text(account.organization)
+                                            HStack {
+                                                Text(user.role.displayName)
+                                                    .font(.subheadline)
+                                                    .fontWeight(.bold)
+                                                    .foregroundColor(.primary)
+                                                Spacer()
+                                                Text("User: \(user.username)")
+                                                    .font(.caption2)
+                                                    .fontWeight(.bold)
+                                                    .foregroundColor(Color(red: 0.0, green: 0.42, blue: 0.44))
+                                                    .padding(.horizontal, 6)
+                                                    .padding(.vertical, 2)
+                                                    .background(Color(red: 0.0, green: 0.42, blue: 0.44).opacity(0.08))
+                                                    .clipShape(Capsule())
+                                            }
+                                            Text("\(user.name) • \(user.organization)")
                                                 .font(.caption)
                                                 .foregroundColor(.secondary)
+                                                .lineLimit(1)
                                         }
-                                        Spacer()
+
                                         Image(systemName: "chevron.right")
+                                            .font(.caption)
                                             .foregroundColor(.secondary)
                                     }
-                                    .padding()
+                                    .padding(14)
                                     .background(Color(.systemBackground))
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
                                     .shadow(color: .black.opacity(0.03), radius: 4)
                                 }
                             }
                         }
                         .padding(.horizontal)
+                        .padding(.bottom, 30)
                     }
                 }
                 .background(Color(.systemGroupedBackground))
             }
+        }
+    }
+
+    // Smart Authentication Logic
+    private func performLogin() {
+        errorMessage = ""
+        let query = usernameInput.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let pass = passwordInput.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !query.isEmpty else {
+            errorMessage = "Please enter username, email, or mobile number."
+            return
+        }
+        guard !pass.isEmpty else {
+            errorMessage = "Please enter your password."
+            return
+        }
+
+        // Match user by username, email, or phone
+        if let match = users.first(where: {
+            $0.username.lowercased() == query ||
+            $0.email.lowercased() == query ||
+            $0.phone.replacingOccurrences(of: " ", with: "").contains(query)
+        }) {
+            if match.password == pass {
+                if match.status == "Suspended" {
+                    errorMessage = "Account is suspended. Please contact Super Admin."
+                } else {
+                    loggedInUser = match
+                }
+            } else {
+                errorMessage = "Incorrect password for \(match.name). Try 'password123'."
+            }
+        } else {
+            errorMessage = "User not found. Use demo users (admin, doctor, patient, lab, scans, pharmacy, agent)."
         }
     }
 }
@@ -160,14 +374,14 @@ struct PatientHomeView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Primary Service Location") {
+                Section("Serving Location") {
                     HStack {
                         Image(systemName: "mappin.circle.fill")
                             .foregroundColor(Color(red: 0.0, green: 0.42, blue: 0.44))
                         Text(currentCity)
                             .fontWeight(.bold)
                         Spacer()
-                        Text("60-Min Collection")
+                        Text("60-Min Home Sample Collection")
                             .font(.caption)
                             .foregroundColor(.green)
                     }
@@ -269,7 +483,7 @@ struct PatientHomeView: View {
                     }
                 }
             }
-            .navigationTitle("MedMarg Patient")
+            .navigationTitle("Patient Portal (\(user.name))")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Logout", action: onLogout)
@@ -379,15 +593,99 @@ struct DoctorHomeView: View {
 }
 
 // =========================================================================
-// 3. SUPER ADMIN HOME VIEW
+// 3. SUPER ADMIN HOME VIEW (WITH FULL USER MANAGEMENT)
 // =========================================================================
 struct SuperAdminHomeView: View {
     let user: UserProfile
+    @Binding var users: [UserProfile]
     let onLogout: () -> Void
+
+    @State private var showAddUserSheet: Bool = false
+    @State private var editingUser: UserProfile? = nil
+
+    // New User Sheet Form State
+    @State private var newName: String = ""
+    @State private var newUsername: String = ""
+    @State private var newEmail: String = ""
+    @State private var newPhone: String = ""
+    @State private var newPassword: String = "password123"
+    @State private var newRole: UserRole = .patient
+    @State private var newOrg: String = ""
 
     var body: some View {
         NavigationStack {
             List {
+                // ================= USER MANAGEMENT SUITE =================
+                Section(header: HStack {
+                    Text("Universal Users & Access Management")
+                    Spacer()
+                    Button(action: { showAddUserSheet = true }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus.circle.fill")
+                            Text("Add User")
+                        }
+                        .font(.caption)
+                        .fontWeight(.bold)
+                    }
+                }) {
+                    ForEach(users) { usr in
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Image(systemName: usr.role.iconName)
+                                    .foregroundColor(Color(red: 0.0, green: 0.42, blue: 0.44))
+
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(usr.name)
+                                        .fontWeight(.bold)
+                                    Text("\(usr.role.displayName) • User: \(usr.username)")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+
+                                Spacer()
+
+                                Text(usr.status)
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(usr.status == "Active" ? .green : .red)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background((usr.status == "Active" ? Color.green : Color.red).opacity(0.1))
+                                    .clipShape(Capsule())
+                            }
+
+                            Text("Email: \(usr.email) • Phone: \(usr.phone)")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+
+                            HStack {
+                                Text("Pass: \(usr.password)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Button("Edit / Reset") {
+                                    editingUser = usr
+                                }
+                                .font(.caption2)
+                                .foregroundColor(.blue)
+
+                                Button("Toggle Status") {
+                                    if let idx = users.firstIndex(where: { $0.id == usr.id }) {
+                                        users[idx].status = (users[idx].status == "Active") ? "Suspended" : "Active"
+                                    }
+                                }
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                    .onDelete { indexSet in
+                        users.remove(atOffsets: indexSet)
+                    }
+                }
+
+                // ================= OTHER MODULES =================
                 Section("1. Tests Catalog & Health Packages Studio") {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Tests Catalog (104 Tests Active)")
@@ -402,13 +700,6 @@ struct SuperAdminHomeView: View {
                             .fontWeight(.bold)
                             .foregroundColor(Color(red: 0.96, green: 0.62, blue: 0.04))
                         Text("Aarogyam Senior Citizen: 104 Tests • ₹1,499 (57% OFF)")
-                            .font(.caption)
-                    }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Test Categories Manager (11 Categories)")
-                            .fontWeight(.bold)
-                        Text("Editable: Thyroid, Cardiac, Liver, Kidney, Vitamins, Diabetes")
                             .font(.caption)
                     }
                 }
@@ -429,16 +720,7 @@ struct SuperAdminHomeView: View {
                     }
                 }
 
-                Section("3. Partner Diagnostic Labs") {
-                    Text("• Thyrocare Central Lab (NABL-CC-4921) - 15% Margin")
-                        .font(.caption)
-                    Text("• Apollo Diagnostics Tirupati (NABL-AP-8921) - 18% Margin")
-                        .font(.caption)
-                    Text("• Dr. Lal PathLabs Hub (NABL-AP-3104) - 15% Margin")
-                        .font(.caption)
-                }
-
-                Section("4. Collection Agents Fleet (Tirupati Grid)") {
+                Section("3. Collection Agents Fleet (Tirupati Grid)") {
                     HStack {
                         Text("📍 Ramesh Kumar (AG-01)")
                         Spacer()
@@ -446,41 +728,13 @@ struct SuperAdminHomeView: View {
                             .font(.caption)
                             .foregroundColor(.green)
                     }
-                    HStack {
-                        Text("📍 Suresh Babu (AG-02)")
-                        Spacer()
-                        Text("Box: 3.8°C • 7 Samples")
-                            .font(.caption)
-                            .foregroundColor(.green)
-                    }
-                    HStack {
-                        Text("📍 Venkat Reddy (AG-03)")
-                        Spacer()
-                        Text("Box: 4.5°C • 8 Samples")
-                            .font(.caption)
-                            .foregroundColor(.green)
-                    }
                 }
 
-                Section("5. Medical Inventory & Consumables") {
+                Section("4. Medical Inventory & Consumables") {
                     HStack {
                         Text("BD Vacutainer EDTA Tubes (2ml)")
                         Spacer()
                         Text("1,450 In Stock")
-                            .fontWeight(.bold)
-                            .foregroundColor(.green)
-                    }
-                    HStack {
-                        Text("SST Gel Tubes (Yellow Top)")
-                        Spacer()
-                        Text("1,800 In Stock")
-                            .fontWeight(.bold)
-                            .foregroundColor(.green)
-                    }
-                    HStack {
-                        Text("Nitrile Gloves Powder-Free (M)")
-                        Spacer()
-                        Text("240 Boxes")
                             .fontWeight(.bold)
                             .foregroundColor(.green)
                     }
@@ -490,6 +744,114 @@ struct SuperAdminHomeView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Logout", action: onLogout)
+                }
+            }
+            .sheet(isPresented: $showAddUserSheet) {
+                NavigationStack {
+                    Form {
+                        Section("User Details") {
+                            TextField("Full Name", text: $newName)
+                            TextField("Username", text: $newUsername)
+                                .autocapitalization(.none)
+                            TextField("Email Address", text: $newEmail)
+                                .autocapitalization(.none)
+                            TextField("Phone Number", text: $newPhone)
+                            SecureField("Password", text: $newPassword)
+                        }
+
+                        Section("Role & Workspace") {
+                            Picker("User Role", selection: $newRole) {
+                                ForEach(UserRole.allCases) { role in
+                                    Text(role.displayName).tag(role)
+                                }
+                            }
+                            TextField("Organization / Clinic / Address", text: $newOrg)
+                        }
+                    }
+                    .navigationTitle("Add New System User")
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button("Cancel") { showAddUserSheet = false }
+                        }
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Save User") {
+                                let newUser = UserProfile(
+                                    id: "usr_\(UUID().uuidString.prefix(6))",
+                                    name: newName.isEmpty ? "New User" : newName,
+                                    username: newUsername.isEmpty ? "user\(users.count + 1)" : newUsername,
+                                    email: newEmail.isEmpty ? "user@medmarg.com" : newEmail,
+                                    phone: newPhone.isEmpty ? "+91 98765 99999" : newPhone,
+                                    password: newPassword.isEmpty ? "password123" : newPassword,
+                                    role: newRole,
+                                    organization: newOrg.isEmpty ? "Tirupati Hub" : newOrg,
+                                    status: "Active",
+                                    createdAt: "30-Aug-2026"
+                                )
+                                users.append(newUser)
+                                showAddUserSheet = false
+                                // Reset form
+                                newName = ""; newUsername = ""; newEmail = ""; newPhone = ""; newOrg = ""
+                            }
+                            .fontWeight(.bold)
+                        }
+                    }
+                }
+            }
+            .sheet(item: $editingUser) { usr in
+                EditUserSheet(user: usr, onSave: { updated in
+                    if let idx = users.firstIndex(where: { $0.id == updated.id }) {
+                        users[idx] = updated
+                    }
+                    editingUser = nil
+                }, onCancel: {
+                    editingUser = nil
+                })
+            }
+        }
+    }
+}
+
+// Edit User Modal Sheet
+struct EditUserSheet: View {
+    @State var user: UserProfile
+    let onSave: (UserProfile) -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Edit Profile") {
+                    TextField("Full Name", text: $user.name)
+                    TextField("Username", text: $user.username)
+                        .autocapitalization(.none)
+                    TextField("Email", text: $user.email)
+                    TextField("Phone", text: $user.phone)
+                    TextField("Password", text: $user.password)
+                }
+
+                Section("Role & Status") {
+                    Picker("Role", selection: $user.role) {
+                        ForEach(UserRole.allCases) { role in
+                            Text(role.displayName).tag(role)
+                        }
+                    }
+                    Picker("Account Status", selection: $user.status) {
+                        Text("Active").tag("Active")
+                        Text("Suspended").tag("Suspended")
+                    }
+                    TextField("Organization", text: $user.organization)
+                }
+            }
+            .navigationTitle("Edit User: \(user.username)")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel", action: onCancel)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save Changes") {
+                        onSave(user)
+                    }
+                    .fontWeight(.bold)
                 }
             }
         }
@@ -585,6 +947,38 @@ struct PharmacyHomeView: View {
                 }
             }
             .navigationTitle("Generic Chemist")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Logout", action: onLogout)
+                }
+            }
+        }
+    }
+}
+
+// =========================================================================
+// 7. COLLECTION AGENT / FLEET VIEW
+// =========================================================================
+struct AgentHomeView: View {
+    let user: UserProfile
+    let onLogout: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Field Sample Collection Orders (Tirupati)") {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Stop #1: Rahul Sharma (Air Bypass Rd)")
+                            .fontWeight(.bold)
+                        Text("Tests: Thyroid Total + Lipid Profile • Fasting: 12h")
+                            .font(.caption)
+                        Text("Box Temperature: 4.2°C (Compliant)")
+                            .font(.caption2)
+                            .foregroundColor(.green)
+                    }
+                }
+            }
+            .navigationTitle("Fleet Agent Desk")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Logout", action: onLogout)

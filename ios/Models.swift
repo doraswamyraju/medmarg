@@ -2,32 +2,51 @@ import Foundation
 
 enum UserRole: String, CaseIterable, Identifiable {
     case patient = "PATIENT"
+    case doctor = "DOCTOR"
+    case admin = "ADMIN"
     case diagnosticLab = "DIAGNOSTIC_LAB"
     case scanCenter = "SCAN_CENTER"
-    case doctor = "DOCTOR"
     case pharmacy = "PHARMACY"
-    case admin = "ADMIN"
+    case collectionAgent = "COLLECTION_AGENT"
 
     var id: String { self.rawValue }
 
     var displayName: String {
         switch self {
         case .patient: return "Patient (Customer)"
+        case .doctor: return "Doctor (In-Clinic OPD)"
+        case .admin: return "Super Admin (Central Lab)"
         case .diagnosticLab: return "Diagnostic Lab Partner"
         case .scanCenter: return "Radiology & Scan Center"
-        case .doctor: return "Doctor (In-Clinic OPD)"
-        case .pharmacy: return "Pharmacy Partner"
-        case .admin: return "MedMarg Super Admin"
+        case .pharmacy: return "Generic Pharmacy Partner"
+        case .collectionAgent: return "Collection Agent (Fleet)"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .patient: return "person.crop.circle.fill"
+        case .doctor: return "stethoscope"
+        case .admin: return "shield.fill"
+        case .diagnosticLab: return "flask.fill"
+        case .scanCenter: return "waveform.path.ecg.rectangle"
+        case .pharmacy: return "pills.fill"
+        case .collectionAgent: return "car.fill"
         }
     }
 }
 
-struct UserProfile: Identifiable {
+struct UserProfile: Identifiable, Equatable {
     let id: String
-    let name: String
-    let identifier: String
-    let role: UserRole
-    let organization: String
+    var name: String
+    var username: String
+    var email: String
+    var phone: String
+    var password: String
+    var role: UserRole
+    var organization: String
+    var status: String // Active / Inactive
+    var createdAt: String
 }
 
 struct LabTestItem: Identifiable {
