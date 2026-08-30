@@ -116,12 +116,14 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
       {/* Top Navigation */}
       <nav style={{ backgroundColor: '#004D40', color: '#FFF', padding: '0.65rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-            <img 
-              src="/logo.png" 
-              alt="MedMarg" 
-              style={{ height: '36px', objectFit: 'contain', filter: 'brightness(0) invert(1)' }} 
-            />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer' }} onClick={onLogout}>
+            <div style={{ backgroundColor: '#FFFFFF', padding: '3px 8px', borderRadius: '8px', display: 'flex', alignItems: 'center' }}>
+              <img 
+                src="/logo.png" 
+                alt="MedMarg" 
+                style={{ height: '32px', objectFit: 'contain' }} 
+              />
+            </div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', backgroundColor: 'rgba(255,255,255,0.12)', padding: '0.4rem 0.85rem', borderRadius: '20px', fontSize: '0.85rem' }}>

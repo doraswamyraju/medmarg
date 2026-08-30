@@ -62,16 +62,15 @@ export default function LabPartnerDashboard({ user, onSwitchRole, onLogout }) {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', display: 'flex', flexDirection: 'column' }}>
-      {/* Top Navbar */}
-      <nav style={{ backgroundColor: '#1E3A8A', color: '#FFF', padding: '0.85rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-            <FlaskConical size={20} color="#FFF" />
+      {/* Top Navigation */}
+      <nav style={{ backgroundColor: '#1E293B', color: '#FFF', padding: '0.65rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={onLogout}>
+          <div style={{ backgroundColor: '#FFFFFF', padding: '3px 8px', borderRadius: '8px', display: 'flex', alignItems: 'center' }}>
+            <img src="/logo.png" alt="MedMarg" style={{ height: '30px', objectFit: 'contain' }} />
           </div>
-          <div>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: '800', lineHeight: 1.1 }}>MedMarg Partner Portal (Pathology Lab)</h2>
-            <span style={{ fontSize: '0.75rem', color: '#93C5FD' }}>{user?.org || 'Dr. Lal PathLabs (NABL Center)'}</span>
-          </div>
+          <span style={{ fontSize: '0.85rem', backgroundColor: '#334155', padding: '0.2rem 0.6rem', borderRadius: '6px', color: '#94A3B8' }}>
+            Lab Partner Portal
+          </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>

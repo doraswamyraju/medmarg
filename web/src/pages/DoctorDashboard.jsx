@@ -38,15 +38,14 @@ export default function DoctorDashboard({ user, onSwitchRole, onLogout }) {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', display: 'flex', flexDirection: 'column' }}>
       {/* Top Navbar */}
-      <nav style={{ backgroundColor: '#4C1D95', color: '#FFF', padding: '0.85rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: '#8B5CF6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-            <Stethoscope size={20} color="#FFF" />
+      <nav style={{ backgroundColor: '#5B21B6', color: '#FFF', padding: '0.65rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={onLogout}>
+          <div style={{ backgroundColor: '#FFFFFF', padding: '3px 8px', borderRadius: '8px', display: 'flex', alignItems: 'center' }}>
+            <img src="/logo.png" alt="MedMarg" style={{ height: '30px', objectFit: 'contain' }} />
           </div>
-          <div>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: '800', lineHeight: 1.1 }}>Doctor OPD Practice & Clinic Appointments</h2>
-            <span style={{ fontSize: '0.75rem', color: '#DDD6FE' }}>{user?.name || 'Dr. Ananya Sharma (Diabetologist)'} • MedMarg Care Clinic</span>
-          </div>
+          <span style={{ fontSize: '0.85rem', backgroundColor: 'rgba(255,255,255,0.15)', padding: '0.2rem 0.6rem', borderRadius: '6px', color: '#EDE9FE', fontWeight: '700' }}>
+            Doctor OPD Clinic Console
+          </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
