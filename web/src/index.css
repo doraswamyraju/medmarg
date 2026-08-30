@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap');
 
 :root {
   --primary: #006B70;
@@ -8,6 +8,10 @@
   --accent-emerald-light: #D1FAE5;
   --accent-cyan: #06B6D4;
   --accent-cyan-light: #CFFAFE;
+  --accent-yellow: #F59E0B;
+  --accent-yellow-light: #FEF3C7;
+  --accent-yellow-glow: #FBBF24;
+  --accent-yellow-dark: #B45309;
   --slate-900: #0F172A;
   --slate-800: #1E293B;
   --slate-700: #334155;
@@ -18,9 +22,6 @@
   --slate-100: #F1F5F9;
   --slate-50: #F8FAFC;
   --nabl-blue: #2563EB;
-  --nabl-blue-light: #DBEAFE;
-  --amber-warning: #F59E0B;
-  --rose-error: #EF4444;
 }
 
 * {
@@ -34,10 +35,71 @@ body {
   background-color: var(--slate-50);
   color: var(--slate-900);
   min-height: 100vh;
+  overflow-x: hidden;
 }
 
-button, input, select, textarea {
-  font-family: inherit;
+/* Parallax Floating Keyframes */
+@keyframes floatSlow {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(2deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes floatReverse {
+  0% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(10px) scale(1.03); }
+  100% { transform: translateY(0px) scale(1); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.7); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.floating-elem {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+.floating-elem-reverse {
+  animation: floatReverse 7s ease-in-out infinite;
+}
+
+.glow-yellow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+/* Smooth Interactive Cards */
+.card-interactive {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid var(--slate-200);
+}
+
+.card-interactive:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 20px 35px -10px rgba(0, 107, 112, 0.12), 0 10px 15px -5px rgba(245, 158, 11, 0.08);
+  border-color: #CBD5E1;
+}
+
+.badge-yellow {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  color: #FFFFFF;
+  font-weight: 800;
+  box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+}
+
+.gradient-yellow-bg {
+  background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 50%, #FDE68A 100%);
+}
+
+.gradient-hero {
+  background: radial-gradient(circle at 80% 20%, rgba(245, 158, 11, 0.15) 0%, transparent 40%),
+              radial-gradient(circle at 20% 80%, rgba(6, 182, 212, 0.15) 0%, transparent 40%),
+              linear-gradient(135deg, #004D40 0%, #006B70 60%, #00363A 100%);
 }
 
 .custom-scrollbar::-webkit-scrollbar {
@@ -50,15 +112,6 @@ button, input, select, textarea {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--slate-300, #CBD5E1);
+  background: #CBD5E1;
   border-radius: 4px;
-}
-
-.card-hover {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(0, 107, 112, 0.1), 0 8px 10px -6px rgba(0, 107, 112, 0.05);
 }
