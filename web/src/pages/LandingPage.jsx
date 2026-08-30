@@ -98,14 +98,6 @@ export default function LandingPage({ onNavigateLogin }) {
                 style={{ height: '42px', objectFit: 'contain' }} 
               />
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: '800', width: 'fit-content' }}>
-                OPEN HEALTHCARE MARKETPLACE
-              </span>
-              <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700', marginTop: '0.1rem' }}>
-                Serving <strong style={{ color: '#006B70' }}>Tirupati & Across India</strong>
-              </span>
-            </div>
           </div>
 
           {/* Navigation Links with Micro-Interactions */}
