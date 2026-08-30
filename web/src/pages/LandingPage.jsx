@@ -29,6 +29,7 @@ import { THYROCARE_CATEGORIES, THYROCARE_TESTS } from '../data/thyrocareTests';
 
 export default function LandingPage({ onNavigateLogin }) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All Tests & Packages');
   const [userCity, setUserCity] = useState('Tirupati, Andhra Pradesh');
   const [isLocating, setIsLocating] = useState(false);
@@ -169,36 +170,123 @@ export default function LandingPage({ onNavigateLogin }) {
             Access all 100+ Thyrocare pathology tests & Aarogyam full-body health profiles at lowest negotiated rates. Compare with Apollo Diagnostics & Dr. Lal PathLabs with Free Home Sample Collection.
           </p>
 
-          {/* Unified Location + Search Bar Widget */}
-          <div style={{ maxWidth: '880px', margin: '0 auto', backgroundColor: '#FFFFFF', borderRadius: '22px', padding: '0.55rem', display: 'flex', alignItems: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.35)', border: '2px solid rgba(245,158,11,0.3)' }}>
-            <div 
-              onClick={() => setShowLocationModal(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0 1.25rem', borderRight: '1.5px solid #E2E8F0', cursor: 'pointer' }}
-            >
-              <MapPin size={22} color="#006B70" />
-              <div style={{ textAlign: 'left' }}>
-                <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: '600' }}>LOCATION</div>
-                <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.92rem' }}>{userCity.split(',')[0]}</div>
+          {/* Unified Location + Search Bar Widget with Live Auto-Suggestions Dropdown */}
+          <div style={{ maxWidth: '920px', margin: '0 auto', position: 'relative' }}>
+            <div style={{ backgroundColor: '#FFFFFF', borderRadius: '22px', padding: '0.55rem', display: 'flex', alignItems: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.35)', border: '2px solid rgba(245,158,11,0.35)' }}>
+              
+              <div 
+                onClick={() => setShowLocationModal(true)}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0 1.25rem', borderRight: '1.5px solid #E2E8F0', cursor: 'pointer' }}
+              >
+                <MapPin size={22} color="#006B70" />
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: '700' }}>LOCATION</div>
+                  <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.92rem' }}>{userCity.split(',')[0]}</div>
+                </div>
               </div>
+
+              <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Search size={22} color="#94A3B8" style={{ position: 'absolute', left: '16px' }} />
+                <input
+                  type="text"
+                  placeholder="Search 100+ tests (Aarogyam, Thyroid, HbA1c, Lipid, Vitamin D, MRI)..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  style={{ width: '100%', padding: '1rem 1rem 1rem 3.4rem', border: 'none', fontSize: '1rem', outline: 'none', color: '#0F172A', fontWeight: '600' }}
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    style={{ position: 'absolute', right: '12px', background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.1rem', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <button
+                onClick={() => {
+                  const firstMatch = filteredTests[0];
+                  if (firstMatch) {
+                    setActiveTestModal(firstMatch);
+                  } else {
+                    document.getElementById('thyrocare')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                style={{ padding: '0.95rem 1.9rem', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', color: '#FFF', border: 'none', borderRadius: '16px', fontWeight: '900', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(245,158,11,0.4)', flexShrink: 0 }}
+              >
+                Compare & Book <ArrowRight size={18} />
+              </button>
             </div>
 
-            <div style={{ flex: 1, position: 'relative', display: 'flex', alignItems: 'center' }}>
-              <Search size={22} color="#94A3B8" style={{ position: 'absolute', left: '16px' }} />
-              <input
-                type="text"
-                placeholder="Search Thyrocare tests (Aarogyam, Thyroid, HbA1c, Vitamin D, Lipid), MRI Scans..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ width: '100%', padding: '1rem 1rem 1rem 3.4rem', border: 'none', fontSize: '1rem', outline: 'none', color: '#0F172A', fontWeight: '500' }}
-              />
-            </div>
+            {/* LIVE AUTOCOMPLETE SUGGESTIONS DROPDOWN */}
+            {searchQuery.trim().length > 0 && (
+              <div 
+                style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '8px', zIndex: 100, backgroundColor: '#FFFFFF', borderRadius: '20px', boxShadow: '0 25px 60px -10px rgba(0,0,0,0.3)', border: '1.5px solid #E2E8F0', maxHeight: '360px', overflowY: 'auto', textAlign: 'left', padding: '0.75rem' }}
+                className="custom-scrollbar"
+              >
+                <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#64748B', padding: '0.35rem 0.65rem', textTransform: 'uppercase', display: 'flex', justifyContent: 'space-between' }}>
+                  <span>Matching Tests & Packages ({filteredTests.length})</span>
+                  <span>Click to Compare Rates</span>
+                </div>
 
-            <button
-              onClick={() => onNavigateLogin('PATIENT')}
-              style={{ padding: '0.95rem 1.9rem', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', color: '#FFF', border: 'none', borderRadius: '16px', fontWeight: '800', fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(245,158,11,0.4)' }}
-            >
-              Compare & Book <ArrowRight size={18} />
-            </button>
+                {filteredTests.length > 0 ? (
+                  filteredTests.slice(0, 8).map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTestModal(item);
+                        setSearchQuery('');
+                      }}
+                      style={{ padding: '0.85rem 1rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', transition: 'background 0.15s', borderBottom: '1px solid #F1F5F9' }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#FEF3C7'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <strong style={{ color: '#0F172A', fontSize: '0.95rem' }}>{item.name}</strong>
+                          <span style={{ fontSize: '0.7rem', backgroundColor: '#E0F2F1', color: '#006B70', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '700' }}>
+                            {item.params} Params
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.2rem' }}>
+                          {item.category} • Fasting: {item.fasting} • TAT: {item.tat}
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: '900', color: '#B45309' }}>
+                          ₹{item.thyrocarePrice}
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: '#94A3B8', textDecoration: 'line-through' }}>
+                          ₹{item.originalPrice}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ padding: '1.5rem', textAlign: 'center', color: '#64748B' }}>
+                    <p style={{ fontWeight: '700' }}>No exact test match found for "{searchQuery}"</p>
+                    <span style={{ fontSize: '0.82rem' }}>Try searching "Aarogyam", "Thyroid", "Lipid", "HbA1c", or "Vitamin D"</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Quick Popular Search Tags */}
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap', fontSize: '0.82rem' }}>
+            <span style={{ color: '#E0F2F1', fontWeight: '700' }}>Popular Searches:</span>
+            {['Aarogyam 1.3', 'Lipid Profile', 'Thyroid Total (T3/T4/TSH)', 'HbA1c Diabetes', 'Vitamin D3 & B12', 'Complete Blood Count'].map((tag) => (
+              <button
+                key={tag}
+                onClick={() => setSearchQuery(tag)}
+                style={{ padding: '0.25rem 0.65rem', backgroundColor: 'rgba(255,255,255,0.15)', color: '#FFF', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '14px', fontSize: '0.78rem', fontWeight: '600', cursor: 'pointer', backdropFilter: 'blur(4px)' }}
+              >
+                {tag}
+              </button>
+            ))}
           </div>
 
           {/* Golden Yellow Trust Badges */}
