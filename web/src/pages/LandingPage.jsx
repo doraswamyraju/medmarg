@@ -83,40 +83,59 @@ export default function LandingPage({ onNavigateLogin }) {
         </div>
       </div>
 
-      {/* 1. TOP HEADER & STICKY NAVIGATION */}
-      <header style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-        <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '0.75rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {/* Logo with clean white presentation */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div style={{ backgroundColor: '#FFFFFF', padding: '4px 8px', borderRadius: '10px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+      {/* 1. CREATIVE ULTRA-MODERN STICKY HEADER */}
+      <header style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(16px)', borderBottom: '1.5px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 10px 30px -10px rgba(0, 107, 112, 0.08)' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0.85rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          
+          {/* Logo with Creative Interactive Container */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div style={{ backgroundColor: '#FFFFFF', padding: '6px 12px', borderRadius: '14px', display: 'flex', alignItems: 'center', boxShadow: '0 4px 14px rgba(0, 107, 112, 0.12)', border: '1px solid #E2E8F0', transition: 'all 0.2s ease' }} className="card-interactive">
               <img 
                 src="/logo.png" 
                 alt="MedMarg" 
                 style={{ height: '42px', objectFit: 'contain' }} 
               />
             </div>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: '800', width: 'fit-content' }}>
+                OPEN HEALTHCARE MARKETPLACE
+              </span>
+              <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700', marginTop: '0.1rem' }}>
+                Serving <strong style={{ color: '#006B70' }}>Tirupati & Across India</strong>
+              </span>
+            </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-            <a href="#thyrocare" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem' }}>Thyrocare & Labs</a>
-            <a href="#scans" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem' }}>3.0T MRI & Scans</a>
-            <a href="#doctors" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem' }}>In-Clinic Doctors</a>
-            <a href="#pharmacy" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem' }}>Generic Pharmacy</a>
-            <a href="#abha" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem' }}>ABHA Health Locker</a>
+          {/* Navigation Links with Micro-Interactions */}
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>
+            <a href="#thyrocare" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <FlaskConical size={16} color="#F59E0B" /> Thyrocare & Labs
+            </a>
+            <a href="#scans" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <Building2 size={16} color="#06B6D4" /> 3.0T MRI Scans
+            </a>
+            <a href="#doctors" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <Stethoscope size={16} color="#8B5CF6" /> In-Clinic Doctors
+            </a>
+            <a href="#pharmacy" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <Pill size={16} color="#10B981" /> Generic Pharmacy
+            </a>
+            <a href="#abha" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <FolderHeart size={16} color="#EC4899" /> ABHA Locker
+            </a>
           </nav>
 
-          {/* Action CTAs */}
+          {/* Creative Action CTAs */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
             <button
-              onClick={() => onNavigateLogin('DIAGNOSTIC_LAB')}
-              style={{ padding: '0.55rem 1rem', border: '1.5px solid #006B70', borderRadius: '10px', color: '#006B70', backgroundColor: '#FFF', fontSize: '0.88rem', fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s' }}
+              onClick={() => onNavigateLogin()}
+              style={{ padding: '0.6rem 1.1rem', border: '2px solid #006B70', borderRadius: '12px', color: '#006B70', backgroundColor: '#FFF', fontSize: '0.88rem', fontWeight: '800', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
             >
-              Partner Portal
+              <Shield size={16} /> Partner Portal
             </button>
             <button
-              onClick={() => onNavigateLogin('PATIENT')}
-              style={{ padding: '0.6rem 1.3rem', background: 'linear-gradient(135deg, #006B70 0%, #004D40 100%)', color: '#FFF', border: 'none', borderRadius: '10px', fontSize: '0.88rem', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 12px rgba(0,107,112,0.25)' }}
+              onClick={() => onNavigateLogin()}
+              style={{ padding: '0.65rem 1.4rem', background: 'linear-gradient(135deg, #006B70 0%, #004D40 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 6px 16px rgba(0,107,112,0.3)', transition: 'all 0.2s' }}
             >
               Sign In / Login <ArrowRight size={16} />
             </button>
@@ -585,56 +604,107 @@ export default function LandingPage({ onNavigateLogin }) {
         </div>
       </section>
 
-      {/* 10. COMPREHENSIVE FOOTER WITH CLEAN WHITE LOGO CONTAINER */}
-      <footer style={{ backgroundColor: '#0F172A', color: '#94A3B8', padding: '4.5rem 1.5rem 2rem', borderTop: '1px solid #1E293B' }}>
-        <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '2.5rem', marginBottom: '3rem' }}>
+      {/* 10. ULTRA-CREATIVE MULTI-TIERED MODERN FOOTER */}
+      <footer style={{ backgroundColor: '#070D1E', color: '#94A3B8', padding: '5rem 1.5rem 2rem', borderTop: '2px solid #1E293B', backgroundImage: 'radial-gradient(circle at 10% 20%, rgba(0, 107, 112, 0.15) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(245, 158, 11, 0.1) 0%, transparent 40%)' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
           
-          <div>
-            {/* Clean logo box container in footer */}
-            <div style={{ backgroundColor: '#FFFFFF', display: 'inline-block', padding: '6px 12px', borderRadius: '12px', marginBottom: '1.25rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-              <img 
-                src="/logo.png" 
-                alt="MedMarg" 
-                style={{ height: '36px', objectFit: 'contain', display: 'block' }} 
-              />
+          {/* Upper Tier: Brand + Value Proposition + Accreditations */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '3rem', paddingBottom: '3.5rem', borderBottom: '1px solid #1E293B' }}>
+            
+            <div style={{ gridColumn: 'span 1' }}>
+              {/* Crisp Official Logo Container */}
+              <div style={{ backgroundColor: '#FFFFFF', display: 'inline-flex', padding: '8px 16px', borderRadius: '14px', marginBottom: '1.25rem', boxShadow: '0 8px 24px rgba(0,0,0,0.3)', border: '1px solid #E2E8F0' }}>
+                <img 
+                  src="/logo.png" 
+                  alt="MedMarg" 
+                  style={{ height: '40px', objectFit: 'contain', display: 'block' }} 
+                />
+              </div>
+              
+              <p style={{ fontSize: '0.9rem', lineHeight: 1.6, color: '#94A3B8' }}>
+                India's premier open healthcare marketplace bridging patients with NABL certified diagnostic labs (Thyrocare, Apollo, Dr. Lal), 3.0T MRI imaging centers, verified OPD doctors, and generic pharmacies.
+              </p>
+
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.25rem' }}>
+                <span style={{ fontSize: '0.75rem', backgroundColor: '#1E293B', color: '#FBBF24', padding: '0.3rem 0.65rem', borderRadius: '8px', fontWeight: '800', border: '1px solid #334155' }}>
+                  ✓ NABL & CAP
+                </span>
+                <span style={{ fontSize: '0.75rem', backgroundColor: '#1E293B', color: '#10B981', padding: '0.3rem 0.65rem', borderRadius: '8px', fontWeight: '800', border: '1px solid #334155' }}>
+                  ✓ ABDM / ABHA
+                </span>
+                <span style={{ fontSize: '0.75rem', backgroundColor: '#1E293B', color: '#67E8F9', padding: '0.3rem 0.65rem', borderRadius: '8px', fontWeight: '800', border: '1px solid #334155' }}>
+                  ✓ ISO 9001
+                </span>
+              </div>
             </div>
-            <p style={{ fontSize: '0.85rem', lineHeight: 1.6 }}>
-              India's transparent multi-lab diagnostic marketplace connecting patients with Thyrocare, Apollo, Dr. Lal PathLabs, and verified imaging centers.
-            </p>
+
+            <div>
+              <h4 style={{ color: '#FFFFFF', fontWeight: '800', marginBottom: '1.25rem', fontSize: '1rem', letterSpacing: '-0.01em' }}>Diagnostics & Health</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.88rem' }}>
+                <a href="#thyrocare" style={{ color: '#94A3B8', textDecoration: 'none', transition: 'color 0.2s' }}>Thyrocare Aarogyam Profiles</a>
+                <a href="#thyrocare" style={{ color: '#94A3B8', textDecoration: 'none' }}>Thyroid Profile Total (T3/T4/TSH)</a>
+                <a href="#thyrocare" style={{ color: '#94A3B8', textDecoration: 'none' }}>Diabetes HbA1c & Fasting Glucose</a>
+                <a href="#thyrocare" style={{ color: '#94A3B8', textDecoration: 'none' }}>Complete Lipid Profile (Cholesterol)</a>
+                <a href="#thyrocare" style={{ color: '#94A3B8', textDecoration: 'none' }}>Liver (LFT) & Kidney (KFT) Tests</a>
+                <a href="#thyrocare" style={{ color: '#94A3B8', textDecoration: 'none' }}>Vitamin D3 + B12 Screening</a>
+              </div>
+            </div>
+
+            <div>
+              <h4 style={{ color: '#FFFFFF', fontWeight: '800', marginBottom: '1.25rem', fontSize: '1rem', letterSpacing: '-0.01em' }}>Specialized Care</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.88rem' }}>
+                <a href="#scans" style={{ color: '#94A3B8', textDecoration: 'none' }}>3.0T Silent MRI Scans</a>
+                <a href="#scans" style={{ color: '#94A3B8', textDecoration: 'none' }}>128-Slice Low Dose CT Scans</a>
+                <a href="#scans" style={{ color: '#94A3B8', textDecoration: 'none' }}>4D Ultrasound & Doppler</a>
+                <a href="#doctors" style={{ color: '#94A3B8', textDecoration: 'none' }}>In-Clinic OPD Doctor Booking</a>
+                <a href="#pharmacy" style={{ color: '#94A3B8', textDecoration: 'none' }}>Generic Medicine Cost Saver (70%)</a>
+                <a href="#abha" style={{ color: '#94A3B8', textDecoration: 'none' }}>ABHA Health Locker & Trends</a>
+              </div>
+            </div>
+
+            <div>
+              <h4 style={{ color: '#FFFFFF', fontWeight: '800', marginBottom: '1.25rem', fontSize: '1rem', letterSpacing: '-0.01em' }}>For Healthcare Partners</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.88rem' }}>
+                <button onClick={() => onNavigateLogin()} style={{ background: 'none', border: 'none', color: '#FBBF24', textAlign: 'left', cursor: 'pointer', fontSize: '0.88rem', fontWeight: '700', padding: 0 }}>Register Diagnostic Lab Portal</button>
+                <button onClick={() => onNavigateLogin()} style={{ background: 'none', border: 'none', color: '#94A3B8', textAlign: 'left', cursor: 'pointer', fontSize: '0.88rem', padding: 0 }}>Register 3.0T MRI Scan Center</button>
+                <button onClick={() => onNavigateLogin()} style={{ background: 'none', border: 'none', color: '#94A3B8', textAlign: 'left', cursor: 'pointer', fontSize: '0.88rem', padding: 0 }}>Register Clinic / Doctor Practice</button>
+                <button onClick={() => onNavigateLogin()} style={{ background: 'none', border: 'none', color: '#94A3B8', textAlign: 'left', cursor: 'pointer', fontSize: '0.88rem', padding: 0 }}>Register Retail / Generic Pharmacy</button>
+                <div style={{ marginTop: '0.75rem', padding: '0.85rem', backgroundColor: '#1E293B', borderRadius: '12px', border: '1px solid #334155' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#FBBF24', fontWeight: '800' }}>⚡ FAST PARTNER ONBOARDING</div>
+                  <div style={{ fontSize: '0.78rem', color: '#CBD5E1', marginTop: '0.2rem' }}>Get verified & start receiving bookings in 24 hours.</div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
-          <div>
-            <h4 style={{ color: '#FFF', fontWeight: '800', marginBottom: '1rem', fontSize: '0.95rem' }}>For Patients</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.85rem' }}>
-              <a href="#thyrocare" style={{ color: '#94A3B8', textDecoration: 'none' }}>Thyrocare Pathology Tests</a>
-              <a href="#thyrocare" style={{ color: '#94A3B8', textDecoration: 'none' }}>Aarogyam Full Body Checkups</a>
-              <a href="#scans" style={{ color: '#94A3B8', textDecoration: 'none' }}>3.0T MRI & CT Scans</a>
-              <a href="#doctors" style={{ color: '#94A3B8', textDecoration: 'none' }}>Book In-Clinic Doctor</a>
-              <a href="#pharmacy" style={{ color: '#94A3B8', textDecoration: 'none' }}>Generic Medicines</a>
+          {/* Lower Tier: Cities Grid & Copyright */}
+          <div style={{ paddingTop: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', fontSize: '0.82rem', color: '#64748B' }}>
+              <strong style={{ color: '#CBD5E1' }}>Popular Service Cities:</strong>
+              {['Tirupati (AP)', 'Vijayawada (AP)', 'Visakhapatnam (AP)', 'Nellore (AP)', 'Guntur (AP)', 'Hyderabad (TS)', 'Bangalore (KA)', 'Chennai (TN)', 'Mumbai (MH)', 'Delhi NCR'].map((city, idx) => (
+                <span key={city} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ color: '#94A3B8' }}>{city}</span>
+                  {idx < 9 && <span>•</span>}
+                </span>
+              ))}
             </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderTop: '1px solid #1E293B', paddingTop: '1.5rem', fontSize: '0.82rem', color: '#64748B' }}>
+              <div>
+                © 2026 <strong>MedMarg Healthcare Marketplace</strong> (<a href="https://www.medmarg.com/" style={{ color: '#94A3B8', textDecoration: 'none' }}>www.medmarg.com</a>). All rights reserved.
+              </div>
+              <div style={{ display: 'flex', gap: '1.5rem' }}>
+                <span>Privacy Policy</span>
+                <span>Terms of Marketplace</span>
+                <span>NABL Quality Assurance</span>
+                <span>ABDM Compliant</span>
+              </div>
+            </div>
+
           </div>
 
-          <div>
-            <h4 style={{ color: '#FFF', fontWeight: '800', marginBottom: '1rem', fontSize: '0.95rem' }}>Healthcare Partners</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.85rem' }}>
-              <button onClick={() => onNavigateLogin('DIAGNOSTIC_LAB')} style={{ background: 'none', border: 'none', color: '#94A3B8', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', padding: 0 }}>Register Diagnostic Lab</button>
-              <button onClick={() => onNavigateLogin('SCAN_CENTER')} style={{ background: 'none', border: 'none', color: '#94A3B8', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', padding: 0 }}>Register Scan Center</button>
-              <button onClick={() => onNavigateLogin('DOCTOR')} style={{ background: 'none', border: 'none', color: '#94A3B8', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', padding: 0 }}>Register Clinic / Doctor</button>
-              <button onClick={() => onNavigateLogin('PHARMACY')} style={{ background: 'none', border: 'none', color: '#94A3B8', textAlign: 'left', cursor: 'pointer', fontSize: '0.85rem', padding: 0 }}>Register Pharmacy</button>
-            </div>
-          </div>
-
-          <div>
-            <h4 style={{ color: '#FFF', fontWeight: '800', marginBottom: '1rem', fontSize: '0.95rem' }}>Mobile Apps</h4>
-            <p style={{ fontSize: '0.85rem', marginBottom: '0.75rem' }}>Native Android (Kotlin) & iOS (Swift)</p>
-            <div style={{ fontSize: '0.75rem', backgroundColor: '#1E293B', padding: '0.6rem 0.85rem', borderRadius: '10px', border: '1px solid #334155', color: '#FBBF24', fontWeight: '700' }}>
-              📱 Android APK & iOS IPA in Build Pipeline
-            </div>
-          </div>
-        </div>
-
-        <div style={{ maxWidth: '1240px', margin: '0 auto', paddingTop: '2rem', borderTop: '1px solid #1E293B', textAlign: 'center', fontSize: '0.82rem' }}>
-          © 2026 MedMarg Healthcare Platform (https://www.medmarg.com/). NABL, CAP & ABHA Certified. All rights reserved.
         </div>
       </footer>
 

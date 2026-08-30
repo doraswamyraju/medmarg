@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import LandingPage from './pages/LandingPage';
-import LoginPage, { DEMO_ACCOUNTS } from './pages/LoginPage';
+import LoginPage from './pages/LoginPage';
 import PatientDashboard from './pages/PatientDashboard';
 import LabPartnerDashboard from './pages/LabPartnerDashboard';
 import ScanCenterDashboard from './pages/ScanCenterDashboard';
@@ -17,6 +17,7 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       if (window.location.pathname.includes('/login')) {
+        setCurrentUser(null);
         setCurrentView('LOGIN');
       } else if (!currentUser) {
         setCurrentView('LANDING');
@@ -26,15 +27,10 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [currentUser]);
 
-  const navigateToLogin = (roleHint) => {
+  // Navigate to login screen (never auto-login)
+  const navigateToLogin = () => {
     window.history.pushState({}, '', '/login');
-    if (roleHint) {
-      const match = DEMO_ACCOUNTS.find(a => a.role === roleHint);
-      if (match) {
-        setCurrentUser(match);
-        return;
-      }
-    }
+    setCurrentUser(null);
     setCurrentView('LOGIN');
   };
 
@@ -56,7 +52,7 @@ export default function App() {
     navigateToLogin();
   };
 
-  // If user is logged in, show their dedicated role dashboard
+  // 1. If user has actively logged in, show their specific role dashboard
   if (currentUser) {
     switch (currentUser.role) {
       case 'DIAGNOSTIC_LAB':
@@ -75,11 +71,11 @@ export default function App() {
     }
   }
 
-  // If view is LOGIN, show Single Universal Login page
-  if (currentView === 'LOGIN') {
+  // 2. If at /login or view is LOGIN, render the All Panels Login Aggregator
+  if (currentView === 'LOGIN' || window.location.pathname.includes('/login')) {
     return <LoginPage onLoginSuccess={handleLoginSuccess} onBackToHome={navigateToHome} />;
   }
 
-  // Otherwise, render the complete MedMarg Landing Page
+  // 3. Otherwise, render the complete MedMarg Landing Page
   return <LandingPage onNavigateLogin={navigateToLogin} />;
 }
