@@ -130,6 +130,13 @@ struct GenericMedicineItem: Identifiable, Equatable {
     let savingsPercent: Int
 }
 
+struct BiomarkerRecord: Identifiable, Equatable {
+    var id: String { name }
+    let name: String
+    let value: String
+    let status: String
+}
+
 struct HealthRecordItem: Identifiable, Equatable {
     let id: String
     let testTitle: String
@@ -138,7 +145,7 @@ struct HealthRecordItem: Identifiable, Equatable {
     let status: String
     let summary: String
     let driveUrl: String
-    let biomarkers: [(String, String, String)] // Name, Value, Status (Normal/High/Borderline)
+    let biomarkers: [BiomarkerRecord]
 }
 
 struct CartItem: Identifiable, Equatable {
