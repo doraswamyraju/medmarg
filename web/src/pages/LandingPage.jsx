@@ -122,8 +122,8 @@ export default function LandingPage({ onNavigateLogin }) {
             <a href="#pharmacy" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
               <Pill size={16} color="#10B981" /> Generic Pharmacy
             </a>
-            <a href="#abha" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <FolderHeart size={16} color="#EC4899" /> ABHA Locker
+            <a href="#records" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <FolderHeart size={16} color="#EC4899" /> Health Records
             </a>
           </nav>
 
@@ -295,7 +295,7 @@ export default function LandingPage({ onNavigateLogin }) {
               { text: 'Thyrocare National Processing Lab Partner', color: '#FBBF24' },
               { text: '100% Free Home Sample Collection', color: '#10B981' },
               { text: 'NABL, CAP & ISO 9001 Certified', color: '#67E8F9' },
-              { text: 'Reports Synced to ABHA & Google Drive', color: '#FDE047' }
+              { text: 'Reports Synced to Google Drive & WhatsApp', color: '#FDE047' }
             ].map((item, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#FFFFFF', fontWeight: '600' }}>
                 <CheckCircle2 size={18} color={item.color} />
@@ -315,7 +315,7 @@ export default function LandingPage({ onNavigateLogin }) {
             { title: '3.0T MRI & Scans', desc: 'Silent MRI, CT Scan & 4D Ultrasound Slots', icon: Building2, color: '#06B6D4', bg: '#CFFAFE', target: '#scans' },
             { title: 'In-Clinic Doctors', desc: 'Book Walk-in OPD Specialist Appointments', icon: Stethoscope, color: '#8B5CF6', bg: '#EDE9FE', target: '#doctors' },
             { title: 'Generic Pharmacy', desc: 'Save Up to 70% with Quality Generic Salts', icon: Pill, color: '#10B981', bg: '#D1FAE5', target: '#pharmacy' },
-            { title: 'ABHA Health Locker', desc: 'Biomarker Trends & Google Drive Sync', icon: FolderHeart, color: '#EC4899', bg: '#FCE7F3', target: '#abha' }
+            { title: 'Digital Health Records', desc: 'Biomarker Trends & Google Drive Sync', icon: FolderHeart, color: '#EC4899', bg: '#FCE7F3', target: '#records' }
           ].map((cat, i) => {
             const IconComp = cat.icon;
             return (
@@ -650,31 +650,31 @@ export default function LandingPage({ onNavigateLogin }) {
         </div>
       </section>
 
-      {/* 8. ABHA HEALTH LOCKER & GOOGLE DRIVE */}
-      <section id="abha" style={{ maxWidth: '1240px', margin: '0 auto 5rem', padding: '0 1.5rem' }}>
+      {/* 8. DIGITAL HEALTH RECORDS & GOOGLE DRIVE */}
+      <section id="records" style={{ maxWidth: '1240px', margin: '0 auto 5rem', padding: '0 1.5rem' }}>
         <div style={{ backgroundColor: '#0F172A', borderRadius: '28px', color: '#FFFFFF', padding: '3.5rem 3rem', display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '3rem', alignItems: 'center' }}>
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.75rem', backgroundColor: 'rgba(245,158,11,0.2)', color: '#FBBF24', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '800', marginBottom: '1rem' }}>
-              <Award size={14} /> National Digital Health Mission
+              <Award size={14} /> Smart Digital Health Records
             </div>
             <h2 style={{ fontSize: '2.4rem', fontWeight: '900', lineHeight: 1.2 }}>
-              Ayushman Bharat Digital Health Locker (ABHA)
+              Smart Digital Health Records & Reports Locker
             </h2>
             <p style={{ color: '#94A3B8', fontSize: '1.05rem', marginTop: '0.75rem', lineHeight: 1.6 }}>
-              All your Thyrocare reports, Apollo scans, and prescriptions are unified under your ABHA ID with automatic biomarker trends (Cholesterol, HbA1c, Liver enzymes) and secure Google Drive shareable links.
+              All your Thyrocare reports, Apollo scans, and prescriptions are securely stored with automatic biomarker trends (Cholesterol, HbA1c, Liver enzymes) and direct Google Drive shareable PDF links.
             </p>
 
             <button
               onClick={() => onNavigateLogin('PATIENT')}
               style={{ marginTop: '2rem', padding: '0.95rem 1.8rem', background: 'linear-gradient(135deg, #006B70 0%, #004D40 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '0.95rem', cursor: 'pointer' }}
             >
-              Link ABHA & View Reports
+              View Health Records & Reports
             </button>
           </div>
 
           <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1px solid #334155', padding: '1.75rem' }}>
             <div style={{ fontSize: '0.85rem', color: '#94A3B8', fontWeight: '700' }}>CONNECTED HEALTH LOCKER</div>
-            <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#FFF', marginTop: '0.2rem' }}>ABHA: rahul.sharma@abdm</div>
+            <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#FFF', marginTop: '0.2rem' }}>Patient ID: rahul.sharma@medmarg.com</div>
 
             <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div style={{ padding: '0.85rem 1rem', backgroundColor: '#0F172A', borderRadius: '12px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -740,7 +740,7 @@ export default function LandingPage({ onNavigateLogin }) {
                   ✓ NABL & CAP
                 </span>
                 <span style={{ fontSize: '0.75rem', backgroundColor: '#1E293B', color: '#10B981', padding: '0.3rem 0.65rem', borderRadius: '8px', fontWeight: '800', border: '1px solid #334155' }}>
-                  ✓ ABDM / ABHA
+                  ✓ Google Cloud Sync
                 </span>
                 <span style={{ fontSize: '0.75rem', backgroundColor: '#1E293B', color: '#67E8F9', padding: '0.3rem 0.65rem', borderRadius: '8px', fontWeight: '800', border: '1px solid #334155' }}>
                   ✓ ISO 9001
@@ -768,7 +768,7 @@ export default function LandingPage({ onNavigateLogin }) {
                 <a href="#scans" style={{ color: '#94A3B8', textDecoration: 'none' }}>4D Ultrasound & Doppler</a>
                 <a href="#doctors" style={{ color: '#94A3B8', textDecoration: 'none' }}>In-Clinic OPD Doctor Booking</a>
                 <a href="#pharmacy" style={{ color: '#94A3B8', textDecoration: 'none' }}>Generic Medicine Cost Saver (70%)</a>
-                <a href="#abha" style={{ color: '#94A3B8', textDecoration: 'none' }}>ABHA Health Locker & Trends</a>
+                <a href="#records" style={{ color: '#94A3B8', textDecoration: 'none' }}>Digital Health Records & Trends</a>
               </div>
             </div>
 
@@ -809,7 +809,7 @@ export default function LandingPage({ onNavigateLogin }) {
                 <span>Privacy Policy</span>
                 <span>Terms of Marketplace</span>
                 <span>NABL Quality Assurance</span>
-                <span>ABDM Compliant</span>
+                <span>HIPAA Compliant</span>
               </div>
             </div>
 
@@ -871,7 +871,7 @@ export default function LandingPage({ onNavigateLogin }) {
               </div>
               <div style={{ padding: '0.75rem', borderRadius: '10px', backgroundColor: '#F1F5F9', fontSize: '0.82rem' }}>
                 <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', fontWeight: '700' }}>DIGITAL REPORT TAT</span>
-                <strong style={{ color: '#006B70' }}>{activeTestModal.tat} (WhatsApp & ABHA)</strong>
+                <strong style={{ color: '#006B70' }}>{activeTestModal.tat} (WhatsApp & Google Drive)</strong>
               </div>
             </div>
 
