@@ -1,5 +1,30 @@
 import Foundation
+import SwiftUI
 
+// ==========================================
+// 🎨 MEDMARG BRAND DESIGN SYSTEM & TOKENS
+// ==========================================
+struct MedMargTheme {
+    static let primaryTeal = Color(red: 0.0, green: 0.42, blue: 0.44)       // #006B70
+    static let darkTeal = Color(red: 0.0, green: 0.30, blue: 0.32)          // #004D40
+    static let lightTeal = Color(red: 0.88, green: 0.95, blue: 0.95)        // #E0F2F1
+    static let accentEmerald = Color(red: 0.06, green: 0.73, blue: 0.51)    // #10B981
+    static let emeraldLight = Color(red: 0.82, green: 0.98, blue: 0.90)     // #D1FAE5
+    static let amberGold = Color(red: 0.96, green: 0.62, blue: 0.04)        // #F59E0B
+    static let amberLight = Color(red: 0.99, green: 0.95, blue: 0.78)       // #FEF3C7
+    static let cyanBlue = Color(red: 0.02, green: 0.71, blue: 0.83)         // #06B6D4
+    static let purpleClinic = Color(red: 0.55, green: 0.36, blue: 0.96)     // #8B5CF6
+    static let slate900 = Color(red: 0.06, green: 0.09, blue: 0.16)         // #0F172A
+    static let slate700 = Color(red: 0.20, green: 0.25, blue: 0.33)         // #334155
+    static let slate500 = Color(red: 0.39, green: 0.45, blue: 0.55)         // #64748B
+    static let slate200 = Color(red: 0.89, green: 0.91, blue: 0.94)         // #E2E8F0
+    static let slate50 = Color(red: 0.97, green: 0.98, blue: 0.99)          // #F8FAFC
+    static let pureWhite = Color.white
+}
+
+// ==========================================
+// 🧑‍💼 USER ROLES & PROFILES
+// ==========================================
 enum UserRole: String, CaseIterable, Identifiable {
     case patient = "PATIENT"
     case doctor = "DOCTOR"
@@ -45,105 +70,83 @@ struct UserProfile: Identifiable, Equatable {
     var password: String
     var role: UserRole
     var organization: String
-    var status: String // Active / Inactive
+    var status: String
     var createdAt: String
 }
 
-struct LabTestItem: Identifiable {
+// ==========================================
+// 🧪 LIVE DIAGNOSTIC & HEALTHCARE MODELS
+// ==========================================
+struct LabTestItem: Identifiable, Equatable {
     let id: String
     let name: String
     let category: String
-    let labName: String
-    let price: Int
-    let originalPrice: Int
+    let sampleType: String
+    let fastingHours: Int
     let params: Int
+    let thyrocarePrice: Int
+    let apolloPrice: Int
+    let lalPrice: Int
+    let mrp: Int
     let tatHours: Int
-    let isNabl: Bool
-    let isHomeCollection: Bool
+    let tags: [String]
 }
 
-struct HealthPackageItem: Identifiable {
+struct HealthPackageItem: Identifiable, Equatable {
     let id: String
     let name: String
-    let includedCount: Int
-    let params: Int
-    let price: Int
-    let originalPrice: Int
+    let testsCount: Int
+    let paramsCount: Int
+    let dealPrice: Int
+    let mrp: Int
     let discountPercent: Int
-    let yellowTag: String
+    let tag: String
+    let description: String
+    let includedTests: [String]
 }
 
-struct DoctorPatientItem: Identifiable {
-    let id: String
-    let name: String
-    let age: Int
-    let gender: String
-    let phone: String
-    let address: String
-    let appAccessGranted: Bool
-}
-
-struct DoctorOrderItem: Identifiable {
-    let id: String
-    let doctorName: String
-    let patientName: String
-    let phone: String
-    let tests: [String]
-    let labCost: Int
-    let doctorPrice: Int
-    let doctorMargin: Int
-    let status: String
-    let driveReport: String
-    let date: String
-}
-
-struct CollectionAgentItem: Identifiable {
-    let id: String
-    let name: String
-    let phone: String
-    let area: String
-    let samplesToday: Int
-    let temp: String
-    let battery: String
-    let status: String
-    let rating: Double
-}
-
-struct MedicalInventoryItem: Identifiable {
+struct ScanServiceItem: Identifiable, Equatable {
     let id: String
     let name: String
     let category: String
-    var currentQty: Int
-    let minThreshold: Int
-    let unit: String
-    let unitCost: Double
-    let supplier: String
-}
-
-struct ScanServiceItem: Identifiable {
-    let id: String
-    let name: String
     let centerName: String
     let machineSpec: String
     let price: Int
-    let originalPrice: Int
+    let mrp: Int
+    let durationMins: Int
     let nextSlot: String
+    let fastingRequired: Bool
 }
 
-struct DoctorItem: Identifiable {
+struct GenericMedicineItem: Identifiable, Equatable {
     let id: String
-    let name: String
-    let specialty: String
-    let qualification: String
-    let clinic: String
-    let fee: Int
-    let nextSlot: String
+    let brandName: String
+    let genericName: String
+    let category: String
+    let manufacturer: String
+    let brandMrp: Double
+    let genericPrice: Double
+    let packSize: String
+    let savingsPercent: Int
 }
 
-struct HealthRecordItem: Identifiable {
+struct HealthRecordItem: Identifiable, Equatable {
     let id: String
-    let title: String
+    let testTitle: String
     let labName: String
     let date: String
+    let status: String
+    let summary: String
     let driveUrl: String
+    let biomarkers: [(String, String, String)] // Name, Value, Status (Normal/High/Borderline)
+}
+
+struct CartItem: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let subtitle: String
+    let provider: String
+    let price: Int
+    let mrp: Int
+    let type: String // Lab Test / MRI Scan / Medicine
 }
