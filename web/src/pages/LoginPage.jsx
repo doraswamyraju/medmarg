@@ -124,15 +124,13 @@ export default function LoginPage({ onLoginSuccess }) {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F8FAFC' }}>
       {/* Header */}
-      <header style={{ padding: '1.25rem 2rem', backgroundColor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#006B70', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFF', fontWeight: 'bold', fontSize: '1.25rem' }}>
-            M
-          </div>
-          <div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#006B70', letterSpacing: '-0.02em', lineHeight: 1 }}>MedMarg</h1>
-            <span style={{ fontSize: '0.75rem', color: '#64748B' }}>Multi-Lab Diagnostic & Healthcare Marketplace</span>
-          </div>
+      <header style={{ padding: '0.85rem 2rem', backgroundColor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }} onClick={onBackToHome}>
+          <img 
+            src="/logo.png" 
+            alt="MedMarg" 
+            style={{ height: '40px', objectFit: 'contain' }} 
+          />
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           <span style={{ fontSize: '0.85rem', color: '#64748B' }}>Hospital / Lab Partner?</span>
