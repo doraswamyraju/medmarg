@@ -6,6 +6,7 @@ import {
   Stethoscope, 
   Pill, 
   ShieldCheck, 
+  Shield,
   FolderHeart, 
   MapPin, 
   CheckCircle2, 
@@ -32,6 +33,7 @@ export default function LandingPage({ onNavigateLogin }) {
   const [userCity, setUserCity] = useState('Tirupati, Andhra Pradesh');
   const [isLocating, setIsLocating] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
+  const [activeTestModal, setActiveTestModal] = useState(null);
 
   // 1. AUTO-ACCESS GPS LOCATION ON FIRST LOAD
   useEffect(() => {
@@ -40,7 +42,6 @@ export default function LandingPage({ onNavigateLogin }) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setIsLocating(false);
-          // Auto detected
           setUserCity('Tirupati, Andhra Pradesh (Auto-Detected GPS)');
         },
         (error) => {
@@ -297,70 +298,63 @@ export default function LandingPage({ onNavigateLogin }) {
           })}
         </div>
 
-        {/* Tests & Packages List */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        {/* Dynamic Multi-Column Test Cards Grid (Beside each other) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(295px, 1fr))', gap: '1.25rem' }}>
           {filteredTests.map((test) => (
             <div 
               key={test.id} 
-              style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '1.6rem', display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: '1.5rem', alignItems: 'center' }}
+              onClick={() => setActiveTestModal(test)}
+              style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '1.4rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}
               className="card-interactive"
             >
-              {/* Left Column: Test Details */}
+              {/* Card Top Info */}
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.35rem' }}>
-                  <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+                  <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '800' }}>
                     {test.yellowTag}
                   </span>
-                  <span style={{ fontSize: '0.75rem', backgroundColor: '#E0F2F1', color: '#006B70', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '700' }}>
-                    {test.category}
+                  <span style={{ fontSize: '0.75rem', color: '#006B70', fontWeight: '700', backgroundColor: '#E0F2F1', padding: '0.15rem 0.45rem', borderRadius: '6px' }}>
+                    {test.params} Tests
                   </span>
                 </div>
 
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#0F172A', lineHeight: 1.3 }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0F172A', lineHeight: 1.3, minHeight: '44px' }}>
                   {test.name}
                 </h3>
                 
-                <p style={{ fontSize: '0.85rem', color: '#64748B', margin: '0.4rem 0 0.8rem', lineHeight: 1.5 }}>
+                <p style={{ fontSize: '0.82rem', color: '#64748B', margin: '0.5rem 0 0.85rem', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {test.description}
                 </p>
 
-                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.82rem', color: '#475569', flexWrap: 'wrap' }}>
-                  <span>🔬 <strong>{test.params}</strong> Parameters</span>
-                  <span>🩸 Sample: <strong>{test.sample}</strong></span>
-                  <span>⏰ Fasting: <strong>{test.fasting}</strong></span>
-                  <span>⏱️ TAT: <strong>{test.tat}</strong></span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.78rem', color: '#475569', backgroundColor: '#F8FAFC', padding: '0.65rem 0.8rem', borderRadius: '10px', marginBottom: '1rem', border: '1px solid #F1F5F9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span>🩸 Sample:</span> <strong style={{ color: '#0F172A' }}>{test.sample.split('(')[0]}</strong>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span>⏱️ Report In:</span> <strong style={{ color: '#006B70' }}>{test.tat}</strong>
+                  </div>
                 </div>
               </div>
 
-              {/* Right Column: Multi-Lab Price Comparison Matrix */}
-              <div style={{ backgroundColor: '#F8FAFC', borderRadius: '16px', border: '1px solid #E2E8F0', padding: '1.2rem' }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: '800', color: '#64748B', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-                  Multi-Lab Rate Comparison
-                </div>
-
-                {/* Thyrocare Deal */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.8rem', backgroundColor: '#FEF3C7', borderRadius: '10px', border: '1.5px solid #F59E0B', marginBottom: '0.5rem' }}>
+              {/* Card Bottom: Price & Details Action */}
+              <div style={{ paddingTop: '0.85rem', borderTop: '1px solid #F1F5F9' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.75rem' }}>
                   <div>
-                    <div style={{ fontWeight: '800', color: '#B45309', fontSize: '0.92rem' }}>Thyrocare Central Lab</div>
-                    <div style={{ fontSize: '0.75rem', color: '#92400E' }}>NABL & CAP Accredited • Free Home Visit</div>
+                    <span style={{ fontSize: '0.72rem', color: '#64748B', display: 'block', fontWeight: '600' }}>Thyrocare Deal</span>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
+                      <span style={{ fontSize: '1.45rem', fontWeight: '900', color: '#B45309' }}>₹{test.thyrocarePrice}</span>
+                      <span style={{ fontSize: '0.8rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{test.originalPrice}</span>
+                    </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: '1.35rem', fontWeight: '900', color: '#B45309' }}>₹{test.thyrocarePrice}</span>
-                    <div style={{ fontSize: '0.75rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{test.originalPrice}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: '800', backgroundColor: '#D1FAE5', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>
+                    Free Home Visit
                   </div>
-                </div>
-
-                {/* Comparative Labs */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#64748B', padding: '0.3rem 0.5rem' }}>
-                  <span>Apollo Diagnostics: <strong>₹{test.apolloPrice}</strong></span>
-                  <span>Dr. Lal PathLabs: <strong>₹{test.lalPrice}</strong></span>
                 </div>
 
                 <button
-                  onClick={() => onNavigateLogin('PATIENT')}
-                  style={{ width: '100%', marginTop: '0.85rem', padding: '0.75rem', background: 'linear-gradient(135deg, #006B70 0%, #004D40 100%)', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.4rem' }}
+                  style={{ width: '100%', padding: '0.65rem', background: 'linear-gradient(135deg, #006B70 0%, #004D40 100%)', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.4rem' }}
                 >
-                  Book at Thyrocare for ₹{test.thyrocarePrice} <ArrowRight size={16} />
+                  View Details & Compare <ChevronRight size={14} />
                 </button>
               </div>
             </div>
@@ -707,6 +701,128 @@ export default function LandingPage({ onNavigateLogin }) {
 
         </div>
       </footer>
+
+      {/* DETAILED TEST & LAB COMPARISON POPUP MODAL */}
+      {activeTestModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 110, backgroundColor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem', overflowY: 'auto' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '640px', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '2rem', boxShadow: '0 25px 60px -15px rgba(0,0,0,0.3)', border: '2px solid #E2E8F0', position: 'relative' }}>
+            
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                  <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: '800' }}>
+                    {activeTestModal.yellowTag}
+                  </span>
+                  <span style={{ fontSize: '0.75rem', backgroundColor: '#E0F2F1', color: '#006B70', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: '700' }}>
+                    {activeTestModal.category}
+                  </span>
+                </div>
+                <h2 style={{ fontSize: '1.45rem', fontWeight: '900', color: '#0F172A', lineHeight: 1.25 }}>
+                  {activeTestModal.name}
+                </h2>
+              </div>
+              
+              <button 
+                onClick={() => setActiveTestModal(null)} 
+                style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#F1F5F9', border: 'none', fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B', fontWeight: 'bold' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Description & Clinical Scope */}
+            <div style={{ backgroundColor: '#F8FAFC', borderRadius: '14px', padding: '1rem', border: '1px solid #E2E8F0', marginBottom: '1.25rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#64748B', textTransform: 'uppercase', marginBottom: '0.35rem' }}>CLINICAL SCOPE & PARAMETERS</div>
+              <p style={{ fontSize: '0.88rem', color: '#334155', lineHeight: 1.5 }}>
+                {activeTestModal.description}
+              </p>
+            </div>
+
+            {/* Key Test Attributes Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              <div style={{ padding: '0.75rem', borderRadius: '10px', backgroundColor: '#F1F5F9', fontSize: '0.82rem' }}>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', fontWeight: '700' }}>TOTAL PARAMETERS</span>
+                <strong style={{ color: '#0F172A' }}>{activeTestModal.params} Diagnostic Biomarkers</strong>
+              </div>
+              <div style={{ padding: '0.75rem', borderRadius: '10px', backgroundColor: '#F1F5F9', fontSize: '0.82rem' }}>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', fontWeight: '700' }}>SAMPLE TYPE</span>
+                <strong style={{ color: '#0F172A' }}>{activeTestModal.sample}</strong>
+              </div>
+              <div style={{ padding: '0.75rem', borderRadius: '10px', backgroundColor: '#F1F5F9', fontSize: '0.82rem' }}>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', fontWeight: '700' }}>FASTING GUIDELINE</span>
+                <strong style={{ color: '#0F172A' }}>{activeTestModal.fasting}</strong>
+              </div>
+              <div style={{ padding: '0.75rem', borderRadius: '10px', backgroundColor: '#F1F5F9', fontSize: '0.82rem' }}>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.72rem', fontWeight: '700' }}>DIGITAL REPORT TAT</span>
+                <strong style={{ color: '#006B70' }}>{activeTestModal.tat} (WhatsApp & ABHA)</strong>
+              </div>
+            </div>
+
+            {/* Side-by-Side Lab Rate Comparison */}
+            <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <TrendingUp size={16} color="#F59E0B" /> Open Multi-Lab Rate Comparison in {userCity.split(',')[0]}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {/* Thyrocare Central Featured */}
+                <div style={{ padding: '1rem', borderRadius: '14px', backgroundColor: '#FFFBEB', border: '2px solid #F59E0B', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <strong style={{ color: '#B45309', fontSize: '1rem' }}>Thyrocare Central Lab</strong>
+                      <span style={{ fontSize: '0.7rem', backgroundColor: '#F59E0B', color: '#FFF', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>LOWEST PRICE</span>
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#92400E', marginTop: '0.2rem' }}>
+                      NABL & CAP Certified • Free Home Sample Collection in Tirupati
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '1.5rem', fontWeight: '900', color: '#B45309' }}>₹{activeTestModal.thyrocarePrice}</span>
+                    <div style={{ fontSize: '0.78rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{activeTestModal.originalPrice}</div>
+                  </div>
+                </div>
+
+                {/* Apollo Diagnostics */}
+                <div style={{ padding: '0.85rem 1rem', borderRadius: '12px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong style={{ color: '#0F172A', fontSize: '0.92rem' }}>Apollo Diagnostics</strong>
+                    <div style={{ fontSize: '0.75rem', color: '#64748B' }}>NABL Accredited • Home collection ₹150</div>
+                  </div>
+                  <div style={{ textAlign: 'right', fontWeight: '800', color: '#0F172A', fontSize: '1.1rem' }}>
+                    ₹{activeTestModal.apolloPrice}
+                  </div>
+                </div>
+
+                {/* Dr. Lal PathLabs */}
+                <div style={{ padding: '0.85rem 1rem', borderRadius: '12px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong style={{ color: '#0F172A', fontSize: '0.92rem' }}>Dr. Lal PathLabs</strong>
+                    <div style={{ fontSize: '0.75rem', color: '#64748B' }}>NABL Accredited • Home collection ₹200</div>
+                  </div>
+                  <div style={{ textAlign: 'right', fontWeight: '800', color: '#0F172A', fontSize: '1.1rem' }}>
+                    ₹{activeTestModal.lalPrice}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Booking CTA */}
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                onClick={() => {
+                  setActiveTestModal(null);
+                  onNavigateLogin();
+                }}
+                style={{ flex: 1, padding: '0.95rem', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', color: '#FFF', border: 'none', borderRadius: '14px', fontWeight: '900', fontSize: '1rem', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', boxShadow: '0 6px 18px rgba(245,158,11,0.35)' }}
+              >
+                Book at Thyrocare for ₹{activeTestModal.thyrocarePrice} <ArrowRight size={18} />
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* LOCATION SELECTION MODAL */}
       {showLocationModal && (
