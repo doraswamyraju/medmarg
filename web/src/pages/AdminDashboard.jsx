@@ -257,11 +257,12 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
 
   const navMenuItems = [
     { key: 'OVERVIEW', label: 'Overview & KPI Metrics', icon: BarChart3 },
+    { key: 'DOCTOR_ORDERS', label: 'Doctor Orders & Prescriptions', icon: Stethoscope, badge: '4 New' },
     { key: 'TESTS_MGMT', label: 'Tests Catalog & Pricing', icon: FlaskConical, badge: testsList.length },
     { key: 'PACKAGE_BUILDER', label: 'Health Package Builder', icon: Package, badge: packagesList.length },
     { key: 'LABS', label: 'Partner Labs Directory', icon: Building2, badge: labPartners.length },
     { key: 'SCANS', label: '3.0T MRI & Radiology', icon: Layers, badge: scanCenters.length },
-    { key: 'DOCTORS', label: 'In-Clinic Doctors', icon: Stethoscope, badge: doctorsList.length },
+    { key: 'DOCTORS', label: 'In-Clinic Doctors', icon: Users, badge: doctorsList.length },
     { key: 'PHARMACY', label: 'Generic Pharmacy & Rx', icon: Pill, badge: 3 },
     { key: 'FLEET', label: 'Tirupati Phlebo Fleet', icon: Truck, badge: phleboFleet.length },
     { key: 'PATIENTS', label: 'Patients & Health Logs', icon: Users },
@@ -457,6 +458,106 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                     <Package size={16} /> Package Builder
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* ===================== TAB: DOCTOR PRESCRIBED ORDERS & DUAL REPORT DISPATCH ===================== */}
+          {activeTab === 'DOCTOR_ORDERS' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#FFFFFF' }}>
+                    Doctor Prescribed Lab Orders Queue (Central Lab)
+                  </h2>
+                  <p style={{ color: '#94A3B8', fontSize: '0.88rem' }}>
+                    Orders submitted by consulting doctors with B2B lab payments. Uploading diagnostic reports auto-syncs to both Doctor & Patient consoles.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8' }}>
+                      <th style={{ padding: '1rem 1.25rem' }}>ORDER ID / DATE</th>
+                      <th style={{ padding: '1rem' }}>PRESCRIBING DOCTOR</th>
+                      <th style={{ padding: '1rem' }}>PATIENT & CITY</th>
+                      <th style={{ padding: '1rem' }}>PRESCRIBED TESTS</th>
+                      <th style={{ padding: '1rem' }}>DOCTOR PAID TO LAB</th>
+                      <th style={{ padding: '1rem' }}>PATIENT CHARGED</th>
+                      <th style={{ padding: '1rem' }}>SAMPLE STATUS</th>
+                      <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>DUAL REPORT DISPATCH</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      {
+                        orderId: 'DOC-ORD-8921',
+                        doctor: 'Dr. Ananya Sharma',
+                        clinic: 'MedMarg Care Clinic, Tirupati',
+                        patient: 'Rahul Sharma',
+                        address: 'Air Bypass Rd, Tirupati',
+                        tests: ['Thyroid Total (T3/T4/TSH)', 'Lipid Profile Comprehensive'],
+                        doctorPaid: 1000,
+                        patientCharged: 1000,
+                        sampleStatus: 'PHLEBO ASSIGNED (RAMESH KUMAR)',
+                        reportStatus: 'PROCESSING',
+                        date: '30 Aug 2026'
+                      },
+                      {
+                        orderId: 'DOC-ORD-8920',
+                        doctor: 'Dr. Rajeshwar Rao',
+                        clinic: 'Heart Wellness Institute',
+                        patient: 'K. Srinivasa Rao',
+                        address: 'SVIMS Road, Tirupati',
+                        tests: ['Cardiac Risk Profile (hsCRP, Apo-B)', 'HbA1c Diabetes'],
+                        doctorPaid: 1450,
+                        patientCharged: 1900,
+                        sampleStatus: 'SAMPLE IN LAB',
+                        reportStatus: 'REPORT_READY',
+                        date: '29 Aug 2026'
+                      }
+                    ].map((ord) => (
+                      <tr key={ord.orderId} style={{ borderBottom: '1px solid #334155' }}>
+                        <td style={{ padding: '1rem 1.25rem' }}>
+                          <strong style={{ color: '#FDE047' }}>{ord.orderId}</strong>
+                          <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{ord.date}</div>
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <strong style={{ color: '#C084FC' }}>{ord.doctor}</strong>
+                          <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{ord.clinic}</div>
+                        </td>
+                        <td style={{ padding: '1rem', color: '#FFFFFF', fontWeight: '700' }}>
+                          {ord.patient}
+                          <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{ord.address}</div>
+                        </td>
+                        <td style={{ padding: '1rem', color: '#CBD5E1' }}>
+                          {ord.tests.join(', ')}
+                        </td>
+                        <td style={{ padding: '1rem', color: '#10B981', fontWeight: '900' }}>
+                          ₹{ord.doctorPaid} <span style={{ fontSize: '0.7rem', color: '#10B981' }}>✓ PAID</span>
+                        </td>
+                        <td style={{ padding: '1rem', color: '#FBBF24', fontWeight: '900' }}>
+                          ₹{ord.patientCharged}
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <span style={{ fontSize: '0.72rem', backgroundColor: 'rgba(245,158,11,0.2)', color: '#FBBF24', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '800' }}>
+                            {ord.sampleStatus}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
+                          <button
+                            onClick={() => alert(`Report for ${ord.orderId} uploaded! Dispatched instantly to ${ord.doctor}'s portal and ${ord.patient}'s app with Google Drive link.`)}
+                            style={{ padding: '0.45rem 0.85rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                          >
+                            <DownloadCloud size={14} /> Dual Upload & Sync
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
