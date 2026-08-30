@@ -37,9 +37,68 @@ struct LabTestItem: Identifiable {
     let labName: String
     let price: Int
     let originalPrice: Int
+    let params: Int
     let tatHours: Int
     let isNabl: Bool
     let isHomeCollection: Bool
+}
+
+struct HealthPackageItem: Identifiable {
+    let id: String
+    let name: String
+    let includedCount: Int
+    let params: Int
+    let price: Int
+    let originalPrice: Int
+    let discountPercent: Int
+    let yellowTag: String
+}
+
+struct DoctorPatientItem: Identifiable {
+    let id: String
+    let name: String
+    let age: Int
+    let gender: String
+    let phone: String
+    let address: String
+    let appAccessGranted: Bool
+}
+
+struct DoctorOrderItem: Identifiable {
+    let id: String
+    let doctorName: String
+    let patientName: String
+    let phone: String
+    let tests: [String]
+    let labCost: Int
+    let doctorPrice: Int
+    let doctorMargin: Int
+    let status: String
+    let driveReport: String
+    let date: String
+}
+
+struct CollectionAgentItem: Identifiable {
+    let id: String
+    let name: String
+    let phone: String
+    let area: String
+    let samplesToday: Int
+    let temp: String
+    let battery: String
+    let status: String
+    let rating: Double
+}
+
+struct MedicalInventoryItem: Identifiable {
+    let id: String
+    let name: String
+    let category: String
+    var currentQty: Int
+    let minThreshold: Int
+    let unit: String
+    let unitCost: Double
+    let supplier: String
 }
 
 struct ScanServiceItem: Identifiable {
@@ -48,6 +107,7 @@ struct ScanServiceItem: Identifiable {
     let centerName: String
     let machineSpec: String
     let price: Int
+    let originalPrice: Int
     let nextSlot: String
 }
 
@@ -55,6 +115,7 @@ struct DoctorItem: Identifiable {
     let id: String
     let name: String
     let specialty: String
+    let qualification: String
     let clinic: String
     let fee: Int
     let nextSlot: String
