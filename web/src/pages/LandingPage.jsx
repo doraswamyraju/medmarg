@@ -98,45 +98,74 @@ export default function LandingPage({ onNavigateLogin }) {
         </div>
       </div>
 
-      {/* 1. CREATIVE ULTRA-MODERN STICKY HEADER */}
-      <header style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(16px)', borderBottom: '1.5px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 10px 30px -10px rgba(0, 107, 112, 0.08)' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '0.85rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* 1. CREATIVE LUXURY MODERN STICKY HEADER */}
+      <header style={{ position: 'sticky', top: 0, zIndex: 50, backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(20px)', borderBottom: '1px solid #E2E8F0', boxShadow: '0 4px 20px -4px rgba(0, 77, 64, 0.08)' }}>
+        <div style={{ maxWidth: '1320px', margin: '0 auto', padding: '0.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           
-          {/* Logo with Creative Interactive Container */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div style={{ backgroundColor: '#FFFFFF', padding: '6px 12px', borderRadius: '14px', display: 'flex', alignItems: 'center', boxShadow: '0 4px 14px rgba(0, 107, 112, 0.12)', border: '1px solid #E2E8F0', transition: 'all 0.2s ease' }} className="card-interactive">
+          {/* Logo */}
+          <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+            <div style={{ backgroundColor: '#FFFFFF', padding: '6px 14px', borderRadius: '12px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.06)', border: '1px solid #E2E8F0' }}>
               <img 
                 src="/logo.png" 
                 alt="MedMarg" 
-                style={{ height: '42px', objectFit: 'contain' }} 
+                style={{ height: '38px', objectFit: 'contain', display: 'block' }} 
               />
             </div>
           </div>
 
-          {/* Navigation Links with Micro-Interactions */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>
-            <a href="#thyrocare" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          {/* Navigation Links with Refined Clean Pill Style */}
+          <nav style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#F8FAFC', padding: '0.35rem 0.6rem', borderRadius: '30px', border: '1px solid #E2E8F0' }}>
+            <a 
+              href="#thyrocare" 
+              style={{ textDecoration: 'none', color: '#0F172A', fontWeight: '700', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.45rem 1rem', borderRadius: '20px', transition: 'all 0.15s ease' }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FEF3C7'; e.currentTarget.style.color = '#B45309'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#0F172A'; }}
+            >
               <FlaskConical size={16} color="#F59E0B" /> Thyrocare & Labs
             </a>
-            <a href="#scans" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            
+            <a 
+              href="#scans" 
+              style={{ textDecoration: 'none', color: '#0F172A', fontWeight: '700', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.45rem 1rem', borderRadius: '20px', transition: 'all 0.15s ease' }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#CFFAFE'; e.currentTarget.style.color = '#0891B2'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#0F172A'; }}
+            >
               <Building2 size={16} color="#06B6D4" /> 3.0T MRI Scans
             </a>
-            <a href="#doctors" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            
+            <a 
+              href="#doctors" 
+              style={{ textDecoration: 'none', color: '#0F172A', fontWeight: '700', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.45rem 1rem', borderRadius: '20px', transition: 'all 0.15s ease' }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#EDE9FE'; e.currentTarget.style.color = '#7C3AED'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#0F172A'; }}
+            >
               <Stethoscope size={16} color="#8B5CF6" /> In-Clinic Doctors
             </a>
-            <a href="#pharmacy" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            
+            <a 
+              href="#pharmacy" 
+              style={{ textDecoration: 'none', color: '#0F172A', fontWeight: '700', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.45rem 1rem', borderRadius: '20px', transition: 'all 0.15s ease' }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#D1FAE5'; e.currentTarget.style.color = '#047857'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#0F172A'; }}
+            >
               <Pill size={16} color="#10B981" /> Generic Pharmacy
             </a>
-            <a href="#records" style={{ textDecoration: 'none', color: '#1E293B', fontWeight: '700', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            
+            <a 
+              href="#records" 
+              style={{ textDecoration: 'none', color: '#0F172A', fontWeight: '700', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.45rem 1rem', borderRadius: '20px', transition: 'all 0.15s ease' }}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#FCE7F3'; e.currentTarget.style.color = '#DB2777'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#0F172A'; }}
+            >
               <FolderHeart size={16} color="#EC4899" /> Health Records
             </a>
           </nav>
 
-          {/* Creative Action CTAs */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          {/* Action Button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <button
               onClick={() => onNavigateLogin()}
-              style={{ padding: '0.7rem 1.5rem', background: 'linear-gradient(135deg, #006B70 0%, #004D40 100%)', color: '#FFF', border: 'none', borderRadius: '14px', fontSize: '0.92rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 6px 18px rgba(0,107,112,0.35)', transition: 'all 0.2s ease' }}
+              style={{ padding: '0.65rem 1.4rem', background: 'linear-gradient(135deg, #006B70 0%, #004D40 100%)', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem', boxShadow: '0 4px 14px rgba(0,107,112,0.3)', transition: 'all 0.15s ease' }}
             >
               Sign In / Login <ArrowRight size={16} />
             </button>
