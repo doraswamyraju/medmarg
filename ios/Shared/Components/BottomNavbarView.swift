@@ -31,11 +31,8 @@ struct BottomNavbarView: View {
                     // Tab 0: Overview
                     bottomNavTab(index: 0, icon: "chart.bar.fill", title: "Overview")
 
-                    // Tab 1: Users & Access
-                    bottomNavTab(index: 1, icon: "person.2.fill", title: "Users")
-
-                    // Tab 2: Tests & Rates Catalog (CREATIVE CENTER HIGHLIGHTED ACTION BUTTON)
-                    Button(action: { selectedTab = 2 }) {
+                    // Tab 1: Tests (CREATIVE CENTER HIGHLIGHTED ACTION BUTTON)
+                    Button(action: { selectedTab = 1 }) {
                         VStack(spacing: 2) {
                             ZStack {
                                 Circle()
@@ -48,18 +45,21 @@ struct BottomNavbarView: View {
                                     .foregroundColor(.white)
                             }
 
-                            Text("Tests & Rates")
+                            Text("Tests")
                                 .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(selectedTab == 2 ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
+                                .foregroundColor(selectedTab == 1 ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
                         }
                         .frame(maxWidth: .infinity)
                     }
 
-                    // Tab 3: Partner Labs
-                    bottomNavTab(index: 3, icon: "building.2.fill", title: "NABL Labs")
+                    // Tab 2: Labs
+                    bottomNavTab(index: 2, icon: "building.2.fill", title: "Labs")
 
-                    // Tab 4: Fleet & Cold-Chain
-                    bottomNavTab(index: 4, icon: "car.fill", title: "Fleet & IOT")
+                    // Tab 3: Hospitals
+                    bottomNavTab(index: 3, icon: "cross.case.fill", title: "Hospitals")
+
+                    // Tab 7: Users
+                    bottomNavTab(index: 7, icon: "person.2.fill", title: "Users")
                 } else {
                     // ==========================================
                     // 📱 PATIENT / DEFAULT BOTTOM NAVBAR

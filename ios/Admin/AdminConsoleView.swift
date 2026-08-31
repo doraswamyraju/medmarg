@@ -55,10 +55,13 @@ struct AdminConsoleView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     adminMainTabPill(index: 0, title: "Overview", icon: "chart.bar.fill")
-                    adminMainTabPill(index: 1, title: "Users & Access (\(users.count))", icon: "person.2.fill")
-                    adminMainTabPill(index: 2, title: "Tests & Catalog (\(testsList.count))", icon: "flask.fill")
-                    adminMainTabPill(index: 3, title: "Partner Labs (\(labPartners.count))", icon: "building.2.fill")
-                    adminMainTabPill(index: 4, title: "Fleet & Cold-Chain", icon: "car.fill")
+                    adminMainTabPill(index: 1, title: "Tests (\(testsList.count))", icon: "flask.fill")
+                    adminMainTabPill(index: 2, title: "Labs (\(labPartners.count))", icon: "building.2.fill")
+                    adminMainTabPill(index: 3, title: "Hospitals", icon: "cross.case.fill")
+                    adminMainTabPill(index: 4, title: "Pharmacies", icon: "pills.fill")
+                    adminMainTabPill(index: 5, title: "Agents (\(fleetAgents.count))", icon: "car.fill")
+                    adminMainTabPill(index: 6, title: "Inventory", icon: "box.truck.fill")
+                    adminMainTabPill(index: 7, title: "Users (\(users.count))", icon: "person.2.fill")
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
@@ -102,13 +105,19 @@ struct AdminConsoleView: View {
                     case 0:
                         AdminOverviewView()
                     case 1:
-                        AdminUsersView(users: $users, showAddUserSheet: $showAddUserSheet)
-                    case 2:
                         AdminTestsView(testsList: $testsList, showAddTestSheet: $showAddTestSheet)
-                    case 3:
+                    case 2:
                         AdminLabsView(labPartners: $labPartners, pendingLabRequests: $pendingLabRequests)
+                    case 3:
+                        hospitalsModuleSection
                     case 4:
+                        pharmaciesModuleSection
+                    case 5:
                         AdminFleetView(fleetAgents: $fleetAgents)
+                    case 6:
+                        inventoryModuleSection
+                    case 7:
+                        AdminUsersView(users: $users, showAddUserSheet: $showAddUserSheet)
                     default:
                         AdminOverviewView()
                     }
@@ -121,6 +130,73 @@ struct AdminConsoleView: View {
         }
         .sheet(isPresented: $showAddTestSheet) {
             addTestSheet
+        }
+    }
+
+    // Helper Sections for Hospitals, Pharmacies & Inventory
+    private var hospitalsModuleSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Partner Hospital Hubs & OPD Consoles")
+                    .font(.system(size: 15, weight: .bold))
+                Spacer()
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("SVIMS Super Specialty Hospital")
+                    .font(.system(size: 14, weight: .bold))
+                Text("Alipiri Rd, Tirupati • OPD Token Desk Active")
+                    .font(.system(size: 11))
+                    .foregroundColor(MedMargTheme.slate500)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(MedMargTheme.pureWhite)
+            .cornerRadius(12)
+        }
+    }
+
+    private var pharmaciesModuleSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Generic Chemist & Pharmacy Outlets")
+                    .font(.system(size: 15, weight: .bold))
+                Spacer()
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("MedMarg Generic Chemist Hub")
+                    .font(.system(size: 14, weight: .bold))
+                Text("Air Bypass Rd, Tirupati • Prescription Fulfillment Active")
+                    .font(.system(size: 11))
+                    .foregroundColor(MedMargTheme.slate500)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(MedMargTheme.pureWhite)
+            .cornerRadius(12)
+        }
+    }
+
+    private var inventoryModuleSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Medical Inventory & Phlebotomist Supplies")
+                    .font(.system(size: 15, weight: .bold))
+                Spacer()
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("BD Vacutainer EDTA K2 Tubes (Purple)")
+                    .font(.system(size: 14, weight: .bold))
+                Text("Current Qty: 1,450 Tubes • Minimum Threshold: 300")
+                    .font(.system(size: 11))
+                    .foregroundColor(MedMargTheme.slate500)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(MedMargTheme.pureWhite)
+            .cornerRadius(12)
         }
     }
 
@@ -149,13 +225,19 @@ struct AdminConsoleView: View {
         case 0:
             return [(0, "Live Metrics"), (1, "Telemetry Feed"), (2, "Activity Logs")]
         case 1:
-            return [(0, "All System Users"), (1, "Doctor Accounts"), (2, "Diagnostic Labs"), (3, "Phlebotomists")]
+            return [(0, "Diagnostic Tests"), (1, "Full Body Packages"), (2, "Category Manager")]
         case 2:
-            return [(0, "Diagnostic Tests"), (1, "Full Body Packages"), (2, "Categories Manager")]
+            return [(0, "Active Accredited Labs"), (1, "Onboarding Requests"), (2, "Quality NABL")]
         case 3:
-            return [(0, "Active Accredited Labs"), (1, "Onboarding Requests"), (2, "Commission Margins")]
+            return [(0, "Partner Hospitals"), (1, "OPD Token Desk"), (2, "Radiology Hubs")]
         case 4:
-            return [(0, "Phlebotomist Roster"), (1, "IOT Temperature Telemetry"), (2, "Sample Dispatches")]
+            return [(0, "Generic Chemist Stores"), (1, "Medicine Inventory"), (2, "Prescription Orders")]
+        case 5:
+            return [(0, "Phlebotomist Roster"), (1, "Cold-Chain Telemetry"), (2, "Agent Onboarding")]
+        case 6:
+            return [(0, "Stock Overview"), (1, "Agent Supplies Dispatch"), (2, "Purchase Orders")]
+        case 7:
+            return [(0, "All System Users"), (1, "Doctor Accounts"), (2, "Diagnostic Labs"), (3, "Phlebotomists"), (4, "Patients")]
         default:
             return []
         }
@@ -288,7 +370,6 @@ struct AdminConsoleView: View {
         newTestName = ""
         newTestThyrocarePrice = ""
         newTestApolloPrice = ""
-        newTestLalPrice = ""
         newTestMRP = ""
     }
 }

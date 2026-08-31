@@ -68,7 +68,7 @@ struct BottomSheetMenuView: View {
             bottomSheetModuleCard(
                 tabIndex: 0,
                 icon: "chart.bar.fill",
-                title: "System Overview",
+                title: "Overview",
                 description: "Live Revenue, Order Metrics & Platform Activity Log",
                 subTabs: [
                     (0, "Live Metrics"),
@@ -77,56 +77,96 @@ struct BottomSheetMenuView: View {
                 ]
             )
 
-            // Module 1: Users & Access
+            // Module 1: Tests
             bottomSheetModuleCard(
                 tabIndex: 1,
-                icon: "person.2.fill",
-                title: "Users & Access Control",
-                description: "User CRUD, Role Filters & Account Status Toggles",
-                subTabs: [
-                    (0, "All System Users"),
-                    (1, "Doctor Accounts"),
-                    (2, "Diagnostic Labs"),
-                    (3, "Phlebotomists")
-                ]
-            )
-
-            // Module 2: Tests & Catalog
-            bottomSheetModuleCard(
-                tabIndex: 2,
                 icon: "flask.fill",
-                title: "Tests & Pricing Catalog",
+                title: "Tests",
                 description: "104 Parameters, B2B Negotiated Rates & Category Manager",
                 subTabs: [
                     (0, "Diagnostic Tests"),
                     (1, "Full Body Packages"),
-                    (2, "Categories Manager")
+                    (2, "Category Manager")
                 ]
             )
 
-            // Module 3: Partner Labs
+            // Module 2: Labs
             bottomSheetModuleCard(
-                tabIndex: 3,
+                tabIndex: 2,
                 icon: "building.2.fill",
-                title: "Partner NABL Labs",
-                description: "Thyrocare, Apollo & Lal PathLabs Approvals",
+                title: "Labs",
+                description: "Thyrocare, Apollo & Lal PathLabs Accredited Centers",
                 subTabs: [
                     (0, "Active Accredited Labs"),
                     (1, "Onboarding Requests"),
-                    (2, "Commission Margins")
+                    (2, "Quality NABL")
                 ]
             )
 
-            // Module 4: Fleet & Cold-Chain
+            // Module 3: Hospitals
+            bottomSheetModuleCard(
+                tabIndex: 3,
+                icon: "cross.case.fill",
+                title: "Hospitals",
+                description: "Partner Hospital Consoles, OPD Token Desks & Radiology",
+                subTabs: [
+                    (0, "Partner Hospitals"),
+                    (1, "OPD Token Desk"),
+                    (2, "Radiology Hubs")
+                ]
+            )
+
+            // Module 4: Pharmacies
             bottomSheetModuleCard(
                 tabIndex: 4,
+                icon: "pills.fill",
+                title: "Pharmacies",
+                description: "Generic Chemist Stores, Stock Inventory & E-Prescriptions",
+                subTabs: [
+                    (0, "Generic Chemist Stores"),
+                    (1, "Medicine Inventory"),
+                    (2, "Prescription Orders")
+                ]
+            )
+
+            // Module 5: Agents
+            bottomSheetModuleCard(
+                tabIndex: 5,
                 icon: "car.fill",
-                title: "Fleet & Cold-Chain IOT",
-                description: "Field Collection Agents & Live Temperature Telemetry",
+                title: "Agents",
+                description: "Phlebotomist Roster, Cold-Chain Telemetry & Onboarding",
                 subTabs: [
                     (0, "Phlebotomist Roster"),
-                    (1, "IOT Temperature Telemetry"),
-                    (2, "Sample Dispatches")
+                    (1, "Cold-Chain Telemetry"),
+                    (2, "Agent Onboarding")
+                ]
+            )
+
+            // Module 6: Inventory
+            bottomSheetModuleCard(
+                tabIndex: 6,
+                icon: "box.truck.fill",
+                title: "Inventory",
+                description: "Supplies Stock Overview, Agent Dispatches & Purchase Orders",
+                subTabs: [
+                    (0, "Stock Overview"),
+                    (1, "Agent Supplies Dispatch"),
+                    (2, "Purchase Orders")
+                ]
+            )
+
+            // Module 7: Users
+            bottomSheetModuleCard(
+                tabIndex: 7,
+                icon: "person.2.fill",
+                title: "Users",
+                description: "All System Users, Doctors, Labs, Agents & Patients Access",
+                subTabs: [
+                    (0, "All System Users"),
+                    (1, "Doctor Accounts"),
+                    (2, "Diagnostic Labs"),
+                    (3, "Phlebotomists"),
+                    (4, "Patients")
                 ]
             )
         }
