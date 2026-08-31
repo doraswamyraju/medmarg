@@ -155,7 +155,6 @@ struct ContentView: View {
                             user: user,
                             showSidebar: $showSidebar,
                             selectedTab: $selectedTab,
-                            onSwitchRole: { role in quickDemoLogin(role: role) },
                             onLogout: logout
                         )
                     }
