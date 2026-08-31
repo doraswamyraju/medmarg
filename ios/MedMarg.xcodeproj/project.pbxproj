@@ -9,18 +9,22 @@
 /* Begin PBXBuildFile section */
 		B2000001 /* AdminConsoleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000001 /* AdminConsoleView.swift */; };
 		B2000002 /* AdminFleetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000002 /* AdminFleetView.swift */; };
-		B2000003 /* AdminLabsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000003 /* AdminLabsView.swift */; };
-		B2000004 /* AdminOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000004 /* AdminOverviewView.swift */; };
-		B2000005 /* AdminTestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000005 /* AdminTestsView.swift */; };
-		B2000006 /* AdminUsersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000006 /* AdminUsersView.swift */; };
-		B2000007 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000007 /* ContentView.swift */; };
-		B2000008 /* MedMargApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000008 /* MedMargApp.swift */; };
-		B2000009 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000009 /* Models.swift */; };
-		B2000010 /* BottomNavbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000010 /* BottomNavbarView.swift */; };
-		B2000011 /* BottomSheetMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000011 /* BottomSheetMenuView.swift */; };
-		B2000012 /* NotificationCenterSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000012 /* NotificationCenterSheet.swift */; };
-		B2000013 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000013 /* SidebarView.swift */; };
-		B2000014 /* TopbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000014 /* TopbarView.swift */; };
+		B2000003 /* AdminHospitalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000003 /* AdminHospitalsView.swift */; };
+		B2000004 /* AdminInventoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000004 /* AdminInventoryView.swift */; };
+		B2000005 /* AdminLabsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000005 /* AdminLabsView.swift */; };
+		B2000006 /* AdminOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000006 /* AdminOverviewView.swift */; };
+		B2000007 /* AdminPharmaciesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000007 /* AdminPharmaciesView.swift */; };
+		B2000008 /* AdminTestsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000008 /* AdminTestsView.swift */; };
+		B2000009 /* AdminUsersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000009 /* AdminUsersView.swift */; };
+		B2000010 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000010 /* ContentView.swift */; };
+		B2000011 /* MedMargApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000011 /* MedMargApp.swift */; };
+		B2000012 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000012 /* Models.swift */; };
+		B2000013 /* BottomNavbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000013 /* BottomNavbarView.swift */; };
+		B2000014 /* BottomSheetMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000014 /* BottomSheetMenuView.swift */; };
+		B2000015 /* NotificationCenterSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000015 /* NotificationCenterSheet.swift */; };
+		B2000016 /* QuickCreateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000016 /* QuickCreateSheet.swift */; };
+		B2000017 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000017 /* SidebarView.swift */; };
+		B2000018 /* TopbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000018 /* TopbarView.swift */; };
 		B1000004 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1000004 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -28,18 +32,22 @@
 		P1000000 /* MedMarg.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MedMarg.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F2000001 /* AdminConsoleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin/AdminConsoleView.swift"; sourceTree = "<group>"; };
 		F2000002 /* AdminFleetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin/AdminFleetView.swift"; sourceTree = "<group>"; };
-		F2000003 /* AdminLabsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin/AdminLabsView.swift"; sourceTree = "<group>"; };
-		F2000004 /* AdminOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin/AdminOverviewView.swift"; sourceTree = "<group>"; };
-		F2000005 /* AdminTestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin/AdminTestsView.swift"; sourceTree = "<group>"; };
-		F2000006 /* AdminUsersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin/AdminUsersView.swift"; sourceTree = "<group>"; };
-		F2000007 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContentView.swift"; sourceTree = "<group>"; };
-		F2000008 /* MedMargApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MedMargApp.swift"; sourceTree = "<group>"; };
-		F2000009 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models.swift"; sourceTree = "<group>"; };
-		F2000010 /* BottomNavbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/BottomNavbarView.swift"; sourceTree = "<group>"; };
-		F2000011 /* BottomSheetMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/BottomSheetMenuView.swift"; sourceTree = "<group>"; };
-		F2000012 /* NotificationCenterSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/NotificationCenterSheet.swift"; sourceTree = "<group>"; };
-		F2000013 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/SidebarView.swift"; sourceTree = "<group>"; };
-		F2000014 /* TopbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/TopbarView.swift"; sourceTree = "<group>"; };
+		F2000003 /* AdminHospitalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin/AdminHospitalsView.swift"; sourceTree = "<group>"; };
+		F2000004 /* AdminInventoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin/AdminInventoryView.swift"; sourceTree = "<group>"; };
+		F2000005 /* AdminLabsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin/AdminLabsView.swift"; sourceTree = "<group>"; };
+		F2000006 /* AdminOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin/AdminOverviewView.swift"; sourceTree = "<group>"; };
+		F2000007 /* AdminPharmaciesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin/AdminPharmaciesView.swift"; sourceTree = "<group>"; };
+		F2000008 /* AdminTestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin/AdminTestsView.swift"; sourceTree = "<group>"; };
+		F2000009 /* AdminUsersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Admin/AdminUsersView.swift"; sourceTree = "<group>"; };
+		F2000010 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContentView.swift"; sourceTree = "<group>"; };
+		F2000011 /* MedMargApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MedMargApp.swift"; sourceTree = "<group>"; };
+		F2000012 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models.swift"; sourceTree = "<group>"; };
+		F2000013 /* BottomNavbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/BottomNavbarView.swift"; sourceTree = "<group>"; };
+		F2000014 /* BottomSheetMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/BottomSheetMenuView.swift"; sourceTree = "<group>"; };
+		F2000015 /* NotificationCenterSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/NotificationCenterSheet.swift"; sourceTree = "<group>"; };
+		F2000016 /* QuickCreateSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/QuickCreateSheet.swift"; sourceTree = "<group>"; };
+		F2000017 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/SidebarView.swift"; sourceTree = "<group>"; };
+		F2000018 /* TopbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/TopbarView.swift"; sourceTree = "<group>"; };
 		F1000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -59,18 +67,22 @@
 			children = (
 				F2000001 /* AdminConsoleView.swift */,
 				F2000002 /* AdminFleetView.swift */,
-				F2000003 /* AdminLabsView.swift */,
-				F2000004 /* AdminOverviewView.swift */,
-				F2000005 /* AdminTestsView.swift */,
-				F2000006 /* AdminUsersView.swift */,
-				F2000007 /* ContentView.swift */,
-				F2000008 /* MedMargApp.swift */,
-				F2000009 /* Models.swift */,
-				F2000010 /* BottomNavbarView.swift */,
-				F2000011 /* BottomSheetMenuView.swift */,
-				F2000012 /* NotificationCenterSheet.swift */,
-				F2000013 /* SidebarView.swift */,
-				F2000014 /* TopbarView.swift */,
+				F2000003 /* AdminHospitalsView.swift */,
+				F2000004 /* AdminInventoryView.swift */,
+				F2000005 /* AdminLabsView.swift */,
+				F2000006 /* AdminOverviewView.swift */,
+				F2000007 /* AdminPharmaciesView.swift */,
+				F2000008 /* AdminTestsView.swift */,
+				F2000009 /* AdminUsersView.swift */,
+				F2000010 /* ContentView.swift */,
+				F2000011 /* MedMargApp.swift */,
+				F2000012 /* Models.swift */,
+				F2000013 /* BottomNavbarView.swift */,
+				F2000014 /* BottomSheetMenuView.swift */,
+				F2000015 /* NotificationCenterSheet.swift */,
+				F2000016 /* QuickCreateSheet.swift */,
+				F2000017 /* SidebarView.swift */,
+				F2000018 /* TopbarView.swift */,
 				F1000004 /* Assets.xcassets */,
 				P1000000 /* MedMarg.app */,
 			);
@@ -148,18 +160,22 @@
 			files = (
 				B2000001 /* AdminConsoleView.swift in Sources */,
 				B2000002 /* AdminFleetView.swift in Sources */,
-				B2000003 /* AdminLabsView.swift in Sources */,
-				B2000004 /* AdminOverviewView.swift in Sources */,
-				B2000005 /* AdminTestsView.swift in Sources */,
-				B2000006 /* AdminUsersView.swift in Sources */,
-				B2000007 /* ContentView.swift in Sources */,
-				B2000008 /* MedMargApp.swift in Sources */,
-				B2000009 /* Models.swift in Sources */,
-				B2000010 /* BottomNavbarView.swift in Sources */,
-				B2000011 /* BottomSheetMenuView.swift in Sources */,
-				B2000012 /* NotificationCenterSheet.swift in Sources */,
-				B2000013 /* SidebarView.swift in Sources */,
-				B2000014 /* TopbarView.swift in Sources */,
+				B2000003 /* AdminHospitalsView.swift in Sources */,
+				B2000004 /* AdminInventoryView.swift in Sources */,
+				B2000005 /* AdminLabsView.swift in Sources */,
+				B2000006 /* AdminOverviewView.swift in Sources */,
+				B2000007 /* AdminPharmaciesView.swift in Sources */,
+				B2000008 /* AdminTestsView.swift in Sources */,
+				B2000009 /* AdminUsersView.swift in Sources */,
+				B2000010 /* ContentView.swift in Sources */,
+				B2000011 /* MedMargApp.swift in Sources */,
+				B2000012 /* Models.swift in Sources */,
+				B2000013 /* BottomNavbarView.swift in Sources */,
+				B2000014 /* BottomSheetMenuView.swift in Sources */,
+				B2000015 /* NotificationCenterSheet.swift in Sources */,
+				B2000016 /* QuickCreateSheet.swift in Sources */,
+				B2000017 /* SidebarView.swift in Sources */,
+				B2000018 /* TopbarView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

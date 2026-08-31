@@ -4,6 +4,7 @@ struct BottomNavbarView: View {
     @Binding var selectedTab: Int
     let userRole: UserRole
     @Binding var showBottomSheetMenu: Bool
+    @Binding var showQuickCreateSheet: Bool
 
     var body: some View {
         VStack(spacing: 4) {
@@ -26,40 +27,40 @@ struct BottomNavbarView: View {
             HStack {
                 if userRole == .admin {
                     // ==========================================
-                    // 🛡️ SUPER ADMIN DEDICATED BOTTOM NAVBAR
+                    // 🛡️ SUPER ADMIN DEDICATED 5-ELEMENT BOTTOM NAVBAR
                     // ==========================================
-                    // Tab 0: Overview
-                    bottomNavTab(index: 0, icon: "chart.bar.fill", title: "Overview")
+                    // 1. Tests (Tab 1)
+                    bottomNavTab(index: 1, icon: "flask.fill", title: "Tests")
 
-                    // Tab 1: Tests (CREATIVE CENTER HIGHLIGHTED ACTION BUTTON)
-                    Button(action: { selectedTab = 1 }) {
+                    // 2. Labs (Tab 2)
+                    bottomNavTab(index: 2, icon: "building.2.fill", title: "Labs")
+
+                    // 3. ➕ Quick Create Action Button (DISTINCT HIGHLIGHTED CENTER BUTTON)
+                    Button(action: { showQuickCreateSheet = true }) {
                         VStack(spacing: 2) {
                             ZStack {
                                 Circle()
                                     .fill(LinearGradient(colors: [MedMargTheme.primaryTeal, MedMargTheme.accentEmerald], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                    .frame(width: 44, height: 44)
-                                    .shadow(color: MedMargTheme.accentEmerald.opacity(0.4), radius: 8, x: 0, y: 3)
+                                    .frame(width: 48, height: 48)
+                                    .shadow(color: MedMargTheme.accentEmerald.opacity(0.5), radius: 8, x: 0, y: 4)
 
-                                Image(systemName: "flask.fill")
-                                    .font(.system(size: 20, weight: .bold))
+                                Image(systemName: "plus")
+                                    .font(.system(size: 24, weight: .black))
                                     .foregroundColor(.white)
                             }
 
-                            Text("Tests")
+                            Text("Create")
                                 .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(selectedTab == 1 ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
+                                .foregroundColor(MedMargTheme.primaryTeal)
                         }
                         .frame(maxWidth: .infinity)
                     }
 
-                    // Tab 2: Labs
-                    bottomNavTab(index: 2, icon: "building.2.fill", title: "Labs")
-
-                    // Tab 3: Hospitals
+                    // 4. Hospitals (Tab 3)
                     bottomNavTab(index: 3, icon: "cross.case.fill", title: "Hospitals")
 
-                    // Tab 7: Users
-                    bottomNavTab(index: 7, icon: "person.2.fill", title: "Users")
+                    // 5. Agents (Tab 5)
+                    bottomNavTab(index: 5, icon: "car.fill", title: "Agents")
                 } else {
                     // ==========================================
                     // 📱 PATIENT / DEFAULT BOTTOM NAVBAR

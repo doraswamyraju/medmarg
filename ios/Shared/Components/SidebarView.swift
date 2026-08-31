@@ -72,23 +72,52 @@ struct SidebarView: View {
 
                 Spacer()
 
-                // Logout Footer Button
-                Button(action: {
-                    showSidebar = false
-                    onLogout()
-                }) {
-                    HStack(spacing: 10) {
+                // Footer Bar: Profile & Settings on left, Logout Icon on right ending
+                HStack(spacing: 12) {
+                    // Profile Options Button
+                    Button(action: {
+                        showSidebar = false
+                        selectedTab = 7 // Users / Profile tab
+                    }) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "person.crop.circle.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(MedMargTheme.primaryTeal)
+
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("Profile & Settings")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(MedMargTheme.slate900)
+                                Text("Account & Role Permissions")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(MedMargTheme.slate500)
+                            }
+                        }
+                    }
+
+                    Spacer()
+
+                    // Logout Action Button on Far Right Ending
+                    Button(action: {
+                        showSidebar = false
+                        onLogout()
+                    }) {
                         Image(systemName: "power")
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(.red)
-                        Text("Logout")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(.red)
+                            .padding(10)
+                            .background(Color.red.opacity(0.1))
+                            .cornerRadius(10)
                     }
-                    .padding(18)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.red.opacity(0.06))
                 }
+                .padding(16)
+                .background(MedMargTheme.slate50)
+                .overlay(
+                    Rectangle()
+                        .frame(height: 1)
+                        .foregroundColor(MedMargTheme.slate200),
+                    alignment: .top
+                )
             }
             .frame(width: 300)
             .background(MedMargTheme.pureWhite)
