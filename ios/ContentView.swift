@@ -1357,20 +1357,764 @@ struct AdminConsoleView: View {
     @Binding var users: [UserProfile]
     let onLogout: () -> Void
 
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("MedMarg Super Admin Governance")
-                    .font(.system(size: 20, weight: .bold))
-                    .padding(.horizontal, 16)
-                    .padding(.top, 16)
+    // Navigation & Filters
+    @State private var activeTab: Int = 0 // 0: Overview, 1: Users & Access, 2: Tests & Catalog, 3: Partner Labs, 4: Fleet & Cold-Chain
+    @State private var searchQuery: String = ""
+    @State private var roleFilter: String = "ALL"
 
-                Text("Centralized access control, multi-lab pricing agreements, and system telemetry.")
-                    .font(.system(size: 13))
-                    .foregroundColor(MedMargTheme.slate500)
-                    .padding(.horizontal, 16)
+    // Dynamic State for Tests, Labs & Fleet
+    @State private var testsList: [LabTestItem] = WEB_THYROCARE_TESTS
+    @State private var labPartners: [LabPartner] = [
+        LabPartner(id: "LAB-01", name: "Thyrocare Central Processing Lab", type: "National Reference Lab", city: "Mumbai / Pan-India", nabl: "NABL-CC-4921", status: "ACTIVE", margin: "15%", testsCount: 104),
+        LabPartner(id: "LAB-02", name: "Apollo Diagnostics Tirupati", type: "Regional Processing Hub", city: "Tirupati (Air Bypass Rd)", nabl: "NABL-AP-8921", status: "ACTIVE", margin: "18%", testsCount: 85),
+        LabPartner(id: "LAB-03", name: "Dr. Lal PathLabs Hub", type: "Accredited Lab", city: "Tirupati (Renigunta Rd)", nabl: "NABL-AP-3104", status: "ACTIVE", margin: "15%", testsCount: 92)
+    ]
+    @State private var pendingLabRequests: [LabRequest] = [
+        LabRequest(id: "REQ-101", name: "Star Diagnostics & Pathology Hub", applicant: "Dr. K. Srinivas", city: "Tirupati (Alipiri)", license: "AP-MED-2026-89", phone: "+91 98765 99001", testsOffered: 45, date: "30 Aug 2026"),
+        LabRequest(id: "REQ-102", name: "Srinivasa Bio-Pathology Care", applicant: "Dr. R. Mohan", city: "Chandragiri, Tirupati", license: "AP-MED-2026-94", phone: "+91 98765 99002", testsOffered: 38, date: "29 Aug 2026")
+    ]
+    @State private var fleetAgents: [FleetAgentStatus] = [
+        FleetAgentStatus(id: "AG-01", name: "Ramesh Kumar", phone: "+91 98765 11223", area: "Air Bypass & Alipiri, Tirupati", samplesToday: 9, temp: "4.2°C", battery: "88%", status: "ON_ROUTE"),
+        FleetAgentStatus(id: "AG-02", name: "Srinivas Rao", phone: "+91 98765 22334", area: "Renigunta Rd, Tirupati", samplesToday: 14, temp: "3.8°C", battery: "94%", status: "AT_PATIENT_HOME"),
+        FleetAgentStatus(id: "AG-03", name: "Praveen V.", phone: "+91 98765 33445", area: "SVIMS & Hospital Zone", samplesToday: 11, temp: "4.5°C", battery: "76%", status: "DELIVERING_TO_LAB")
+    ]
+
+    // Modals & Form States
+    @State private var showAddUserSheet: Bool = false
+    @State private var showAddTestSheet: Bool = false
+
+    // New User Form State
+    @State private var newName: String = ""
+    @State private var newUsername: String = ""
+    @State private var newEmail: String = ""
+    @State private var newPhone: String = ""
+    @State private var newOrganization: String = ""
+    @State private var newRole: UserRole = .patient
+
+    // New Test Form State
+    @State private var newTestName: String = ""
+    @State private var newTestCategory: String = "Thyroid & Hormones"
+    @State private var newTestParams: String = "1"
+    @State private var newTestSample: String = "Blood (Serum)"
+    @State private var newTestDescription: String = ""
+    @State private var newTestThyrocarePrice: String = ""
+    @State private var newTestApolloPrice: String = ""
+    @State private var newTestLalPrice: String = ""
+    @State private var newTestMRP: String = ""
+    @State private var newTestTag: String = "SPECIAL RATE"
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Header Bar
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "shield.fill")
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                        Text("Super Admin Governance")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(MedMargTheme.slate900)
+                    }
+                    Text("Central Platform Control • Multi-Lab Agreements & Telemetry")
+                        .font(.system(size: 11))
+                        .foregroundColor(MedMargTheme.slate500)
+                }
+
+                Spacer()
+
+                Button(action: onLogout) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                        Text("Logout")
+                    }
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.red)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.red.opacity(0.1))
+                    .cornerRadius(8)
+                }
+            }
+            .padding(16)
+            .background(MedMargTheme.pureWhite)
+
+            // Sub-Tab Selector Pills
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    adminSubTabPill(index: 0, title: "Overview", icon: "chart.bar.fill")
+                    adminSubTabPill(index: 1, title: "Users & Access (\(users.count))", icon: "person.2.fill")
+                    adminSubTabPill(index: 2, title: "Tests & Catalog (\(testsList.count))", icon: "flask.fill")
+                    adminSubTabPill(index: 3, title: "Partner Labs (\(labPartners.count))", icon: "building.2.fill")
+                    adminSubTabPill(index: 4, title: "Fleet & Cold-Chain", icon: "car.fill")
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+            }
+            .background(MedMargTheme.slate50)
+
+            // Active Tab Content
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 16) {
+                    switch activeTab {
+                    case 0:
+                        adminOverviewSection
+                    case 1:
+                        adminUsersSection
+                    case 2:
+                        adminTestsSection
+                    case 3:
+                        adminLabsSection
+                    case 4:
+                        adminFleetSection
+                    default:
+                        adminOverviewSection
+                    }
+                }
+                .padding(16)
             }
         }
+        .sheet(isPresented: $showAddUserSheet) {
+            addUserSheet
+        }
+        .sheet(isPresented: $showAddTestSheet) {
+            addTestSheet
+        }
+    }
+
+    private func adminSubTabPill(index: Int, title: String, icon: String) -> some View {
+        Button(action: { activeTab = index }) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 12))
+                Text(title)
+                    .font(.system(size: 12, weight: activeTab == index ? .bold : .medium))
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(activeTab == index ? MedMargTheme.primaryTeal : MedMargTheme.pureWhite)
+            .foregroundColor(activeTab == index ? .white : MedMargTheme.slate700)
+            .cornerRadius(20)
+            .shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1)
+        }
+    }
+
+    // ==========================================
+    // 📊 TAB 0: OVERVIEW & SYSTEM METRICS
+    // ==========================================
+    private var adminOverviewSection: some View {
+        VStack(spacing: 16) {
+            // Live Status Banner
+            HStack {
+                HStack(spacing: 8) {
+                    Circle().fill(Color.green).frame(width: 10, height: 10)
+                    Text("Central Processing Hub Online")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(MedMargTheme.darkTeal)
+                }
+                Spacer()
+                Text("NABL Sync Active")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(MedMargTheme.primaryTeal)
+            }
+            .padding(12)
+            .background(MedMargTheme.lightTeal)
+            .cornerRadius(10)
+
+            // Metrics 2x2 Grid
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                adminMetricCard(title: "Revenue Today", value: "₹4,82,500", trend: "+14.2% vs yesterday", icon: "indianrupeesign.circle.fill", color: Color.green)
+                adminMetricCard(title: "Lab Bookings", value: "1,420 Orders", trend: "104 Full Checkups", icon: "doc.plaintext.fill", color: Color.blue)
+                adminMetricCard(title: "NABL Labs", value: "14 Partners", trend: "100% Compliant", icon: "building.2.fill", color: Color.purple)
+                adminMetricCard(title: "On-Duty Fleet", value: "32 Agents", trend: "Avg Temp: 4.2°C", icon: "truck.box.fill", color: Color.orange)
+            }
+
+            // Platform Activity Stream
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Recent System Activity")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(MedMargTheme.slate900)
+
+                adminActivityRow(icon: "checkmark.circle.fill", color: .green, title: "Thyrocare Price Sync Completed", subtitle: "104 test parameters updated across Tirupati hub", time: "10 mins ago")
+                adminActivityRow(icon: "person.crop.circle.badge.plus", color: .blue, title: "New Doctor Onboarded", subtitle: "Dr. Ananya Sharma MD verified for OPD token booking", time: "25 mins ago")
+                adminActivityRow(icon: "building.badge.gearshape.fill", color: .purple, title: "Lab Onboarding Requested", subtitle: "Star Diagnostics submitted NABL license for review", time: "1 hour ago")
+            }
+            .padding(14)
+            .background(MedMargTheme.pureWhite)
+            .cornerRadius(12)
+        }
+    }
+
+    private func adminMetricCard(title: String, value: String, trend: String, icon: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(color)
+                Spacer()
+            }
+
+            Text(value)
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(MedMargTheme.slate900)
+
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(MedMargTheme.slate500)
+
+            Text(trend)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundColor(color)
+        }
+        .padding(14)
+        .background(MedMargTheme.pureWhite)
+        .cornerRadius(12)
+        .shadow(color: Color.black.opacity(0.02), radius: 4, x: 0, y: 2)
+    }
+
+    private func adminActivityRow(icon: String, color: Color, title: String, subtitle: String, time: String) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 18))
+                .foregroundColor(color)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(MedMargTheme.slate900)
+                Text(subtitle)
+                    .font(.system(size: 11))
+                    .foregroundColor(MedMargTheme.slate500)
+            }
+
+            Spacer()
+
+            Text(time)
+                .font(.system(size: 10))
+                .foregroundColor(MedMargTheme.slate500)
+        }
+        .padding(.vertical, 6)
+    }
+
+    // ==========================================
+    // 👥 TAB 1: USERS & ACCESS MANAGEMENT
+    // ==========================================
+    private var adminUsersSection: some View {
+        VStack(spacing: 12) {
+            // Action & Search Header
+            HStack {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(MedMargTheme.slate500)
+                    TextField("Search users by name, email, role...", text: $searchQuery)
+                        .autocapitalization(.none)
+                }
+                .padding(10)
+                .background(MedMargTheme.pureWhite)
+                .cornerRadius(10)
+
+                Button(action: { showAddUserSheet = true }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                        Text("Add User")
+                    }
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(MedMargTheme.primaryTeal)
+                    .cornerRadius(10)
+                }
+            }
+
+            // Role Filter Pills
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    roleFilterPill(roleKey: "ALL", label: "All Users")
+                    ForEach(UserRole.allCases) { role in
+                        roleFilterPill(roleKey: role.rawValue, label: role.rawValue)
+                    }
+                }
+            }
+
+            // Users List
+            let filteredUsers = users.filter { user in
+                (roleFilter == "ALL" || user.role.rawValue == roleFilter) &&
+                (searchQuery.isEmpty || user.name.localizedCaseInsensitiveContains(searchQuery) || user.email.localizedCaseInsensitiveContains(searchQuery) || user.username.localizedCaseInsensitiveContains(searchQuery))
+            }
+
+            ForEach(filteredUsers) { user in
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        ZStack {
+                            Circle().fill(MedMargTheme.primaryTeal.opacity(0.15)).frame(width: 40, height: 40)
+                            Text(String(user.name.prefix(1)))
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(MedMargTheme.primaryTeal)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 6) {
+                                Text(user.name)
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(MedMargTheme.slate900)
+
+                                Text(user.role.rawValue)
+                                    .font(.system(size: 9, weight: .bold))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(MedMargTheme.lightTeal)
+                                    .foregroundColor(MedMargTheme.primaryTeal)
+                                    .cornerRadius(4)
+                            }
+
+                            Text("@\(user.username) • \(user.email)")
+                                .font(.system(size: 11))
+                                .foregroundColor(MedMargTheme.slate500)
+                        }
+
+                        Spacer()
+
+                        Text(user.status)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(user.status == "Active" ? .green : .red)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(user.status == "Active" ? Color.green.opacity(0.1) : Color.red.opacity(0.1))
+                            .cornerRadius(6)
+                    }
+
+                    Text("Org/Address: \(user.organization)")
+                        .font(.system(size: 11))
+                        .foregroundColor(MedMargTheme.slate700)
+
+                    Divider()
+
+                    // Action Controls
+                    HStack {
+                        Button(action: { toggleUserStatus(userId: user.id) }) {
+                            Text(user.status == "Active" ? "Suspend Account" : "Activate Account")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(user.status == "Active" ? .red : .green)
+                        }
+
+                        Spacer()
+
+                        Button(action: { deleteUser(userId: user.id) }) {
+                            Image(systemName: "trash.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.red)
+                        }
+                    }
+                }
+                .padding(14)
+                .background(MedMargTheme.pureWhite)
+                .cornerRadius(12)
+            }
+        }
+    }
+
+    private func roleFilterPill(roleKey: String, label: String) -> some View {
+        Button(action: { roleFilter = roleKey }) {
+            Text(label)
+                .font(.system(size: 11, weight: roleFilter == roleKey ? .bold : .medium))
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(roleFilter == roleKey ? MedMargTheme.primaryTeal : MedMargTheme.pureWhite)
+                .foregroundColor(roleFilter == roleKey ? .white : MedMargTheme.slate700)
+                .cornerRadius(14)
+        }
+    }
+
+    // ==========================================
+    // 🧪 TAB 2: TESTS & CATALOG MANAGEMENT
+    // ==========================================
+    private var adminTestsSection: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Text("Diagnostic Tests & Packages Catalog")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(MedMargTheme.slate900)
+
+                Spacer()
+
+                Button(action: { showAddTestSheet = true }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                        Text("Add Test")
+                    }
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(MedMargTheme.primaryTeal)
+                    .cornerRadius(8)
+                }
+            }
+
+            ForEach(testsList) { test in
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(test.name)
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate900)
+                            Text("\(test.category) • \(test.params) Parameters")
+                                .font(.system(size: 11))
+                                .foregroundColor(MedMargTheme.slate500)
+                        }
+                        Spacer()
+                        Text(test.yellowTag)
+                            .font(.system(size: 9, weight: .bold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(MedMargTheme.amberLight)
+                            .foregroundColor(MedMargTheme.amberGold)
+                            .cornerRadius(4)
+                    }
+
+                    // Multi-Lab Negotiated Pricing Bar
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Thyrocare Rate")
+                                .font(.system(size: 10))
+                                .foregroundColor(MedMargTheme.slate500)
+                            Text("₹\(test.thyrocarePrice)")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(MedMargTheme.primaryTeal)
+                        }
+
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Apollo Price")
+                                .font(.system(size: 10))
+                                .foregroundColor(MedMargTheme.slate500)
+                            Text("₹\(test.apolloPrice)")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(MedMargTheme.slate700)
+                        }
+
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("Lal Path Price")
+                                .font(.system(size: 10))
+                                .foregroundColor(MedMargTheme.slate500)
+                            Text("₹\(test.lalPrice)")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(MedMargTheme.slate700)
+                        }
+
+                        Spacer()
+
+                        Button(action: {
+                            testsList.removeAll(where: { $0.id == test.id })
+                        }) {
+                            Image(systemName: "trash")
+                                .foregroundColor(.red)
+                                .font(.system(size: 14))
+                        }
+                    }
+                    .padding(8)
+                    .background(MedMargTheme.slate50)
+                    .cornerRadius(8)
+                }
+                .padding(14)
+                .background(MedMargTheme.pureWhite)
+                .cornerRadius(12)
+            }
+        }
+    }
+
+    // ==========================================
+    // 🏥 TAB 3: PARTNER LABS & ONBOARDING
+    // ==========================================
+    private var adminLabsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            // Active Labs
+            Text("Active NABL Diagnostic Lab Partners")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(MedMargTheme.slate900)
+
+            ForEach(labPartners) { lab in
+                HStack(spacing: 12) {
+                    Image(systemName: "building.2.crop.circle.fill")
+                        .font(.system(size: 28))
+                        .foregroundColor(MedMargTheme.primaryTeal)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(lab.name)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(MedMargTheme.slate900)
+                        Text("\(lab.type) • \(lab.city)")
+                            .font(.system(size: 11))
+                            .foregroundColor(MedMargTheme.slate500)
+                        Text("Accreditation: \(lab.nabl) • Commission Margin: \(lab.margin)")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                    }
+
+                    Spacer()
+                }
+                .padding(14)
+                .background(MedMargTheme.pureWhite)
+                .cornerRadius(12)
+            }
+
+            // Onboarding Requests
+            Text("Pending Onboarding Applications (\(pendingLabRequests.count))")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(MedMargTheme.slate900)
+
+            ForEach(pendingLabRequests) { req in
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(req.name)
+                                .font(.system(size: 14, weight: .bold))
+                            Text("Applicant: \(req.applicant) • \(req.city)")
+                                .font(.system(size: 11))
+                                .foregroundColor(MedMargTheme.slate500)
+                        }
+                        Spacer()
+                        Text("UNDER REVIEW")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.orange)
+                            .padding(4)
+                            .background(Color.orange.opacity(0.1))
+                            .cornerRadius(4)
+                    }
+
+                    HStack {
+                        Button(action: {
+                            labPartners.append(LabPartner(id: req.id, name: req.name, type: "Approved Partner Lab", city: req.city, nabl: req.license, status: "ACTIVE", margin: "15%", testsCount: req.testsOffered))
+                            pendingLabRequests.removeAll(where: { $0.id == req.id })
+                        }) {
+                            Text("Approve & Onboard")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.green)
+                                .cornerRadius(6)
+                        }
+
+                        Button(action: {
+                            pendingLabRequests.removeAll(where: { $0.id == req.id })
+                        }) {
+                            Text("Reject Application")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.red)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.red.opacity(0.1))
+                                .cornerRadius(6)
+                        }
+                    }
+                }
+                .padding(14)
+                .background(MedMargTheme.pureWhite)
+                .cornerRadius(12)
+            }
+        }
+    }
+
+    // ==========================================
+    // 🚚 TAB 4: FLEET & COLD CHAIN IOT
+    // ==========================================
+    private var adminFleetSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Field Collection Fleet & Cold-Chain Telemetry")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(MedMargTheme.slate900)
+
+            ForEach(fleetAgents) { agent in
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("\(agent.name) (\(agent.id))")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate900)
+                            Text("Assigned Zone: \(agent.area)")
+                                .font(.system(size: 11))
+                                .foregroundColor(MedMargTheme.slate500)
+                        }
+
+                        Spacer()
+
+                        Text(agent.temp)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(MedMargTheme.darkTeal)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(MedMargTheme.emeraldLight)
+                            .cornerRadius(6)
+                    }
+
+                    HStack(spacing: 16) {
+                        Text("Samples Today: \(agent.samplesToday)")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+
+                        Text("IOT Battery: \(agent.battery)")
+                            .font(.system(size: 11))
+                            .foregroundColor(MedMargTheme.slate500)
+
+                        Spacer()
+
+                        Text(agent.status)
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(MedMargTheme.slate700)
+                    }
+                }
+                .padding(14)
+                .background(MedMargTheme.pureWhite)
+                .cornerRadius(12)
+            }
+        }
+    }
+
+    // ==========================================
+    // 📄 ADD USER MODAL SHEET
+    // ==========================================
+    private var addUserSheet: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Text("Create New System User")
+                    .font(.system(size: 18, weight: .bold))
+                Spacer()
+                Button("Cancel") { showAddUserSheet = false }
+            }
+            .padding(20)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    TextField("Full Name", text: $newName)
+                    TextField("Username", text: $newUsername)
+                        .autocapitalization(.none)
+                    TextField("Email Address", text: $newEmail)
+                        .autocapitalization(.none)
+                    TextField("Phone Number", text: $newPhone)
+                    TextField("Organization / Address", text: $newOrganization)
+
+                    Picker("User Role", selection: $newRole) {
+                        ForEach(UserRole.allCases) { role in
+                            Text(role.displayName).tag(role)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    Button(action: saveNewUser) {
+                        Text("Save & Grant Access")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(MedMargTheme.primaryTeal)
+                            .cornerRadius(10)
+                    }
+                    .padding(.top, 12)
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+
+    // ==========================================
+    // 📄 ADD TEST MODAL SHEET
+    // ==========================================
+    private var addTestSheet: some View {
+        VStack(spacing: 16) {
+            HStack {
+                Text("Add Diagnostic Test to Catalog")
+                    .font(.system(size: 18, weight: .bold))
+                Spacer()
+                Button("Cancel") { showAddTestSheet = false }
+            }
+            .padding(20)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 12) {
+                    TextField("Test Name", text: $newTestName)
+                    TextField("Thyrocare Negotiated Price (₹)", text: $newTestThyrocarePrice)
+                    TextField("Apollo Diagnostics Price (₹)", text: $newTestApolloPrice)
+                    TextField("Dr. Lal PathLabs Price (₹)", text: $newTestLalPrice)
+                    TextField("Original MRP (₹)", text: $newTestMRP)
+                    TextField("Parameters Count", text: $newTestParams)
+                    TextField("Sample Type (e.g. Blood/Urine)", text: $newTestSample)
+                    TextField("Description", text: $newTestDescription)
+
+                    Button(action: saveNewTest) {
+                        Text("Save Test to Catalog")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(MedMargTheme.primaryTeal)
+                            .cornerRadius(10)
+                    }
+                    .padding(.top, 12)
+                }
+                .padding(.horizontal, 20)
+            }
+        }
+    }
+
+    // Helpers
+    private func toggleUserStatus(userId: String) {
+        if let idx = users.firstIndex(where: { $0.id == userId }) {
+            users[idx].status = (users[idx].status == "Active") ? "Suspended" : "Active"
+        }
+    }
+
+    private func deleteUser(userId: String) {
+        users.removeAll(where: { $0.id == userId })
+    }
+
+    private func saveNewUser() {
+        guard !newName.isEmpty, !newUsername.isEmpty else { return }
+        let user = UserProfile(
+            id: UUID().uuidString,
+            name: newName,
+            username: newUsername,
+            email: newEmail.isEmpty ? "\(newUsername)@medmarg.com" : newEmail,
+            phone: newPhone.isEmpty ? "+91 98765 00000" : newPhone,
+            password: "password123",
+            role: newRole,
+            organization: newOrganization.isEmpty ? "Tirupati Hub" : newOrganization,
+            status: "Active",
+            createdAt: "31-Aug-2026"
+        )
+        users.append(user)
+        showAddUserSheet = false
+        newName = ""
+        newUsername = ""
+        newEmail = ""
+        newPhone = ""
+        newOrganization = ""
+    }
+
+    private func saveNewTest() {
+        guard !newTestName.isEmpty else { return }
+        let test = LabTestItem(
+            id: UUID().uuidString,
+            name: newTestName,
+            category: newTestCategory,
+            params: Int(newTestParams) ?? 1,
+            sampleType: newTestSample,
+            description: newTestDescription.isEmpty ? "Diagnostic test panel." : newTestDescription,
+            mrp: Int(newTestMRP) ?? 1000,
+            thyrocarePrice: Int(newTestThyrocarePrice) ?? 499,
+            apolloPrice: Int(newTestApolloPrice) ?? 750,
+            lalPrice: Int(newTestLalPrice) ?? 800,
+            tat: "12 hrs",
+            fasting: "No Fasting Required",
+            bestseller: false,
+            yellowTag: newTestTag
+        )
+        testsList.append(test)
+        showAddTestSheet = false
+        newTestName = ""
+        newTestThyrocarePrice = ""
+        newTestApolloPrice = ""
+        newTestLalPrice = ""
+        newTestMRP = ""
     }
 }
 
