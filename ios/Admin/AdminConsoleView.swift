@@ -4,8 +4,7 @@ struct AdminConsoleView: View {
     @Binding var users: [UserProfile]
     let onLogout: () -> Void
 
-    // Navigation & Filters
-    @State private var activeTab: Int = 0 // 0: Overview, 1: Users & Access, 2: Tests & Catalog, 3: Partner Labs, 4: Fleet & Cold-Chain
+    @Binding var activeTab: Int // 0: Overview, 1: Users & Access, 2: Tests & Catalog, 3: Partner Labs, 4: Fleet & Cold-Chain
 
     // Dynamic State for Tests, Labs & Fleet
     @State private var testsList: [LabTestItem] = WEB_THYROCARE_TESTS
@@ -50,38 +49,6 @@ struct AdminConsoleView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header Bar
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "shield.fill")
-                            .foregroundColor(MedMargTheme.primaryTeal)
-                        Text("Super Admin Governance")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(MedMargTheme.slate900)
-                    }
-                    Text("Central Platform Control • Multi-Lab Agreements & Telemetry")
-                        .font(.system(size: 11))
-                        .foregroundColor(MedMargTheme.slate500)
-                }
-
-                Spacer()
-
-                Button(action: onLogout) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
-                        Text("Logout")
-                    }
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.red)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.red.opacity(0.1))
-                    .cornerRadius(8)
-                }
-            }
-            .padding(16)
-            .background(MedMargTheme.pureWhite)
 
             // Sub-Tab Selector Pills
             ScrollView(.horizontal, showsIndicators: false) {
