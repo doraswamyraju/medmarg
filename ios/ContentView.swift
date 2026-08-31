@@ -101,10 +101,12 @@ struct ContentView: View {
     
     // UI Navigation State
     @State private var selectedTab: Int = 0 // 0: Home, 1: Labs & Tests, 2: Track, 3: Docs & Profile
+    @State private var selectedSubTab: Int = 0
     @State private var showSidebar: Bool = false
     @State private var showCityPicker: Bool = false
     @State private var showCartSheet: Bool = false
     @State private var showNotificationCenter: Bool = false
+    @State private var showBottomSheetMenu: Bool = false
     @State private var selectedCategory: String = "All Tests & Packages"
     @State private var searchQuery: String = ""
     @State private var cartItems: [CartItem] = [
@@ -127,7 +129,8 @@ struct ContentView: View {
                             showCityPicker: $showCityPicker,
                             showCartSheet: $showCartSheet,
                             showNotificationCenter: $showNotificationCenter,
-                            cartItemCount: cartItems.count
+                            cartItemCount: cartItems.count,
+                            onLogout: logout
                         )
                         
                         // 2. Role-Based Active View Body
@@ -138,7 +141,7 @@ struct ContentView: View {
                             case .doctor:
                                 DoctorWorkdeskView(user: user, onLogout: logout)
                             case .admin:
-                                AdminConsoleView(users: $users, onLogout: logout, activeTab: $selectedTab)
+                                AdminConsoleView(users: $users, onLogout: logout, activeTab: $selectedTab, activeSubTab: $selectedSubTab)
                             case .diagnosticLab:
                                 LabDeskView(user: user, onLogout: logout)
                             case .scanCenter:
@@ -151,7 +154,7 @@ struct ContentView: View {
                         }
 
                         // 3. Shared Dynamic Bottom Navigation Bar
-                        BottomNavbarView(selectedTab: $selectedTab, userRole: user.role, showSidebar: $showSidebar)
+                        BottomNavbarView(selectedTab: $selectedTab, userRole: user.role, showBottomSheetMenu: $showBottomSheetMenu)
                     }
 
                     // 3. Slide-Out Sidebar Navigation Drawer
@@ -160,6 +163,7 @@ struct ContentView: View {
                             user: user,
                             showSidebar: $showSidebar,
                             selectedTab: $selectedTab,
+                            selectedSubTab: $selectedSubTab,
                             onLogout: logout
                         )
                     }
@@ -172,6 +176,15 @@ struct ContentView: View {
                 }
                 .sheet(isPresented: $showNotificationCenter) {
                     NotificationCenterSheet(isPresented: $showNotificationCenter)
+                }
+                .sheet(isPresented: $showBottomSheetMenu) {
+                    BottomSheetMenuView(
+                        user: user,
+                        isPresented: $showBottomSheetMenu,
+                        selectedTab: $selectedTab,
+                        selectedSubTab: $selectedSubTab,
+                        onLogout: logout
+                    )
                 }
             } else {
                 // Clean Branded Login View

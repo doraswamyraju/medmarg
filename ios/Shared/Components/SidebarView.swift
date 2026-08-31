@@ -4,6 +4,7 @@ struct SidebarView: View {
     let user: UserProfile
     @Binding var showSidebar: Bool
     @Binding var selectedTab: Int
+    @Binding var selectedSubTab: Int
     let onLogout: () -> Void
 
     var body: some View {
@@ -16,89 +17,51 @@ struct SidebarView: View {
                 }
 
             VStack(alignment: .leading, spacing: 0) {
-                // Brand Logo & User Profile Header
-                VStack(alignment: .leading, spacing: 14) {
-                    HStack(spacing: 10) {
-                        Image("logo-icon")
+                // Header: Horizontal MedMarg Logo, Super Admin Title & Email
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .center, spacing: 10) {
+                        Image("logo")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 32, height: 32)
-                        
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("MedMarg")
-                                .font(.system(size: 18, weight: .black))
-                                .foregroundColor(MedMargTheme.primaryTeal)
-                            Text("HEALTH & DIAGNOSTICS")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(MedMargTheme.slate500)
-                        }
+                            .frame(height: 34)
 
                         Spacer()
 
                         Button(action: { withAnimation { showSidebar = false } }) {
                             Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 20))
+                                .font(.system(size: 22))
                                 .foregroundColor(MedMargTheme.slate500)
                         }
                     }
 
-                    HStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(MedMargTheme.primaryTeal)
-                                .frame(width: 44, height: 44)
-                            Text(String(user.name.prefix(1)))
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(.white)
-                        }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(user.role.displayName)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(MedMargTheme.primaryTeal)
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(user.name)
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundColor(MedMargTheme.slate900)
-                            Text(user.email)
-                                .font(.system(size: 11))
-                                .foregroundColor(MedMargTheme.slate500)
-                            
-                            Text(user.role.displayName)
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(MedMargTheme.primaryTeal)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(MedMargTheme.lightTeal)
-                                .cornerRadius(6)
-                        }
+                        Text(user.email)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(MedMargTheme.slate500)
                     }
 
                     Divider()
                 }
-                .padding(20)
+                .padding(18)
                 .background(MedMargTheme.slate50)
 
-                // Role-Specific Navigation Menu Items
+                // Sidebar Navigation Tabs with Inner Sub-Tabs
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text("WORKSPACE MODULES")
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(MedMargTheme.slate500)
                             .padding(.horizontal, 20)
                             .padding(.top, 12)
 
-                        switch user.role {
-                        case .admin:
-                            adminSidebarItems
-                        case .patient:
-                            patientSidebarItems
-                        case .doctor:
-                            doctorSidebarItems
-                        case .diagnosticLab:
-                            labSidebarItems
-                        case .scanCenter:
-                            scanCenterSidebarItems
-                        case .pharmacy:
-                            pharmacySidebarItems
-                        case .collectionAgent:
-                            agentSidebarItems
+                        if user.role == .admin {
+                            adminSidebarModules
+                        } else {
+                            patientSidebarModules
                         }
                     }
                     .padding(.vertical, 8)
@@ -106,21 +69,22 @@ struct SidebarView: View {
 
                 Spacer()
 
-                // Logout Button
+                // Logout Footer Button
                 Button(action: {
                     showSidebar = false
                     onLogout()
                 }) {
                     HStack(spacing: 10) {
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                        Image(systemName: "power")
+                            .font(.system(size: 16, weight: .bold))
                             .foregroundColor(.red)
-                        Text("Sign Out")
+                        Text("Logout")
                             .font(.system(size: 15, weight: .bold))
                             .foregroundColor(.red)
                     }
-                    .padding(20)
+                    .padding(18)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.red.opacity(0.05))
+                    .background(Color.red.opacity(0.06))
                 }
             }
             .frame(width: 300)
@@ -130,122 +94,114 @@ struct SidebarView: View {
         }
     }
 
-    // Role Specific Sidebar Content
-    private var adminSidebarItems: some View {
+    // Super Admin Expandable Modules with Inner Sub-Tabs
+    private var adminSidebarModules: some View {
         Group {
-            sidebarItem(icon: "chart.bar.fill", title: "System Overview", active: selectedTab == 0) {
-                selectedTab = 0
-                showSidebar = false
-            }
-            sidebarItem(icon: "person.2.fill", title: "Users & Access Control", active: selectedTab == 1) {
-                selectedTab = 1
-                showSidebar = false
-            }
-            sidebarItem(icon: "flask.fill", title: "Tests & Pricing Catalog", active: selectedTab == 2) {
-                selectedTab = 2
-                showSidebar = false
-            }
-            sidebarItem(icon: "building.2.fill", title: "Partner NABL Labs", active: selectedTab == 3) {
-                selectedTab = 3
-                showSidebar = false
-            }
-            sidebarItem(icon: "car.fill", title: "Fleet & Cold-Chain IOT", active: selectedTab == 4) {
-                selectedTab = 4
-                showSidebar = false
-            }
+            // Module 0: Overview
+            sidebarMainTab(index: 0, icon: "chart.bar.fill", title: "System Overview", subTabs: [
+                (0, "Live Metrics"),
+                (1, "Telemetry Feed"),
+                (2, "Activity Logs")
+            ])
+
+            // Module 1: Users & Access
+            sidebarMainTab(index: 1, icon: "person.2.fill", title: "Users & Access Control", subTabs: [
+                (0, "All System Users"),
+                (1, "Doctor Accounts"),
+                (2, "Diagnostic Labs"),
+                (3, "Phlebotomists")
+            ])
+
+            // Module 2: Tests & Catalog
+            sidebarMainTab(index: 2, icon: "flask.fill", title: "Tests & Rates Catalog", subTabs: [
+                (0, "Diagnostic Tests"),
+                (1, "Full Body Packages"),
+                (2, "Categories Manager")
+            ])
+
+            // Module 3: Partner Labs
+            sidebarMainTab(index: 3, icon: "building.2.fill", title: "Partner NABL Labs", subTabs: [
+                (0, "Active Accredited Labs"),
+                (1, "Onboarding Requests"),
+                (2, "Commission Margins")
+            ])
+
+            // Module 4: Fleet & Cold-Chain
+            sidebarMainTab(index: 4, icon: "car.fill", title: "Fleet & Cold-Chain IOT", subTabs: [
+                (0, "Phlebotomist Roster"),
+                (1, "IOT Temperature Telemetry"),
+                (2, "Sample Dispatches")
+            ])
         }
     }
 
-    private var patientSidebarItems: some View {
+    private var patientSidebarModules: some View {
         Group {
-            sidebarItem(icon: "house.fill", title: "Home Dashboard", active: selectedTab == 0) {
-                selectedTab = 0
-                showSidebar = false
-            }
-            sidebarItem(icon: "flask.fill", title: "Labs & Pathology Catalog", active: selectedTab == 1) {
-                selectedTab = 1
-                showSidebar = false
-            }
-            sidebarItem(icon: "location.fill.viewfinder", title: "Live Phlebotomist Tracker", active: selectedTab == 2) {
-                selectedTab = 2
-                showSidebar = false
-            }
-            sidebarItem(icon: "doc.text.fill", title: "Prescriptions & Records", active: selectedTab == 3) {
-                selectedTab = 3
-                showSidebar = false
-            }
+            sidebarMainTab(index: 0, icon: "house.fill", title: "Home Dashboard", subTabs: [])
+            sidebarMainTab(index: 1, icon: "flask.fill", title: "Labs & Pathology Catalog", subTabs: [])
+            sidebarMainTab(index: 2, icon: "location.fill.viewfinder", title: "Live Phlebotomist Tracker", subTabs: [])
+            sidebarMainTab(index: 3, icon: "doc.text.fill", title: "Prescriptions & Records", subTabs: [])
         }
     }
 
-    private var doctorSidebarItems: some View {
-        Group {
-            sidebarItem(icon: "stethoscope", title: "OPD Workdesk & Queue", active: selectedTab == 0) {
-                selectedTab = 0
-                showSidebar = false
-            }
-            sidebarItem(icon: "doc.badge.plus", title: "E-Prescriptions", active: selectedTab == 1) {
-                selectedTab = 1
-                showSidebar = false
-            }
-        }
-    }
+    private func sidebarMainTab(index: Int, icon: String, title: String, subTabs: [(Int, String)]) -> some View {
+        let isMainActive = selectedTab == index
 
-    private var labSidebarItems: some View {
-        Group {
-            sidebarItem(icon: "flask.fill", title: "Lab Processing Queue", active: selectedTab == 0) {
-                selectedTab = 0
+        return VStack(alignment: .leading, spacing: 2) {
+            Button(action: {
+                selectedTab = index
+                selectedSubTab = 0
                 showSidebar = false
-            }
-            sidebarItem(icon: "checkmark.seal.fill", title: "Upload Certified Reports", active: selectedTab == 1) {
-                selectedTab = 1
-                showSidebar = false
-            }
-        }
-    }
+            }) {
+                HStack(spacing: 12) {
+                    Image(systemName: icon)
+                        .font(.system(size: 16))
+                        .foregroundColor(isMainActive ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
+                        .frame(width: 24)
 
-    private var scanCenterSidebarItems: some View {
-        Group {
-            sidebarItem(icon: "waveform.path.ecg.rectangle", title: "3.0T Radiology Hub", active: selectedTab == 0) {
-                selectedTab = 0
-                showSidebar = false
-            }
-        }
-    }
+                    Text(title)
+                        .font(.system(size: 14, weight: isMainActive ? .bold : .medium))
+                        .foregroundColor(isMainActive ? MedMargTheme.primaryTeal : MedMargTheme.slate900)
 
-    private var pharmacySidebarItems: some View {
-        Group {
-            sidebarItem(icon: "pills.fill", title: "Generic Chemist Desk", active: selectedTab == 0) {
-                selectedTab = 0
-                showSidebar = false
-            }
-        }
-    }
+                    Spacer()
 
-    private var agentSidebarItems: some View {
-        Group {
-            sidebarItem(icon: "car.fill", title: "Field Collection Roster", active: selectedTab == 0) {
-                selectedTab = 0
-                showSidebar = false
+                    if !subTabs.isEmpty {
+                        Image(systemName: isMainActive ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(isMainActive ? MedMargTheme.primaryTeal : MedMargTheme.slate500)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(isMainActive ? MedMargTheme.lightTeal : Color.clear)
+                .cornerRadius(8)
             }
-        }
-    }
 
-    private func sidebarItem(icon: String, title: String, active: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(active ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
-                    .frame(width: 24)
-                Text(title)
-                    .font(.system(size: 14, weight: active ? .bold : .medium))
-                    .foregroundColor(active ? MedMargTheme.primaryTeal : MedMargTheme.slate900)
-                Spacer()
+            // Render Inner Sub-Tabs if main tab is active
+            if isMainActive && !subTabs.isEmpty {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(subTabs, id: \.0) { sub in
+                        Button(action: {
+                            selectedTab = index
+                            selectedSubTab = sub.0
+                            showSidebar = false
+                        }) {
+                            HStack(spacing: 8) {
+                                Circle()
+                                    .fill(selectedSubTab == sub.0 ? MedMargTheme.primaryTeal : MedMargTheme.slate500)
+                                    .frame(width: 5, height: 5)
+                                Text(sub.1)
+                                    .font(.system(size: 12, weight: selectedSubTab == sub.0 ? .bold : .regular))
+                                    .foregroundColor(selectedSubTab == sub.0 ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
+                                Spacer()
+                            }
+                            .padding(.leading, 44)
+                            .padding(.vertical, 6)
+                        }
+                    }
+                }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-            .background(active ? MedMargTheme.lightTeal : Color.clear)
-            .cornerRadius(8)
         }
+        .padding(.horizontal, 4)
     }
 }
