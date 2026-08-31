@@ -104,6 +104,7 @@ struct ContentView: View {
     @State private var showSidebar: Bool = false
     @State private var showCityPicker: Bool = false
     @State private var showCartSheet: Bool = false
+    @State private var showNotificationCenter: Bool = false
     @State private var selectedCategory: String = "All Tests & Packages"
     @State private var searchQuery: String = ""
     @State private var cartItems: [CartItem] = [
@@ -125,6 +126,7 @@ struct ContentView: View {
                             showSidebar: $showSidebar,
                             showCityPicker: $showCityPicker,
                             showCartSheet: $showCartSheet,
+                            showNotificationCenter: $showNotificationCenter,
                             cartItemCount: cartItems.count
                         )
                         
@@ -149,7 +151,7 @@ struct ContentView: View {
                         }
 
                         // 3. Shared Dynamic Bottom Navigation Bar
-                        BottomNavbarView(selectedTab: $selectedTab, userRole: user.role)
+                        BottomNavbarView(selectedTab: $selectedTab, userRole: user.role, showSidebar: $showSidebar)
                     }
 
                     // 3. Slide-Out Sidebar Navigation Drawer
@@ -167,6 +169,9 @@ struct ContentView: View {
                 }
                 .sheet(isPresented: $showCartSheet) {
                     cartViewSheet
+                }
+                .sheet(isPresented: $showNotificationCenter) {
+                    NotificationCenterSheet(isPresented: $showNotificationCenter)
                 }
             } else {
                 // Clean Branded Login View

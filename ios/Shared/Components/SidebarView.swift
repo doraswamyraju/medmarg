@@ -16,24 +16,48 @@ struct SidebarView: View {
                 }
 
             VStack(alignment: .leading, spacing: 0) {
-                // User Profile Header
-                VStack(alignment: .leading, spacing: 12) {
+                // Brand Logo & User Profile Header
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 10) {
+                        Image("logo-icon")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 32, height: 32)
+                        
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("MedMarg")
+                                .font(.system(size: 18, weight: .black))
+                                .foregroundColor(MedMargTheme.primaryTeal)
+                            Text("HEALTH & DIAGNOSTICS")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate500)
+                        }
+
+                        Spacer()
+
+                        Button(action: { withAnimation { showSidebar = false } }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(MedMargTheme.slate500)
+                        }
+                    }
+
                     HStack(spacing: 12) {
                         ZStack {
                             Circle()
                                 .fill(MedMargTheme.primaryTeal)
-                                .frame(width: 50, height: 50)
+                                .frame(width: 44, height: 44)
                             Text(String(user.name.prefix(1)))
-                                .font(.system(size: 20, weight: .bold))
+                                .font(.system(size: 18, weight: .bold))
                                 .foregroundColor(.white)
                         }
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(user.name)
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(size: 15, weight: .bold))
                                 .foregroundColor(MedMargTheme.slate900)
                             Text(user.email)
-                                .font(.system(size: 12))
+                                .font(.system(size: 11))
                                 .foregroundColor(MedMargTheme.slate500)
                             
                             Text(user.role.displayName)
