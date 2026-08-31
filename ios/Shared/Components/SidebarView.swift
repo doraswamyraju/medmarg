@@ -4,7 +4,6 @@ struct SidebarView: View {
     let user: UserProfile
     @Binding var showSidebar: Bool
     @Binding var selectedTab: Int
-    let onSwitchRole: (UserRole) -> Void
     let onLogout: () -> Void
 
     var body: some View {
@@ -52,44 +51,30 @@ struct SidebarView: View {
                 .padding(20)
                 .background(MedMargTheme.slate50)
 
-                // Navigation Items List
+                // Role-Specific Navigation Menu Items
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("QUICK NAVIGATION")
+                        Text("WORKSPACE MODULES")
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(MedMargTheme.slate500)
                             .padding(.horizontal, 20)
                             .padding(.top, 12)
 
-                        sidebarItem(icon: "house.fill", title: "Home Dashboard", active: selectedTab == 0) {
-                            selectedTab = 0
-                            showSidebar = false
-                        }
-                        sidebarItem(icon: "flask.fill", title: "Labs & Pathology Catalog", active: selectedTab == 1) {
-                            selectedTab = 1
-                            showSidebar = false
-                        }
-                        sidebarItem(icon: "location.fill.viewfinder", title: "Live Phlebotomist Tracker", active: selectedTab == 2) {
-                            selectedTab = 2
-                            showSidebar = false
-                        }
-                        sidebarItem(icon: "doc.text.fill", title: "Prescriptions & Records", active: selectedTab == 3) {
-                            selectedTab = 3
-                            showSidebar = false
-                        }
-
-                        Divider().padding(.vertical, 8)
-
-                        Text("ROLE SWITCHER (DEMO)")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(MedMargTheme.slate500)
-                            .padding(.horizontal, 20)
-
-                        ForEach(UserRole.allCases) { role in
-                            sidebarItem(icon: role.iconName, title: role.displayName, active: user.role == role) {
-                                onSwitchRole(role)
-                                showSidebar = false
-                            }
+                        switch user.role {
+                        case .admin:
+                            adminSidebarItems
+                        case .patient:
+                            patientSidebarItems
+                        case .doctor:
+                            doctorSidebarItems
+                        case .diagnosticLab:
+                            labSidebarItems
+                        case .scanCenter:
+                            scanCenterSidebarItems
+                        case .pharmacy:
+                            pharmacySidebarItems
+                        case .collectionAgent:
+                            agentSidebarItems
                         }
                     }
                     .padding(.vertical, 8)
@@ -118,6 +103,106 @@ struct SidebarView: View {
             .background(MedMargTheme.pureWhite)
             .shadow(color: Color.black.opacity(0.2), radius: 10, x: 5, y: 0)
             .transition(.move(edge: .leading))
+        }
+    }
+
+    // Role Specific Sidebar Content
+    private var adminSidebarItems: some View {
+        Group {
+            sidebarItem(icon: "chart.bar.fill", title: "System Overview", active: selectedTab == 0) {
+                selectedTab = 0
+                showSidebar = false
+            }
+            sidebarItem(icon: "person.2.fill", title: "Users & Access Control", active: selectedTab == 1) {
+                selectedTab = 1
+                showSidebar = false
+            }
+            sidebarItem(icon: "flask.fill", title: "Tests & Pricing Catalog", active: selectedTab == 2) {
+                selectedTab = 2
+                showSidebar = false
+            }
+            sidebarItem(icon: "building.2.fill", title: "Partner NABL Labs", active: selectedTab == 3) {
+                selectedTab = 3
+                showSidebar = false
+            }
+            sidebarItem(icon: "car.fill", title: "Fleet & Cold-Chain IOT", active: selectedTab == 4) {
+                selectedTab = 4
+                showSidebar = false
+            }
+        }
+    }
+
+    private var patientSidebarItems: some View {
+        Group {
+            sidebarItem(icon: "house.fill", title: "Home Dashboard", active: selectedTab == 0) {
+                selectedTab = 0
+                showSidebar = false
+            }
+            sidebarItem(icon: "flask.fill", title: "Labs & Pathology Catalog", active: selectedTab == 1) {
+                selectedTab = 1
+                showSidebar = false
+            }
+            sidebarItem(icon: "location.fill.viewfinder", title: "Live Phlebotomist Tracker", active: selectedTab == 2) {
+                selectedTab = 2
+                showSidebar = false
+            }
+            sidebarItem(icon: "doc.text.fill", title: "Prescriptions & Records", active: selectedTab == 3) {
+                selectedTab = 3
+                showSidebar = false
+            }
+        }
+    }
+
+    private var doctorSidebarItems: some View {
+        Group {
+            sidebarItem(icon: "stethoscope", title: "OPD Workdesk & Queue", active: selectedTab == 0) {
+                selectedTab = 0
+                showSidebar = false
+            }
+            sidebarItem(icon: "doc.badge.plus", title: "E-Prescriptions", active: selectedTab == 1) {
+                selectedTab = 1
+                showSidebar = false
+            }
+        }
+    }
+
+    private var labSidebarItems: some View {
+        Group {
+            sidebarItem(icon: "flask.fill", title: "Lab Processing Queue", active: selectedTab == 0) {
+                selectedTab = 0
+                showSidebar = false
+            }
+            sidebarItem(icon: "checkmark.seal.fill", title: "Upload Certified Reports", active: selectedTab == 1) {
+                selectedTab = 1
+                showSidebar = false
+            }
+        }
+    }
+
+    private var scanCenterSidebarItems: some View {
+        Group {
+            sidebarItem(icon: "waveform.path.ecg.rectangle", title: "3.0T Radiology Hub", active: selectedTab == 0) {
+                selectedTab = 0
+                showSidebar = false
+            }
+        }
+    }
+
+    private var pharmacySidebarItems: some View {
+        Group {
+            sidebarItem(icon: "pills.fill", title: "Generic Chemist Desk", active: selectedTab == 0) {
+                selectedTab = 0
+                showSidebar = false
+            }
+        }
+    }
+
+    private var agentSidebarItems: some View {
+        Group {
+            sidebarItem(icon: "car.fill", title: "Field Collection Roster", active: selectedTab == 0) {
+                selectedTab = 0
+                showSidebar = false
+            }
         }
     }
 
