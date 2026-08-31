@@ -147,6 +147,39 @@ struct CartItem: Identifiable, Equatable {
     let type: String // Lab Test / MRI Scan / Medicine
 }
 
+struct LabPartner: Identifiable, Equatable {
+    let id: String
+    let name: String
+    let type: String
+    let city: String
+    let nabl: String
+    var status: String
+    var margin: String
+    let testsCount: Int
+}
+
+struct LabRequest: Identifiable, Equatable {
+    let id: String
+    let name: String
+    let applicant: String
+    let city: String
+    let license: String
+    let phone: String
+    let testsOffered: Int
+    let date: String
+}
+
+struct FleetAgentStatus: Identifiable, Equatable {
+    let id: String
+    let name: String
+    let phone: String
+    let area: String
+    let samplesToday: Int
+    let temp: String
+    let battery: String
+    var status: String
+}
+
 // ==========================================
 // 📍 OFFICIAL WEB MODULE CATEGORIES & TESTS
 // ==========================================
