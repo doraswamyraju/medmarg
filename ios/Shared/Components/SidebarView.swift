@@ -7,6 +7,9 @@ struct SidebarView: View {
     @Binding var selectedSubTab: Int
     let onLogout: () -> Void
 
+    // Accordion State to toggle expand/collapse of main tabs
+    @State private var expandedTabs: Set<Int> = [0]
+
     var body: some View {
         ZStack(alignment: .leading) {
             // Dark Backdrop Overlay
@@ -17,13 +20,13 @@ struct SidebarView: View {
                 }
 
             VStack(alignment: .leading, spacing: 0) {
-                // Header: Horizontal MedMarg Logo, Super Admin Title & Email
+                // Header: Horizontal MedMarg Logo & User Info
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .center, spacing: 10) {
                         Image("logo")
                             .resizable()
                             .scaledToFit()
-                            .frame(height: 34)
+                            .frame(height: 32)
 
                         Spacer()
 
@@ -49,19 +52,19 @@ struct SidebarView: View {
                 .padding(18)
                 .background(MedMargTheme.slate50)
 
-                // Sidebar Navigation Tabs with Inner Sub-Tabs
+                // Sidebar Navigation Tabs with Accordion Show/Hide Inner Options
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("WORKSPACE MODULES")
+                        Text("SUPER ADMIN MODULES")
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(MedMargTheme.slate500)
                             .padding(.horizontal, 20)
                             .padding(.top, 12)
 
                         if user.role == .admin {
-                            adminSidebarModules
+                            adminAccordionModules
                         } else {
-                            patientSidebarModules
+                            patientAccordionModules
                         }
                     }
                     .padding(.vertical, 8)
@@ -94,93 +97,165 @@ struct SidebarView: View {
         }
     }
 
-    // Super Admin Expandable Modules with Inner Sub-Tabs
-    private var adminSidebarModules: some View {
+    // 8 Exact Accordion Main Modules for Super Admin
+    private var adminAccordionModules: some View {
         Group {
-            // Module 0: Overview
-            sidebarMainTab(index: 0, icon: "chart.bar.fill", title: "System Overview", subTabs: [
-                (0, "Live Metrics"),
-                (1, "Telemetry Feed"),
-                (2, "Activity Logs")
-            ])
+            // 0. Overview
+            accordionTab(
+                index: 0,
+                icon: "chart.bar.fill",
+                title: "Overview",
+                subTabs: [
+                    (0, "Live Metrics"),
+                    (1, "Telemetry Feed"),
+                    (2, "Activity Logs")
+                ]
+            )
 
-            // Module 1: Users & Access
-            sidebarMainTab(index: 1, icon: "person.2.fill", title: "Users & Access Control", subTabs: [
-                (0, "All System Users"),
-                (1, "Doctor Accounts"),
-                (2, "Diagnostic Labs"),
-                (3, "Phlebotomists")
-            ])
+            // 1. Tests
+            accordionTab(
+                index: 1,
+                icon: "flask.fill",
+                title: "Tests",
+                subTabs: [
+                    (0, "Diagnostic Tests"),
+                    (1, "Full Body Packages"),
+                    (2, "Category Manager")
+                ]
+            )
 
-            // Module 2: Tests & Catalog
-            sidebarMainTab(index: 2, icon: "flask.fill", title: "Tests & Rates Catalog", subTabs: [
-                (0, "Diagnostic Tests"),
-                (1, "Full Body Packages"),
-                (2, "Categories Manager")
-            ])
+            // 2. Labs
+            accordionTab(
+                index: 2,
+                icon: "building.2.fill",
+                title: "Labs",
+                subTabs: [
+                    (0, "Active Accredited Labs"),
+                    (1, "Onboarding Requests"),
+                    (2, "Quality NABL")
+                ]
+            )
 
-            // Module 3: Partner Labs
-            sidebarMainTab(index: 3, icon: "building.2.fill", title: "Partner NABL Labs", subTabs: [
-                (0, "Active Accredited Labs"),
-                (1, "Onboarding Requests"),
-                (2, "Commission Margins")
-            ])
+            // 3. Hospitals
+            accordionTab(
+                index: 3,
+                icon: "cross.case.fill",
+                title: "Hospitals",
+                subTabs: [
+                    (0, "Partner Hospitals"),
+                    (1, "OPD Token Desk"),
+                    (2, "Radiology Hubs")
+                ]
+            )
 
-            // Module 4: Fleet & Cold-Chain
-            sidebarMainTab(index: 4, icon: "car.fill", title: "Fleet & Cold-Chain IOT", subTabs: [
-                (0, "Phlebotomist Roster"),
-                (1, "IOT Temperature Telemetry"),
-                (2, "Sample Dispatches")
-            ])
+            // 4. Pharmacies
+            accordionTab(
+                index: 4,
+                icon: "pills.fill",
+                title: "Pharmacies",
+                subTabs: [
+                    (0, "Generic Chemist Stores"),
+                    (1, "Medicine Inventory"),
+                    (2, "Prescription Orders")
+                ]
+            )
+
+            // 5. Agents
+            accordionTab(
+                index: 5,
+                icon: "car.fill",
+                title: "Agents",
+                subTabs: [
+                    (0, "Phlebotomist Roster"),
+                    (1, "Cold-Chain Telemetry"),
+                    (2, "Agent Onboarding")
+                ]
+            )
+
+            // 6. Inventory
+            accordionTab(
+                index: 6,
+                icon: "box.truck.fill",
+                title: "Inventory",
+                subTabs: [
+                    (0, "Stock Overview"),
+                    (1, "Agent Supplies Dispatch"),
+                    (2, "Purchase Orders")
+                ]
+            )
+
+            // 7. Users
+            accordionTab(
+                index: 7,
+                icon: "person.2.fill",
+                title: "Users",
+                subTabs: [
+                    (0, "All System Users"),
+                    (1, "Doctor Accounts"),
+                    (2, "Diagnostic Labs"),
+                    (3, "Phlebotomists"),
+                    (4, "Patients")
+                ]
+            )
         }
     }
 
-    private var patientSidebarModules: some View {
+    private var patientAccordionModules: some View {
         Group {
-            sidebarMainTab(index: 0, icon: "house.fill", title: "Home Dashboard", subTabs: [])
-            sidebarMainTab(index: 1, icon: "flask.fill", title: "Labs & Pathology Catalog", subTabs: [])
-            sidebarMainTab(index: 2, icon: "location.fill.viewfinder", title: "Live Phlebotomist Tracker", subTabs: [])
-            sidebarMainTab(index: 3, icon: "doc.text.fill", title: "Prescriptions & Records", subTabs: [])
+            accordionTab(index: 0, icon: "house.fill", title: "Home Dashboard", subTabs: [])
+            accordionTab(index: 1, icon: "flask.fill", title: "Labs & Pathology Catalog", subTabs: [])
+            accordionTab(index: 2, icon: "location.fill.viewfinder", title: "Live Phlebotomist Tracker", subTabs: [])
+            accordionTab(index: 3, icon: "doc.text.fill", title: "Prescriptions & Records", subTabs: [])
         }
     }
 
-    private func sidebarMainTab(index: Int, icon: String, title: String, subTabs: [(Int, String)]) -> some View {
-        let isMainActive = selectedTab == index
+    private func accordionTab(index: Int, icon: String, title: String, subTabs: [(Int, String)]) -> some View {
+        let isMainSelected = selectedTab == index
+        let isExpanded = expandedTabs.contains(index)
 
         return VStack(alignment: .leading, spacing: 2) {
+            // Main Tab Row -> Click to expand/collapse inner options
             Button(action: {
-                selectedTab = index
-                selectedSubTab = 0
-                showSidebar = false
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    if isExpanded {
+                        expandedTabs.remove(index)
+                    } else {
+                        expandedTabs.insert(index)
+                    }
+                    selectedTab = index
+                    selectedSubTab = 0
+                }
             }) {
                 HStack(spacing: 12) {
                     Image(systemName: icon)
                         .font(.system(size: 16))
-                        .foregroundColor(isMainActive ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
+                        .foregroundColor(isMainSelected ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
                         .frame(width: 24)
 
                     Text(title)
-                        .font(.system(size: 14, weight: isMainActive ? .bold : .medium))
-                        .foregroundColor(isMainActive ? MedMargTheme.primaryTeal : MedMargTheme.slate900)
+                        .font(.system(size: 14, weight: isMainSelected ? .bold : .medium))
+                        .foregroundColor(isMainSelected ? MedMargTheme.primaryTeal : MedMargTheme.slate900)
 
                     Spacer()
 
                     if !subTabs.isEmpty {
-                        Image(systemName: isMainActive ? "chevron.down" : "chevron.right")
+                        Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(isMainActive ? MedMargTheme.primaryTeal : MedMargTheme.slate500)
+                            .foregroundColor(isMainSelected ? MedMargTheme.primaryTeal : MedMargTheme.slate500)
                     }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .background(isMainActive ? MedMargTheme.lightTeal : Color.clear)
+                .background(isMainSelected ? MedMargTheme.lightTeal : Color.clear)
                 .cornerRadius(8)
             }
 
-            // Render Inner Sub-Tabs if main tab is active
-            if isMainActive && !subTabs.isEmpty {
+            // Inner Options list -> Shown when expanded
+            if isExpanded && !subTabs.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
                     ForEach(subTabs, id: \.0) { sub in
+                        let isSubSelected = isMainSelected && selectedSubTab == sub.0
+
                         Button(action: {
                             selectedTab = index
                             selectedSubTab = sub.0
@@ -188,11 +263,13 @@ struct SidebarView: View {
                         }) {
                             HStack(spacing: 8) {
                                 Circle()
-                                    .fill(selectedSubTab == sub.0 ? MedMargTheme.primaryTeal : MedMargTheme.slate500)
+                                    .fill(isSubSelected ? MedMargTheme.primaryTeal : MedMargTheme.slate500)
                                     .frame(width: 5, height: 5)
+
                                 Text(sub.1)
-                                    .font(.system(size: 12, weight: selectedSubTab == sub.0 ? .bold : .regular))
-                                    .foregroundColor(selectedSubTab == sub.0 ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
+                                    .font(.system(size: 12, weight: isSubSelected ? .bold : .regular))
+                                    .foregroundColor(isSubSelected ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
+
                                 Spacer()
                             }
                             .padding(.leading, 44)
@@ -200,6 +277,7 @@ struct SidebarView: View {
                         }
                     }
                 }
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .padding(.horizontal, 4)
