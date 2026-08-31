@@ -136,7 +136,7 @@ struct ContentView: View {
                             case .doctor:
                                 DoctorWorkdeskView(user: user, onLogout: logout)
                             case .admin:
-                                AdminConsoleView(users: $users, onLogout: logout)
+                                AdminConsoleView(users: $users, onLogout: logout, activeTab: $selectedTab)
                             case .diagnosticLab:
                                 LabDeskView(user: user, onLogout: logout)
                             case .scanCenter:
@@ -147,6 +147,9 @@ struct ContentView: View {
                                 FleetDeskView(user: user, onLogout: logout)
                             }
                         }
+
+                        // 3. Shared Dynamic Bottom Navigation Bar
+                        BottomNavbarView(selectedTab: $selectedTab, userRole: user.role)
                     }
 
                     // 3. Slide-Out Sidebar Navigation Drawer
@@ -633,25 +636,19 @@ struct ContentView: View {
     // 📱 PATIENT BODY VIEW & REDESIGNED NAVBAR
     // ==========================================
     private var patientBodyView: some View {
-        VStack(spacing: 0) {
-            // Main Tab Content
-            Group {
-                switch selectedTab {
-                case 0:
-                    patientHomeTab
-                case 1:
-                    patientLabsCatalogTab
-                case 2:
-                    patientLiveTrackTab
-                case 3:
-                    patientDocsAndProfileTab
-                default:
-                    patientHomeTab
-                }
+        Group {
+            switch selectedTab {
+            case 0:
+                patientHomeTab
+            case 1:
+                patientLabsCatalogTab
+            case 2:
+                patientLiveTrackTab
+            case 3:
+                patientDocsAndProfileTab
+            default:
+                patientHomeTab
             }
-
-            // Modular Bottom Navigation Bar
-            BottomNavbarView(selectedTab: $selectedTab)
         }
     }
 
