@@ -8,7 +8,7 @@ struct SidebarView: View {
     let onLogout: () -> Void
 
     // Accordion State to toggle expand/collapse of main tabs
-    @State private var expandedTabs: Set<Int> = [0]
+    @State private var expandedTabs: Set<Int> = []
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -20,7 +20,7 @@ struct SidebarView: View {
                 }
 
             VStack(alignment: .leading, spacing: 0) {
-                // Header: Horizontal MedMarg Logo & User Info
+                // Header: Horizontal MedMarg Logo & User Info (Pure White Background for Seamless Logo)
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .center, spacing: 10) {
                         Image("logo")
@@ -50,7 +50,7 @@ struct SidebarView: View {
                     Divider()
                 }
                 .padding(18)
-                .background(MedMargTheme.slate50)
+                .background(MedMargTheme.pureWhite) // Pure white background matches logo asset seamlessly (no white patch artifact)
 
                 // Sidebar Navigation Tabs with Accordion Show/Hide Inner Options
                 ScrollView(showsIndicators: false) {
@@ -111,7 +111,7 @@ struct SidebarView: View {
                     }
                 }
                 .padding(16)
-                .background(MedMargTheme.slate50)
+                .background(MedMargTheme.pureWhite)
                 .overlay(
                     Rectangle()
                         .frame(height: 1)
@@ -123,6 +123,10 @@ struct SidebarView: View {
             .background(MedMargTheme.pureWhite)
             .shadow(color: Color.black.opacity(0.2), radius: 10, x: 5, y: 0)
             .transition(.move(edge: .leading))
+            .onAppear {
+                // Expand active tab by default when sidebar opens
+                expandedTabs.insert(selectedTab)
+            }
         }
     }
 
