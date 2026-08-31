@@ -6,6 +6,7 @@ struct TopbarView: View {
     @Binding var showSidebar: Bool
     @Binding var showCityPicker: Bool
     @Binding var showCartSheet: Bool
+    @Binding var showNotificationCenter: Bool
     let cartItemCount: Int
 
     var body: some View {
@@ -22,19 +23,26 @@ struct TopbarView: View {
 
             // 2. Role-Specific Header Contents
             if user.role == .admin {
-                // SUPER ADMIN TOPBAR HEADER
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "shield.fill")
-                            .font(.system(size: 13))
-                            .foregroundColor(MedMargTheme.primaryTeal)
-                        Text("MedMarg Super Admin")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(MedMargTheme.slate900)
+                // SUPER ADMIN TOPBAR HEADER WITH OFFICIAL BRANDING LOGO
+                HStack(spacing: 8) {
+                    Image("logo-icon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 28, height: 28)
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        HStack(spacing: 4) {
+                            Text("MedMarg")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(MedMargTheme.primaryTeal)
+                            Text("Super Admin")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate900)
+                        }
+                        Text("Central Control & Telemetry")
+                            .font(.system(size: 10))
+                            .foregroundColor(MedMargTheme.slate500)
                     }
-                    Text("Central Control • Multi-Lab & Telemetry")
-                        .font(.system(size: 10))
-                        .foregroundColor(MedMargTheme.slate500)
                 }
 
                 Spacer()
@@ -53,8 +61,8 @@ struct TopbarView: View {
                 .background(MedMargTheme.lightTeal)
                 .cornerRadius(12)
 
-                // Notification Bell
-                Button(action: {}) {
+                // Notification Bell connected to Bottom Sheet Notification Center
+                Button(action: { showNotificationCenter = true }) {
                     ZStack(alignment: .topTrailing) {
                         Image(systemName: "bell.fill")
                             .font(.system(size: 16))
@@ -82,24 +90,31 @@ struct TopbarView: View {
                     }
                 }
             } else if user.role == .patient {
-                // PATIENT / CUSTOMER TOPBAR HEADER
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Serving in")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(MedMargTheme.slate500)
+                // PATIENT / CUSTOMER TOPBAR HEADER WITH LOGO
+                HStack(spacing: 6) {
+                    Image("logo-icon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
 
-                    Button(action: { showCityPicker = true }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "location.fill")
-                                .font(.system(size: 11))
-                                .foregroundColor(MedMargTheme.primaryTeal)
-                            Text(currentCity)
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(MedMargTheme.slate900)
-                                .lineLimit(1)
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(MedMargTheme.primaryTeal)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Serving in")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(MedMargTheme.slate500)
+
+                        Button(action: { showCityPicker = true }) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "location.fill")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(MedMargTheme.primaryTeal)
+                                Text(currentCity)
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(MedMargTheme.slate900)
+                                    .lineLimit(1)
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(MedMargTheme.primaryTeal)
+                            }
                         }
                     }
                 }
@@ -128,6 +143,18 @@ struct TopbarView: View {
                     }
                 }
 
+                // Notification Bell
+                Button(action: { showNotificationCenter = true }) {
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "bell.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(MedMargTheme.slate700)
+                            .padding(8)
+                            .background(MedMargTheme.slate50)
+                            .cornerRadius(10)
+                    }
+                }
+
                 // User Profile Avatar Circle
                 Button(action: { withAnimation { showSidebar.toggle() } }) {
                     ZStack {
@@ -140,17 +167,36 @@ struct TopbarView: View {
                     }
                 }
             } else {
-                // PROVIDER / PARTNER WORKSPACE TOPBAR HEADER
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(user.organization)
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(MedMargTheme.slate900)
-                    Text(user.role.displayName)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(MedMargTheme.primaryTeal)
+                // PROVIDER / PARTNER WORKSPACE TOPBAR HEADER WITH LOGO
+                HStack(spacing: 8) {
+                    Image("logo-icon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 26, height: 26)
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(user.organization)
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(MedMargTheme.slate900)
+                        Text(user.role.displayName)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                    }
                 }
 
                 Spacer()
+
+                // Notification Bell
+                Button(action: { showNotificationCenter = true }) {
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "bell.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(MedMargTheme.slate700)
+                            .padding(8)
+                            .background(MedMargTheme.slate50)
+                            .cornerRadius(10)
+                    }
+                }
 
                 Button(action: { withAnimation { showSidebar.toggle() } }) {
                     ZStack {
