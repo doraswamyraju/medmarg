@@ -109,13 +109,13 @@ struct AdminConsoleView: View {
                     case 2:
                         AdminLabsView(labPartners: $labPartners, pendingLabRequests: $pendingLabRequests)
                     case 3:
-                        hospitalsModuleSection
+                        AdminHospitalsView()
                     case 4:
-                        pharmaciesModuleSection
+                        AdminPharmaciesView()
                     case 5:
                         AdminFleetView(fleetAgents: $fleetAgents)
                     case 6:
-                        inventoryModuleSection
+                        AdminInventoryView()
                     case 7:
                         AdminUsersView(users: $users, showAddUserSheet: $showAddUserSheet)
                     default:
@@ -130,73 +130,6 @@ struct AdminConsoleView: View {
         }
         .sheet(isPresented: $showAddTestSheet) {
             addTestSheet
-        }
-    }
-
-    // Helper Sections for Hospitals, Pharmacies & Inventory
-    private var hospitalsModuleSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text("Partner Hospital Hubs & OPD Consoles")
-                    .font(.system(size: 15, weight: .bold))
-                Spacer()
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("SVIMS Super Specialty Hospital")
-                    .font(.system(size: 14, weight: .bold))
-                Text("Alipiri Rd, Tirupati • OPD Token Desk Active")
-                    .font(.system(size: 11))
-                    .foregroundColor(MedMargTheme.slate500)
-            }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(MedMargTheme.pureWhite)
-            .cornerRadius(12)
-        }
-    }
-
-    private var pharmaciesModuleSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text("Generic Chemist & Pharmacy Outlets")
-                    .font(.system(size: 15, weight: .bold))
-                Spacer()
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("MedMarg Generic Chemist Hub")
-                    .font(.system(size: 14, weight: .bold))
-                Text("Air Bypass Rd, Tirupati • Prescription Fulfillment Active")
-                    .font(.system(size: 11))
-                    .foregroundColor(MedMargTheme.slate500)
-            }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(MedMargTheme.pureWhite)
-            .cornerRadius(12)
-        }
-    }
-
-    private var inventoryModuleSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                Text("Medical Inventory & Phlebotomist Supplies")
-                    .font(.system(size: 15, weight: .bold))
-                Spacer()
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("BD Vacutainer EDTA K2 Tubes (Purple)")
-                    .font(.system(size: 14, weight: .bold))
-                Text("Current Qty: 1,450 Tubes • Minimum Threshold: 300")
-                    .font(.system(size: 11))
-                    .foregroundColor(MedMargTheme.slate500)
-            }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(MedMargTheme.pureWhite)
-            .cornerRadius(12)
         }
     }
 

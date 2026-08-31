@@ -107,6 +107,7 @@ struct ContentView: View {
     @State private var showCartSheet: Bool = false
     @State private var showNotificationCenter: Bool = false
     @State private var showBottomSheetMenu: Bool = false
+    @State private var showQuickCreateSheet: Bool = false
     @State private var selectedCategory: String = "All Tests & Packages"
     @State private var searchQuery: String = ""
     @State private var cartItems: [CartItem] = [
@@ -154,7 +155,12 @@ struct ContentView: View {
                         }
 
                         // 3. Shared Dynamic Bottom Navigation Bar
-                        BottomNavbarView(selectedTab: $selectedTab, userRole: user.role, showBottomSheetMenu: $showBottomSheetMenu)
+                        BottomNavbarView(
+                            selectedTab: $selectedTab,
+                            userRole: user.role,
+                            showBottomSheetMenu: $showBottomSheetMenu,
+                            showQuickCreateSheet: $showQuickCreateSheet
+                        )
                     }
 
                     // 3. Slide-Out Sidebar Navigation Drawer
@@ -184,6 +190,13 @@ struct ContentView: View {
                         selectedTab: $selectedTab,
                         selectedSubTab: $selectedSubTab,
                         onLogout: logout
+                    )
+                }
+                .sheet(isPresented: $showQuickCreateSheet) {
+                    QuickCreateSheet(
+                        isPresented: $showQuickCreateSheet,
+                        selectedTab: $selectedTab,
+                        selectedSubTab: $selectedSubTab
                     )
                 }
             } else {
