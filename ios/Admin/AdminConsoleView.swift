@@ -5,6 +5,7 @@ struct AdminConsoleView: View {
     let onLogout: () -> Void
 
     @Binding var activeTab: Int // 0: Overview, 1: Users & Access, 2: Tests & Catalog, 3: Partner Labs, 4: Fleet & Cold-Chain
+    @Binding var activeSubTab: Int
 
     // Dynamic State for Tests, Labs & Fleet
     @State private var testsList: [LabTestItem] = WEB_THYROCARE_TESTS
@@ -50,19 +51,49 @@ struct AdminConsoleView: View {
     var body: some View {
         VStack(spacing: 0) {
 
-            // Sub-Tab Selector Pills
+            // Main Module Tab Pills (Row 1)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    adminSubTabPill(index: 0, title: "Overview", icon: "chart.bar.fill")
-                    adminSubTabPill(index: 1, title: "Users & Access (\(users.count))", icon: "person.2.fill")
-                    adminSubTabPill(index: 2, title: "Tests & Catalog (\(testsList.count))", icon: "flask.fill")
-                    adminSubTabPill(index: 3, title: "Partner Labs (\(labPartners.count))", icon: "building.2.fill")
-                    adminSubTabPill(index: 4, title: "Fleet & Cold-Chain", icon: "car.fill")
+                    adminMainTabPill(index: 0, title: "Overview", icon: "chart.bar.fill")
+                    adminMainTabPill(index: 1, title: "Users & Access (\(users.count))", icon: "person.2.fill")
+                    adminMainTabPill(index: 2, title: "Tests & Catalog (\(testsList.count))", icon: "flask.fill")
+                    adminMainTabPill(index: 3, title: "Partner Labs (\(labPartners.count))", icon: "building.2.fill")
+                    adminMainTabPill(index: 4, title: "Fleet & Cold-Chain", icon: "car.fill")
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.vertical, 8)
             }
             .background(MedMargTheme.slate50)
+
+            // Inner Sub-Tab Pills (Row 2)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(innerSubTabsFor(mainTab: activeTab), id: \.0) { sub in
+                        Button(action: { activeSubTab = sub.0 }) {
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(activeSubTab == sub.0 ? MedMargTheme.primaryTeal : MedMargTheme.slate500)
+                                    .frame(width: 5, height: 5)
+                                Text(sub.1)
+                                    .font(.system(size: 11, weight: activeSubTab == sub.0 ? .bold : .medium))
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 5)
+                            .background(activeSubTab == sub.0 ? MedMargTheme.lightTeal : MedMargTheme.pureWhite)
+                            .foregroundColor(activeSubTab == sub.0 ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
+                            .cornerRadius(14)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(activeSubTab == sub.0 ? MedMargTheme.primaryTeal.opacity(0.4) : MedMargTheme.slate200, lineWidth: 1)
+                            )
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 6)
+            }
+            .background(MedMargTheme.pureWhite)
+            .shadow(color: Color.black.opacity(0.02), radius: 2, x: 0, y: 1)
 
             // Active Tab Content
             ScrollView(showsIndicators: false) {
@@ -93,8 +124,11 @@ struct AdminConsoleView: View {
         }
     }
 
-    private func adminSubTabPill(index: Int, title: String, icon: String) -> some View {
-        Button(action: { activeTab = index }) {
+    private func adminMainTabPill(index: Int, title: String, icon: String) -> some View {
+        Button(action: {
+            activeTab = index
+            activeSubTab = 0
+        }) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
                     .font(.system(size: 12))
@@ -107,6 +141,23 @@ struct AdminConsoleView: View {
             .foregroundColor(activeTab == index ? .white : MedMargTheme.slate700)
             .cornerRadius(20)
             .shadow(color: Color.black.opacity(0.02), radius: 3, x: 0, y: 1)
+        }
+    }
+
+    private func innerSubTabsFor(mainTab: Int) -> [(Int, String)] {
+        switch mainTab {
+        case 0:
+            return [(0, "Live Metrics"), (1, "Telemetry Feed"), (2, "Activity Logs")]
+        case 1:
+            return [(0, "All System Users"), (1, "Doctor Accounts"), (2, "Diagnostic Labs"), (3, "Phlebotomists")]
+        case 2:
+            return [(0, "Diagnostic Tests"), (1, "Full Body Packages"), (2, "Categories Manager")]
+        case 3:
+            return [(0, "Active Accredited Labs"), (1, "Onboarding Requests"), (2, "Commission Margins")]
+        case 4:
+            return [(0, "Phlebotomist Roster"), (1, "IOT Temperature Telemetry"), (2, "Sample Dispatches")]
+        default:
+            return []
         }
     }
 

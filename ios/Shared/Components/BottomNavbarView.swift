@@ -3,14 +3,14 @@ import SwiftUI
 struct BottomNavbarView: View {
     @Binding var selectedTab: Int
     let userRole: UserRole
-    @Binding var showSidebar: Bool
+    @Binding var showBottomSheetMenu: Bool
 
     var body: some View {
         VStack(spacing: 4) {
-            // Drag Handle Bar for Swipe Up Gesture
+            // Drag Handle Bar to Open Dedicated Bottom Sheet Menu
             Button(action: {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    showSidebar.toggle()
+                    showBottomSheetMenu = true
                 }
             }) {
                 HStack(spacing: 4) {
@@ -111,9 +111,9 @@ struct BottomNavbarView: View {
             DragGesture(minimumDistance: 15, coordinateSpace: .local)
                 .onEnded { value in
                     if value.translation.height < -20 {
-                        // Swipe Up detected -> open sidebar menu bottom sheet
+                        // Swipe Up detected -> open dedicated bottom sheet menu
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            showSidebar = true
+                            showBottomSheetMenu = true
                         }
                     }
                 }

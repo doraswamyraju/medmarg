@@ -17,9 +17,10 @@
 		B2000008 /* MedMargApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000008 /* MedMargApp.swift */; };
 		B2000009 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000009 /* Models.swift */; };
 		B2000010 /* BottomNavbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000010 /* BottomNavbarView.swift */; };
-		B2000011 /* NotificationCenterSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000011 /* NotificationCenterSheet.swift */; };
-		B2000012 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000012 /* SidebarView.swift */; };
-		B2000013 /* TopbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000013 /* TopbarView.swift */; };
+		B2000011 /* BottomSheetMenuView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000011 /* BottomSheetMenuView.swift */; };
+		B2000012 /* NotificationCenterSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000012 /* NotificationCenterSheet.swift */; };
+		B2000013 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000013 /* SidebarView.swift */; };
+		B2000014 /* TopbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000014 /* TopbarView.swift */; };
 		B1000004 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1000004 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -35,9 +36,10 @@
 		F2000008 /* MedMargApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MedMargApp.swift"; sourceTree = "<group>"; };
 		F2000009 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models.swift"; sourceTree = "<group>"; };
 		F2000010 /* BottomNavbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/BottomNavbarView.swift"; sourceTree = "<group>"; };
-		F2000011 /* NotificationCenterSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/NotificationCenterSheet.swift"; sourceTree = "<group>"; };
-		F2000012 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/SidebarView.swift"; sourceTree = "<group>"; };
-		F2000013 /* TopbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/TopbarView.swift"; sourceTree = "<group>"; };
+		F2000011 /* BottomSheetMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/BottomSheetMenuView.swift"; sourceTree = "<group>"; };
+		F2000012 /* NotificationCenterSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/NotificationCenterSheet.swift"; sourceTree = "<group>"; };
+		F2000013 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/SidebarView.swift"; sourceTree = "<group>"; };
+		F2000014 /* TopbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/TopbarView.swift"; sourceTree = "<group>"; };
 		F1000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -65,9 +67,10 @@
 				F2000008 /* MedMargApp.swift */,
 				F2000009 /* Models.swift */,
 				F2000010 /* BottomNavbarView.swift */,
-				F2000011 /* NotificationCenterSheet.swift */,
-				F2000012 /* SidebarView.swift */,
-				F2000013 /* TopbarView.swift */,
+				F2000011 /* BottomSheetMenuView.swift */,
+				F2000012 /* NotificationCenterSheet.swift */,
+				F2000013 /* SidebarView.swift */,
+				F2000014 /* TopbarView.swift */,
 				F1000004 /* Assets.xcassets */,
 				P1000000 /* MedMarg.app */,
 			);
@@ -153,9 +156,10 @@
 				B2000008 /* MedMargApp.swift in Sources */,
 				B2000009 /* Models.swift in Sources */,
 				B2000010 /* BottomNavbarView.swift in Sources */,
-				B2000011 /* NotificationCenterSheet.swift in Sources */,
-				B2000012 /* SidebarView.swift in Sources */,
-				B2000013 /* TopbarView.swift in Sources */,
+				B2000011 /* BottomSheetMenuView.swift in Sources */,
+				B2000012 /* NotificationCenterSheet.swift in Sources */,
+				B2000013 /* SidebarView.swift in Sources */,
+				B2000014 /* TopbarView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
