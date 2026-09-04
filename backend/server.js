@@ -2,7 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const { uploadFileToGoogleDrive } = require('./services/googleDriveService');
+const { fetchCatalogFromGoogleSheet, appendTestToSheet, appendProfileToSheet } = require('./services/googleSheetsService');
 
 const app = express();
 
@@ -16,11 +18,55 @@ app.use(express.json());
 // In-memory multer storage for streaming directly to Google Drive
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Health Check
+// -------------------------------------------------------------
+// MASTER CATALOG DATA STORE (TESTS, PROFILES & PACKAGES)
+// -------------------------------------------------------------
+const CATALOG_FILE = path.join(__dirname, 'data/catalogData.json');
+
+let catalogState = {
+    tests: [],
+    profiles: [],
+    packages: [],
+    lastSynced: new Date().toISOString()
+};
+
+function loadCatalogData() {
+    try {
+        if (fs.existsSync(CATALOG_FILE)) {
+            const raw = fs.readFileSync(CATALOG_FILE, 'utf8');
+            catalogState = JSON.parse(raw);
+            console.log(`Loaded catalog: ${catalogState.tests.length} tests, ${catalogState.profiles.length} profiles, ${catalogState.packages.length} packages.`);
+        }
+    } catch (err) {
+        console.error('Failed to load catalogData.json:', err.message);
+    }
+}
+
+function saveCatalogData() {
+    try {
+        catalogState.lastSynced = new Date().toISOString();
+        fs.writeFileSync(CATALOG_FILE, JSON.stringify(catalogState, null, 2), 'utf8');
+    } catch (err) {
+        console.error('Failed to persist catalogData.json:', err.message);
+    }
+}
+
+// Initial load
+loadCatalogData();
+
+// -------------------------------------------------------------
+// HEALTH & AUTH ENDPOINTS
+// -------------------------------------------------------------
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'online',
         service: 'MedMarg Backend API',
+        catalog: {
+            tests: catalogState.tests.length,
+            profiles: catalogState.profiles.length,
+            packages: catalogState.packages.length,
+            lastSynced: catalogState.lastSynced
+        },
         port: PORT,
         timestamp: new Date().toISOString()
     });
@@ -41,10 +87,10 @@ app.post('/api/v1/auth/login', (req, res) => {
     let name = 'Patient User';
     let organization = 'Bangalore, Indiranagar';
 
-    if (idLower.includes('lab') || idLower.includes('lal') || idLower.includes('pathlabs')) {
+    if (idLower.includes('lab') || idLower.includes('lal') || idLower.includes('pathlabs') || idLower.includes('thyrocare')) {
         detectedRole = 'DIAGNOSTIC_LAB';
-        name = 'Dr. Lal PathLabs Admin';
-        organization = 'Dr. Lal PathLabs (NABL Certified)';
+        name = 'MedMarg Central Pathology Hub';
+        organization = 'MedMarg Central Diagnostics (NABL Certified)';
     } else if (idLower.includes('scan') || idLower.includes('aarthi') || idLower.includes('mri')) {
         detectedRole = 'SCAN_CENTER';
         name = 'Aarthi Scans Operations';
@@ -77,7 +123,6 @@ app.post('/api/v1/auth/login', (req, res) => {
 });
 
 // GOOGLE DRIVE FILE & REPORT UPLOAD ENDPOINT
-// Uploads PDF reports or prescriptions to Google Drive and returns shareable webViewLink
 app.post('/api/v1/upload', upload.single('file'), async (req, res) => {
     try {
         if (!req.file) {
@@ -85,8 +130,6 @@ app.post('/api/v1/upload', upload.single('file'), async (req, res) => {
         }
 
         const { originalname, buffer, mimetype } = req.file;
-
-        // Upload to Google Drive folder
         const driveResult = await uploadFileToGoogleDrive(buffer, originalname, mimetype);
 
         res.json({
@@ -103,36 +146,283 @@ app.post('/api/v1/upload', upload.single('file'), async (req, res) => {
     }
 });
 
-// MULTI-LAB DIAGNOSTIC TESTS COMPARISON API
-app.get('/api/v1/tests', (req, res) => {
-    res.json([
-        {
-            id: 't_lipid',
-            name: 'Lipid Profile (Complete Cholesterol)',
-            category: 'Heart Health',
-            parametersCount: 8,
-            sampleType: 'Blood',
-            fastingRequiredHours: 12,
-            labs: [
-                { labName: 'Apollo Diagnostics', price: 499, mrp: 850, tatHours: 6, isNabl: true, freeHomeCollection: true },
-                { labName: 'Dr. Lal PathLabs', price: 549, mrp: 900, tatHours: 8, isNabl: true, freeHomeCollection: false },
-                { labName: 'Thyrocare Central Lab', price: 399, mrp: 750, tatHours: 12, isNabl: true, freeHomeCollection: true }
-            ]
-        },
-        {
-            id: 't_hba1c',
-            name: 'HbA1c (Glycosylated Hemoglobin)',
-            category: 'Diabetes Care',
-            parametersCount: 2,
-            sampleType: 'Blood',
-            fastingRequiredHours: 0,
-            labs: [
-                { labName: 'Thyrocare Central Lab', price: 299, mrp: 600, tatHours: 6, isNabl: true, freeHomeCollection: true },
-                { labName: 'Apollo Diagnostics', price: 349, mrp: 650, tatHours: 4, isNabl: true, freeHomeCollection: true },
-                { labName: 'Dr. Lal PathLabs', price: 399, mrp: 700, tatHours: 6, isNabl: true, freeHomeCollection: false }
-            ]
+// -------------------------------------------------------------
+// UNIFIED MEDMARG CATALOG APIS (SINGLE-LAB ARCHITECTURE)
+// -------------------------------------------------------------
+
+// SUMMARY STATS
+app.get('/api/v1/catalog/summary', (req, res) => {
+    res.json({
+        success: true,
+        labBrand: 'MedMarg Central Diagnostics',
+        totalTests: catalogState.tests.length,
+        totalProfiles: catalogState.profiles.length,
+        totalPackages: catalogState.packages.length,
+        lastSynced: catalogState.lastSynced
+    });
+});
+
+// GET TESTS (With Search, Filter by Fasting & Sample Type)
+app.get('/api/v1/catalog/tests', (req, res) => {
+    const { q, fasting, sample, limit, page } = req.query;
+    let list = catalogState.tests;
+
+    if (q) {
+        const query = q.toLowerCase();
+        list = list.filter(t => 
+            (t.name && t.name.toLowerCase().includes(query)) ||
+            (t.code && t.code.toLowerCase().includes(query)) ||
+            (t.sampleType && t.sampleType.toLowerCase().includes(query))
+        );
+    }
+
+    if (fasting) {
+        list = list.filter(t => t.fasting === fasting.toUpperCase());
+    }
+
+    if (sample) {
+        list = list.filter(t => t.sampleType && t.sampleType.toUpperCase().includes(sample.toUpperCase()));
+    }
+
+    const total = list.length;
+    if (limit) {
+        const pageNum = parseInt(page, 10) || 1;
+        const limitNum = parseInt(limit, 10) || 50;
+        const start = (pageNum - 1) * limitNum;
+        list = list.slice(start, start + limitNum);
+    }
+
+    res.json({
+        success: true,
+        total,
+        tests: list
+    });
+});
+
+// CREATE / ADD NEW TEST (Syncs to Google Sheets & MedMarg DB)
+app.post('/api/v1/catalog/tests', async (req, res) => {
+    const { code, name, sampleType, fasting, mrp, price, tatHours, description } = req.body;
+
+    if (!code || !name) {
+        return res.status(400).json({ error: 'Test Code and Test Name are required.' });
+    }
+
+    const serialNo = catalogState.tests.length + 1;
+    const newTest = {
+        id: `TEST_${serialNo}`,
+        serialNo,
+        code: code.trim().toUpperCase(),
+        name: name.trim(),
+        sampleType: (sampleType || 'SERUM').trim().toUpperCase(),
+        fasting: (fasting || 'NO').trim().toUpperCase(),
+        category: 'Individual Test',
+        mrp: Number(mrp) || 499,
+        price: Number(price) || 299,
+        tatHours: Number(tatHours) || 24,
+        description: description || `Clinical laboratory test for ${name}.`,
+        active: true
+    };
+
+    catalogState.tests.unshift(newTest);
+    saveCatalogData();
+
+    // Async sync with Google Sheet
+    try {
+        await appendTestToSheet(newTest);
+    } catch (sheetErr) {
+        console.warn('Google Sheet append deferred:', sheetErr.message);
+    }
+
+    res.status(201).json({
+        success: true,
+        message: 'Test created successfully and synced to MedMarg catalog.',
+        test: newTest
+    });
+});
+
+// GET PROFILES (With Search & Filter)
+app.get('/api/v1/catalog/profiles', (req, res) => {
+    const { q, fasting, sample } = req.query;
+    let list = catalogState.profiles;
+
+    if (q) {
+        const query = q.toLowerCase();
+        list = list.filter(p => 
+            (p.name && p.name.toLowerCase().includes(query)) ||
+            (p.code && p.code.toLowerCase().includes(query)) ||
+            (p.sampleType && p.sampleType.toLowerCase().includes(query))
+        );
+    }
+
+    if (fasting) {
+        list = list.filter(p => p.fasting === fasting.toUpperCase());
+    }
+
+    res.json({
+        success: true,
+        total: list.length,
+        profiles: list
+    });
+});
+
+// CREATE / ADD NEW PROFILE (Syncs to Google Sheets & MedMarg DB)
+app.post('/api/v1/catalog/profiles', async (req, res) => {
+    const { code, name, sampleType, fasting, mrp, price, tatHours, description } = req.body;
+
+    if (!code || !name) {
+        return res.status(400).json({ error: 'Profile Code and Profile Name are required.' });
+    }
+
+    const serialNo = catalogState.profiles.length + 1;
+    const newProfile = {
+        id: `PROF_${serialNo}`,
+        serialNo,
+        code: code.trim().toUpperCase(),
+        name: name.trim(),
+        sampleType: (sampleType || 'SERUM').trim().toUpperCase(),
+        fasting: (fasting || 'NO').trim().toUpperCase(),
+        category: 'Diagnostic Profile',
+        mrp: Number(mrp) || 1499,
+        price: Number(price) || 899,
+        tatHours: Number(tatHours) || 24,
+        description: description || `Comprehensive diagnostic profile panel for ${name}.`,
+        active: true
+    };
+
+    catalogState.profiles.unshift(newProfile);
+    saveCatalogData();
+
+    try {
+        await appendProfileToSheet(newProfile);
+    } catch (sheetErr) {
+        console.warn('Google Sheet append deferred:', sheetErr.message);
+    }
+
+    res.status(201).json({
+        success: true,
+        message: 'Profile created successfully and synced to MedMarg catalog.',
+        profile: newProfile
+    });
+});
+
+// GET PACKAGES (Custom Bundles combining Tests & Profiles)
+app.get('/api/v1/catalog/packages', (req, res) => {
+    // Populate package details with referenced profile/test metadata
+    const populated = catalogState.packages.map(pkg => {
+        const profileDetails = (pkg.profiles || []).map(code => 
+            catalogState.profiles.find(p => p.code === code) || { code, name: code }
+        );
+        const testDetails = (pkg.tests || []).map(code => 
+            catalogState.tests.find(t => t.code === code) || { code, name: code }
+        );
+
+        return {
+            ...pkg,
+            profileDetails,
+            testDetails
+        };
+    });
+
+    res.json({
+        success: true,
+        total: populated.length,
+        packages: populated
+    });
+});
+
+// CREATE / PUBLISH NEW HEALTH PACKAGE (Package Builder)
+app.post('/api/v1/catalog/packages', (req, res) => {
+    const { name, code, tagline, category, mrp, price, selectedProfiles, selectedTests, description, tatHours } = req.body;
+
+    if (!name || !price) {
+        return res.status(400).json({ error: 'Package Name and Price are required.' });
+    }
+
+    const profileCodes = selectedProfiles || [];
+    const testCodes = selectedTests || [];
+
+    // Auto-calculate aggregated sample types and fasting
+    const referencedProfiles = catalogState.profiles.filter(p => profileCodes.includes(p.code));
+    const referencedTests = catalogState.tests.filter(t => testCodes.includes(t.code));
+
+    const sampleSet = new Set();
+    [...referencedProfiles, ...referencedTests].forEach(item => {
+        if (item.sampleType) {
+            item.sampleType.split(',').forEach(s => sampleSet.add(s.trim()));
         }
-    ]);
+    });
+    const aggregatedSamples = Array.from(sampleSet);
+    if (aggregatedSamples.length === 0) aggregatedSamples.push('SERUM');
+
+    const needsFasting = [...referencedProfiles, ...referencedTests].some(item => item.fasting === 'YES');
+
+    const newPackage = {
+        id: `PKG_${Date.now()}`,
+        name: name.trim(),
+        code: (code || `MM_PKG_${Date.now().toString().slice(-4)}`).toUpperCase(),
+        tagline: tagline || 'Custom Curated Health Assessment Bundle',
+        category: category || 'Wellness Checkup',
+        mrp: Number(mrp) || Number(price) * 2,
+        price: Number(price),
+        discountPercent: mrp ? Math.round(((mrp - price) / mrp) * 100) : 50,
+        fasting: needsFasting ? 'YES' : 'NO',
+        fastingNote: needsFasting ? '8-10 hours overnight fasting recommended' : 'No special fasting required',
+        sampleTypes: aggregatedSamples,
+        tatHours: Number(tatHours) || 24,
+        popular: true,
+        profiles: profileCodes,
+        tests: testCodes,
+        testCount: profileCodes.length * 10 + testCodes.length,
+        description: description || `Comprehensive health package combining ${profileCodes.length} profiles and ${testCodes.length} clinical tests.`
+    };
+
+    catalogState.packages.unshift(newPackage);
+    saveCatalogData();
+
+    res.status(201).json({
+        success: true,
+        message: 'Package created and published successfully to MedMarg catalog.',
+        package: newPackage
+    });
+});
+
+// DELETE PACKAGE
+app.delete('/api/v1/catalog/packages/:id', (req, res) => {
+    const { id } = req.params;
+    catalogState.packages = catalogState.packages.filter(p => p.id !== id);
+    saveCatalogData();
+    res.json({ success: true, message: `Package ${id} deleted successfully.` });
+});
+
+// TWO-WAY SYNC TRIGGER (Google Sheets <-> MedMarg DB)
+app.post('/api/v1/catalog/sync', async (req, res) => {
+    try {
+        const result = await fetchCatalogFromGoogleSheet();
+        if (result && result.tests && result.tests.length > 0) {
+            catalogState.tests = result.tests;
+            if (result.profiles && result.profiles.length > 0) {
+                catalogState.profiles = result.profiles;
+            }
+            saveCatalogData();
+        }
+
+        res.json({
+            success: true,
+            source: result.source || 'synced_database',
+            message: `Catalog synchronized successfully. ${catalogState.tests.length} tests and ${catalogState.profiles.length} profiles active.`,
+            stats: {
+                totalTests: catalogState.tests.length,
+                totalProfiles: catalogState.profiles.length,
+                totalPackages: catalogState.packages.length,
+                lastSynced: catalogState.lastSynced
+            }
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: 'Failed to sync with Google Sheets',
+            details: err.message
+        });
+    }
 });
 
 // RADIOLOGY SCANS API
@@ -142,96 +432,60 @@ app.get('/api/v1/scans', (req, res) => {
             id: 's_mri_brain',
             name: 'MRI Brain (Plain + Angio)',
             modality: 'MRI',
-            centers: [
-                { centerName: 'Aarthi Scans & Labs', machine: 'Siemens 3.0 Tesla Silent MRI', price: 3499, mrp: 6000, nextSlot: 'Today, 5:00 PM' },
-                { centerName: 'Medall Diagnostic Center', machine: 'GE 1.5T Wide Bore', price: 2999, mrp: 5200, nextSlot: 'Today, 6:30 PM' }
-            ]
+            price: 3499,
+            mrp: 6000,
+            nextSlot: 'Today, 5:00 PM',
+            tatHours: 4
+        },
+        {
+            id: 's_ct_chest',
+            name: 'HRCT Chest (High Resolution Lung CT)',
+            modality: 'CT Scan',
+            price: 2499,
+            mrp: 4500,
+            nextSlot: 'Today, 4:30 PM',
+            tatHours: 3
+        },
+        {
+            id: 's_usg_abdomen',
+            name: 'Ultrasound Whole Abdomen & Pelvis',
+            modality: 'Ultrasound',
+            price: 1199,
+            mrp: 2000,
+            nextSlot: 'Tomorrow, 9:00 AM',
+            tatHours: 2
         }
     ]);
 });
 
-// IN-MEMORY PATHOLOGY TESTS & PACKAGES STORE
-let customTestsCatalog = [];
-let customPackagesStore = [];
-
-// TESTS & PACKAGES CATALOG API
+// LEGACY TESTS ENDPOINT COMPATIBILITY (Single-Lab MedMarg Format)
 app.get('/api/v1/tests', (req, res) => {
+    const list = catalogState.tests.slice(0, 100).map(t => ({
+        id: t.id,
+        name: t.name,
+        code: t.code,
+        category: t.category,
+        parametersCount: 1,
+        sampleType: t.sampleType,
+        fastingRequiredHours: t.fasting === 'YES' ? 10 : 0,
+        price: t.price,
+        mrp: t.mrp,
+        tatHours: t.tatHours
+    }));
+
     res.json({
         success: true,
-        tests: customTestsCatalog,
-        packages: customPackagesStore
+        tests: list,
+        packages: catalogState.packages
     });
-});
-
-// CREATE NEW INDIVIDUAL TEST API
-app.post('/api/v1/tests', (req, res) => {
-    const { name, category, params, sample, fasting, tat, thyrocarePrice, originalPrice, apolloPrice, lalPrice, description, yellowTag } = req.body;
-    
-    if (!name || !thyrocarePrice) {
-        return res.status(400).json({ error: 'Test name and price are required.' });
-    }
-
-    const newTest = {
-        id: `custom_test_${Date.now()}`,
-        name,
-        category: category || 'General Pathology',
-        params: Number(params) || 1,
-        sample: sample || 'Blood (Serum)',
-        fasting: fasting || '10-12 hrs Fasting',
-        tat: tat || '12 Hours',
-        thyrocarePrice: Number(thyrocarePrice),
-        originalPrice: Number(originalPrice || thyrocarePrice * 1.5),
-        apolloPrice: Number(apolloPrice || thyrocarePrice * 1.4),
-        lalPrice: Number(lalPrice || thyrocarePrice * 1.6),
-        description: description || `${name} diagnostic pathology biomarker test.`,
-        yellowTag: yellowTag || 'NEW'
-    };
-
-    customTestsCatalog.unshift(newTest);
-    return res.status(201).json({ success: true, message: 'Test created successfully', test: newTest });
-});
-
-// CREATE NEW HEALTH PACKAGE (BUNDLE CREATOR) API
-app.post('/api/v1/packages', (req, res) => {
-    const { name, selectedTestIds, packagePrice, originalPrice, yellowTag, description, fasting, tat } = req.body;
-
-    if (!name || !packagePrice) {
-        return res.status(400).json({ error: 'Package name and package price are required.' });
-    }
-
-    const newPackage = {
-        id: `pkg_${Date.now()}`,
-        name,
-        category: 'Aarogyam Full Body Profiles',
-        includedItems: selectedTestIds || [],
-        params: (selectedTestIds || []).length * 5 + 10,
-        thyrocarePrice: Number(packagePrice),
-        originalPrice: Number(originalPrice || packagePrice * 2),
-        discountPercent: originalPrice ? Math.round(((originalPrice - packagePrice) / originalPrice) * 100) : 50,
-        yellowTag: yellowTag || 'SPECIAL BUNDLE',
-        description: description || `Comprehensive health checkup bundle including ${(selectedTestIds || []).length} major test profiles.`,
-        sample: 'Blood (Serum) & Urine',
-        fasting: fasting || '10-12 hrs Overnight Fasting',
-        tat: tat || '24 Hours'
-    };
-
-    customPackagesStore.unshift(newPackage);
-    return res.status(201).json({ success: true, message: 'Health package created successfully', package: newPackage });
-});
-
-// DELETE TEST OR PACKAGE
-app.delete('/api/v1/tests/:id', (req, res) => {
-    const { id } = req.params;
-    customTestsCatalog = customTestsCatalog.filter(t => t.id !== id);
-    customPackagesStore = customPackagesStore.filter(p => p.id !== id);
-    return res.json({ success: true, message: `Item ${id} deleted successfully.` });
 });
 
 // Start Server
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`=========================================`);
+    console.log(`=======================================================`);
     console.log(` MedMarg Backend API running on port ${PORT}`);
-    console.log(` Google Drive File Storage: ACTIVE`);
+    console.log(` Unified Diagnostics: ${catalogState.tests.length} Tests | ${catalogState.profiles.length} Profiles | ${catalogState.packages.length} Packages`);
+    console.log(` Google Sheets & Drive Storage: ACTIVE`);
     console.log(` Health Check: http://localhost:${PORT}/api/health`);
-    console.log(`=========================================`);
+    console.log(`=======================================================`);
 });
