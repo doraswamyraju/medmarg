@@ -4,7 +4,15 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { uploadFileToGoogleDrive } = require('./services/googleDriveService');
-const { fetchCatalogFromGoogleSheet, appendTestToSheet, appendProfileToSheet } = require('./services/googleSheetsService');
+const { 
+    fetchCatalogFromGoogleSheet, 
+    appendTestToSheet, 
+    updateTestInSheet,
+    appendProfileToSheet, 
+    updateProfileInSheet,
+    getWebhookUrl,
+    saveWebhookUrl
+} = require('./services/googleSheetsService');
 
 const app = express();
 
@@ -392,6 +400,26 @@ app.delete('/api/v1/catalog/packages/:id', (req, res) => {
     catalogState.packages = catalogState.packages.filter(p => p.id !== id);
     saveCatalogData();
     res.json({ success: true, message: `Package ${id} deleted successfully.` });
+});
+
+// GET / SET GOOGLE APPS SCRIPT WEBHOOK CONFIG
+app.get('/api/v1/catalog/webhook-config', (req, res) => {
+    res.json({
+        success: true,
+        webhookUrl: getWebhookUrl(),
+        connected: Boolean(getWebhookUrl())
+    });
+});
+
+app.post('/api/v1/catalog/webhook-config', (req, res) => {
+    const { webhookUrl } = req.body;
+    saveWebhookUrl(webhookUrl || '');
+    res.json({
+        success: true,
+        message: 'Google Sheets Two-Way Webhook configured successfully.',
+        webhookUrl: getWebhookUrl(),
+        connected: Boolean(getWebhookUrl())
+    });
 });
 
 // TWO-WAY SYNC TRIGGER (Google Sheets <-> MedMarg DB)

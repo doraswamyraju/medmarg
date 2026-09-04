@@ -4,7 +4,27 @@ const path = require('path');
 const fs = require('fs');
 
 const DEFAULT_SPREADSHEET_ID = process.env.GOOGLE_SHEETS_CATALOG_ID || '1W37T0qzCZDYoBYPIG5MsWZeBZrict_BfDUx9itGSZp0';
-const GOOGLE_APPS_SCRIPT_WEBHOOK_URL = process.env.GOOGLE_SHEETS_WEBHOOK_URL || '';
+const CONFIG_FILE = path.join(__dirname, '../data/webhookConfig.json');
+
+function getWebhookUrl() {
+    try {
+        if (fs.existsSync(CONFIG_FILE)) {
+            const cfg = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+            if (cfg.webhookUrl) return cfg.webhookUrl;
+        }
+    } catch (e) {}
+    return process.env.GOOGLE_SHEETS_WEBHOOK_URL || '';
+}
+
+function saveWebhookUrl(url) {
+    try {
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify({ webhookUrl: url.trim(), updatedAt: new Date().toISOString() }, null, 2), 'utf8');
+        return true;
+    } catch (e) {
+        console.error('Failed to save webhook config:', e);
+        return false;
+    }
+}
 
 /**
  * Helper to fetch CSV directly from Google Sheets Public / Shared URL
@@ -15,7 +35,6 @@ function fetchSheetCsv(spreadsheetId, sheetName) {
         
         https.get(url, (res) => {
             if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-                // Follow redirect
                 https.get(res.headers.location, (redRes) => {
                     let data = '';
                     redRes.on('data', chunk => data += chunk);
@@ -32,7 +51,7 @@ function fetchSheetCsv(spreadsheetId, sheetName) {
 }
 
 /**
- * Robust CSV Line Parser that handles quoted commas
+ * Robust CSV Line Parser
  */
 function parseCsvRows(csvText) {
     if (!csvText) return [];
@@ -129,56 +148,76 @@ async function fetchCatalogFromGoogleSheet(spreadsheetId = DEFAULT_SPREADSHEET_I
 }
 
 /**
- * Send write / append / edit payload to Google Apps Script Webhook (if configured)
+ * Send write / append / edit payload to Google Apps Script Webhook with full redirect follow
  */
-function sendToGoogleAppsScript(action, payload, webhookUrl = GOOGLE_APPS_SCRIPT_WEBHOOK_URL) {
+function sendToGoogleAppsScript(action, payload, webhookUrl = getWebhookUrl()) {
     if (!webhookUrl) {
-        console.log('[GoogleSheetsSync] Webhook URL not set. Saved to MedMarg DB cache.');
-        return Promise.resolve({ success: true, message: 'Saved locally' });
+        console.log('[GoogleSheetsSync] Webhook URL not configured. Updates saved to MedMarg DB.');
+        return Promise.resolve({ success: true, message: 'Saved to MedMarg DB' });
     }
 
     return new Promise((resolve) => {
         try {
-            const data = JSON.stringify({ action, data: payload, timestamp: new Date().toISOString() });
-            const parsedUrl = new URL(webhookUrl);
-            const req = https.request(parsedUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': Buffer.byteLength(data)
-                }
-            }, (res) => {
-                let resData = '';
-                res.on('data', chunk => resData += chunk);
-                res.on('end', () => {
-                    console.log(`[GoogleSheetsSync] Google Apps Script responded: ${resData}`);
-                    resolve({ success: true, response: resData });
+            const postBody = JSON.stringify({ action, data: payload, timestamp: new Date().toISOString() });
+            
+            function makeRequest(targetUrl) {
+                const parsed = new URL(targetUrl);
+                const req = https.request(parsed, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Content-Length': Buffer.byteLength(postBody)
+                    }
+                }, (res) => {
+                    if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                        // Google Apps Script redirect
+                        https.get(res.headers.location, (redRes) => {
+                            let redData = '';
+                            redRes.on('data', c => redData += c);
+                            redRes.on('end', () => resolve({ success: true, response: redData }));
+                        }).on('error', (e) => resolve({ success: false, error: e.message }));
+                        return;
+                    }
+
+                    let resData = '';
+                    res.on('data', chunk => resData += chunk);
+                    res.on('end', () => resolve({ success: true, response: resData }));
                 });
-            });
 
-            req.on('error', (err) => {
-                console.warn('[GoogleSheetsSync] Apps Script webhook error:', err.message);
-                resolve({ success: false, error: err.message });
-            });
+                req.on('error', (err) => resolve({ success: false, error: err.message }));
+                req.write(postBody);
+                req.end();
+            }
 
-            req.write(data);
-            req.end();
+            makeRequest(webhookUrl);
         } catch (e) {
             resolve({ success: false, error: e.message });
         }
     });
 }
 
-async function appendTestToSheet(testItem, spreadsheetId = DEFAULT_SPREADSHEET_ID) {
+async function appendTestToSheet(testItem) {
     return sendToGoogleAppsScript('APPEND_TEST', testItem);
 }
 
-async function appendProfileToSheet(profileItem, spreadsheetId = DEFAULT_SPREADSHEET_ID) {
+async function updateTestInSheet(testItem) {
+    return sendToGoogleAppsScript('UPDATE_TEST', testItem);
+}
+
+async function appendProfileToSheet(profileItem) {
     return sendToGoogleAppsScript('APPEND_PROFILE', profileItem);
+}
+
+async function updateProfileInSheet(profileItem) {
+    return sendToGoogleAppsScript('UPDATE_PROFILE', profileItem);
 }
 
 module.exports = {
     fetchCatalogFromGoogleSheet,
     appendTestToSheet,
-    appendProfileToSheet
+    updateTestInSheet,
+    appendProfileToSheet,
+    updateProfileInSheet,
+    getWebhookUrl,
+    saveWebhookUrl
 };
