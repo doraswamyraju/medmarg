@@ -207,7 +207,7 @@ app.get('/api/v1/catalog/tests', (req, res) => {
     });
 });
 
-// CREATE / ADD NEW TEST (Syncs to Google Sheets & MedMarg DB)
+// CREATE / ADD / UPDATE TEST (Syncs to Google Sheets & MedMarg DB)
 app.post('/api/v1/catalog/tests', async (req, res) => {
     const { code, name, sampleType, fasting, mrp, price, tatHours, description } = req.body;
 
@@ -215,11 +215,13 @@ app.post('/api/v1/catalog/tests', async (req, res) => {
         return res.status(400).json({ error: 'Test Code and Test Name are required.' });
     }
 
-    const serialNo = catalogState.tests.length + 1;
-    const newTest = {
-        id: `TEST_${serialNo}`,
-        serialNo,
-        code: code.trim().toUpperCase(),
+    const testCode = code.trim().toUpperCase();
+    const existingIndex = catalogState.tests.findIndex(t => t.code === testCode);
+
+    const testItem = {
+        id: existingIndex >= 0 ? catalogState.tests[existingIndex].id : `TEST_${catalogState.tests.length + 1}`,
+        serialNo: existingIndex >= 0 ? catalogState.tests[existingIndex].serialNo : catalogState.tests.length + 1,
+        code: testCode,
         name: name.trim(),
         sampleType: (sampleType || 'SERUM').trim().toUpperCase(),
         fasting: (fasting || 'NO').trim().toUpperCase(),
@@ -231,20 +233,24 @@ app.post('/api/v1/catalog/tests', async (req, res) => {
         active: true
     };
 
-    catalogState.tests.unshift(newTest);
+    if (existingIndex >= 0) {
+        catalogState.tests[existingIndex] = testItem;
+    } else {
+        catalogState.tests.unshift(testItem);
+    }
     saveCatalogData();
 
     // Async sync with Google Sheet
     try {
-        await appendTestToSheet(newTest);
+        await updateTestInSheet(testItem);
     } catch (sheetErr) {
-        console.warn('Google Sheet append deferred:', sheetErr.message);
+        console.warn('Google Sheet update deferred:', sheetErr.message);
     }
 
     res.status(201).json({
         success: true,
-        message: 'Test created successfully and synced to MedMarg catalog.',
-        test: newTest
+        message: existingIndex >= 0 ? 'Test updated and synced to Google Sheets.' : 'Test created and synced to Google Sheets.',
+        test: testItem
     });
 });
 
@@ -273,7 +279,7 @@ app.get('/api/v1/catalog/profiles', (req, res) => {
     });
 });
 
-// CREATE / ADD NEW PROFILE (Syncs to Google Sheets & MedMarg DB)
+// CREATE / ADD / UPDATE PROFILE (Syncs to Google Sheets & MedMarg DB)
 app.post('/api/v1/catalog/profiles', async (req, res) => {
     const { code, name, sampleType, fasting, mrp, price, tatHours, description } = req.body;
 
@@ -281,11 +287,13 @@ app.post('/api/v1/catalog/profiles', async (req, res) => {
         return res.status(400).json({ error: 'Profile Code and Profile Name are required.' });
     }
 
-    const serialNo = catalogState.profiles.length + 1;
-    const newProfile = {
-        id: `PROF_${serialNo}`,
-        serialNo,
-        code: code.trim().toUpperCase(),
+    const profCode = code.trim().toUpperCase();
+    const existingIndex = catalogState.profiles.findIndex(p => p.code === profCode);
+
+    const profItem = {
+        id: existingIndex >= 0 ? catalogState.profiles[existingIndex].id : `PROF_${catalogState.profiles.length + 1}`,
+        serialNo: existingIndex >= 0 ? catalogState.profiles[existingIndex].serialNo : catalogState.profiles.length + 1,
+        code: profCode,
         name: name.trim(),
         sampleType: (sampleType || 'SERUM').trim().toUpperCase(),
         fasting: (fasting || 'NO').trim().toUpperCase(),
@@ -297,19 +305,23 @@ app.post('/api/v1/catalog/profiles', async (req, res) => {
         active: true
     };
 
-    catalogState.profiles.unshift(newProfile);
+    if (existingIndex >= 0) {
+        catalogState.profiles[existingIndex] = profItem;
+    } else {
+        catalogState.profiles.unshift(profItem);
+    }
     saveCatalogData();
 
     try {
-        await appendProfileToSheet(newProfile);
+        await updateProfileInSheet(profItem);
     } catch (sheetErr) {
-        console.warn('Google Sheet append deferred:', sheetErr.message);
+        console.warn('Google Sheet update deferred:', sheetErr.message);
     }
 
     res.status(201).json({
         success: true,
-        message: 'Profile created successfully and synced to MedMarg catalog.',
-        profile: newProfile
+        message: existingIndex >= 0 ? 'Profile updated and synced to Google Sheets.' : 'Profile created and synced to Google Sheets.',
+        profile: profItem
     });
 });
 
