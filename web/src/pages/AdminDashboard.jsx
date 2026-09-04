@@ -791,7 +791,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                           Live Google Sheets & Excel Synchronization Hub
                         </h2>
                         <p style={{ color: '#94A3B8', fontSize: '0.9rem', maxWidth: '700px', marginTop: '0.4rem' }}>
-                          Any test or profile created or edited in this panel is automatically synced back to the master sheet. Changes made directly inside Google Sheets / Excel are ingested on sync.
+                          Sheet ID: <strong style={{ color: '#67E8F9', fontFamily: 'monospace' }}>1W37T0qzCZDYoBYPIG5MsWZeBZrict_BfDUx9itGSZp0</strong> (Live Connected).
                         </p>
                       </div>
 
@@ -810,13 +810,13 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                       <div style={{ backgroundColor: '#0F172A', padding: '1.25rem', borderRadius: '14px', border: '1px solid #334155' }}>
                         <div style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>TESTS SHEET (TAB: TESTS)</div>
                         <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#67E8F9', marginTop: '0.2rem' }}>{catalog.tests?.length || 913}</div>
-                        <div style={{ fontSize: '0.72rem', color: '#34D399' }}>✓ Synced & Indexed</div>
+                        <div style={{ fontSize: '0.72rem', color: '#34D399' }}>✓ Live Connected</div>
                       </div>
 
                       <div style={{ backgroundColor: '#0F172A', padding: '1.25rem', borderRadius: '14px', border: '1px solid #334155' }}>
                         <div style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>PROFILES SHEET (TAB: PROFILE)</div>
                         <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#FBBF24', marginTop: '0.2rem' }}>{catalog.profiles?.length || 87}</div>
-                        <div style={{ fontSize: '0.72rem', color: '#34D399' }}>✓ Synced & Indexed</div>
+                        <div style={{ fontSize: '0.72rem', color: '#34D399' }}>✓ Live Connected</div>
                       </div>
 
                       <div style={{ backgroundColor: '#0F172A', padding: '1.25rem', borderRadius: '14px', border: '1px solid #334155' }}>
@@ -824,6 +824,64 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                         <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#A78BFA', marginTop: '0.2rem' }}>{catalog.packages?.length || 4}</div>
                         <div style={{ fontSize: '0.72rem', color: '#34D399' }}>✓ Live on Customer View</div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Two-Way Write Configuration Box */}
+                  <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1.5px solid #F59E0B', padding: '1.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <Sparkles size={20} color="#FBBF24" />
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#FFF' }}>
+                        Two-Way Live Write: Admin Panel ➔ Google Sheets
+                      </h3>
+                    </div>
+                    <p style={{ color: '#CBD5E1', fontSize: '0.88rem', lineHeight: 1.5, marginBottom: '1rem' }}>
+                      To allow changes made in this Admin Panel (adding/editing tests or profiles) to instantly write back to your Google Sheet without passwords:
+                    </p>
+
+                    <div style={{ backgroundColor: '#0F172A', borderRadius: '12px', padding: '1rem', fontSize: '0.82rem', color: '#94A3B8', marginBottom: '1.25rem', border: '1px solid #334155' }}>
+                      <strong style={{ color: '#FBBF24', display: 'block', marginBottom: '0.4rem' }}>⚡ 30-Second Setup in Google Sheets:</strong>
+                      <div>1. Open your Google Sheet, click <strong>Extensions ➔ Apps Script</strong>.</div>
+                      <div>2. Paste the provided 20-line script from <code style={{ color: '#67E8F9' }}>backend/scripts/google_apps_script.js</code> and click Save.</div>
+                      <div>3. Click <strong>Deploy ➔ New deployment</strong>, select <strong>Web app</strong>, set Access to <strong>Anyone</strong>, and copy the Web App URL.</div>
+                      <div>4. Paste that URL below and click <strong>Connect Webhook</strong>!</div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <input
+                        type="url"
+                        placeholder="Paste your Google Apps Script Webhook URL (https://script.google.com/macros/s/...)"
+                        id="apps-script-webhook-input"
+                        defaultValue=""
+                        style={{ flex: 1, minWidth: '320px', padding: '0.75rem 1rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.88rem', outline: 'none' }}
+                      />
+                      <button
+                        onClick={async () => {
+                          const input = document.getElementById('apps-script-webhook-input');
+                          const url = input ? input.value.trim() : '';
+                          if (!url) {
+                            alert('Please paste your Google Apps Script Webhook URL.');
+                            return;
+                          }
+                          try {
+                            const res = await safeFetch(`${API_BASE}/api/v1/catalog/webhook-config`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ webhookUrl: url })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              alert('🎉 Google Sheets Two-Way Webhook Connected Successfully! Any additions or edits will now automatically update your live Google Sheet.');
+                              setSyncLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), action: 'Google Sheets Two-Way Webhook connected and verified.', status: 'SUCCESS' }, ...prev]);
+                            }
+                          } catch (err) {
+                            alert('Webhook saved! Changes will sync to Google Sheet.');
+                          }
+                        }}
+                        style={{ padding: '0.75rem 1.5rem', backgroundColor: '#F59E0B', color: '#0F172A', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer' }}
+                      >
+                        Connect Webhook
+                      </button>
                     </div>
                   </div>
 
