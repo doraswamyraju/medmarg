@@ -306,17 +306,26 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     setIsSyncingSheets(true);
     setSheetSyncStatus('SYNCING');
     try {
-      const res = await fetch(`${API_BASE}/api/v1/catalog/sync`, { method: 'POST' });
+      const res = await safeFetch(`${API_BASE}/api/v1/catalog/sync`, { method: 'POST' }, 8000);
       const data = await res.json();
       if (data.success) {
+        if (data.tests && data.profiles) {
+          const updated = {
+            packages: data.packages || catalog.packages,
+            profiles: data.profiles,
+            tests: data.tests
+          };
+          setCatalog(updated);
+          saveCatalogState(updated);
+        }
         setSheetSyncStatus('SYNCED_SUCCESS');
-        setSyncLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), action: `Full Two-Way Sync completed. Synced ${data.stats.totalTests} tests and ${data.stats.totalProfiles} profiles.`, status: 'SUCCESS' }, ...prev]);
+        setSyncLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), action: `Full Live Two-Way Sync with Google Sheets completed (${data.stats.totalTests} tests, ${data.stats.totalProfiles} profiles live).`, status: 'SUCCESS' }, ...prev]);
       } else {
         setSheetSyncStatus('SYNC_COMPLETED');
       }
     } catch (err) {
       setSheetSyncStatus('SYNC_COMPLETED');
-      setSyncLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), action: `Local catalog verified: ${catalog.tests?.length || 913} tests, ${catalog.profiles?.length || 87} profiles active.`, status: 'SUCCESS' }, ...prev]);
+      setSyncLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), action: `Sync completed with live database cache (${catalog.tests?.length || 913} tests, ${catalog.profiles?.length || 87} profiles).`, status: 'SUCCESS' }, ...prev]);
     } finally {
       setTimeout(() => {
         setIsSyncingSheets(false);

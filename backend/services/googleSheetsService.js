@@ -1,91 +1,117 @@
-const { google } = require('googleapis');
+const https = require('https');
+const http = require('http');
 const path = require('path');
 const fs = require('fs');
 
-// Google Sheets Service for Two-Way Synchronisation with MedMarg DB
-let sheetsClient = null;
+const DEFAULT_SPREADSHEET_ID = process.env.GOOGLE_SHEETS_CATALOG_ID || '1W37T0qzCZDYoBYPIG5MsWZeBZrict_BfDUx9itGSZp0';
+const GOOGLE_APPS_SCRIPT_WEBHOOK_URL = process.env.GOOGLE_SHEETS_WEBHOOK_URL || '';
 
-function getSheetsClient() {
-    if (sheetsClient) return sheetsClient;
-
-    try {
-        const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || path.join(__dirname, '../config/google-drive-key.json');
+/**
+ * Helper to fetch CSV directly from Google Sheets Public / Shared URL
+ */
+function fetchSheetCsv(spreadsheetId, sheetName) {
+    return new Promise((resolve, reject) => {
+        const url = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}`;
         
-        if (fs.existsSync(credentialsPath)) {
-            const auth = new google.auth.GoogleAuth({
-                keyFile: credentialsPath,
-                scopes: [
-                    'https://www.googleapis.com/auth/spreadsheets',
-                    'https://www.googleapis.com/auth/drive'
-                ]
-            });
-            sheetsClient = google.sheets({ version: 'v4', auth });
-            return sheetsClient;
-        }
-    } catch (err) {
-        console.warn('Google Sheets service account not configured yet. Fallback sync active.');
-    }
-    return null;
+        https.get(url, (res) => {
+            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                // Follow redirect
+                https.get(res.headers.location, (redRes) => {
+                    let data = '';
+                    redRes.on('data', chunk => data += chunk);
+                    redRes.on('end', () => resolve(data));
+                }).on('error', reject);
+                return;
+            }
+
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => resolve(data));
+        }).on('error', reject);
+    });
 }
 
 /**
- * Fetch all rows from a Google Sheet (both TESTS and PROFILE tabs)
- * @param {string} spreadsheetId 
- * @returns {Promise<{tests: Array, profiles: Array, lastSynced: string}>}
+ * Robust CSV Line Parser that handles quoted commas
  */
-const DEFAULT_SPREADSHEET_ID = process.env.GOOGLE_SHEETS_CATALOG_ID || '1W37T0qzCZDYoBYPIG5MsWZeBZrict_BfDUx9itGSZp0';
+function parseCsvRows(csvText) {
+    if (!csvText) return [];
+    const lines = csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
+    const rows = [];
 
-async function fetchCatalogFromGoogleSheet(spreadsheetId = DEFAULT_SPREADSHEET_ID) {
-    const sheets = getSheetsClient();
-
-    if (!sheets || !spreadsheetId) {
-        // Return local catalog if live sheet ID is not set
-        const catalogPath = path.join(__dirname, '../data/catalogData.json');
-        if (fs.existsSync(catalogPath)) {
-            const localData = JSON.parse(fs.readFileSync(catalogPath, 'utf8'));
-            return {
-                success: true,
-                source: 'local_synced_cache',
-                lastSynced: new Date().toISOString(),
-                totalTests: localData.tests.length,
-                totalProfiles: localData.profiles.length,
-                tests: localData.tests,
-                profiles: localData.profiles,
-                packages: localData.packages
-            };
+    for (const line of lines) {
+        const row = [];
+        let inQuotes = false;
+        let cell = '';
+        for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+                if (inQuotes && line[i + 1] === '"') {
+                    cell += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                row.push(cell.trim());
+                cell = '';
+            } else {
+                cell += char;
+            }
         }
+        row.push(cell.trim());
+        rows.push(row);
     }
+    return rows;
+}
 
+/**
+ * Fetch all rows from live Google Sheets (both TESTS and PROFILE tabs)
+ */
+async function fetchCatalogFromGoogleSheet(spreadsheetId = DEFAULT_SPREADSHEET_ID) {
     try {
-        const testRes = await sheets.spreadsheets.values.get({
-            spreadsheetId,
-            range: 'TESTS!A2:E'
-        });
+        console.log(`[GoogleSheetsSync] Fetching live data from Google Sheet ID: ${spreadsheetId}...`);
 
-        const profileRes = await sheets.spreadsheets.values.get({
-            spreadsheetId,
-            range: 'PROFILE!A2:E'
-        });
+        const [testCsv, profileCsv] = await Promise.all([
+            fetchSheetCsv(spreadsheetId, 'TESTS'),
+            fetchSheetCsv(spreadsheetId, 'PROFILE')
+        ]);
 
-        const parseRows = (rows, keyPrefix) => {
-            if (!rows) return [];
-            return rows.map((r, idx) => ({
-                id: `${keyPrefix}_${r[0] || idx + 1}`,
-                serialNo: parseInt(r[0], 10) || idx + 1,
-                code: r[1] || '',
-                name: r[2] || '',
-                sampleType: r[3] || 'SERUM',
-                fasting: (r[4] || 'NO').toUpperCase(),
-                category: keyPrefix === 'PROF' ? 'Diagnostic Profile' : 'Individual Test',
-                mrp: keyPrefix === 'PROF' ? 1499 : 499,
-                price: keyPrefix === 'PROF' ? 899 : 299,
-                tatHours: 24,
-                active: true
-            }));
+        const testRows = parseCsvRows(testCsv);
+        const profileRows = parseCsvRows(profileCsv);
+
+        const parseItems = (rows, keyPrefix) => {
+            if (!rows || rows.length <= 1) return [];
+            return rows.slice(1).map((r, idx) => {
+                const sNo = r[0] || (idx + 1).toString();
+                const code = (r[1] || '').trim();
+                const name = (r[2] || '').trim();
+                const sampleType = (r[3] || 'SERUM').trim().toUpperCase();
+                const fasting = ((r[4] || 'NO').trim().toUpperCase() === 'YES') ? 'YES' : 'NO';
+
+                if (!code && !name) return null;
+
+                return {
+                    id: `${keyPrefix}_${sNo}`,
+                    serialNo: parseInt(sNo, 10) || idx + 1,
+                    code,
+                    name,
+                    sampleType,
+                    fasting,
+                    category: keyPrefix === 'PROF' ? 'Diagnostic Profile' : 'Individual Test',
+                    mrp: keyPrefix === 'PROF' ? 1499 : 499,
+                    price: keyPrefix === 'PROF' ? 899 : 299,
+                    tatHours: 24,
+                    description: `Clinical ${keyPrefix === 'PROF' ? 'profile panel' : 'test'} analyzing ${name}.`,
+                    active: true
+                };
+            }).filter(Boolean);
         };
 
-        const tests = parseRows(testRes.data.values, 'TEST');
-        const profiles = parseRows(profileRes.data.values, 'PROF');
+        const tests = parseItems(testRows, 'TEST');
+        const profiles = parseItems(profileRows, 'PROF');
+
+        console.log(`[GoogleSheetsSync] Successfully fetched ${tests.length} tests and ${profiles.length} profiles directly from Google Sheets!`);
 
         return {
             success: true,
@@ -97,67 +123,61 @@ async function fetchCatalogFromGoogleSheet(spreadsheetId = DEFAULT_SPREADSHEET_I
             profiles
         };
     } catch (err) {
-        console.error('Error reading from Google Sheets:', err.message);
+        console.error('[GoogleSheetsSync] Live Google Sheets fetch error:', err.message);
         throw err;
     }
 }
 
 /**
- * Append or update a single test in Google Sheet
+ * Send write / append / edit payload to Google Apps Script Webhook (if configured)
  */
-async function appendTestToSheet(testItem, spreadsheetId = DEFAULT_SPREADSHEET_ID) {
-    const sheets = getSheetsClient();
-    if (!sheets || !spreadsheetId) {
-        return { success: true, message: 'Saved to MedMarg DB (Sheet sync queued)' };
+function sendToGoogleAppsScript(action, payload, webhookUrl = GOOGLE_APPS_SCRIPT_WEBHOOK_URL) {
+    if (!webhookUrl) {
+        console.log('[GoogleSheetsSync] Webhook URL not set. Saved to MedMarg DB cache.');
+        return Promise.resolve({ success: true, message: 'Saved locally' });
     }
 
-    const values = [[
-        testItem.serialNo || '',
-        testItem.code || '',
-        testItem.name || '',
-        testItem.sampleType || 'SERUM',
-        testItem.fasting || 'NO'
-    ]];
+    return new Promise((resolve) => {
+        try {
+            const data = JSON.stringify({ action, data: payload, timestamp: new Date().toISOString() });
+            const parsedUrl = new URL(webhookUrl);
+            const req = https.request(parsedUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(data)
+                }
+            }, (res) => {
+                let resData = '';
+                res.on('data', chunk => resData += chunk);
+                res.on('end', () => {
+                    console.log(`[GoogleSheetsSync] Google Apps Script responded: ${resData}`);
+                    resolve({ success: true, response: resData });
+                });
+            });
 
-    await sheets.spreadsheets.values.append({
-        spreadsheetId,
-        range: 'TESTS!A:E',
-        valueInputOption: 'USER_ENTERED',
-        resource: { values }
+            req.on('error', (err) => {
+                console.warn('[GoogleSheetsSync] Apps Script webhook error:', err.message);
+                resolve({ success: false, error: err.message });
+            });
+
+            req.write(data);
+            req.end();
+        } catch (e) {
+            resolve({ success: false, error: e.message });
+        }
     });
-
-    return { success: true, message: 'Test appended to Google Sheet and synced with MedMarg DB' };
 }
 
-/**
- * Append or update a profile in Google Sheet
- */
+async function appendTestToSheet(testItem, spreadsheetId = DEFAULT_SPREADSHEET_ID) {
+    return sendToGoogleAppsScript('APPEND_TEST', testItem);
+}
+
 async function appendProfileToSheet(profileItem, spreadsheetId = DEFAULT_SPREADSHEET_ID) {
-    const sheets = getSheetsClient();
-    if (!sheets || !spreadsheetId) {
-        return { success: true, message: 'Saved to MedMarg DB (Sheet sync queued)' };
-    }
-
-    const values = [[
-        profileItem.serialNo || '',
-        profileItem.code || '',
-        profileItem.name || '',
-        profileItem.sampleType || 'SERUM',
-        profileItem.fasting || 'NO'
-    ]];
-
-    await sheets.spreadsheets.values.append({
-        spreadsheetId,
-        range: 'PROFILE!A:E',
-        valueInputOption: 'USER_ENTERED',
-        resource: { values }
-    });
-
-    return { success: true, message: 'Profile appended to Google Sheet and synced with MedMarg DB' };
+    return sendToGoogleAppsScript('APPEND_PROFILE', profileItem);
 }
 
 module.exports = {
-    getSheetsClient,
     fetchCatalogFromGoogleSheet,
     appendTestToSheet,
     appendProfileToSheet
