@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Search, 
   FlaskConical, 
@@ -30,26 +30,34 @@ import {
   AlertCircle,
   FileText,
   Activity,
-  UserCheck
+  UserCheck,
+  Layers,
+  Filter
 } from 'lucide-react';
-import { THYROCARE_CATEGORIES, THYROCARE_TESTS } from '../data/thyrocareTests';
+import initialCatalog from '../data/catalogData.json';
+import { getCatalogState, filterCatalogItems } from '../data/catalogStore';
 
 export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   const [activeTab, setActiveTab] = useState('TESTS'); // 'TESTS' | 'DOCTOR_PRESCRIPTIONS' | 'SCANS' | 'DOCTORS' | 'PHARMACY' | 'RECORDS' | 'ORDERS'
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All Tests & Packages');
+  const [catalogSubTab, setCatalogSubTab] = useState('ALL'); // 'ALL' | 'PACKAGES' | 'PROFILES' | 'TESTS'
+  const [fastingFilter, setFastingFilter] = useState('ALL');
+  const [sampleFilter, setSampleFilter] = useState('ALL');
   
+  const [catalog, setCatalog] = useState(getCatalogState() || initialCatalog);
+
   // Cart
   const [cart, setCart] = useState([
     {
-      id: 'th_aarogyam_complete',
-      name: 'Aarogyam Complete 1.3 (Full Body Checkup)',
-      lab: 'Thyrocare Central Lab',
+      id: 'pkg_mm_master',
+      name: 'MedMarg Master Health Checkup (Comprehensive)',
+      lab: 'MedMarg Central Diagnostics',
       price: 1499,
-      mrp: 3500,
-      params: 104,
-      fasting: '10-12 hrs Fasting'
+      mrp: 3999,
+      params: 92,
+      fasting: 'YES',
+      sampleType: 'SERUM, EDTA, URINE'
     }
   ]);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
@@ -81,7 +89,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
     phleboName: 'Ramesh Kumar (Certified Phlebotomist)',
     phleboPhone: '+91 98765 11223',
     status: 'ASSIGNED',
-    items: ['Aarogyam Complete 1.3 (104 Tests)', 'Thyroid Profile Total (T3/T4/TSH)'],
+    items: ['MedMarg Master Health Checkup', 'Thyroid Profile Total (T3/T4/TSH)'],
     totalAmount: 1798
   });
 
@@ -101,25 +109,62 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   const [prescriptionUploaded, setPrescriptionUploaded] = useState(false);
   const [genericSwitched, setGenericSwitched] = useState(false);
 
-  // Filtered tests
-  const filteredTests = THYROCARE_TESTS.filter(test => {
-    const matchesCategory = selectedCategory === 'All Tests & Packages' || test.category === selectedCategory;
-    const matchesSearch = searchQuery === '' || 
-      test.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      test.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  // Sync catalog from backend API if available
+  useEffect(() => {
+    fetch('http://localhost:5080/api/v1/catalog/summary')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          Promise.all([
+            fetch('http://localhost:5080/api/v1/catalog/packages').then(r => r.json()),
+            fetch('http://localhost:5080/api/v1/catalog/profiles').then(r => r.json()),
+            fetch('http://localhost:5080/api/v1/catalog/tests?limit=1000').then(r => r.json())
+          ]).then(([pkgs, profs, tsts]) => {
+            if (pkgs.packages && profs.profiles && tsts.tests) {
+              setCatalog({
+                packages: pkgs.packages,
+                profiles: profs.profiles,
+                tests: tsts.tests
+              });
+            }
+          }).catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, []);
 
-  const addToCart = (test) => {
-    if (!cart.some(item => item.id === test.id)) {
+  const getFilteredItems = () => {
+    let items = [];
+    if (catalogSubTab === 'ALL') {
+      items = [
+        ...(catalog.packages || []).map(p => ({ ...p, itemType: 'PACKAGE' })),
+        ...(catalog.profiles || []).map(p => ({ ...p, itemType: 'PROFILE' })),
+        ...(catalog.tests || []).map(t => ({ ...t, itemType: 'TEST' }))
+      ];
+    } else if (catalogSubTab === 'PACKAGES') {
+      items = (catalog.packages || []).map(p => ({ ...p, itemType: 'PACKAGE' }));
+    } else if (catalogSubTab === 'PROFILES') {
+      items = (catalog.profiles || []).map(p => ({ ...p, itemType: 'PROFILE' }));
+    } else if (catalogSubTab === 'TESTS') {
+      items = (catalog.tests || []).map(t => ({ ...t, itemType: 'TEST' }));
+    }
+
+    return filterCatalogItems(items, searchQuery, fastingFilter, sampleFilter);
+  };
+
+  const displayCatalogItems = getFilteredItems();
+
+  const addToCart = (item) => {
+    if (!cart.some(cartItem => cartItem.id === (item.id || item.code))) {
       setCart([...cart, {
-        id: test.id,
-        name: test.name,
-        lab: 'Thyrocare Central Lab',
-        price: test.thyrocarePrice,
-        mrp: test.originalPrice,
-        params: test.params,
-        fasting: test.fasting
+        id: item.id || item.code,
+        name: item.name,
+        lab: 'MedMarg Central Diagnostics',
+        price: item.price,
+        mrp: item.mrp || item.price * 1.5,
+        params: item.testCount || 1,
+        fasting: item.fasting || 'NO',
+        sampleType: item.sampleType || item.sampleTypes?.join(', ') || 'SERUM'
       }]);
     }
   };
@@ -129,7 +174,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
-  const cartSavings = cart.reduce((sum, item) => sum + (item.mrp - item.price), 0);
+  const cartSavings = cart.reduce((sum, item) => sum + ((item.mrp || item.price * 1.5) - item.price), 0);
 
   const handleCompleteBooking = (e) => {
     e.preventDefault();
@@ -139,7 +184,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   };
 
   const navMenuItems = [
-    { key: 'TESTS', label: 'Diagnostic Pathology (Thyrocare)', icon: FlaskConical, badge: '100+ Tests' },
+    { key: 'TESTS', label: 'Diagnostic Pathology', icon: FlaskConical, badge: `${(catalog.tests?.length || 913) + (catalog.profiles?.length || 87)} Items` },
     { key: 'DOCTOR_PRESCRIPTIONS', label: 'Doctor Prescriptions', icon: UserCheck, badge: `${doctorPrescriptions.length} Active` },
     { key: 'SCANS', label: '3.0T MRI & Scans', icon: Building2, badge: 'Hourly Slots' },
     { key: 'DOCTORS', label: 'In-Clinic OPD Doctors', icon: Stethoscope },
@@ -151,7 +196,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', color: '#0F172A', fontFamily: 'Inter, system-ui, sans-serif' }}>
       
-      {/* 1. ENTERPRISE PATIENT SIDEBAR */}
+      {/* 1. PATIENT SIDEBAR */}
       <aside style={{ 
         width: sidebarCollapsed ? '80px' : '280px', 
         backgroundColor: '#004D40', 
@@ -200,528 +245,543 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.85rem',
+                  gap: '0.75rem',
                   padding: '0.75rem 1rem',
                   borderRadius: '12px',
                   border: 'none',
                   backgroundColor: isActive ? '#006B70' : 'transparent',
                   color: isActive ? '#FFFFFF' : '#B2DFDB',
                   fontWeight: isActive ? '800' : '600',
-                  fontSize: '0.88rem',
+                  fontSize: '0.86rem',
                   cursor: 'pointer',
                   textAlign: 'left',
-                  transition: 'all 0.15s ease',
-                  justifyContent: sidebarCollapsed ? 'center' : 'flex-start'
+                  transition: 'all 0.15s ease'
                 }}
-                title={sidebarCollapsed ? item.label : undefined}
               >
-                <IconComp size={20} color={isActive ? '#FDE047' : '#80CBC4'} />
-                {!sidebarCollapsed && <span style={{ flex: 1 }}>{item.label}</span>}
-                {!sidebarCollapsed && item.badge !== undefined && (
-                  <span style={{ fontSize: '0.72rem', backgroundColor: isActive ? 'rgba(0,0,0,0.25)' : '#00332C', color: isActive ? '#FDE047' : '#B2DFDB', padding: '0.15rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
-                    {item.badge}
-                  </span>
+                <IconComp size={18} color={isActive ? '#FBBF24' : '#80CBC4'} />
+                {!sidebarCollapsed && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
+                    <span>{item.label}</span>
+                    {item.badge && (
+                      <span style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem', borderRadius: '6px', backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', color: isActive ? '#FFF' : '#80CBC4' }}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
                 )}
               </button>
             );
           })}
         </nav>
 
-        {/* Sidebar Footer */}
-        <div style={{ padding: '1rem', borderTop: '1px solid #003830', backgroundColor: '#00332C' }}>
-          {!sidebarCollapsed && (
-            <div style={{ marginBottom: '0.75rem' }}>
+        {/* User Info & Switch */}
+        <div style={{ padding: '1rem', borderTop: '1px solid #003830' }}>
+          {!sidebarCollapsed ? (
+            <div>
               <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#FFF' }}>{user?.name || 'Rahul Sharma'}</div>
-              <div style={{ fontSize: '0.72rem', color: '#80CBC4' }}>Tirupati, Andhra Pradesh</div>
+              <div style={{ fontSize: '0.72rem', color: '#80CBC4' }}>{user?.identifier || '+91 98765 43210'}</div>
+              <button
+                onClick={onLogout}
+                style={{ marginTop: '0.65rem', width: '100%', padding: '0.45rem', backgroundColor: 'rgba(255,255,255,0.1)', color: '#FFF', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '700', cursor: 'pointer' }}
+              >
+                Sign Out
+              </button>
             </div>
+          ) : (
+            <button onClick={onLogout} style={{ width: '100%', background: 'none', border: 'none', color: '#FFF', cursor: 'pointer' }}>⏻</button>
           )}
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={onSwitchRole} style={{ flex: 1, padding: '0.5rem', backgroundColor: '#004D40', color: '#FDE047', border: '1px solid #006B70', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}>
-              {sidebarCollapsed ? '⇄' : 'Switch Role'}
-            </button>
-            <button onClick={onLogout} style={{ padding: '0.5rem 0.75rem', backgroundColor: '#EF4444', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}>
-              {sidebarCollapsed ? '✕' : 'Logout'}
-            </button>
-          </div>
         </div>
       </aside>
 
-      {/* 2. MAIN PATIENT WORKSPACE CONTAINER */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
+      {/* 2. MAIN CONTENT AREA */}
+      <main style={{ flex: 1, overflowY: 'auto', padding: '2rem 2.5rem', maxHeight: '100vh' }} className="custom-scrollbar">
         
         {/* Top Header Bar */}
-        <header style={{ height: '70px', backgroundColor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', padding: '0 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0F172A' }}>
-              {navMenuItems.find(m => m.key === activeTab)?.label}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: '900', color: '#0F172A' }}>
+              {activeTab === 'TESTS' && 'Diagnostic Pathology & Lab Tests'}
+              {activeTab === 'DOCTOR_PRESCRIPTIONS' && 'Doctor Prescriptions & Recommended Tests'}
+              {activeTab === 'SCANS' && '3.0T MRI & Radiology Slots'}
+              {activeTab === 'DOCTORS' && 'In-Clinic OPD Specialist Appointments'}
+              {activeTab === 'PHARMACY' && 'Generic Medicine Cost Optimizer'}
+              {activeTab === 'RECORDS' && 'Digital Health Locker & Biomarker Trends'}
+              {activeTab === 'ORDERS' && 'Live Booking Tracker & Phlebotomist Status'}
             </h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', backgroundColor: '#E0F2F1', padding: '0.3rem 0.7rem', borderRadius: '20px', fontSize: '0.8rem' }}>
-              <MapPin size={14} color="#006B70" />
-              <span style={{ color: '#006B70', fontWeight: '700' }}>Tirupati, Andhra Pradesh</span>
-            </div>
+            <p style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '0.2rem' }}>
+              MedMarg Unified Healthcare • NABL Certified Pathology with Free Home Collection
+            </p>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {/* Cart Floating Button */}
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
             <button
               onClick={() => setShowCheckoutModal(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#F59E0B', color: '#0F172A', padding: '0.55rem 1.1rem', borderRadius: '12px', border: 'none', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 4px 10px rgba(245,158,11,0.3)' }}
+              style={{ padding: '0.65rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.6rem', boxShadow: '0 4px 12px rgba(0,107,112,0.25)' }}
             >
-              <ShoppingBag size={18} />
-              <span>Cart ({cart.length})</span>
-              {cart.length > 0 && <span style={{ backgroundColor: '#B45309', color: '#FFF', padding: '0.1rem 0.4rem', borderRadius: '6px', fontSize: '0.78rem' }}>₹{cartTotal}</span>}
+              <ShoppingBag size={18} color="#FBBF24" />
+              <span>Cart ({cart.length}) • ₹{cartTotal}</span>
             </button>
           </div>
-        </header>
+        </div>
 
-        {/* Dynamic Main Content */}
-        <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
-          
-          {/* ===================== TAB 1: DIAGNOSTIC TESTS (THYROCARE) ===================== */}
-          {activeTab === 'TESTS' && (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <div>
-                  <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#0F172A' }}>
-                    Pathology Tests & Full-Body Packages ({filteredTests.length} Tests)
-                  </h2>
-                  <p style={{ color: '#64748B', fontSize: '0.88rem' }}>
-                    Compare negotiated Thyrocare rates against Apollo & Dr. Lal PathLabs. Free home sample collection in Tirupati.
-                  </p>
+        {/* ---------------- ACTIVE TAB 1: DIAGNOSTIC TESTS (UNIFIED MEDMARG LAB) ---------------- */}
+        {activeTab === 'TESTS' && (
+          <div>
+            
+            {/* Search & Sub-tabs Bar */}
+            <div style={{ backgroundColor: '#FFFFFF', padding: '1.25rem', borderRadius: '18px', border: '1px solid #E2E8F0', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              
+              {/* Search Box */}
+              <div style={{ position: 'relative' }}>
+                <Search size={20} color="#94A3B8" style={{ position: 'absolute', left: '14px', top: '12px' }} />
+                <input
+                  type="text"
+                  placeholder={`Search ${catalog.tests?.length || 913}+ tests (Thyroid, HbA1c, Vitamin D, Allergy, Liver, CBC)...`}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ width: '100%', padding: '0.75rem 1rem 0.75rem 2.8rem', borderRadius: '12px', border: '1.5px solid #E2E8F0', fontSize: '0.92rem', outline: 'none', color: '#0F172A', fontWeight: '600' }}
+                />
+              </div>
+
+              {/* Subtabs & Filters */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {[
+                    { key: 'ALL', label: `All Items (${(catalog.packages?.length || 0) + (catalog.profiles?.length || 0) + (catalog.tests?.length || 0)})` },
+                    { key: 'PACKAGES', label: `✨ Health Packages (${catalog.packages?.length || 4})` },
+                    { key: 'PROFILES', label: `🔬 Diagnostic Profiles (${catalog.profiles?.length || 87})` },
+                    { key: 'TESTS', label: `🧪 Individual Tests (${catalog.tests?.length || 913})` }
+                  ].map(tab => {
+                    const isSel = catalogSubTab === tab.key;
+                    return (
+                      <button
+                        key={tab.key}
+                        onClick={() => setCatalogSubTab(tab.key)}
+                        style={{
+                          padding: '0.45rem 0.95rem',
+                          borderRadius: '10px',
+                          border: isSel ? '1.5px solid #006B70' : '1px solid #E2E8F0',
+                          backgroundColor: isSel ? '#006B70' : '#F8FAFC',
+                          color: isSel ? '#FFFFFF' : '#475569',
+                          fontWeight: isSel ? '800' : '600',
+                          fontSize: '0.82rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {tab.label}
+                      </button>
+                    );
+                  })}
                 </div>
 
-                <div style={{ position: 'relative', minWidth: '300px' }}>
-                  <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '12px' }} />
-                  <input
-                    type="text"
-                    placeholder="Search tests (Aarogyam, Thyroid, Lipid)..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem 1rem 0.65rem 2.4rem', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '0.88rem', outline: 'none' }}
-                  />
-                </div>
-              </div>
-
-              {/* Category Filter Pills */}
-              <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.85rem', marginBottom: '1.5rem' }} className="custom-scrollbar">
-                {THYROCARE_CATEGORIES.map(cat => {
-                  const isSelected = selectedCategory === cat;
-                  return (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedCategory(cat)}
-                      style={{
-                        padding: '0.45rem 0.9rem',
-                        borderRadius: '10px',
-                        border: isSelected ? '1.5px solid #F59E0B' : '1px solid #E2E8F0',
-                        backgroundColor: isSelected ? '#FEF3C7' : '#FFFFFF',
-                        color: isSelected ? '#B45309' : '#475569',
-                        fontWeight: isSelected ? '800' : '600',
-                        fontSize: '0.84rem',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {cat}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Test Cards Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
-                {filteredTests.map(test => {
-                  const isInCart = cart.some(item => item.id === test.id);
-                  return (
-                    <div key={test.id} style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.4rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} className="card-interactive">
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                          <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '800' }}>
-                            {test.yellowTag}
-                          </span>
-                          <span style={{ fontSize: '0.75rem', color: '#006B70', fontWeight: '700', backgroundColor: '#E0F2F1', padding: '0.15rem 0.45rem', borderRadius: '6px' }}>
-                            {test.params} Parameters
-                          </span>
-                        </div>
-
-                        <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0F172A', lineHeight: 1.3 }}>
-                          {test.name}
-                        </h3>
-
-                        <p style={{ fontSize: '0.82rem', color: '#64748B', margin: '0.4rem 0 0.85rem', lineHeight: 1.4, minHeight: '38px' }}>
-                          {test.description}
-                        </p>
-
-                        <div style={{ fontSize: '0.78rem', color: '#475569', backgroundColor: '#F8FAFC', padding: '0.6rem 0.75rem', borderRadius: '10px', marginBottom: '1rem', border: '1px solid #F1F5F9' }}>
-                          <div>🩸 Sample: <strong>{test.sample}</strong></div>
-                          <div style={{ marginTop: '0.2rem' }}>⏰ Fasting: <strong>{test.fasting}</strong> • TAT: <strong>{test.tat}</strong></div>
-                        </div>
-                      </div>
-
-                      <div style={{ paddingTop: '0.85rem', borderTop: '1px solid #F1F5F9' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                          <div>
-                            <span style={{ fontSize: '0.7rem', color: '#64748B', display: 'block' }}>Thyrocare Rate</span>
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                              <span style={{ fontSize: '1.35rem', fontWeight: '900', color: '#B45309' }}>₹{test.thyrocarePrice}</span>
-                              <span style={{ fontSize: '0.8rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{test.originalPrice}</span>
-                            </div>
-                          </div>
-                          <div style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: '800', backgroundColor: '#D1FAE5', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>
-                            Free Home Visit
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => addToCart(test)}
-                          disabled={isInCart}
-                          style={{
-                            width: '100%',
-                            padding: '0.7rem',
-                            background: isInCart ? '#E2E8F0' : 'linear-gradient(135deg, #006B70 0%, #004D40 100%)',
-                            color: isInCart ? '#64748B' : '#FFF',
-                            border: 'none',
-                            borderRadius: '10px',
-                            fontWeight: '800',
-                            fontSize: '0.88rem',
-                            cursor: isInCart ? 'default' : 'pointer',
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            gap: '0.4rem'
-                          }}
-                        >
-                          {isInCart ? <><Check size={16} /> Added to Cart</> : <><ShoppingBag size={16} /> Add to Cart (₹{test.thyrocarePrice})</>}
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ===================== TAB 2: DOCTOR PRESCRIBED TESTS ===================== */}
-          {activeTab === 'DOCTOR_PRESCRIPTIONS' && (
-            <div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#0F172A' }}>Doctor Prescriptions & Prescribed Tests</h2>
-                <p style={{ color: '#64748B', fontSize: '0.88rem' }}>
-                  Diagnostic tests prescribed directly by your consulting doctor with customized pricing and shared report sync.
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {doctorPrescriptions.map(rx => (
-                  <div key={rx.prescriptionId} style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '2px solid #6366F1', padding: '1.75rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #E2E8F0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-                      <div>
-                        <span style={{ fontSize: '0.75rem', backgroundColor: '#EDE9FE', color: '#6D28D9', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '900' }}>
-                          PRESCRIBED BY YOUR DOCTOR
-                        </span>
-                        <h3 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#0F172A', marginTop: '0.4rem' }}>{rx.doctorName}</h3>
-                        <div style={{ fontSize: '0.85rem', color: '#64748B' }}>{rx.clinic} • Prescribed on {rx.date}</div>
-                      </div>
-
-                      <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '0.75rem', color: '#64748B' }}>Prescription Fee Total:</span>
-                        <div style={{ fontSize: '1.5rem', fontWeight: '900', color: '#4338CA' }}>₹{rx.totalDoctorPrice}</div>
-                      </div>
-                    </div>
-
-                    <div style={{ backgroundColor: '#F8FAFC', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '1.25rem' }}>
-                      <strong style={{ fontSize: '0.82rem', color: '#334155' }}>Doctor's Clinical Notes:</strong>
-                      <p style={{ fontSize: '0.88rem', color: '#475569', marginTop: '0.2rem' }}>{rx.notes}</p>
-                    </div>
-
-                    <div style={{ marginBottom: '1.25rem' }}>
-                      <strong style={{ fontSize: '0.85rem', color: '#0F172A', display: 'block', marginBottom: '0.5rem' }}>Prescribed Tests Checklist:</strong>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        {rx.tests.map((t, idx) => (
-                          <div key={idx} style={{ padding: '0.75rem 1rem', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                              <strong style={{ fontSize: '0.92rem', color: '#0F172A' }}>{t.name}</strong>
-                              <span style={{ fontSize: '0.75rem', color: '#64748B', marginLeft: '0.5rem' }}>({t.params} Biomarkers)</span>
-                            </div>
-                            <div>
-                              <span style={{ fontSize: '0.8rem', color: '#94A3B8', textDecoration: 'line-through', marginRight: '0.5rem' }}>₹{t.standardMRP}</span>
-                              <strong style={{ fontSize: '1.1rem', color: '#4338CA' }}>₹{t.doctorPrice}</strong>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid #E2E8F0' }}>
-                      <div style={{ fontSize: '0.85rem', color: '#006B70', fontWeight: '700' }}>
-                        📍 Free Home Sample Collection at Plot 42, Air Bypass Road, Tirupati
-                      </div>
-                      <button
-                        onClick={() => alert(`Home sample collection confirmed for Dr. Ananya Sharma's prescription! Phlebotomist Ramesh Kumar dispatched.`)}
-                        style={{ padding: '0.75rem 1.5rem', backgroundColor: '#6366F1', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.9rem', cursor: 'pointer' }}
-                      >
-                        Confirm Sample Collection Slot (₹{rx.totalDoctorPrice})
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ===================== TAB 3: 3.0T MRI & SCANS ===================== */}
-          {activeTab === 'SCANS' && (
-            <div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#0F172A' }}>Radiology & 3.0T Silent MRI Scans</h2>
-                <p style={{ color: '#64748B', fontSize: '0.88rem' }}>Confirmed slot booking with certified imaging centers in Tirupati.</p>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
-                {[
-                  { name: 'MRI Brain (Plain + Angio)', center: 'Aarthi Scans & Labs (Tirupati Center)', spec: 'Siemens 3.0 Tesla Silent MRI', price: 3499, mrp: 6000, prep: '4h Fasting • No metallic objects', slots: ['Today 5:00 PM', 'Tomorrow 10:00 AM'] },
-                  { name: 'HRCT Chest (Low Radiation)', center: 'Focus Imaging Diagnostics', spec: '128-Slice Low Dose CT', price: 2499, mrp: 4500, prep: 'Creatinine report required for contrast', slots: ['Today 6:30 PM', 'Tomorrow 11:30 AM'] },
-                  { name: 'USG Whole Abdomen & Pelvis', center: 'Medall Diagnostics', spec: '4D Color Doppler Ultrasound', price: 1199, mrp: 2000, prep: 'Full Bladder • 6h Fasting', slots: ['Tomorrow 9:00 AM', 'Tomorrow 3:00 PM'] }
-                ].map((scan, idx) => (
-                  <div key={idx} style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} className="card-interactive">
-                    <div>
-                      <span style={{ fontSize: '0.72rem', backgroundColor: '#CFFAFE', color: '#0891B2', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
-                        {scan.spec}
-                      </span>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#0F172A', marginTop: '0.5rem' }}>{scan.name}</h3>
-                      <div style={{ fontSize: '0.85rem', color: '#64748B', marginTop: '0.25rem' }}>{scan.center}</div>
-                      <div style={{ fontSize: '0.8rem', color: '#475569', backgroundColor: '#F8FAFC', padding: '0.75rem', borderRadius: '10px', margin: '0.85rem 0' }}>
-                        <strong>Protocol:</strong> {scan.prep}
-                      </div>
-                    </div>
-
-                    <div style={{ paddingTop: '1rem', borderTop: '1px solid #F1F5F9' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-                        <div>
-                          <span style={{ fontSize: '0.7rem', color: '#64748B' }}>MedMarg Rate</span>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                            <span style={{ fontSize: '1.35rem', fontWeight: '900', color: '#0F172A' }}>₹{scan.price}</span>
-                            <span style={{ fontSize: '0.8rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{scan.mrp}</span>
-                          </div>
-                        </div>
-                        <span style={{ fontSize: '0.75rem', color: '#10B981', fontWeight: '800' }}>Save {Math.round(((scan.mrp - scan.price) / scan.mrp) * 100)}%</span>
-                      </div>
-
-                      <button
-                        onClick={() => alert(`Appointment Slot reserved for ${scan.name} at ${scan.center} (${scan.slots[0]}). Appointment Pass sent to your WhatsApp!`)}
-                        style={{ width: '100%', padding: '0.75rem', backgroundColor: '#06B6D4', color: '#0F172A', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer' }}
-                      >
-                        Reserve Slot ({scan.slots[0]})
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ===================== TAB 4: IN-CLINIC DOCTORS ===================== */}
-          {activeTab === 'DOCTORS' && (
-            <div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#0F172A' }}>In-Clinic OPD Doctor Appointments</h2>
-                <p style={{ color: '#64748B', fontSize: '0.88rem' }}>Book walk-in clinic consultation tokens with verified specialists in Tirupati.</p>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
-                {[
-                  { name: 'Dr. Ananya Sharma', specialty: 'General Physician & Diabetologist', qual: 'MBBS, MD (Internal Medicine)', clinic: 'MedMarg Care Clinic, Air Bypass Road, Tirupati', fee: 499, exp: '14 yrs exp', slot: 'Today, 4:30 PM (Token #4)' },
-                  { name: 'Dr. Rajeshwar Rao', specialty: 'Cardiologist', qual: 'MBBS, MD, DM (Cardiology)', clinic: 'Heart Wellness Institute, SVIMS Road, Tirupati', fee: 800, exp: '22 yrs exp', slot: 'Tomorrow, 10:00 AM (Token #2)' }
-                ].map((doc, idx) => (
-                  <div key={idx} style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                      <div style={{ width: '56px', height: '56px', borderRadius: '16px', backgroundColor: '#EDE9FE', color: '#8B5CF6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Stethoscope size={28} />
-                      </div>
-                      <div>
-                        <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#0F172A' }}>{doc.name}</h3>
-                        <div style={{ color: '#8B5CF6', fontWeight: '700', fontSize: '0.88rem' }}>{doc.specialty}</div>
-                        <div style={{ color: '#64748B', fontSize: '0.8rem' }}>{doc.qual} • {doc.exp}</div>
-                      </div>
-                    </div>
-
-                    <div style={{ fontSize: '0.85rem', color: '#334155', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1.25rem' }}>
-                      <MapPin size={16} color="#8B5CF6" /> {doc.clinic}
-                    </div>
-
-                    <div style={{ paddingTop: '1rem', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: '#64748B' }}>Consultation Fee</span>
-                        <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#0F172A' }}>₹{doc.fee}</div>
-                      </div>
-                      <button
-                        onClick={() => alert(`In-Clinic OPD Appointment confirmed for ${doc.name}! ${doc.slot}.`)}
-                        style={{ padding: '0.7rem 1.3rem', backgroundColor: '#8B5CF6', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer' }}
-                      >
-                        Book OPD Token
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ===================== TAB 5: GENERIC PHARMACY ===================== */}
-          {activeTab === 'PHARMACY' && (
-            <div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#065F46' }}>Generic Pharmacy & 70% Cost-Saver</h2>
-                <p style={{ color: '#64748B', fontSize: '0.88rem' }}>Upload prescription to substitute branded medications with exact generic equivalents.</p>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'start' }}>
-                <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '2px dashed #10B981', padding: '2.5rem 2rem', textAlign: 'center' }}>
-                  <div style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: '#D1FAE5', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
-                    <UploadCloud size={30} />
-                  </div>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#0F172A' }}>Upload Doctor's Prescription</h3>
-                  <p style={{ fontSize: '0.85rem', color: '#64748B', margin: '0.4rem 0 1.5rem' }}>
-                    Supports PDF, JPG or camera scan.
-                  </p>
-                  <button
-                    onClick={() => setPrescriptionUploaded(true)}
-                    style={{ padding: '0.8rem 1.6rem', backgroundColor: '#10B981', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '0.92rem', cursor: 'pointer' }}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#64748B' }}>
+                  <span>Fasting:</span>
+                  <select 
+                    value={fastingFilter} 
+                    onChange={(e) => setFastingFilter(e.target.value)}
+                    style={{ padding: '0.3rem 0.5rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.8rem', outline: 'none' }}
                   >
-                    {prescriptionUploaded ? '✓ Prescription Analyzed (rx_tirupati.pdf)' : 'Select Prescription File'}
+                    <option value="ALL">All</option>
+                    <option value="YES">Required</option>
+                    <option value="NO">Not Required</option>
+                  </select>
+
+                  <span style={{ marginLeft: '0.5rem' }}>Sample:</span>
+                  <select 
+                    value={sampleFilter} 
+                    onChange={(e) => setSampleFilter(e.target.value)}
+                    style={{ padding: '0.3rem 0.5rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.8rem', outline: 'none' }}
+                  >
+                    <option value="ALL">All</option>
+                    <option value="SERUM">Serum</option>
+                    <option value="EDTA">EDTA</option>
+                    <option value="URINE">Urine</option>
+                  </select>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Test Cards Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+              {displayCatalogItems.slice(0, 80).map((item) => {
+                const inCart = cart.some(c => c.id === (item.id || item.code));
+                return (
+                  <div
+                    key={item.id || item.code}
+                    style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: item.itemType === 'PACKAGE' ? '2px solid #F59E0B' : '1.5px solid #E2E8F0', padding: '1.35rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          backgroundColor: item.itemType === 'PACKAGE' ? '#FEF3C7' : (item.itemType === 'PROFILE' ? '#CFFAFE' : '#E0F2F1'), 
+                          color: item.itemType === 'PACKAGE' ? '#B45309' : (item.itemType === 'PROFILE' ? '#0891B2' : '#006B70'), 
+                          padding: '0.15rem 0.45rem', 
+                          borderRadius: '4px', 
+                          fontWeight: '800' 
+                        }}>
+                          {item.itemType || 'TEST'} {item.code ? `• ${item.code}` : ''}
+                        </span>
+                        
+                        <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: '700', backgroundColor: '#D1FAE5', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                          Free Home Pickup
+                        </span>
+                      </div>
+
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0F172A', lineHeight: 1.3 }}>
+                        {item.name}
+                      </h3>
+
+                      <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.4rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                        <div>🩸 Sample: <strong>{item.sampleType || item.sampleTypes?.join(', ') || 'SERUM'}</strong></div>
+                        <div>🍽️ Fasting: <strong style={{ color: item.fasting === 'YES' ? '#D97706' : '#10B981' }}>{item.fasting === 'YES' ? 'Yes (8-10 Hours)' : 'No Fasting'}</strong></div>
+                        <div>⏱️ Turnaround: <strong>{item.tatHours || 24} Hours</strong></div>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: '1rem', paddingTop: '0.85rem', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '1.35rem', fontWeight: '900', color: '#006B70' }}>₹{item.price}</div>
+                        {item.mrp && (
+                          <div style={{ fontSize: '0.75rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{item.mrp}</div>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => inCart ? removeFromCart(item.id || item.code) : addToCart(item)}
+                        style={{
+                          padding: '0.55rem 1.1rem',
+                          backgroundColor: inCart ? '#EF4444' : '#006B70',
+                          color: '#FFF',
+                          border: 'none',
+                          borderRadius: '10px',
+                          fontWeight: '800',
+                          fontSize: '0.82rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.35rem'
+                        }}
+                      >
+                        {inCart ? 'Remove' : '+ Add Test'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {displayCatalogItems.length > 80 && (
+              <div style={{ textAlign: 'center', marginTop: '1.5rem', color: '#64748B', fontSize: '0.85rem' }}>
+                Showing 80 of {displayCatalogItems.length} matching items. Use the search bar above to narrow down results.
+              </div>
+            )}
+
+          </div>
+        )}
+
+        {/* ---------------- ACTIVE TAB 2: DOCTOR PRESCRIPTIONS ---------------- */}
+        {activeTab === 'DOCTOR_PRESCRIPTIONS' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {doctorPrescriptions.map((rx) => (
+              <div key={rx.prescriptionId} style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1.5px solid #CBD5E1', padding: '1.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', backgroundColor: '#EDE9FE', color: '#8B5CF6', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: '800' }}>
+                      IN-CLINIC DOCTOR PRESCRIPTION #{rx.prescriptionId}
+                    </span>
+                    <h2 style={{ fontSize: '1.35rem', fontWeight: '900', color: '#0F172A', marginTop: '0.4rem' }}>
+                      Prescribed by {rx.doctorName}
+                    </h2>
+                    <div style={{ fontSize: '0.85rem', color: '#64748B' }}>{rx.clinic} • {rx.date}</div>
+                  </div>
+
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '0.78rem', color: '#10B981', fontWeight: '800', backgroundColor: '#D1FAE5', padding: '0.25rem 0.65rem', borderRadius: '6px' }}>
+                      Phlebotomist Assigned
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '1.25rem', padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.5rem' }}>DOCTOR'S CLINICAL NOTE:</div>
+                  <p style={{ fontSize: '0.88rem', color: '#334155', margin: 0 }}>"{rx.notes}"</p>
+                </div>
+
+                <div style={{ marginTop: '1.25rem' }}>
+                  <h4 style={{ fontSize: '0.92rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.75rem' }}>Recommended Lab Tests:</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    {rx.tests.map((t, idx) => (
+                      <div key={idx} style={{ padding: '0.75rem 1rem', borderRadius: '10px', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <strong style={{ fontSize: '0.92rem', color: '#0F172A' }}>{t.name}</strong>
+                          <span style={{ fontSize: '0.75rem', color: '#64748B', marginLeft: '0.5rem' }}>({t.params} Parameters)</span>
+                        </div>
+                        <div style={{ fontWeight: '800', color: '#006B70' }}>₹{t.doctorPrice}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ fontSize: '0.8rem', color: '#64748B' }}>Total Test Amount</span>
+                    <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#006B70' }}>₹{rx.totalDoctorPrice}</div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      rx.tests.forEach(t => addToCart({ name: t.name, price: t.doctorPrice, mrp: t.standardMRP, id: t.name }));
+                      setShowCheckoutModal(true);
+                    }}
+                    style={{ padding: '0.75rem 1.5rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer' }}
+                  >
+                    Schedule Home Sample Pickup
                   </button>
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-                <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '1.75rem' }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0F172A', marginBottom: '1rem' }}>Cost Comparison</h3>
-                  <div style={{ padding: '1.25rem', backgroundColor: '#D1FAE5', borderRadius: '12px', border: '2px solid #10B981' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.75rem', backgroundColor: '#F59E0B', color: '#FFF', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>SAVE 53%</span>
-                      <span style={{ fontSize: '1.45rem', fontWeight: '900', color: '#065F46' }}>₹135</span>
-                    </div>
-                    <div style={{ marginTop: '0.4rem' }}>
-                      <strong style={{ color: '#065F46' }}>Saroglitazar 4mg (Generic Equivalent)</strong>
-                    </div>
-                  </div>
+        {/* ---------------- ACTIVE TAB 3: SCANS ---------------- */}
+        {activeTab === 'SCANS' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
+            {[
+              { name: 'MRI Brain (Plain + Angio)', spec: 'Siemens 3.0 Tesla Silent MRI', price: 3499, mrp: 6000, slot: 'Today, 5:00 PM' },
+              { name: 'HRCT Chest (Low Dose Protocol)', spec: '128-Slice Low Dose CT', price: 2499, mrp: 4500, slot: 'Today, 6:30 PM' },
+              { name: 'USG Whole Abdomen & Pelvis', spec: '4D Color Doppler Ultrasound', price: 1199, mrp: 2000, slot: 'Tomorrow, 9:30 AM' }
+            ].map((scan, i) => (
+              <div key={i} style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.5rem' }}>
+                <span style={{ fontSize: '0.75rem', backgroundColor: '#CFFAFE', color: '#0891B2', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '800' }}>
+                  {scan.spec}
+                </span>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#0F172A', marginTop: '0.6rem' }}>{scan.name}</h3>
+                <div style={{ fontSize: '0.85rem', color: '#10B981', fontWeight: '700', marginTop: '0.4rem' }}>⏰ Confirmed Slot: {scan.slot}</div>
+                <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '1.35rem', fontWeight: '900', color: '#006B70' }}>₹{scan.price}</span>
+                  <button 
+                    onClick={() => alert('Slot reserved! Center address and token sent via WhatsApp.')}
+                    style={{ padding: '0.6rem 1.2rem', backgroundColor: '#06B6D4', color: '#0F172A', border: 'none', borderRadius: '10px', fontWeight: '800', cursor: 'pointer' }}
+                  >
+                    Reserve Slot
+                  </button>
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ---------------- ACTIVE TAB 4: DOCTORS ---------------- */}
+        {activeTab === 'DOCTORS' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
+            {[
+              { name: 'Dr. Ananya Sharma', specialty: 'General Physician & Diabetologist', qual: 'MBBS, MD', clinic: 'MedMarg Care Clinic, Air Bypass Road', fee: '₹499', slot: 'Today, 4:30 PM' },
+              { name: 'Dr. Rajeshwar Rao', specialty: 'Cardiologist', qual: 'MBBS, MD, DM', clinic: 'Heart Wellness Institute, Tirupati', fee: '₹800', slot: 'Tomorrow, 10:00 AM' }
+            ].map((doc, i) => (
+              <div key={i} style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0F172A' }}>{doc.name}</h3>
+                <div style={{ fontSize: '0.85rem', color: '#8B5CF6', fontWeight: '700' }}>{doc.specialty}</div>
+                <div style={{ fontSize: '0.8rem', color: '#64748B', marginTop: '0.2rem' }}>{doc.clinic}</div>
+                <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0F172A' }}>{doc.fee}</span>
+                  <button 
+                    onClick={() => alert(`In-Clinic Token Confirmed for ${doc.name} at ${doc.slot}`)}
+                    style={{ padding: '0.6rem 1.2rem', backgroundColor: '#8B5CF6', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', cursor: 'pointer' }}
+                  >
+                    Book Token
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ---------------- ACTIVE TAB 5: PHARMACY ---------------- */}
+        {activeTab === 'PHARMACY' && (
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '2rem', border: '1.5px solid #A7F3D0' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#065F46' }}>Generic Medicine Salt Matcher</h2>
+            <p style={{ fontSize: '0.88rem', color: '#64748B', marginTop: '0.2rem' }}>Save up to 70% by matching branded prescription drugs to WHO-GMP certified generic equivalents.</p>
+            
+            <div style={{ marginTop: '1.5rem', padding: '1.5rem', borderRadius: '14px', backgroundColor: '#ECFDF5', border: '1px solid #A7F3D0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <strong style={{ color: '#064E3B' }}>Upload Doctor's Prescription PDF / Image</strong>
+                  <div style={{ fontSize: '0.78rem', color: '#047857' }}>Auto-synced to Google Drive for secure pharmacist review</div>
+                </div>
+                <button 
+                  onClick={() => setPrescriptionUploaded(true)}
+                  style={{ padding: '0.65rem 1.25rem', backgroundColor: '#059669', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', cursor: 'pointer' }}
+                >
+                  {prescriptionUploaded ? '✓ Prescription Uploaded' : 'Upload Rx'}
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ===================== TAB 6: HEALTH RECORDS ===================== */}
-          {activeTab === 'RECORDS' && (
-            <div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#0F172A' }}>Digital Health Records & Google Drive Reports</h2>
-                <p style={{ color: '#64748B', fontSize: '0.88rem' }}>Direct Google Drive shareable links to all diagnostic lab and radiology reports.</p>
-              </div>
+        {/* ---------------- ACTIVE TAB 6: HEALTH RECORDS ---------------- */}
+        {activeTab === 'RECORDS' && (
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '2rem', border: '1px solid #E2E8F0' }}>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A' }}>Digital Health Locker & Biomarker Trends</h2>
+            <p style={{ fontSize: '0.88rem', color: '#64748B', marginTop: '0.2rem' }}>All lab test PDF reports and doctor prescriptions are automatically organized and backed up to Google Drive.</p>
 
-              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.5rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {[
-                    { title: 'Thyrocare Aarogyam 1.3 Full Body Report (104 Tests)', date: '15 Aug 2026', lab: 'Thyrocare Central Processing Lab', driveLink: 'https://drive.google.com/file/d/1A2B3C4D_MedMarg_SampleReport_Aarogyam/view?usp=sharing' },
-                    { title: 'Siemens 3.0T MRI Brain Scan DICOM & PDF', date: '02 Jul 2026', lab: 'Aarthi Scans & Labs', driveLink: 'https://drive.google.com/file/d/1X9Y8Z7W_MedMarg_MRI_Brain_Scan/view?usp=sharing' }
-                  ].map((rep, idx) => (
-                    <div key={idx} style={{ padding: '1rem 1.25rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <strong style={{ fontSize: '0.95rem', color: '#0F172A' }}>{rep.title}</strong>
-                        <div style={{ fontSize: '0.78rem', color: '#64748B' }}>{rep.lab} • {rep.date}</div>
-                      </div>
-                      <a
-                        href={rep.driveLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ padding: '0.5rem 1rem', backgroundColor: '#006B70', color: '#FFF', borderRadius: '8px', textDecoration: 'none', fontSize: '0.82rem', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-                      >
-                        Open in Google Drive <ExternalLink size={14} />
-                      </a>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginTop: '1.5rem' }}>
+              {[
+                { title: 'Master Health Checkup Report', date: '15 Aug 2026', size: '1.8 MB PDF', id: 'REP-8821' },
+                { title: 'Lipid & HbA1c Profile Report', date: '02 June 2026', size: '1.2 MB PDF', id: 'REP-7412' }
+              ].map((doc, idx) => (
+                <div key={idx} style={{ padding: '1.25rem', borderRadius: '14px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <FileText size={22} color="#006B70" />
+                    <div>
+                      <strong style={{ fontSize: '0.92rem', color: '#0F172A' }}>{doc.title}</strong>
+                      <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{doc.date} • {doc.size}</div>
                     </div>
-                  ))}
+                  </div>
+                  <button 
+                    onClick={() => alert(`Opening Google Drive PDF for ${doc.id}...`)}
+                    style={{ marginTop: '1rem', width: '100%', padding: '0.45rem', backgroundColor: '#E0F2F1', color: '#006B70', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer' }}
+                  >
+                    View on Google Drive
+                  </button>
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ---------------- ACTIVE TAB 7: LIVE ORDERS ---------------- */}
+        {activeTab === 'ORDERS' && (
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '2rem', border: '1px solid #E2E8F0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', backgroundColor: '#E0F2F1', color: '#006B70', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: '800' }}>
+                  LIVE BOOKING #{activeOrder.id}
+                </span>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.35rem' }}>
+                  Home Sample Collection Scheduled
+                </h2>
+              </div>
+              <span style={{ padding: '0.35rem 0.85rem', backgroundColor: '#FEF3C7', color: '#B45309', borderRadius: '20px', fontWeight: '800', fontSize: '0.85rem' }}>
+                Phlebotomist On Route
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginTop: '1.5rem' }}>
+              <div style={{ padding: '1.25rem', borderRadius: '14px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700' }}>ASSIGNED PHLEBOTOMIST</div>
+                <div style={{ fontSize: '1rem', fontWeight: '800', color: '#0F172A', marginTop: '0.25rem' }}>{activeOrder.phleboName}</div>
+                <div style={{ fontSize: '0.85rem', color: '#006B70', marginTop: '0.2rem' }}>📞 {activeOrder.phleboPhone}</div>
+              </div>
+
+              <div style={{ padding: '1.25rem', borderRadius: '14px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700' }}>COLLECTION SLOT & ADDRESS</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#0F172A', marginTop: '0.25rem' }}>{activeOrder.slot}</div>
+                <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '0.2rem' }}>📍 {activeOrder.address}</div>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ===================== TAB 7: MY BOOKINGS ===================== */}
-          {activeTab === 'ORDERS' && (
-            <div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#0F172A' }}>My Diagnostic Bookings & Real-Time Tracking</h2>
-                <p style={{ color: '#64748B', fontSize: '0.88rem' }}>Live phlebotomist home collection status in Tirupati.</p>
-              </div>
-
-              <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '2rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E2E8F0', paddingBottom: '1.25rem', marginBottom: '1.5rem' }}>
-                  <div>
-                    <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '700' }}>BOOKING ID</span>
-                    <h3 style={{ fontSize: '1.35rem', fontWeight: '900', color: '#006B70' }}>{activeOrder.id}</h3>
-                    <div style={{ fontSize: '0.85rem', color: '#64748B' }}>Scheduled Date: <strong>{activeOrder.date}</strong> ({activeOrder.slot})</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.25rem 0.65rem', borderRadius: '6px', fontWeight: '900' }}>PHLEBOTOMIST ASSIGNED</span>
-                    <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#0F172A', marginTop: '0.3rem' }}>₹{activeOrder.totalAmount}</div>
-                  </div>
-                </div>
-
-                <div style={{ backgroundColor: '#FFFBEB', borderRadius: '14px', border: '1.5px solid #FDE68A', padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <strong style={{ color: '#B45309' }}>{activeOrder.phleboName}</strong>
-                    <div style={{ fontSize: '0.82rem', color: '#92400E' }}>📍 Address: {activeOrder.address}</div>
-                  </div>
-                  <a href={`tel:${activeOrder.phleboPhone}`} style={{ padding: '0.6rem 1.1rem', backgroundColor: '#B45309', color: '#FFF', borderRadius: '8px', textDecoration: 'none', fontWeight: '800', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <Phone size={15} /> Call Phlebotomist
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
-
-        </main>
-      </div>
+      </main>
 
       {/* CHECKOUT MODAL */}
       {showCheckoutModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '600px', width: '100%', padding: '2rem', border: '2px solid #006B70' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(6px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '540px', width: '100%', padding: '2rem', boxShadow: '0 25px 60px -15px rgba(0,0,0,0.35)', border: '2px solid #006B70', maxHeight: '90vh', overflowY: 'auto' }}>
+            
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A' }}>Confirm Home Sample Collection</h2>
-              <button onClick={() => setShowCheckoutModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer' }}>✕</button>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A' }}>Confirm Home Sample Booking</h2>
+              <button onClick={() => setShowCheckoutModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748B' }}>✕</button>
             </div>
 
-            <form onSubmit={handleCompleteBooking} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ backgroundColor: '#F8FAFC', padding: '1rem', borderRadius: '12px' }}>
-                {cart.map(item => (
-                  <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0' }}>
-                    <span>{item.name}</span>
-                    <strong>₹{item.price}</strong>
+            {/* Selected items */}
+            <div style={{ marginBottom: '1.25rem', padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: '800', color: '#64748B', marginBottom: '0.6rem' }}>SELECTED TESTS & PROFILES ({cart.length})</div>
+              {cart.map(item => (
+                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid #F1F5F9' }}>
+                  <div>
+                    <strong style={{ fontSize: '0.88rem', color: '#0F172A' }}>{item.name}</strong>
+                    <div style={{ fontSize: '0.74rem', color: '#64748B' }}>Sample: {item.sampleType} • Fasting: {item.fasting}</div>
                   </div>
-                ))}
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '900', color: '#006B70', borderTop: '1px solid #E2E8F0', paddingTop: '0.5rem', marginTop: '0.5rem' }}>
-                  <span>Total Payable:</span>
-                  <span>₹{cartTotal}</span>
+                  <div style={{ fontWeight: '800', color: '#006B70' }}>₹{item.price}</div>
                 </div>
+              ))}
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.75rem', paddingTop: '0.6rem', borderTop: '1.5px solid #CBD5E1', fontSize: '1.1rem', fontWeight: '900' }}>
+                <span>Total Amount:</span>
+                <span style={{ color: '#006B70' }}>₹{cartTotal}</span>
+              </div>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleCompleteBooking} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Patient Full Name</label>
+                <input 
+                  type="text" 
+                  value={patientForm.name} 
+                  onChange={(e) => setPatientForm({ ...patientForm, name: e.target.value })}
+                  required
+                  style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid #CBD5E1', marginTop: '0.25rem' }}
+                />
               </div>
 
-              <button type="submit" style={{ padding: '0.9rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '1rem', cursor: 'pointer' }}>
-                Schedule Phlebotomist (₹{cartTotal})
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Home Collection Address</label>
+                <textarea 
+                  value={patientForm.address} 
+                  onChange={(e) => setPatientForm({ ...patientForm, address: e.target.value })}
+                  rows={2}
+                  required
+                  style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid #CBD5E1', marginTop: '0.25rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#475569' }}>Preferred Time Slot</label>
+                <select 
+                  value={patientForm.slot} 
+                  onChange={(e) => setPatientForm({ ...patientForm, slot: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid #CBD5E1', marginTop: '0.25rem' }}
+                >
+                  <option>06:30 AM - 07:30 AM (Early Fasting)</option>
+                  <option>07:30 AM - 08:30 AM (Standard Fasting)</option>
+                  <option>08:30 AM - 09:30 AM (Morning Fasting)</option>
+                  <option>10:00 AM - 12:00 PM (Non-Fasting)</option>
+                </select>
+              </div>
+
+              <button
+                type="submit"
+                style={{ marginTop: '0.75rem', padding: '0.85rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '1rem', cursor: 'pointer' }}
+              >
+                Confirm Free Home Collection (₹{cartTotal})
               </button>
             </form>
+
           </div>
         </div>
       )}
 
-      {/* BOOKING SUCCESS */}
+      {/* SUCCESS MODAL */}
       {showBookingSuccess && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 130, backgroundColor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '480px', width: '100%', padding: '2.5rem 2rem', textAlign: 'center', border: '2px solid #10B981' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#D1FAE5', color: '#10B981', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 130, backgroundColor: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '460px', width: '100%', padding: '2.5rem 2rem', textAlign: 'center' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#D1FAE5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem' }}>
               <CheckCircle2 size={36} />
             </div>
-            <h2 style={{ fontSize: '1.6rem', fontWeight: '900', color: '#0F172A' }}>Booking Confirmed!</h2>
-            <p style={{ color: '#64748B', fontSize: '0.88rem', margin: '0.75rem 0 1.5rem' }}>
-              Phlebotomist assigned for tomorrow morning at your address in Tirupati.
+            <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A' }}>Booking Confirmed!</h2>
+            <p style={{ fontSize: '0.88rem', color: '#64748B', marginTop: '0.4rem', lineHeight: 1.5 }}>
+              Your MedMarg diagnostic order has been assigned to a certified phlebotomist. Live status updates have been sent to your WhatsApp.
             </p>
-            <button onClick={() => { setShowBookingSuccess(false); setActiveTab('ORDERS'); }} style={{ padding: '0.8rem 1.6rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', cursor: 'pointer' }}>
-              Track Phlebotomist
+            <button
+              onClick={() => setShowBookingSuccess(false)}
+              style={{ marginTop: '1.5rem', padding: '0.75rem 2rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer' }}
+            >
+              Back to Dashboard
             </button>
           </div>
         </div>
