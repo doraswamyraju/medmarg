@@ -33,7 +33,9 @@ function getSheetsClient() {
  * @param {string} spreadsheetId 
  * @returns {Promise<{tests: Array, profiles: Array, lastSynced: string}>}
  */
-async function fetchCatalogFromGoogleSheet(spreadsheetId = process.env.GOOGLE_SHEETS_CATALOG_ID) {
+const DEFAULT_SPREADSHEET_ID = process.env.GOOGLE_SHEETS_CATALOG_ID || '1W37T0qzCZDYoBYPIG5MsWZeBZrict_BfDUx9itGSZp0';
+
+async function fetchCatalogFromGoogleSheet(spreadsheetId = DEFAULT_SPREADSHEET_ID) {
     const sheets = getSheetsClient();
 
     if (!sheets || !spreadsheetId) {
@@ -103,7 +105,7 @@ async function fetchCatalogFromGoogleSheet(spreadsheetId = process.env.GOOGLE_SH
 /**
  * Append or update a single test in Google Sheet
  */
-async function appendTestToSheet(testItem, spreadsheetId = process.env.GOOGLE_SHEETS_CATALOG_ID) {
+async function appendTestToSheet(testItem, spreadsheetId = DEFAULT_SPREADSHEET_ID) {
     const sheets = getSheetsClient();
     if (!sheets || !spreadsheetId) {
         return { success: true, message: 'Saved to MedMarg DB (Sheet sync queued)' };
@@ -130,7 +132,7 @@ async function appendTestToSheet(testItem, spreadsheetId = process.env.GOOGLE_SH
 /**
  * Append or update a profile in Google Sheet
  */
-async function appendProfileToSheet(profileItem, spreadsheetId = process.env.GOOGLE_SHEETS_CATALOG_ID) {
+async function appendProfileToSheet(profileItem, spreadsheetId = DEFAULT_SPREADSHEET_ID) {
     const sheets = getSheetsClient();
     if (!sheets || !spreadsheetId) {
         return { success: true, message: 'Saved to MedMarg DB (Sheet sync queued)' };

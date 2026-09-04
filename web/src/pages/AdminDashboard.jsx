@@ -67,7 +67,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   // Google Sheets Sync State
   const [isSyncingSheets, setIsSyncingSheets] = useState(false);
   const [sheetSyncStatus, setSheetSyncStatus] = useState('CONNECTED_IDLE');
-  const [googleSheetId, setGoogleSheetId] = useState('1A2b3C4d5E6f_tests_data_master');
+  const [googleSheetId, setGoogleSheetId] = useState('1W37T0qzCZDYoBYPIG5MsWZeBZrict_BfDUx9itGSZp0');
   const [syncLogs, setSyncLogs] = useState([
     { timestamp: 'Just now', action: 'Desktop tests data.xlsx initial ingestion verified (913 Tests, 87 Profiles).', status: 'SUCCESS' }
   ]);
