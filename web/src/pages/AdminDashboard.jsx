@@ -850,9 +850,9 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                       <input
                         type="url"
-                        placeholder="Paste your Google Apps Script Webhook URL (https://script.google.com/macros/s/...)"
+                        placeholder="Paste your Google Apps Script Webhook URL"
                         id="apps-script-webhook-input"
-                        defaultValue=""
+                        defaultValue="https://script.google.com/macros/s/AKfycbw8YvvSuCjpOPob8hgfIEoKt1Lry_gnJjXx82iNI_nT-TlE5eiky8WAWM1r-iicroicHA/exec"
                         style={{ flex: 1, minWidth: '320px', padding: '0.75rem 1rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.88rem', outline: 'none' }}
                       />
                       <button

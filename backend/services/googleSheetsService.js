@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 const DEFAULT_SPREADSHEET_ID = process.env.GOOGLE_SHEETS_CATALOG_ID || '1W37T0qzCZDYoBYPIG5MsWZeBZrict_BfDUx9itGSZp0';
+const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbw8YvvSuCjpOPob8hgfIEoKt1Lry_gnJjXx82iNI_nT-TlE5eiky8WAWM1r-iicroicHA/exec';
 const CONFIG_FILE = path.join(__dirname, '../data/webhookConfig.json');
 
 function getWebhookUrl() {
@@ -13,7 +14,7 @@ function getWebhookUrl() {
             if (cfg.webhookUrl) return cfg.webhookUrl;
         }
     } catch (e) {}
-    return process.env.GOOGLE_SHEETS_WEBHOOK_URL || '';
+    return process.env.GOOGLE_SHEETS_WEBHOOK_URL || DEFAULT_WEBHOOK_URL;
 }
 
 function saveWebhookUrl(url) {
