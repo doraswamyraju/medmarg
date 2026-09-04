@@ -51,6 +51,7 @@ import {
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState, saveCatalogState, calculateAggregatedSamples, calculateFastingRequirement } from '../data/catalogStore';
+import { API_BASE } from '../data/apiConfig';
 
 export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   // Navigation State
@@ -120,14 +121,14 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
 
   // Fetch live catalog from backend if available
   useEffect(() => {
-    fetch('http://localhost:5080/api/v1/catalog/summary')
+    fetch(`${API_BASE}/api/v1/catalog/summary`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
           Promise.all([
-            fetch('http://localhost:5080/api/v1/catalog/packages').then(r => r.json()),
-            fetch('http://localhost:5080/api/v1/catalog/profiles').then(r => r.json()),
-            fetch('http://localhost:5080/api/v1/catalog/tests?limit=1000').then(r => r.json())
+            fetch(`${API_BASE}/api/v1/catalog/packages`).then(r => r.json()),
+            fetch(`${API_BASE}/api/v1/catalog/profiles`).then(r => r.json()),
+            fetch(`${API_BASE}/api/v1/catalog/tests?limit=1000`).then(r => r.json())
           ]).then(([pkgs, profs, tsts]) => {
             if (pkgs.packages && profs.profiles && tsts.tests) {
               const updated = {
@@ -177,7 +178,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
 
     // Sync to backend & Sheets
     try {
-      await fetch('http://localhost:5080/api/v1/catalog/tests', {
+      await fetch(`${API_BASE}/api/v1/catalog/tests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTest)
@@ -220,7 +221,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     setEditingItem(null);
 
     try {
-      await fetch('http://localhost:5080/api/v1/catalog/profiles', {
+      await fetch(`${API_BASE}/api/v1/catalog/profiles`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newProfile)
@@ -277,7 +278,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     setShowPackageBuilderModal(false);
 
     try {
-      await fetch('http://localhost:5080/api/v1/catalog/packages', {
+      await fetch(`${API_BASE}/api/v1/catalog/packages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newPkg)
@@ -303,7 +304,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     setIsSyncingSheets(true);
     setSheetSyncStatus('SYNCING');
     try {
-      const res = await fetch('http://localhost:5080/api/v1/catalog/sync', { method: 'POST' });
+      const res = await fetch(`${API_BASE}/api/v1/catalog/sync`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         setSheetSyncStatus('SYNCED_SUCCESS');

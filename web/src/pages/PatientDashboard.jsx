@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState, filterCatalogItems } from '../data/catalogStore';
+import { API_BASE } from '../data/apiConfig';
 
 export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   const [activeTab, setActiveTab] = useState('TESTS'); // 'TESTS' | 'DOCTOR_PRESCRIPTIONS' | 'SCANS' | 'DOCTORS' | 'PHARMACY' | 'RECORDS' | 'ORDERS'
@@ -111,14 +112,14 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
 
   // Sync catalog from backend API if available
   useEffect(() => {
-    fetch('http://localhost:5080/api/v1/catalog/summary')
+    fetch(`${API_BASE}/api/v1/catalog/summary`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
           Promise.all([
-            fetch('http://localhost:5080/api/v1/catalog/packages').then(r => r.json()),
-            fetch('http://localhost:5080/api/v1/catalog/profiles').then(r => r.json()),
-            fetch('http://localhost:5080/api/v1/catalog/tests?limit=1000').then(r => r.json())
+            fetch(`${API_BASE}/api/v1/catalog/packages`).then(r => r.json()),
+            fetch(`${API_BASE}/api/v1/catalog/profiles`).then(r => r.json()),
+            fetch(`${API_BASE}/api/v1/catalog/tests?limit=1000`).then(r => r.json())
           ]).then(([pkgs, profs, tsts]) => {
             if (pkgs.packages && profs.profiles && tsts.tests) {
               setCatalog({
