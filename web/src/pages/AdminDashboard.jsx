@@ -51,7 +51,7 @@ import {
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState, saveCatalogState, calculateAggregatedSamples, calculateFastingRequirement } from '../data/catalogStore';
-import { API_BASE } from '../data/apiConfig';
+import { API_BASE, safeFetch } from '../data/apiConfig';
 
 export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   // Navigation State
@@ -121,14 +121,14 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
 
   // Fetch live catalog from backend if available
   useEffect(() => {
-    fetch(`${API_BASE}/api/v1/catalog/summary`)
+    safeFetch(`${API_BASE}/api/v1/catalog/summary`, {}, 2500)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
           Promise.all([
-            fetch(`${API_BASE}/api/v1/catalog/packages`).then(r => r.json()),
-            fetch(`${API_BASE}/api/v1/catalog/profiles`).then(r => r.json()),
-            fetch(`${API_BASE}/api/v1/catalog/tests?limit=1000`).then(r => r.json())
+            safeFetch(`${API_BASE}/api/v1/catalog/packages`, {}, 2500).then(r => r.json()),
+            safeFetch(`${API_BASE}/api/v1/catalog/profiles`, {}, 2500).then(r => r.json()),
+            safeFetch(`${API_BASE}/api/v1/catalog/tests?limit=1000`, {}, 2500).then(r => r.json())
           ]).then(([pkgs, profs, tsts]) => {
             if (pkgs.packages && profs.profiles && tsts.tests) {
               const updated = {
@@ -142,7 +142,9 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
           }).catch(() => {});
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        // Fallback gracefully to pre-ingested catalog without errors
+      });
   }, []);
 
   // Save Test (Appends / Updates in DB & Triggers Google Sheets Sync)
