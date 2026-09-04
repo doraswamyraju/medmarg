@@ -408,8 +408,11 @@ app.post('/api/v1/catalog/sync', async (req, res) => {
 
         res.json({
             success: true,
-            source: result.source || 'synced_database',
+            source: result.source || 'google_sheets_live',
             message: `Catalog synchronized successfully. ${catalogState.tests.length} tests and ${catalogState.profiles.length} profiles active.`,
+            tests: catalogState.tests,
+            profiles: catalogState.profiles,
+            packages: catalogState.packages,
             stats: {
                 totalTests: catalogState.tests.length,
                 totalProfiles: catalogState.profiles.length,
