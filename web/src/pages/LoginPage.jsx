@@ -213,10 +213,10 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
     const authParams = new URLSearchParams({
       client_id: GOOGLE_CLIENT_ID,
       redirect_uri: redirectUri,
-      response_type: 'token id_token',
-      scope: 'openid email profile',
+      response_type: 'token',
+      scope: 'email profile openid',
       prompt: 'select_account',
-      nonce: `mm_${Date.now()}`
+      include_granted_scopes: 'true'
     });
 
     const targetUrl = `https://accounts.google.com/o/oauth2/v2/auth?${authParams.toString()}`;
