@@ -4,11 +4,12 @@ struct AdminConsoleView: View {
     @Binding var users: [UserProfile]
     let onLogout: () -> Void
 
-    @Binding var activeTab: Int // 0: Overview, 1: Users & Access, 2: Tests & Catalog, 3: Partner Labs, 4: Fleet & Cold-Chain
+    @Binding var activeTab: Int // 0: Overview, 1: Tests & Catalog, 2: Partner Labs, 3: Hospitals, 4: Pharmacies, 5: Fleet & Cold-Chain, 6: Inventory, 7: Users & Access
     @Binding var activeSubTab: Int
 
-    // Dynamic State for Tests, Labs & Fleet
-    @State private var testsList: [LabTestItem] = WEB_THYROCARE_TESTS
+    @ObservedObject var catalogStore: CatalogStore = CatalogStore.shared
+
+    // Dynamic State for Labs & Fleet
     @State private var labPartners: [LabPartner] = [
         LabPartner(id: "LAB-01", name: "Thyrocare Central Processing Lab", type: "National Reference Lab", city: "Mumbai / Pan-India", nabl: "NABL-CC-4921", status: "ACTIVE", margin: "15%", testsCount: 104),
         LabPartner(id: "LAB-02", name: "Apollo Diagnostics Tirupati", type: "Regional Processing Hub", city: "Tirupati (Air Bypass Rd)", nabl: "NABL-AP-8921", status: "ACTIVE", margin: "18%", testsCount: 85),
@@ -36,17 +37,16 @@ struct AdminConsoleView: View {
     @State private var newOrganization: String = ""
     @State private var newRole: UserRole = .patient
 
-    // New Test Form State
+    // New Test/Profile Form State
+    @State private var newItemType: String = "TEST" // "TEST" | "PROFILE"
+    @State private var newTestCode: String = ""
     @State private var newTestName: String = ""
-    @State private var newTestCategory: String = "Thyroid & Hormones"
-    @State private var newTestParams: String = "1"
-    @State private var newTestSample: String = "Blood (Serum)"
+    @State private var newTestSample: String = "SERUM"
+    @State private var newTestFasting: String = "NO"
+    @State private var newTestPrice: String = "299"
+    @State private var newTestMRP: String = "499"
+    @State private var newTestTAT: String = "24"
     @State private var newTestDescription: String = ""
-    @State private var newTestThyrocarePrice: String = ""
-    @State private var newTestApolloPrice: String = ""
-    @State private var newTestLalPrice: String = ""
-    @State private var newTestMRP: String = ""
-    @State private var newTestTag: String = "SPECIAL RATE"
 
     var body: some View {
         VStack(spacing: 0) {
@@ -55,7 +55,7 @@ struct AdminConsoleView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     adminMainTabPill(index: 0, title: "Overview", icon: "chart.bar.fill")
-                    adminMainTabPill(index: 1, title: "Tests (\(testsList.count))", icon: "flask.fill")
+                    adminMainTabPill(index: 1, title: "Catalog (\(catalogStore.allItems.count))", icon: "flask.fill")
                     adminMainTabPill(index: 2, title: "Labs (\(labPartners.count))", icon: "building.2.fill")
                     adminMainTabPill(index: 3, title: "Hospitals", icon: "cross.case.fill")
                     adminMainTabPill(index: 4, title: "Pharmacies", icon: "pills.fill")
@@ -105,7 +105,7 @@ struct AdminConsoleView: View {
                     case 0:
                         AdminOverviewView()
                     case 1:
-                        AdminTestsView(testsList: $testsList, showAddTestSheet: $showAddTestSheet)
+                        AdminTestsView(catalogStore: catalogStore, showAddTestSheet: $showAddTestSheet)
                     case 2:
                         AdminLabsView(labPartners: $labPartners, pendingLabRequests: $pendingLabRequests)
                     case 3:
@@ -158,7 +158,7 @@ struct AdminConsoleView: View {
         case 0:
             return [(0, "Live Metrics"), (1, "Telemetry Feed"), (2, "Activity Logs")]
         case 1:
-            return [(0, "Diagnostic Tests"), (1, "Full Body Packages"), (2, "Category Manager")]
+            return [(0, "Unified Master Catalog"), (1, "Diagnostic Profiles"), (2, "Health Packages")]
         case 2:
             return [(0, "Active Accredited Labs"), (1, "Onboarding Requests"), (2, "Quality NABL")]
         case 3:
@@ -223,7 +223,7 @@ struct AdminConsoleView: View {
     private var addTestSheet: some View {
         VStack(spacing: 16) {
             HStack {
-                Text("Add Diagnostic Test to Catalog")
+                Text("Add Master Diagnostic Item")
                     .font(.system(size: 18, weight: .bold))
                 Spacer()
                 Button("Cancel") { showAddTestSheet = false }
@@ -231,18 +231,48 @@ struct AdminConsoleView: View {
             .padding(20)
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    TextField("Test Name", text: $newTestName)
-                    TextField("Thyrocare Negotiated Price (₹)", text: $newTestThyrocarePrice)
-                    TextField("Apollo Diagnostics Price (₹)", text: $newTestApolloPrice)
-                    TextField("Dr. Lal PathLabs Price (₹)", text: $newTestLalPrice)
-                    TextField("Original MRP (₹)", text: $newTestMRP)
-                    TextField("Parameters Count", text: $newTestParams)
-                    TextField("Sample Type (e.g. Blood/Urine)", text: $newTestSample)
+                VStack(alignment: .leading, spacing: 14) {
+                    Picker("Item Type", selection: $newItemType) {
+                        Text("Individual Test").tag("TEST")
+                        Text("Diagnostic Profile").tag("PROFILE")
+                    }
+                    .pickerStyle(.segmented)
+
+                    TextField("Test/Profile Code (e.g. CBC, LP, ALDRR)", text: $newTestCode)
+                        .autocapitalization(.allCharacters)
+                    TextField("Full Item Name", text: $newTestName)
+                    TextField("Sample Tube (e.g. SERUM, EDTA, URINE)", text: $newTestSample)
+                    
+                    Picker("Fasting Required?", selection: $newTestFasting) {
+                        Text("NO Fasting Required").tag("NO")
+                        Text("YES Fasting Required (8-10h)").tag("YES")
+                    }
+                    .pickerStyle(.segmented)
+
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Discounted Price (₹)")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(MedMargTheme.slate500)
+                            TextField("Price", text: $newTestPrice)
+                                .keyboardType(.numberPad)
+                        }
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Standard MRP (₹)")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(MedMargTheme.slate500)
+                            TextField("MRP", text: $newTestMRP)
+                                .keyboardType(.numberPad)
+                        }
+                    }
+
+                    TextField("Turnaround Time in Hours (e.g. 24)", text: $newTestTAT)
+                        .keyboardType(.numberPad)
                     TextField("Description", text: $newTestDescription)
 
                     Button(action: saveNewTest) {
-                        Text("Save Test to Catalog")
+                        Text("Save to Master Catalog")
                             .font(.system(size: 16, weight: .bold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -281,28 +311,41 @@ struct AdminConsoleView: View {
     }
 
     private func saveNewTest() {
-        guard !newTestName.isEmpty else { return }
-        let test = LabTestItem(
-            id: UUID().uuidString,
-            name: newTestName,
-            category: newTestCategory,
-            params: Int(newTestParams) ?? 1,
-            sampleType: newTestSample,
-            description: newTestDescription.isEmpty ? "Diagnostic test panel." : newTestDescription,
-            mrp: Int(newTestMRP) ?? 1000,
-            thyrocarePrice: Int(newTestThyrocarePrice) ?? 499,
-            apolloPrice: Int(newTestApolloPrice) ?? 750,
-            lalPrice: Int(newTestLalPrice) ?? 800,
-            tat: "12 hrs",
-            fasting: "No Fasting Required",
-            bestseller: false,
-            yellowTag: newTestTag
-        )
-        testsList.append(test)
+        guard !newTestName.isEmpty, !newTestCode.isEmpty else { return }
+
+        let price = Int(newTestPrice) ?? 299
+        let mrp = Int(newTestMRP) ?? 499
+        let tat = Int(newTestTAT) ?? 24
+
+        if newItemType == "PROFILE" {
+            catalogStore.addProfile(
+                code: newTestCode,
+                name: newTestName,
+                sampleType: newTestSample,
+                fasting: newTestFasting,
+                mrp: mrp,
+                price: price,
+                tatHours: tat,
+                description: newTestDescription.isEmpty ? "Comprehensive diagnostic profile." : newTestDescription
+            )
+        } else {
+            catalogStore.addTest(
+                code: newTestCode,
+                name: newTestName,
+                sampleType: newTestSample,
+                fasting: newTestFasting,
+                mrp: mrp,
+                price: price,
+                tatHours: tat,
+                description: newTestDescription.isEmpty ? "Clinical laboratory diagnostic test." : newTestDescription
+            )
+        }
+
         showAddTestSheet = false
+        newTestCode = ""
         newTestName = ""
-        newTestThyrocarePrice = ""
-        newTestApolloPrice = ""
-        newTestMRP = ""
+        newTestDescription = ""
+        newTestPrice = "299"
+        newTestMRP = "499"
     }
 }

@@ -25,7 +25,9 @@
 		B2000016 /* QuickCreateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000016 /* QuickCreateSheet.swift */; };
 		B2000017 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000017 /* SidebarView.swift */; };
 		B2000018 /* TopbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000018 /* TopbarView.swift */; };
+		B2000019 /* CatalogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000019 /* CatalogStore.swift */; };
 		B1000004 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1000004 /* Assets.xcassets */; };
+		B1000005 /* catalogData.json in Resources */ = {isa = PBXBuildFile; fileRef = F1000005 /* catalogData.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -48,7 +50,9 @@
 		F2000016 /* QuickCreateSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/QuickCreateSheet.swift"; sourceTree = "<group>"; };
 		F2000017 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/SidebarView.swift"; sourceTree = "<group>"; };
 		F2000018 /* TopbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/TopbarView.swift"; sourceTree = "<group>"; };
+		F2000019 /* CatalogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CatalogStore.swift"; sourceTree = "<group>"; };
 		F1000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		F1000005 /* catalogData.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "catalogData.json"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,7 +87,9 @@
 				F2000016 /* QuickCreateSheet.swift */,
 				F2000017 /* SidebarView.swift */,
 				F2000018 /* TopbarView.swift */,
+				F2000019 /* CatalogStore.swift */,
 				F1000004 /* Assets.xcassets */,
+				F1000005 /* catalogData.json */,
 				P1000000 /* MedMarg.app */,
 			);
 			sourceTree = "<group>";
@@ -148,6 +154,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B1000004 /* Assets.xcassets in Resources */,
+				B1000005 /* catalogData.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -176,6 +183,7 @@
 				B2000016 /* QuickCreateSheet.swift in Sources */,
 				B2000017 /* SidebarView.swift in Sources */,
 				B2000018 /* TopbarView.swift in Sources */,
+				B2000019 /* CatalogStore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
