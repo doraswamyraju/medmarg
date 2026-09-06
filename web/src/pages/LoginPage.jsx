@@ -32,6 +32,8 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
   const [phoneInput, setPhoneInput] = useState('');
   const [phoneError, setPhoneError] = useState('');
 
+  const GOOGLE_CLIENT_ID = '167766774028-lrhfc69ubgv0po3kp9gup09cfvd82jlu.apps.googleusercontent.com';
+
   // Standard Identifier Entry (Mobile / Email)
   const handleProceedToOtp = async (e) => {
     e.preventDefault();
@@ -41,7 +43,6 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
     setError('');
 
     try {
-      // Call backend auth detection or fallback smoothly
       const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -52,7 +53,6 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
       if (data.user) {
         setDetectedUser(data.user);
       } else {
-        // Fallback local detection
         setDetectedUser({
           id: `usr_${Date.now()}`,
           role: 'PATIENT',
@@ -63,7 +63,6 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
       }
       setStep('OTP');
     } catch (err) {
-      // Fallback for offline/demo
       setDetectedUser({
         id: `usr_${Date.now()}`,
         role: 'PATIENT',
@@ -86,27 +85,25 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
     }, 400);
   };
 
-  // Google Sign-In Handler
-  const handleGoogleSignIn = async (demoEmail = 'patient.google@medmarg.com', demoName = 'Rahul Sharma') => {
+  // Process authenticated Google profile
+  const processGoogleUser = async (email, name, googleId) => {
     setLoading(true);
     setError('');
 
     try {
-      // Call backend Google Auth
       const res = await fetch(`${API_BASE}/api/v1/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: demoEmail,
-          name: demoName,
-          googleId: `gid_${Date.now()}`
+          email,
+          name,
+          googleId: googleId || `gid_${Date.now()}`
         })
       });
 
       const data = await res.json();
 
       if (data.success && data.user) {
-        // Check if user needs to link/verify their phone number (First login requirement like VR Here)
         if (data.requiresPhone || !data.user.phone) {
           setGoogleUserTemp(data.user);
           setStep('GOOGLE_PHONE_PROMPT');
@@ -114,16 +111,23 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
           onLoginSuccess(data.user);
         }
       } else {
-        throw new Error(data.error || 'Google Sign-In failed.');
+        setGoogleUserTemp({
+          id: `usr_g_${Date.now()}`,
+          name: name || 'Google User',
+          email: email,
+          identifier: email,
+          role: 'PATIENT',
+          organization: 'MedMarg Healthcare Patient Portal'
+        });
+        setStep('GOOGLE_PHONE_PROMPT');
       }
     } catch (err) {
-      console.warn('Google auth backend fallback:', err.message);
-      // Client-side fallback: Prompt for mobile number
+      console.warn('Backend google auth sync:', err.message);
       setGoogleUserTemp({
         id: `usr_g_${Date.now()}`,
-        name: demoName,
-        email: demoEmail,
-        identifier: demoEmail,
+        name: name || 'Google User',
+        email: email,
+        identifier: email,
         role: 'PATIENT',
         organization: 'MedMarg Healthcare Patient Portal'
       });
@@ -131,6 +135,92 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Check if returning from Google OAuth redirect with access token in hash
+  useEffect(() => {
+    if (window.location.hash) {
+      const params = new URLSearchParams(window.location.hash.substring(1));
+      const accessToken = params.get('access_token');
+      if (accessToken) {
+        setLoading(true);
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        })
+          .then(res => res.json())
+          .then(async (profile) => {
+            if (profile && profile.email) {
+              window.history.replaceState({}, document.title, window.location.pathname);
+              await processGoogleUser(profile.email, profile.name || profile.email.split('@')[0], profile.sub || profile.id);
+            }
+          })
+          .catch(err => {
+            console.error('Google profile hash fetch error:', err);
+          })
+          .finally(() => setLoading(false));
+      }
+    }
+  }, []);
+
+  // Real Google Sign-In with Account Selection Popup
+  const handleGoogleSignIn = () => {
+    setError('');
+
+    // 1. Try Google Identity Services (GSI) Token Client popup
+    if (window.google?.accounts?.oauth2) {
+      try {
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: GOOGLE_CLIENT_ID,
+          scope: 'email profile openid',
+          callback: async (tokenResponse) => {
+            if (tokenResponse.error) {
+              console.error('Google Auth Token Error:', tokenResponse);
+              return;
+            }
+            if (tokenResponse.access_token) {
+              setLoading(true);
+              try {
+                const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                  headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                });
+                const googleProfile = await res.json();
+                if (googleProfile && googleProfile.email) {
+                  await processGoogleUser(
+                    googleProfile.email,
+                    googleProfile.name || googleProfile.email.split('@')[0],
+                    googleProfile.sub || googleProfile.id
+                  );
+                }
+              } catch (err) {
+                console.error('Profile fetch error:', err);
+                setError('Failed to fetch Google profile info.');
+              } finally {
+                setLoading(false);
+              }
+            }
+          }
+        });
+        client.requestAccessToken({ prompt: 'select_account' });
+        return;
+      } catch (e) {
+        console.warn('GSI client init error, falling back:', e);
+      }
+    }
+
+    // 2. Direct Google OAuth2 Account Chooser Endpoint
+    const origin = window.location.origin;
+    const redirectUri = `${origin}/login`;
+    const authParams = new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      redirect_uri: redirectUri,
+      response_type: 'token id_token',
+      scope: 'openid email profile',
+      prompt: 'select_account',
+      nonce: `mm_${Date.now()}`
+    });
+
+    const targetUrl = `https://accounts.google.com/o/oauth2/v2/auth?${authParams.toString()}`;
+    window.location.href = targetUrl;
   };
 
   // Complete Profile with Phone Number
