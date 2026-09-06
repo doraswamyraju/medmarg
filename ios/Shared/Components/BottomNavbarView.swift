@@ -24,7 +24,7 @@ struct BottomNavbarView: View {
                 .frame(maxWidth: .infinity)
             }
 
-            HStack {
+            HStack(spacing: 0) {
                 if userRole == .admin {
                     // ==========================================
                     // 🛡️ SUPER ADMIN DEDICATED 5-ELEMENT BOTTOM NAVBAR
@@ -41,16 +41,16 @@ struct BottomNavbarView: View {
                             ZStack {
                                 Circle()
                                     .fill(LinearGradient(colors: [MedMargTheme.primaryTeal, MedMargTheme.accentEmerald], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                    .frame(width: 48, height: 48)
+                                    .frame(width: 44, height: 44)
                                     .shadow(color: MedMargTheme.accentEmerald.opacity(0.5), radius: 8, x: 0, y: 4)
 
                                 Image(systemName: "plus")
-                                    .font(.system(size: 24, weight: .black))
+                                    .font(.system(size: 22, weight: .black))
                                     .foregroundColor(.white)
                             }
 
                             Text("Create")
-                                .font(.system(size: 11, weight: .bold))
+                                .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(MedMargTheme.primaryTeal)
                         }
                         .frame(maxWidth: .infinity)
@@ -63,7 +63,8 @@ struct BottomNavbarView: View {
                     bottomNavTab(index: 5, icon: "car.fill", title: "Agents")
                 } else {
                     // ==========================================
-                    // 📱 PATIENT / DEFAULT BOTTOM NAVBAR
+                    // 📱 PATIENT / DEFAULT 5 CORE TABS
+                    // 1. Home, 2. Labs & Tests, 3. Track, 4. Reports, 5. Profile
                     // ==========================================
                     // Tab 0: Home
                     bottomNavTab(index: 0, icon: "house.fill", title: "Home")
@@ -71,40 +72,43 @@ struct BottomNavbarView: View {
                     // Tab 1: Labs & Tests
                     bottomNavTab(index: 1, icon: "flask.fill", title: "Labs & Tests")
 
-                    // Tab 2: Track (CREATIVE CENTER HIGHLIGHTED ACTION BUTTON)
+                    // Tab 2: Track (CENTER HIGHLIGHTED ACTION BUTTON)
                     Button(action: { selectedTab = 2 }) {
                         VStack(spacing: 2) {
                             ZStack {
                                 Circle()
                                     .fill(LinearGradient(colors: [MedMargTheme.primaryTeal, MedMargTheme.accentEmerald], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                    .frame(width: 44, height: 44)
-                                    .shadow(color: MedMargTheme.accentEmerald.opacity(0.4), radius: 8, x: 0, y: 3)
+                                    .frame(width: 40, height: 40)
+                                    .shadow(color: MedMargTheme.accentEmerald.opacity(0.4), radius: 6, x: 0, y: 2)
 
                                 Image(systemName: "location.fill.viewfinder")
-                                    .font(.system(size: 20, weight: .bold))
+                                    .font(.system(size: 18, weight: .bold))
                                     .foregroundColor(.white)
 
                                 // Glowing LIVE Indicator Badge
                                 Circle()
                                     .fill(Color.red)
-                                    .frame(width: 10, height: 10)
-                                    .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                                    .offset(x: 14, y: -14)
+                                    .frame(width: 8, height: 8)
+                                    .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
+                                    .offset(x: 12, y: -12)
                             }
 
                             Text("Track")
-                                .font(.system(size: 11, weight: .bold))
+                                .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(selectedTab == 2 ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
                         }
                         .frame(maxWidth: .infinity)
                     }
 
-                    // Tab 3: Docs & Profile
-                    bottomNavTab(index: 3, icon: "doc.text.fill", title: "Docs & Profile")
+                    // Tab 3: Reports
+                    bottomNavTab(index: 3, icon: "doc.text.fill", title: "Reports")
+
+                    // Tab 4: Profile
+                    bottomNavTab(index: 4, icon: "person.crop.circle.fill", title: "Profile")
                 }
             }
             .padding(.bottom, 6)
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 10)
         }
         .background(MedMargTheme.pureWhite)
         .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: -4)
@@ -123,13 +127,14 @@ struct BottomNavbarView: View {
 
     private func bottomNavTab(index: Int, icon: String, title: String) -> some View {
         Button(action: { selectedTab = index }) {
-            VStack(spacing: 4) {
+            VStack(spacing: 3) {
                 Image(systemName: icon)
-                    .font(.system(size: 18))
+                    .font(.system(size: 17))
                     .foregroundColor(selectedTab == index ? MedMargTheme.primaryTeal : MedMargTheme.slate500)
                 Text(title)
-                    .font(.system(size: 11, weight: selectedTab == index ? .bold : .medium))
+                    .font(.system(size: 10, weight: selectedTab == index ? .bold : .medium))
                     .foregroundColor(selectedTab == index ? MedMargTheme.primaryTeal : MedMargTheme.slate500)
+                    .lineLimit(1)
             }
             .frame(maxWidth: .infinity)
         }

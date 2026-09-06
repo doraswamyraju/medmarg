@@ -235,10 +235,31 @@ struct SidebarView: View {
 
     private var patientAccordionModules: some View {
         Group {
-            accordionTab(index: 0, icon: "house.fill", title: "Home Dashboard", subTabs: [])
-            accordionTab(index: 1, icon: "flask.fill", title: "Labs & Pathology Catalog", subTabs: [])
-            accordionTab(index: 2, icon: "location.fill.viewfinder", title: "Live Phlebotomist Tracker", subTabs: [])
-            accordionTab(index: 3, icon: "doc.text.fill", title: "Prescriptions & Records", subTabs: [])
+            accordionTab(index: 0, icon: "house.fill", title: "Home", subTabs: [
+                (0, "His Wellness"),
+                (1, "Her Wellness"),
+                (2, "Family Wellness"),
+                (3, "Disease Screening")
+            ])
+            accordionTab(index: 1, icon: "flask.fill", title: "Labs & Tests", subTabs: [
+                (0, "All Pathology Tests"),
+                (1, "Health Packages"),
+                (2, "Diagnostic Profiles")
+            ])
+            accordionTab(index: 2, icon: "location.fill.viewfinder", title: "Track", subTabs: [
+                (0, "Live Sample Tracking"),
+                (1, "IoT Cold-Chain Telemetry")
+            ])
+            accordionTab(index: 3, icon: "doc.text.fill", title: "Reports", subTabs: [
+                (0, "NABL PDF Reports"),
+                (1, "Biomarker Trends"),
+                (2, "Doctor Prescriptions")
+            ])
+            accordionTab(index: 4, icon: "person.crop.circle.fill", title: "Profile", subTabs: [
+                (0, "Patient Account"),
+                (1, "Linked Family"),
+                (2, "Addresses")
+            ])
         }
     }
 

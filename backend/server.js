@@ -124,9 +124,76 @@ app.post('/api/v1/auth/login', (req, res) => {
             id: `usr_${Date.now()}`,
             name,
             identifier,
+            phone: idLower.match(/^\+?[0-9]{10,13}$/) ? identifier : '',
             role: detectedRole,
             organization
         }
+    });
+});
+
+// GOOGLE SIGN-IN & PROFILE DETECTION ENDPOINT
+app.post('/api/v1/auth/google', (req, res) => {
+    const { email, name, picture, googleId, phone } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ error: 'Google email is required.' });
+    }
+
+    const emailLower = email.trim().toLowerCase();
+
+    // Determine role from email if predefined admin/partner, default to PATIENT
+    let detectedRole = 'PATIENT';
+    let organization = 'MedMarg Healthcare Patient Portal';
+
+    if (emailLower.includes('admin@medmarg.com')) {
+        detectedRole = 'ADMIN';
+        organization = 'MedMarg Platform Governance & Audit';
+    } else if (emailLower.includes('lab') || emailLower.includes('pathlabs') || emailLower.includes('thyrocare')) {
+        detectedRole = 'DIAGNOSTIC_LAB';
+        organization = 'MedMarg Central Diagnostics (NABL Certified)';
+    } else if (emailLower.includes('scan') || emailLower.includes('aarthi') || emailLower.includes('mri')) {
+        detectedRole = 'SCAN_CENTER';
+        organization = 'Aarthi Scans & Radiology Center (3.0T MRI)';
+    } else if (emailLower.includes('doctor') || emailLower.includes('dr.')) {
+        detectedRole = 'DOCTOR';
+        organization = 'MedMarg Care Clinic (In-Clinic OPD Practice)';
+    } else if (emailLower.includes('pharmacy') || emailLower.includes('chemist')) {
+        detectedRole = 'PHARMACY';
+        organization = 'MedPlus Pharmacy (Generic Dispenser)';
+    }
+
+    const requiresPhone = !phone || phone.trim().length < 10;
+
+    return res.json({
+        success: true,
+        token: `jwt_google_medmarg_${Date.now()}`,
+        requiresPhone,
+        user: {
+            id: `usr_g_${googleId || Date.now()}`,
+            name: name || email.split('@')[0],
+            email: emailLower,
+            identifier: phone || emailLower,
+            phone: phone || '',
+            picture: picture || null,
+            role: detectedRole,
+            organization,
+            authProvider: 'google'
+        }
+    });
+});
+
+// UPDATE USER PHONE NUMBER ENDPOINT
+app.post('/api/v1/auth/update-phone', (req, res) => {
+    const { userId, phone } = req.body;
+
+    if (!phone || phone.trim().length < 10) {
+        return res.status(400).json({ error: 'A valid 10-digit mobile number is required.' });
+    }
+
+    return res.json({
+        success: true,
+        message: 'Phone number updated and profile verified.',
+        phone: phone.trim()
     });
 });
 
