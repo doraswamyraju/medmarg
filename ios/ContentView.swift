@@ -110,6 +110,13 @@ struct ContentView: View {
     @State private var showQuickCreateSheet: Bool = false
     @State private var selectedCategory: String = "All Tests & Packages"
     @State private var searchQuery: String = ""
+    
+    // Master Catalog Store Integration
+    @StateObject private var catalogStore = CatalogStore.shared
+    @State private var catalogSubTab: String = "ALL" // "ALL" | "PACKAGES" | "PROFILES" | "TESTS"
+    @State private var fastingFilter: String = "ALL" // "ALL" | "YES" | "NO"
+    @State private var sampleFilter: String = "ALL" // "ALL" | "SERUM" | "EDTA" | "URINE" | "PLASMA"
+    
     @State private var cartItems: [CartItem] = [
         CartItem(id: "c1", title: "Aarogyam Complete 1.3 (Full Body Checkup)", subtitle: "104 Biomarkers • Thyrocare NABL", provider: "Thyrocare Direct", price: 1499, mrp: 3500, type: "Lab Package")
     ]
@@ -827,15 +834,20 @@ struct ContentView: View {
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.emeraldLight, lineWidth: 1.5))
                 .padding(.horizontal, 16)
 
-                // Popular Pathology Tests Section (Web Data Parity)
+                // Popular Pathology Tests & Packages Section (Unified Catalog)
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        Text("Popular Pathology Tests")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(MedMargTheme.slate900)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Popular Pathology & Profiles")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate900)
+                            Text("\(catalogStore.tests.count) Tests • \(catalogStore.profiles.count) Profiles • Single-Lab Hub")
+                                .font(.system(size: 11))
+                                .foregroundColor(MedMargTheme.slate500)
+                        }
                         Spacer()
                         Button(action: { selectedTab = 1 }) {
-                            Text("See All \(WEB_THYROCARE_TESTS.count)+ Tests")
+                            Text("See All (\(catalogStore.allItems.count))+")
                                 .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(MedMargTheme.primaryTeal)
                         }
@@ -844,8 +856,8 @@ struct ContentView: View {
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
-                            ForEach(Array(WEB_THYROCARE_TESTS.prefix(5))) { test in
-                                testCardView(test: test)
+                            ForEach(Array(catalogStore.allItems.prefix(8))) { item in
+                                catalogItemCardView(item: item)
                             }
                         }
                         .padding(.horizontal, 16)
@@ -913,58 +925,91 @@ struct ContentView: View {
         }
     }
 
-    private func testCardView(test: LabTestItem) -> some View {
+    private func catalogItemCardView(item: CatalogItem) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(test.yellowTag)
-                .font(.system(size: 9, weight: .bold))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(MedMargTheme.amberLight)
-                .foregroundColor(MedMargTheme.amberGold)
-                .cornerRadius(4)
+            HStack {
+                Text(item.displayItemType)
+                    .font(.system(size: 8, weight: .black))
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(
+                        item.isPackage ? MedMargTheme.amberLight :
+                        (item.isProfile ? MedMargTheme.lightTeal : MedMargTheme.emeraldLight)
+                    )
+                    .foregroundColor(
+                        item.isPackage ? MedMargTheme.amberGold :
+                        (item.isProfile ? MedMargTheme.darkTeal : MedMargTheme.accentEmerald)
+                    )
+                    .cornerRadius(4)
 
-            Text(test.name)
+                Spacer()
+
+                if item.calculatedDiscount > 0 {
+                    Text("\(item.calculatedDiscount)% OFF")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(MedMargTheme.accentEmerald)
+                }
+            }
+
+            Text(item.name)
                 .font(.system(size: 13, weight: .bold))
                 .foregroundColor(MedMargTheme.slate900)
                 .lineLimit(2)
                 .frame(height: 34, alignment: .topLeading)
 
-            Text("\(test.params) Parameters • \(test.tat) TAT")
-                .font(.system(size: 11))
+            Text("\(item.displaySample) • \(item.requiresFasting ? "Fasting" : "No Fasting")")
+                .font(.system(size: 10))
                 .foregroundColor(MedMargTheme.slate500)
+                .lineLimit(1)
 
             HStack {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text("₹\(test.thyrocarePrice)")
-                        .font(.system(size: 16, weight: .bold))
+                    Text("₹\(item.price)")
+                        .font(.system(size: 15, weight: .bold))
                         .foregroundColor(MedMargTheme.primaryTeal)
-                    Text("₹\(test.mrp)")
-                        .font(.system(size: 10))
-                        .foregroundColor(MedMargTheme.slate500)
-                        .strikethrough()
+                    if item.mrp > item.price {
+                        Text("₹\(item.mrp)")
+                            .font(.system(size: 10))
+                            .foregroundColor(MedMargTheme.slate500)
+                            .strikethrough()
+                    }
                 }
 
                 Spacer()
 
                 Button(action: {
-                    cartItems.append(CartItem(id: UUID().uuidString, title: test.name, subtitle: "\(test.params) Parameters", provider: "Thyrocare Direct", price: test.thyrocarePrice, mrp: test.mrp, type: "Lab Test"))
-                    showCartSheet = true
+                    addItemToCart(item: item)
                 }) {
                     Text("+ Add")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
+                        .padding(.vertical, 5)
                         .background(MedMargTheme.primaryTeal)
                         .cornerRadius(6)
                 }
             }
         }
         .padding(12)
-        .frame(width: 170)
+        .frame(width: 175)
         .background(MedMargTheme.pureWhite)
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 3)
+    }
+
+    private func addItemToCart(item: CatalogItem) {
+        let sub = item.isPackage ? "\(item.testCount ?? 80) Parameters • Health Package" : (item.isProfile ? "Diagnostic Profile Panel" : "\(item.displaySample) • Fasting: \(item.requiresFasting ? "Yes" : "No")")
+        let cartItem = CartItem(
+            id: UUID().uuidString,
+            title: item.name,
+            subtitle: sub,
+            provider: "MedMarg Central Diagnostics",
+            price: item.price,
+            mrp: item.mrp,
+            type: item.isPackage ? "Health Package" : (item.isProfile ? "Diagnostic Profile" : "Lab Test")
+        )
+        cartItems.append(cartItem)
+        showCartSheet = true
     }
 
     // ==========================================
@@ -972,80 +1017,250 @@ struct ContentView: View {
     // ==========================================
     private var patientLabsCatalogTab: some View {
         VStack(spacing: 0) {
-            // Category Filter Scroll
-            ScrollView(.horizontal, showsIndicators: false) {
+            // Search Input Header
+            VStack(spacing: 10) {
                 HStack(spacing: 8) {
-                    ForEach(WEB_THYROCARE_CATEGORIES, id: \.self) { cat in
-                        Button(action: { selectedCategory = cat }) {
-                            Text(cat)
-                                .font(.system(size: 12, weight: selectedCategory == cat ? .bold : .medium))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(selectedCategory == cat ? MedMargTheme.primaryTeal : MedMargTheme.pureWhite)
-                                .foregroundColor(selectedCategory == cat ? .white : MedMargTheme.slate700)
-                                .cornerRadius(20)
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(MedMargTheme.slate500)
+                        .font(.system(size: 14))
+                    TextField("Search \(catalogStore.tests.count)+ tests (Thyroid, HbA1c, Vitamin D, Allergy, Liver)...", text: $searchQuery)
+                        .font(.system(size: 13))
+                    if !searchQuery.isEmpty {
+                        Button(action: { searchQuery = "" }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(MedMargTheme.slate500)
+                                .font(.system(size: 14))
                         }
                     }
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .background(MedMargTheme.pureWhite)
+                .cornerRadius(10)
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(MedMargTheme.slate200, lineWidth: 1))
                 .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-            }
-            .background(MedMargTheme.slate50)
+                .padding(.top, 10)
 
-            // Tests List (Showing exact Web data filtered)
+                // Sub-Tab Switcher (All / Packages / Profiles / Tests)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        catalogSubTabPill(tabKey: "ALL", label: "All Items (\(catalogStore.allItems.count))")
+                        catalogSubTabPill(tabKey: "PACKAGES", label: "✨ Packages (\(catalogStore.packages.count))")
+                        catalogSubTabPill(tabKey: "PROFILES", label: "🔬 Profiles (\(catalogStore.profiles.count))")
+                        catalogSubTabPill(tabKey: "TESTS", label: "🧪 Tests (\(catalogStore.tests.count))")
+                    }
+                    .padding(.horizontal, 16)
+                }
+
+                // Fasting & Sample Quick Filters
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        // Fasting filters
+                        fastingFilterPill(key: "ALL", label: "All Fasting")
+                        fastingFilterPill(key: "YES", label: "Fasting Required")
+                        fastingFilterPill(key: "NO", label: "No Fasting")
+                        
+                        Divider().frame(height: 16).padding(.horizontal, 2)
+                        
+                        // Sample filters
+                        sampleFilterPill(key: "ALL", label: "All Samples")
+                        sampleFilterPill(key: "SERUM", label: "Serum")
+                        sampleFilterPill(key: "EDTA", label: "EDTA Blood")
+                        sampleFilterPill(key: "URINE", label: "Urine")
+                        sampleFilterPill(key: "PLASMA", label: "Plasma")
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+                }
+            }
+            .background(MedMargTheme.pureWhite)
+            .shadow(color: Color.black.opacity(0.02), radius: 2, x: 0, y: 1)
+
+            // Dynamic Filtered Items List
+            let displayItems = catalogStore.filterItems(
+                tab: catalogSubTab,
+                query: searchQuery,
+                fastingFilter: fastingFilter,
+                sampleFilter: sampleFilter
+            )
+
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 12) {
-                    let filtered = WEB_THYROCARE_TESTS.filter {
-                        selectedCategory == "All Tests & Packages" || $0.category == selectedCategory
-                    }
+                    if displayItems.isEmpty {
+                        VStack(spacing: 10) {
+                            Image(systemName: "flask")
+                                .font(.system(size: 36))
+                                .foregroundColor(MedMargTheme.slate500)
+                            Text("No diagnostic tests found")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate900)
+                            Text("Try searching with another keyword or resetting the filter.")
+                                .font(.system(size: 12))
+                                .foregroundColor(MedMargTheme.slate500)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(40)
+                    } else {
+                        // Show up to 100 items per scroll
+                        ForEach(Array(displayItems.prefix(80))) { item in
+                            VStack(alignment: .leading, spacing: 10) {
+                                HStack(alignment: .top) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        HStack(spacing: 6) {
+                                            Text(item.displayItemType)
+                                                .font(.system(size: 9, weight: .black))
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(
+                                                    item.isPackage ? MedMargTheme.amberLight :
+                                                    (item.isProfile ? MedMargTheme.lightTeal : MedMargTheme.emeraldLight)
+                                                )
+                                                .foregroundColor(
+                                                    item.isPackage ? MedMargTheme.amberGold :
+                                                    (item.isProfile ? MedMargTheme.darkTeal : MedMargTheme.accentEmerald)
+                                                )
+                                                .cornerRadius(4)
 
-                    ForEach(filtered) { test in
-                        HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(test.name)
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(MedMargTheme.slate900)
+                                            Text(item.code)
+                                                .font(.system(size: 10, weight: .bold))
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(MedMargTheme.slate50)
+                                                .foregroundColor(MedMargTheme.slate700)
+                                                .cornerRadius(4)
+                                                .overlay(RoundedRectangle(cornerRadius: 4).stroke(MedMargTheme.slate200, lineWidth: 1))
+                                        }
 
-                                Text(test.description)
-                                    .font(.system(size: 11))
-                                    .foregroundColor(MedMargTheme.slate500)
-                                    .lineLimit(2)
+                                        Text(item.name)
+                                            .font(.system(size: 14, weight: .bold))
+                                            .foregroundColor(MedMargTheme.slate900)
 
-                                HStack(spacing: 8) {
-                                    Text("Thyrocare: ₹\(test.thyrocarePrice)")
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(MedMargTheme.primaryTeal)
-                                    Text("Apollo: ₹\(test.apolloPrice)")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(MedMargTheme.slate500)
-                                    Text("Lal: ₹\(test.lalPrice)")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(MedMargTheme.slate500)
+                                        if let desc = item.description, !desc.isEmpty {
+                                            Text(desc)
+                                                .font(.system(size: 11))
+                                                .foregroundColor(MedMargTheme.slate500)
+                                                .lineLimit(2)
+                                        }
+                                    }
+
+                                    Spacer()
+
+                                    Button(action: {
+                                        addItemToCart(item: item)
+                                    }) {
+                                        Text("+ Add")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 14)
+                                            .padding(.vertical, 7)
+                                            .background(MedMargTheme.primaryTeal)
+                                            .cornerRadius(8)
+                                    }
+                                }
+
+                                Divider()
+
+                                // Metadata & Price Bar
+                                HStack {
+                                    HStack(spacing: 10) {
+                                        HStack(spacing: 3) {
+                                            Image(systemName: "drop.fill")
+                                                .font(.system(size: 9))
+                                                .foregroundColor(MedMargTheme.primaryTeal)
+                                            Text(item.displaySample)
+                                                .font(.system(size: 11, weight: .medium))
+                                                .foregroundColor(MedMargTheme.slate700)
+                                        }
+
+                                        HStack(spacing: 3) {
+                                            Image(systemName: "clock")
+                                                .font(.system(size: 9))
+                                                .foregroundColor(MedMargTheme.slate500)
+                                            Text(item.requiresFasting ? "Fasting (8-10h)" : "No Fasting")
+                                                .font(.system(size: 11, weight: .medium))
+                                                .foregroundColor(item.requiresFasting ? MedMargTheme.amberGold : MedMargTheme.slate500)
+                                        }
+                                    }
+
+                                    Spacer()
+
+                                    HStack(alignment: .firstTextBaseline, spacing: 5) {
+                                        Text("₹\(item.price)")
+                                            .font(.system(size: 16, weight: .black))
+                                            .foregroundColor(MedMargTheme.primaryTeal)
+                                        if item.mrp > item.price {
+                                            Text("₹\(item.mrp)")
+                                                .font(.system(size: 11))
+                                                .foregroundColor(MedMargTheme.slate500)
+                                                .strikethrough()
+                                        }
+                                    }
                                 }
                             }
-
-                            Spacer()
-
-                            Button(action: {
-                                cartItems.append(CartItem(id: UUID().uuidString, title: test.name, subtitle: "\(test.params) Parameters", provider: "Thyrocare Direct", price: test.thyrocarePrice, mrp: test.mrp, type: "Lab Test"))
-                                showCartSheet = true
-                            }) {
-                                Text("+ Add")
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 8)
-                                    .background(MedMargTheme.primaryTeal)
-                                    .cornerRadius(8)
-                            }
+                            .padding(14)
+                            .background(MedMargTheme.pureWhite)
+                            .cornerRadius(12)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.slate200.opacity(0.7), lineWidth: 1))
                         }
-                        .padding(14)
-                        .background(MedMargTheme.pureWhite)
-                        .cornerRadius(12)
+
+                        if displayItems.count > 80 {
+                            Text("Showing 80 of \(displayItems.count) matching items. Refine search to see more.")
+                                .font(.system(size: 11))
+                                .foregroundColor(MedMargTheme.slate500)
+                                .padding(.vertical, 8)
+                        }
                     }
                 }
                 .padding(16)
             }
+        }
+    }
+
+    private func catalogSubTabPill(tabKey: String, label: String) -> some View {
+        Button(action: { catalogSubTab = tabKey }) {
+            Text(label)
+                .font(.system(size: 12, weight: catalogSubTab == tabKey ? .bold : .medium))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(catalogSubTab == tabKey ? MedMargTheme.primaryTeal : MedMargTheme.slate50)
+                .foregroundColor(catalogSubTab == tabKey ? .white : MedMargTheme.slate700)
+                .cornerRadius(16)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(catalogSubTab == tabKey ? MedMargTheme.primaryTeal : MedMargTheme.slate200, lineWidth: 1)
+                )
+        }
+    }
+
+    private func fastingFilterPill(key: String, label: String) -> some View {
+        Button(action: { fastingFilter = key }) {
+            Text(label)
+                .font(.system(size: 10, weight: fastingFilter == key ? .bold : .medium))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(fastingFilter == key ? MedMargTheme.darkTeal : MedMargTheme.pureWhite)
+                .foregroundColor(fastingFilter == key ? .white : MedMargTheme.slate500)
+                .cornerRadius(10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(fastingFilter == key ? MedMargTheme.darkTeal : MedMargTheme.slate200, lineWidth: 0.8)
+                )
+        }
+    }
+
+    private func sampleFilterPill(key: String, label: String) -> some View {
+        Button(action: { sampleFilter = key }) {
+            Text(label)
+                .font(.system(size: 10, weight: sampleFilter == key ? .bold : .medium))
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(sampleFilter == key ? MedMargTheme.primaryTeal : MedMargTheme.pureWhite)
+                .foregroundColor(sampleFilter == key ? .white : MedMargTheme.slate500)
+                .cornerRadius(10)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(sampleFilter == key ? MedMargTheme.primaryTeal : MedMargTheme.slate200, lineWidth: 0.8)
+                )
         }
     }
 
