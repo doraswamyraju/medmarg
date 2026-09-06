@@ -27,7 +27,7 @@ struct BottomSheetMenuView: View {
                     Text("Workspace Hub")
                         .font(.system(size: 16, weight: .bold))
                         .foregroundColor(MedMargTheme.slate900)
-                    Text("All Modules & Inner Navigation")
+                    Text("All Modules & Quick Navigation")
                         .font(.system(size: 11))
                         .foregroundColor(MedMargTheme.slate500)
                 }
@@ -50,6 +50,8 @@ struct BottomSheetMenuView: View {
                 VStack(spacing: 14) {
                     if user.role == .admin {
                         adminBottomSheetModules
+                    } else if user.role == .collectionAgent {
+                        agentBottomSheetModules
                     } else {
                         patientBottomSheetModules
                     }
@@ -64,120 +66,130 @@ struct BottomSheetMenuView: View {
 
     private var adminBottomSheetModules: some View {
         VStack(spacing: 12) {
-            // Module 0: Overview
             bottomSheetModuleCard(
                 tabIndex: 0,
                 icon: "chart.bar.fill",
                 title: "Overview",
                 description: "Live Revenue, Order Metrics & Platform Activity Log",
-                subTabs: [
-                    (0, "Live Metrics"),
-                    (1, "Telemetry Feed"),
-                    (2, "Activity Logs")
-                ]
+                subTabs: [(0, "Live Metrics"), (1, "Telemetry Feed"), (2, "Activity Logs")]
             )
 
-            // Module 1: Tests
             bottomSheetModuleCard(
                 tabIndex: 1,
                 icon: "flask.fill",
                 title: "Tests",
                 description: "104 Parameters, B2B Negotiated Rates & Category Manager",
-                subTabs: [
-                    (0, "Diagnostic Tests"),
-                    (1, "Full Body Packages"),
-                    (2, "Category Manager")
-                ]
+                subTabs: [(0, "Diagnostic Tests"), (1, "Full Body Packages"), (2, "Category Manager")]
             )
 
-            // Module 2: Labs
             bottomSheetModuleCard(
                 tabIndex: 2,
                 icon: "building.2.fill",
                 title: "Labs",
                 description: "Thyrocare, Apollo & Lal PathLabs Accredited Centers",
-                subTabs: [
-                    (0, "Active Accredited Labs"),
-                    (1, "Onboarding Requests"),
-                    (2, "Quality NABL")
-                ]
+                subTabs: [(0, "Active Accredited Labs"), (1, "Lab Verification"), (2, "Processing Turnaround")]
             )
 
-            // Module 3: Hospitals
             bottomSheetModuleCard(
                 tabIndex: 3,
                 icon: "cross.case.fill",
-                title: "Hospitals",
-                description: "Partner Hospital Consoles, OPD Token Desks & Radiology",
-                subTabs: [
-                    (0, "Partner Hospitals"),
-                    (1, "OPD Token Desk"),
-                    (2, "Radiology Hubs")
-                ]
+                title: "Hospitals & Doctors",
+                description: "OPD Specialist Clinics, Tokens & Verification Roster",
+                subTabs: [(0, "Verified Doctors"), (1, "OPD Clinics"), (2, "Doctor Onboarding")]
             )
 
-            // Module 4: Pharmacies
             bottomSheetModuleCard(
                 tabIndex: 4,
                 icon: "pills.fill",
                 title: "Pharmacies",
                 description: "Generic Chemist Stores, Stock Inventory & E-Prescriptions",
-                subTabs: [
-                    (0, "Generic Chemist Stores"),
-                    (1, "Medicine Inventory"),
-                    (2, "Prescription Orders")
-                ]
+                subTabs: [(0, "Generic Chemist Stores"), (1, "Medicine Inventory"), (2, "Prescription Orders")]
             )
 
-            // Module 5: Agents
             bottomSheetModuleCard(
                 tabIndex: 5,
                 icon: "car.fill",
                 title: "Agents",
                 description: "Phlebotomist Roster, Cold-Chain Telemetry & Onboarding",
-                subTabs: [
-                    (0, "Phlebotomist Roster"),
-                    (1, "Cold-Chain Telemetry"),
-                    (2, "Agent Onboarding")
-                ]
-            )
-
-            // Module 6: Inventory
-            bottomSheetModuleCard(
-                tabIndex: 6,
-                icon: "box.truck.fill",
-                title: "Inventory",
-                description: "Supplies Stock Overview, Agent Dispatches & Purchase Orders",
-                subTabs: [
-                    (0, "Stock Overview"),
-                    (1, "Agent Supplies Dispatch"),
-                    (2, "Purchase Orders")
-                ]
-            )
-
-            // Module 7: Users
-            bottomSheetModuleCard(
-                tabIndex: 7,
-                icon: "person.2.fill",
-                title: "Users",
-                description: "All System Users, Doctors, Labs, Agents & Patients Access",
-                subTabs: [
-                    (0, "All System Users"),
-                    (1, "Doctor Accounts"),
-                    (2, "Diagnostic Labs"),
-                    (3, "Phlebotomists"),
-                    (4, "Patients")
-                ]
+                subTabs: [(0, "Phlebotomist Roster"), (1, "Cold-Chain Telemetry"), (2, "Agent Onboarding")]
             )
         }
     }
 
     private var patientBottomSheetModules: some View {
         VStack(spacing: 12) {
-            bottomSheetModuleCard(tabIndex: 0, icon: "house.fill", title: "Home Dashboard", description: "Multi-Lab Diagnostic Search & Bestseller Packages", subTabs: [])
-            bottomSheetModuleCard(tabIndex: 1, icon: "flask.fill", title: "Labs & Pathology Catalog", description: "Thyrocare Full Body Profiles & Health Panels", subTabs: [])
-            bottomSheetModuleCard(tabIndex: 2, icon: "location.fill.viewfinder", title: "Live Phlebotomist Tracker", description: "GPS Tracking for Home Sample Collection Agent", subTabs: [])
-            bottomSheetModuleCard(tabIndex: 3, icon: "doc.text.fill", title: "Prescriptions & Records", description: "Digital Lab Reports & E-Prescriptions Vault", subTabs: [])
+            // Tab 0: Home
+            bottomSheetModuleCard(
+                tabIndex: 0,
+                icon: "house.fill",
+                title: "Home",
+                description: "Wellness Hub, His/Her/Family Wellness & Instant Booking",
+                subTabs: [(0, "His Wellness"), (1, "Her Wellness"), (2, "Family Wellness"), (3, "Disease Screening")]
+            )
+
+            // Tab 1: Labs & Tests
+            bottomSheetModuleCard(
+                tabIndex: 1,
+                icon: "flask.fill",
+                title: "Labs & Tests",
+                description: "913+ Pathology Tests, Profiles, Health Packages & Smart Savings",
+                subTabs: [(0, "All Tests"), (1, "Health Packages"), (2, "Diagnostic Profiles")]
+            )
+
+            // Tab 2: Track
+            bottomSheetModuleCard(
+                tabIndex: 2,
+                icon: "location.fill.viewfinder",
+                title: "Track",
+                description: "Live Phlebotomist GPS Tracking & IoT Cold-Chain Status",
+                subTabs: [(0, "Active Pickups"), (1, "Cold-Chain Temp"), (2, "Collector Contact")]
+            )
+
+            // Tab 3: Reports
+            bottomSheetModuleCard(
+                tabIndex: 3,
+                icon: "doc.text.fill",
+                title: "Reports",
+                description: "Digital Health Locker & Google Drive Synced NABL PDF Reports",
+                subTabs: [(0, "Lab Reports PDF"), (1, "Biomarker Trends"), (2, "Doctor Prescriptions")]
+            )
+
+            // Tab 4: Profile
+            bottomSheetModuleCard(
+                tabIndex: 4,
+                icon: "person.crop.circle.fill",
+                title: "Profile",
+                description: "Verified Mobile Number, Home Addresses & Family Members",
+                subTabs: [(0, "User Account"), (1, "Linked Family"), (2, "Saved Addresses")]
+            )
+        }
+    }
+
+    private var agentBottomSheetModules: some View {
+        VStack(spacing: 12) {
+            bottomSheetModuleCard(
+                tabIndex: 0,
+                icon: "list.clipboard.fill",
+                title: "Assigned Pickups",
+                description: "Today's Home Sample Collections & Time Slots",
+                subTabs: [(0, "Pending"), (1, "Sample Drawn"), (2, "Delivered to Lab")]
+            )
+
+            bottomSheetModuleCard(
+                tabIndex: 1,
+                icon: "thermometer.medium",
+                title: "Cold-Chain Box",
+                description: "IoT Temperature Sensor (4.2°C) & Battery Level",
+                subTabs: [(0, "Live Temp"), (1, "Ice Gel Pack Log")]
+            )
+
+            bottomSheetModuleCard(
+                tabIndex: 2,
+                icon: "qrcode.viewfinder",
+                title: "Barcode Scanner",
+                description: "Scan Vacutainer Test Tubes & Link to Patient Order",
+                subTabs: [(0, "Scan SST"), (1, "Scan EDTA"), (2, "Scan Urine")]
+            )
         }
     }
 
@@ -220,30 +232,20 @@ struct BottomSheetMenuView: View {
             // Inner Sub-Tabs Chips Row
             if !subTabs.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 8) {
                         ForEach(subTabs, id: \.0) { sub in
-                            let isSubActive = isActive && selectedSubTab == sub.0
                             Button(action: {
                                 selectedTab = tabIndex
                                 selectedSubTab = sub.0
                                 isPresented = false
                             }) {
-                                HStack(spacing: 4) {
-                                    Circle()
-                                        .fill(isSubActive ? .white : MedMargTheme.primaryTeal)
-                                        .frame(width: 5, height: 5)
-                                    Text(sub.1)
-                                        .font(.system(size: 11, weight: isSubActive ? .bold : .medium))
-                                }
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                                .background(isSubActive ? MedMargTheme.primaryTeal : MedMargTheme.slate50)
-                                .foregroundColor(isSubActive ? .white : MedMargTheme.slate700)
-                                .cornerRadius(14)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .stroke(isSubActive ? MedMargTheme.primaryTeal : MedMargTheme.slate200, lineWidth: 1)
-                                )
+                                Text(sub.1)
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(selectedTab == tabIndex && selectedSubTab == sub.0 ? MedMargTheme.darkTeal : MedMargTheme.slate50)
+                                    .foregroundColor(selectedTab == tabIndex && selectedSubTab == sub.0 ? .white : MedMargTheme.slate700)
+                                    .cornerRadius(6)
                             }
                         }
                     }
@@ -252,11 +254,10 @@ struct BottomSheetMenuView: View {
         }
         .padding(14)
         .background(MedMargTheme.pureWhite)
-        .cornerRadius(14)
-        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+        .cornerRadius(12)
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(isActive ? MedMargTheme.primaryTeal.opacity(0.4) : Color.clear, lineWidth: 1.5)
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isActive ? MedMargTheme.primaryTeal : MedMargTheme.slate200, lineWidth: isActive ? 1.5 : 1)
         )
     }
 }

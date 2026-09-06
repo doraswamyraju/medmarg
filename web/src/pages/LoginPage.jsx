@@ -10,102 +10,71 @@ import {
   Mail, 
   ArrowRight,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  Lock,
+  Smartphone,
+  Shield,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
-
-export const DEMO_ACCOUNTS = [
-  {
-    role: 'PATIENT',
-    name: 'Rahul Sharma',
-    identifier: '+91 98765 43210',
-    title: 'Patient (Customer)',
-    org: 'Tirupati, Andhra Pradesh',
-    icon: User,
-    color: '#006B70',
-    bg: '#E0F2F1'
-  },
-  {
-    role: 'DIAGNOSTIC_LAB',
-    name: 'Dr. Lal PathLabs Admin',
-    identifier: 'lab.lal@medmarg.com',
-    title: 'Diagnostic Lab Partner',
-    org: 'Dr. Lal PathLabs (NABL Accredited)',
-    icon: FlaskConical,
-    color: '#2563EB',
-    bg: '#DBEAFE'
-  },
-  {
-    role: 'SCAN_CENTER',
-    name: 'Aarthi Scans Operations',
-    identifier: 'aarthi.scans@medmarg.com',
-    title: 'Radiology & Scan Center',
-    org: 'Aarthi Scans (3.0T MRI Center)',
-    icon: Building2,
-    color: '#06B6D4',
-    bg: '#CFFAFE'
-  },
-  {
-    role: 'DOCTOR',
-    name: 'Dr. Ananya Sharma',
-    identifier: 'dr.ananya@medmarg.com',
-    title: 'Doctor (OPD Clinic)',
-    org: 'MBBS, MD - Diabetologist & Physician',
-    icon: Stethoscope,
-    color: '#8B5CF6',
-    bg: '#EDE9FE'
-  },
-  {
-    role: 'PHARMACY',
-    name: 'MedPlus Partner Chemist',
-    identifier: 'chemist@medplus.com',
-    title: 'Pharmacy Partner',
-    org: 'Generic & Branded Dispenser',
-    icon: Pill,
-    color: '#10B981',
-    bg: '#D1FAE5'
-  },
-  {
-    role: 'ADMIN',
-    name: 'MedMarg Super Admin',
-    identifier: 'admin@medmarg.com',
-    title: 'MedMarg Admin',
-    org: 'Platform Governance & Lab Audits',
-    icon: ShieldCheck,
-    color: '#EF4444',
-    bg: '#FEE2E2'
-  }
-];
+import { API_BASE } from '../data/apiConfig';
 
 export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
   const [identifier, setIdentifier] = useState('');
   const [otp, setOtp] = useState('');
-  const [step, setStep] = useState('IDENTIFIER'); // 'IDENTIFIER' | 'OTP'
+  const [step, setStep] = useState('IDENTIFIER'); // 'IDENTIFIER' | 'OTP' | 'GOOGLE_PHONE_PROMPT'
   const [detectedUser, setDetectedUser] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Auto-detect user type upon entry
-  const handleProceedToOtp = (e) => {
+  // Google Sign-In & Missing Phone State
+  const [googleUserTemp, setGoogleUserTemp] = useState(null);
+  const [phoneInput, setPhoneInput] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+
+  // Standard Identifier Entry (Mobile / Email)
+  const handleProceedToOtp = async (e) => {
     e.preventDefault();
-    if (!identifier) return;
+    if (!identifier.trim()) return;
 
     setLoading(true);
-    setTimeout(() => {
-      // Lookup if matches demo or defaults to Patient
-      const match = DEMO_ACCOUNTS.find(
-        (a) => a.identifier.toLowerCase() === identifier.trim().toLowerCase()
-      ) || {
+    setError('');
+
+    try {
+      // Call backend auth detection or fallback smoothly
+      const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ identifier: identifier.trim() })
+      });
+      const data = await res.json();
+
+      if (data.user) {
+        setDetectedUser(data.user);
+      } else {
+        // Fallback local detection
+        setDetectedUser({
+          id: `usr_${Date.now()}`,
+          role: 'PATIENT',
+          name: 'Patient User',
+          identifier: identifier.trim(),
+          organization: 'Patient Portal (Tirupati)'
+        });
+      }
+      setStep('OTP');
+    } catch (err) {
+      // Fallback for offline/demo
+      setDetectedUser({
+        id: `usr_${Date.now()}`,
         role: 'PATIENT',
         name: 'Patient User',
-        identifier: identifier,
-        title: 'Patient (Customer)',
-        org: 'Standard Patient Profile',
-        color: '#006B70'
-      };
-
-      setDetectedUser(match);
+        identifier: identifier.trim(),
+        organization: 'Patient Portal (Tirupati)'
+      });
       setStep('OTP');
+    } finally {
       setLoading(false);
-    }, 400);
+    }
   };
 
   const handleVerifyOtp = (e) => {
@@ -117,46 +86,141 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
     }, 400);
   };
 
-  const handleQuickDemoLogin = (demoAccount) => {
-    onLoginSuccess(demoAccount);
+  // Google Sign-In Handler
+  const handleGoogleSignIn = async (demoEmail = 'patient.google@medmarg.com', demoName = 'Rahul Sharma') => {
+    setLoading(true);
+    setError('');
+
+    try {
+      // Call backend Google Auth
+      const res = await fetch(`${API_BASE}/api/v1/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: demoEmail,
+          name: demoName,
+          googleId: `gid_${Date.now()}`
+        })
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.user) {
+        // Check if user needs to link/verify their phone number (First login requirement like VR Here)
+        if (data.requiresPhone || !data.user.phone) {
+          setGoogleUserTemp(data.user);
+          setStep('GOOGLE_PHONE_PROMPT');
+        } else {
+          onLoginSuccess(data.user);
+        }
+      } else {
+        throw new Error(data.error || 'Google Sign-In failed.');
+      }
+    } catch (err) {
+      console.warn('Google auth backend fallback:', err.message);
+      // Client-side fallback: Prompt for mobile number
+      setGoogleUserTemp({
+        id: `usr_g_${Date.now()}`,
+        name: demoName,
+        email: demoEmail,
+        identifier: demoEmail,
+        role: 'PATIENT',
+        organization: 'MedMarg Healthcare Patient Portal'
+      });
+      setStep('GOOGLE_PHONE_PROMPT');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Complete Profile with Phone Number
+  const handleSavePhoneNumber = async (e) => {
+    e.preventDefault();
+    const cleanPhone = phoneInput.replace(/\D/g, '');
+    if (cleanPhone.length < 10) {
+      setPhoneError('Please enter a valid 10-digit mobile number.');
+      return;
+    }
+
+    setLoading(true);
+    setPhoneError('');
+
+    try {
+      await fetch(`${API_BASE}/api/v1/auth/update-phone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: googleUserTemp?.id,
+          phone: `+91 ${cleanPhone}`
+        })
+      });
+    } catch (e) {
+      // Continue locally
+    }
+
+    const verifiedProfile = {
+      ...googleUserTemp,
+      phone: `+91 ${cleanPhone}`,
+      identifier: `+91 ${cleanPhone}`
+    };
+
+    setTimeout(() => {
+      setLoading(false);
+      onLoginSuccess(verifiedProfile);
+    }, 400);
   };
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F8FAFC' }}>
       {/* Header */}
-      <header style={{ padding: '0.85rem 2rem', backgroundColor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header style={{ padding: '1rem 2rem', backgroundColor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }} onClick={onBackToHome}>
           <img 
             src="/logo.png" 
             alt="MedMarg" 
-            style={{ height: '40px', objectFit: 'contain' }} 
+            style={{ height: '42px', objectFit: 'contain' }} 
           />
         </div>
+        <button 
+          onClick={onBackToHome}
+          style={{ background: 'none', border: '1px solid #CBD5E1', borderRadius: '10px', padding: '0.45rem 1rem', fontSize: '0.85rem', fontWeight: '700', color: '#475569', cursor: 'pointer' }}
+        >
+          ← Back to Marketplace
+        </button>
       </header>
 
       {/* Main Container */}
-      <main style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2rem' }}>
-        <div style={{ width: '100%', maxWidth: '1000px', display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: '2rem', backgroundColor: '#FFFFFF', borderRadius: '24px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 20px 40px -15px rgba(0, 107, 112, 0.07)' }}>
+      <main style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2.5rem 1.5rem' }}>
+        <div style={{ width: '100%', maxWidth: '520px', backgroundColor: '#FFFFFF', borderRadius: '24px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 20px 45px -15px rgba(0, 107, 112, 0.1)' }}>
           
-          {/* Left Column: Universal Login Form */}
-          <div style={{ padding: '3rem 2.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-            <div style={{ marginBottom: '2rem' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.75rem', backgroundColor: '#E0F2F1', color: '#006B70', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '700', marginBottom: '0.75rem' }}>
-                <Sparkles size={14} /> Universal Single Sign-In
+          <div style={{ padding: '2.75rem 2.5rem' }}>
+            
+            {/* Header Badge & Title */}
+            <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.85rem', backgroundColor: '#E0F2F1', color: '#006B70', borderRadius: '20px', fontSize: '0.82rem', fontWeight: '800', marginBottom: '0.85rem' }}>
+                <Sparkles size={15} /> Universal Single Sign-In
               </div>
-              <h2 style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0F172A', lineHeight: '1.2' }}>
+              <h1 style={{ fontSize: '1.85rem', fontWeight: '900', color: '#0F172A', lineHeight: '1.2' }}>
                 Welcome to MedMarg
-              </h2>
-              <p style={{ color: '#64748B', fontSize: '0.95rem', marginTop: '0.4rem' }}>
+              </h1>
+              <p style={{ color: '#64748B', fontSize: '0.92rem', marginTop: '0.45rem', lineHeight: 1.4 }}>
                 One unified portal for Patients, Diagnostic Labs, Scan Centers, Doctors & Pharmacies.
               </p>
             </div>
 
-            {step === 'IDENTIFIER' ? (
+            {error && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', backgroundColor: '#FEE2E2', color: '#DC2626', borderRadius: '12px', fontSize: '0.85rem', marginBottom: '1.25rem', fontWeight: '600' }}>
+                <AlertCircle size={16} />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* STEP 1: MOBILE / EMAIL INPUT */}
+            {step === 'IDENTIFIER' && (
               <form onSubmit={handleProceedToOtp}>
                 <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '0.4rem' }}>
-                    Mobile Number / Email
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#334155', marginBottom: '0.45rem' }}>
+                    Mobile Number / Email Address
                   </label>
                   <div style={{ position: 'relative' }}>
                     <input
@@ -165,60 +229,67 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
                       required
-                      style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1.5px solid #CBD5E1', fontSize: '0.95rem', outline: 'none', transition: 'border-color 0.2s' }}
+                      style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1.5px solid #CBD5E1', fontSize: '0.95rem', outline: 'none', fontWeight: '600', color: '#0F172A' }}
                     />
                   </div>
-                  <span style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.25rem', display: 'block' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.35rem', display: 'block' }}>
                     System automatically detects your user type and loads your dedicated dashboard.
                   </span>
                 </div>
 
                 <button
                   type="submit"
-                  disabled={loading || !identifier}
-                  style={{ width: '100%', padding: '0.9rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '700', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', opacity: loading ? 0.7 : 1 }}
+                  disabled={loading || !identifier.trim()}
+                  style={{ width: '100%', padding: '0.9rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '800', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', opacity: loading ? 0.7 : 1, transition: 'all 0.15s' }}
                 >
                   {loading ? 'Detecting Profile...' : 'Continue with OTP'} <ArrowRight size={18} />
                 </button>
 
-                {/* Social Login Button */}
-                <div style={{ position: 'relative', textAlign: 'center', margin: '1.5rem 0' }}>
+                {/* Social Login Section */}
+                <div style={{ position: 'relative', textAlign: 'center', margin: '1.75rem 0' }}>
                   <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '1px', backgroundColor: '#E2E8F0' }}></div>
-                  <span style={{ position: 'relative', backgroundColor: '#FFF', padding: '0 0.75rem', fontSize: '0.8rem', color: '#94A3B8' }}>OR</span>
+                  <span style={{ position: 'relative', backgroundColor: '#FFF', padding: '0 0.85rem', fontSize: '0.8rem', color: '#94A3B8', fontWeight: '700' }}>OR</span>
                 </div>
 
+                {/* Google Sign In Button */}
                 <button
                   type="button"
-                  onClick={() => handleQuickDemoLogin(DEMO_ACCOUNTS[0])}
-                  style={{ width: '100%', padding: '0.8rem', backgroundColor: '#FFF', color: '#334155', border: '1.5px solid #E2E8F0', borderRadius: '12px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.6rem' }}
+                  onClick={() => handleGoogleSignIn()}
+                  disabled={loading}
+                  style={{ width: '100%', padding: '0.85rem', backgroundColor: '#FFF', color: '#1E293B', border: '1.5px solid #CBD5E1', borderRadius: '12px', fontSize: '0.95rem', fontWeight: '700', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.75rem', boxShadow: '0 2px 6px rgba(0,0,0,0.04)', transition: 'all 0.15s' }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24">
+                  <svg width="20" height="20" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                   </svg>
-                  Continue with Google
+                  <span>Sign in with Google</span>
                 </button>
               </form>
-            ) : (
+            )}
+
+            {/* STEP 2: OTP VERIFICATION */}
+            {step === 'OTP' && (
               <form onSubmit={handleVerifyOtp}>
-                <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '1.25rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#006B70' }}>USER TYPE DETECTED</span>
-                    <button type="button" onClick={() => setStep('IDENTIFIER')} style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer' }}>Change</button>
+                <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '14px', border: '1px solid #E2E8F0', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#006B70', letterSpacing: '0.05em' }}>PROFILE DETECTED</span>
+                    <button type="button" onClick={() => setStep('IDENTIFIER')} style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '0.75rem', textDecoration: 'underline', cursor: 'pointer', fontWeight: '600' }}>Change</button>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                    <CheckCircle2 size={20} color="#10B981" />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: '#E0F2F1', color: '#006B70', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <CheckCircle2 size={20} />
+                    </div>
                     <div>
-                      <div style={{ fontWeight: '700', color: '#0F172A', fontSize: '0.95rem' }}>{detectedUser?.name}</div>
-                      <div style={{ fontSize: '0.8rem', color: '#64748B' }}>{detectedUser?.title} ({detectedUser?.org})</div>
+                      <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.95rem' }}>{detectedUser?.name}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#64748B' }}>Role: <strong>{detectedUser?.role}</strong> • {detectedUser?.organization}</div>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '600', color: '#334155', marginBottom: '0.4rem' }}>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#334155', marginBottom: '0.45rem' }}>
                     Enter 6-Digit Verification Code
                   </label>
                   <input
@@ -228,9 +299,10 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
                     value={otp}
                     onChange={(e) => setOtp(e.target.value)}
                     required
-                    style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1.5px solid #CBD5E1', fontSize: '1.25rem', letterSpacing: '0.3em', textAlign: 'center', outline: 'none' }}
+                    autoFocus
+                    style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '12px', border: '1.5px solid #CBD5E1', fontSize: '1.35rem', letterSpacing: '0.3em', textAlign: 'center', outline: 'none', fontWeight: '800' }}
                   />
-                  <span style={{ fontSize: '0.75rem', color: '#10B981', marginTop: '0.4rem', display: 'block' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#10B981', marginTop: '0.4rem', display: 'block', fontWeight: '600' }}>
                     Demo Mode: Enter any 6 digits (e.g. 123456)
                   </span>
                 </div>
@@ -238,47 +310,72 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
                 <button
                   type="submit"
                   disabled={loading || otp.length < 4}
-                  style={{ width: '100%', padding: '0.9rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '700', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+                  style={{ width: '100%', padding: '0.9rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '800', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
                 >
-                  {loading ? 'Entering Dashboard...' : 'Verify & Launch Dashboard'}
+                  {loading ? 'Launching Dashboard...' : 'Verify & Enter Dashboard'} <ArrowRight size={18} />
                 </button>
               </form>
             )}
-          </div>
 
-          {/* Right Column: Quick Role Switcher Showcase */}
-          <div style={{ backgroundColor: '#F1F5F9', padding: '2.5rem', borderLeft: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ marginBottom: '1rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Instant Role Previews
-              </span>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: '700', color: '#0F172A', marginTop: '0.2rem' }}>
-                Explore Specific Dashboards
-              </h3>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', overflowY: 'auto', maxHeight: '420px', paddingRight: '0.25rem' }}>
-              {DEMO_ACCOUNTS.map((account) => {
-                const IconComponent = account.icon;
-                return (
-                  <div
-                    key={account.role}
-                    onClick={() => handleQuickDemoLogin(account)}
-                    style={{ backgroundColor: '#FFFFFF', padding: '0.9rem 1rem', borderRadius: '12px', border: '1px solid #E2E8F0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.85rem', transition: 'all 0.15s ease' }}
-                    className="card-hover"
-                  >
-                    <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: account.bg, color: account.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <IconComponent size={20} />
+            {/* STEP 3: FIRST LOGIN PHONE NUMBER VERIFICATION (LIKE VR HERE) */}
+            {step === 'GOOGLE_PHONE_PROMPT' && (
+              <form onSubmit={handleSavePhoneNumber}>
+                <div style={{ padding: '1rem', backgroundColor: '#FEF3C7', borderRadius: '14px', border: '1px solid #FDE68A', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <Smartphone size={20} color="#B45309" />
+                    <div>
+                      <div style={{ fontWeight: '800', color: '#92400E', fontSize: '0.9rem' }}>Phone Number Required</div>
+                      <div style={{ fontSize: '0.78rem', color: '#B45309' }}>Google account authenticated: <strong>{googleUserTemp?.email}</strong></div>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.9rem', fontWeight: '700', color: '#0F172A' }}>{account.title}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{account.org}</div>
-                    </div>
-                    <ArrowRight size={16} color="#94A3B8" />
                   </div>
-                );
-              })}
+                </div>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '700', color: '#334155', marginBottom: '0.45rem' }}>
+                    Enter 10-Digit Mobile Number
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div style={{ padding: '0.85rem 0.9rem', backgroundColor: '#F1F5F9', borderRadius: '12px', border: '1.5px solid #CBD5E1', fontSize: '0.95rem', fontWeight: '700', color: '#475569' }}>
+                      🇮🇳 +91
+                    </div>
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      placeholder="9876543210"
+                      value={phoneInput}
+                      onChange={(e) => setPhoneInput(e.target.value)}
+                      required
+                      autoFocus
+                      style={{ flex: 1, padding: '0.85rem 1rem', borderRadius: '12px', border: '1.5px solid #CBD5E1', fontSize: '1rem', outline: 'none', fontWeight: '700', color: '#0F172A' }}
+                    />
+                  </div>
+                  {phoneError ? (
+                    <span style={{ fontSize: '0.75rem', color: '#DC2626', marginTop: '0.35rem', display: 'block', fontWeight: '600' }}>
+                      {phoneError}
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.35rem', display: 'block' }}>
+                      Required for home sample collection updates, phlebotomist tracking & lab report SMS.
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || phoneInput.length < 10}
+                  style={{ width: '100%', padding: '0.9rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '1rem', fontWeight: '800', cursor: 'pointer', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  {loading ? 'Saving Profile...' : 'Complete Profile & Continue'} <ArrowRight size={18} />
+                </button>
+              </form>
+            )}
+
+            {/* Security Guarantee Footer */}
+            <div style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#64748B', fontSize: '0.78rem' }}>
+              <Shield size={14} color="#006B70" />
+              <span>256-Bit SSL Encrypted • NABL & ABDM Compliant</span>
             </div>
+
           </div>
 
         </div>

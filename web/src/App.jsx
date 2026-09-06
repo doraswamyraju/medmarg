@@ -7,6 +7,7 @@ import ScanCenterDashboard from './pages/ScanCenterDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 import PharmacyDashboard from './pages/PharmacyDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import PhlebotomistDashboard from './pages/PhlebotomistDashboard';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -63,6 +64,9 @@ export default function App() {
         return <DoctorDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
       case 'PHARMACY':
         return <PharmacyDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
+      case 'COLLECTION_AGENT':
+      case 'AGENT':
+        return <PhlebotomistDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
       case 'ADMIN':
         return <AdminDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
       case 'PATIENT':
