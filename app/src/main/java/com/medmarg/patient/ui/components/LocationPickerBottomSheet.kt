@@ -18,14 +18,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.medmarg.patient.model.SavedAddress
 import com.medmarg.patient.ui.theme.*
-
-data class SavedAddress(
-    val id: String,
-    val label: String, // Home, Office, Parents
-    val fullAddress: String,
-    val isDefault: Boolean = false
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,10 +30,10 @@ fun LocationPickerBottomSheet(
     var searchPincode by remember { mutableStateOf("") }
 
     val savedAddresses = listOf(
-        SavedAddress("1", "Home", "Plot 42, Air Bypass Road, Tirupati, Andhra Pradesh - 517501", true),
-        SavedAddress("2", "Office", "Renigunta Main Road, Tirupati, Andhra Pradesh - 517506", false),
-        SavedAddress("3", "Parents", "Near Padmavathi Temple, Tiruchanoor Road, Tirupati - 517503", false),
-        SavedAddress("4", "Clinic", "SVIMS Staff Quarters, Alipiri Road, Tirupati - 517507", false)
+        SavedAddress("1", "Home", "Plot 42, Air Bypass Road, Tirupati, Andhra Pradesh - 517501", isDefault = true),
+        SavedAddress("2", "Office", "Renigunta Main Road, Tirupati, Andhra Pradesh - 517506", isDefault = false),
+        SavedAddress("3", "Parents", "Near Padmavathi Temple, Tiruchanoor Road, Tirupati - 517503", isDefault = false),
+        SavedAddress("4", "Clinic", "SVIMS Staff Quarters, Alipiri Road, Tirupati - 517507", isDefault = false)
     )
 
     ModalBottomSheet(
