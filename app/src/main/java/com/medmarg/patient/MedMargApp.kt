@@ -1,28 +1,29 @@
 package com.medmarg.patient
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import com.medmarg.patient.data.CatalogStore
 import com.medmarg.patient.model.CartItem
-import com.medmarg.patient.model.ServiceType
+import com.medmarg.patient.model.CatalogItem
+import com.medmarg.patient.model.UserProfile
 import com.medmarg.patient.model.UserRole
-import com.medmarg.patient.navigation.Screen
-import com.medmarg.patient.navigation.bottomNavScreens
-import com.medmarg.patient.ui.components.LocationPickerBottomSheet
-import com.medmarg.patient.ui.components.MedMargTopHeader
+import com.medmarg.patient.ui.components.*
 import com.medmarg.patient.ui.screens.*
 import com.medmarg.patient.ui.theme.*
 import kotlinx.coroutines.launch
@@ -30,319 +31,448 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MedMargApp() {
-    val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route ?: Screen.Home.route
-
-    val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    var currentLocation by remember { mutableStateOf("Tirupati, Andhra Pradesh") }
-    var showLocationSheet by remember { mutableStateOf(false) }
-    
-    // Multi-role state
-    var activeRole by remember { mutableStateOf(UserRole.PATIENT) }
+    // Initialize Catalog Store with 913+ Tests from Assets
+    LaunchedEffect(Unit) {
+        CatalogStore.initialize(context)
+    }
+
+    // Authenticated User State (Matches iOS login/logout workflow)
+    var loggedInUser by remember {
+        mutableStateOf<UserProfile?>(
+            UserProfile(
+                id = "usr_pat",
+                name = "Rahul Sharma",
+                username = "patient",
+                email = "patient@medmarg.com",
+                phone = "+91 98765 43210",
+                role = UserRole.PATIENT,
+                organization = "Air Bypass Road, Tirupati - 517501"
+            )
+        )
+    }
+
+    // Navigation State: 0: Home, 1: Labs & Tests, 2: Track, 3: Reports, 4: Profile, 5: Doctors, 6: Pharmacy, 7: Scans
+    var selectedTab by remember { mutableIntStateOf(0) }
+
+    // Sheets & Overlays State
+    var showSidebar by remember { mutableStateOf(false) }
+    var showNotificationCenter by remember { mutableStateOf(false) }
+    var showBottomSheetMenu by remember { mutableStateOf(false) }
+    var showCartSheet by remember { mutableStateOf(false) }
     var showRoleSwitchSheet by remember { mutableStateOf(false) }
+    var showLocationSheet by remember { mutableStateOf(false) }
+    var showGooglePhoneSheet by remember { mutableStateOf(false) }
 
-    // Global Cart State
+    // Universal Item Details Sheet State
+    var selectedDetailItem by remember { mutableStateOf<CatalogItem?>(null) }
+
+    // Global Cart Items State
     val cartItems = remember {
         mutableStateListOf(
             CartItem(
                 id = "cart_1",
                 title = "Aarogyam Complete 1.3 (Full Body)",
                 subtitle = "104 Biomarkers • Free Home Collection in Tirupati",
-                providerName = "Thyrocare Central Lab",
+                provider = "MedMarg Central Diagnostics",
                 price = 1499,
-                originalPrice = 3500,
-                serviceType = ServiceType.LAB_TEST,
+                mrp = 3500,
+                type = "Health Package",
                 appointmentDate = "Tomorrow, 07:30 AM",
                 isHomeCollection = true
             )
         )
     }
 
-    if (showLocationSheet) {
-        LocationPickerBottomSheet(
-            onDismissRequest = { showLocationSheet = false },
-            onSelectAddress = { newAddress ->
-                currentLocation = newAddress
+    if (loggedInUser == null) {
+        // ==========================================
+        // 🔐 AUTHENTICATION / LOGIN VIEW
+        // ==========================================
+        LoginScreen(
+            onLoginSuccess = { user ->
+                loggedInUser = user
                 coroutineScope.launch {
-                    snackbarHostState.showSnackbar("Serving location updated to: $newAddress")
+                    snackbarHostState.showSnackbar("Welcome back, ${user.name}!")
                 }
+            },
+            onGoogleSignInClicked = {
+                val googleUser = UserProfile(
+                    id = "usr_g_12345",
+                    name = "Rahul Sharma",
+                    username = "rahul_google",
+                    email = "rahul.patient@gmail.com",
+                    phone = "",
+                    role = UserRole.PATIENT,
+                    organization = "MedMarg Patient Portal"
+                )
+                loggedInUser = googleUser
+                showGooglePhoneSheet = true
             }
         )
-    }
 
-    // Role switcher bottom sheet
-    if (showRoleSwitchSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showRoleSwitchSheet = false },
-            containerColor = PureWhite
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(20.dp)
-            ) {
-                Text(
-                    text = "Switch User Workspace",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Slate900
-                )
-                Text(
-                    text = "Select which MedMarg module console to open:",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Slate500
-                )
-                Spacer(modifier = Modifier.height(14.dp))
-                UserRole.entries.forEach { role ->
-                    Surface(
-                        color = if (activeRole == role) MedTealLight else Slate50,
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, if (activeRole == role) MedTealPrimary else Slate200),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp)
-                            .clickable {
-                                activeRole = role
-                                showRoleSwitchSheet = false
-                            }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = role.displayName,
-                                fontWeight = FontWeight.Bold,
-                                color = if (activeRole == role) MedTealPrimary else Slate900,
-                                modifier = Modifier.weight(1f)
-                            )
-                            if (activeRole == role) {
-                                Text(
-                                    text = "ACTIVE",
-                                    color = MedTealPrimary,
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 11.sp
-                                )
-                            }
+        // Google Phone Prompt Sheet
+        if (showGooglePhoneSheet) {
+            loggedInUser?.let { user ->
+                GooglePhoneSheet(
+                    tempUser = user,
+                    onDismissRequest = { showGooglePhoneSheet = false },
+                    onConfirmPhone = { phone ->
+                        loggedInUser = user.copy(phone = phone)
+                        showGooglePhoneSheet = false
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Phone verified: $phone")
                         }
                     }
-                }
-                Spacer(modifier = Modifier.height(20.dp))
+                )
             }
         }
-    }
-
-    // Direct View for Super Admin and Doctor Roles
-    if (activeRole == UserRole.SUPER_ADMIN) {
-        AdminDashboardScreen(onSwitchRole = { showRoleSwitchSheet = true })
-    } else if (activeRole == UserRole.DOCTOR) {
-        DoctorDashboardScreen(onSwitchRole = { showRoleSwitchSheet = true })
     } else {
+        // ==========================================
+        // 🏥 MAIN MEDMARG LOGGED-IN WORKSPACE
+        // ==========================================
+        val user = loggedInUser!!
+
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
-                if (currentRoute != Screen.Booking.route) {
-                    MedMargTopHeader(
-                        currentLocation = currentLocation,
-                        cartCount = cartItems.size,
-                        onLocationClick = { showLocationSheet = true },
-                        onCartClick = { navController.navigate(Screen.Booking.route) }
+                TopbarView(
+                    user = user,
+                    onMenuClick = { showSidebar = true },
+                    onNotificationClick = { showNotificationCenter = true },
+                    onLogoutClick = {
+                        loggedInUser = null
+                        selectedTab = 0
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Signed out of MedMarg")
+                        }
+                    }
+                )
+            },
+            bottomBar = {
+                Column {
+                    // Floating Cart Bar (Sticky when cart has items)
+                    if (cartItems.isNotEmpty() && selectedTab != 2) {
+                        FloatingCartBar(
+                            cartItems = cartItems,
+                            onCheckoutClick = { showCartSheet = true }
+                        )
+                    }
+
+                    // 5-Tab Navigation Bar with Drag Handle Bar
+                    BottomNavbarView(
+                        selectedTab = selectedTab,
+                        onTabSelected = { selectedTab = it },
+                        userRole = user.role,
+                        onOpenMenuSheet = { showBottomSheetMenu = true }
                     )
                 }
             },
-            bottomBar = {
-                if (currentRoute != Screen.Booking.route) {
-                    NavigationBar(
-                        containerColor = PureWhite,
-                        contentColor = MedTealDark
-                    ) {
-                        bottomNavScreens.forEach { screen ->
-                            val isSelected = currentRoute == screen.route
-                            NavigationBarItem(
-                                selected = isSelected,
-                                onClick = {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = if (isSelected) screen.selectedIcon else screen.unselectedIcon,
-                                        contentDescription = screen.title
-                                    )
-                                },
-                                label = {
-                                    Text(
-                                        text = screen.title,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = MedTealPrimary,
-                                    selectedTextColor = MedTealPrimary,
-                                    indicatorColor = MedTealPrimary.copy(alpha = 0.15f),
-                                    unselectedIconColor = Slate500,
-                                    unselectedTextColor = Slate500
+            containerColor = Slate50
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+            ) {
+                // Main Tab Routing
+                when (selectedTab) {
+                    0 -> HomeScreen(
+                        onNavigateToTab = { selectedTab = it },
+                        onSelectItem = { selectedDetailItem = it },
+                        onOpenPrescription = {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Prescription Upload Camera Opened")
+                            }
+                        }
+                    )
+                    1 -> DiagnosticsScreen(
+                        onSelectItem = { selectedDetailItem = it },
+                        onAddToCart = { item ->
+                            cartItems.add(
+                                CartItem(
+                                    id = "cart_${System.currentTimeMillis()}",
+                                    title = item.name,
+                                    subtitle = "${item.displayItemType} • ${item.displaySample}",
+                                    price = item.price,
+                                    mrp = if (item.mrp > 0) item.mrp else item.price + 500,
+                                    type = item.displayItemType
                                 )
                             )
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Added ${item.name} to Cart")
+                            }
+                        }
+                    )
+                    2 -> TrackScreen()
+                    3 -> HealthLockerScreen()
+                    4 -> ProfileScreen(
+                        user = user,
+                        onOpenLocationPicker = { showLocationSheet = true },
+                        onSwitchRole = { showRoleSwitchSheet = true },
+                        onLogout = {
+                            loggedInUser = null
+                            selectedTab = 0
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Signed out")
+                            }
+                        }
+                    )
+                    5 -> DoctorsScreen(
+                        onBookDoctor = { doctor ->
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Consultation slot selected with ${doctor.name}")
+                            }
+                        }
+                    )
+                    6 -> PharmacyScreen(
+                        onAddToCart = { med, isGeneric ->
+                            val finalPrice = if (isGeneric && med.genericAlternative != null) med.genericAlternative.discountedPrice else med.price
+                            val finalTitle = if (isGeneric && med.genericAlternative != null) "${med.genericAlternative.name} (Generic substitute)" else med.name
+                            cartItems.add(
+                                CartItem(
+                                    id = "med_${med.id}",
+                                    title = finalTitle,
+                                    subtitle = "${med.composition} • ${med.packSize}",
+                                    price = finalPrice,
+                                    mrp = med.mrp,
+                                    type = "Pharmacy"
+                                )
+                            )
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Added $finalTitle to Cart")
+                            }
+                        }
+                    )
+                    7 -> ScansScreen(
+                        onSelectScanCenter = { scan, center ->
+                            cartItems.add(
+                                CartItem(
+                                    id = "scan_${scan.id}",
+                                    title = scan.name,
+                                    subtitle = "${scan.modality} • ${scan.bodyPart} • ${center.centerName}",
+                                    price = center.price,
+                                    mrp = center.originalPrice,
+                                    type = "Radiology Scan"
+                                )
+                            )
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Added ${scan.name} (${center.centerName}) to Cart")
+                            }
+                        }
+                    )
+                }
+
+                // Universal Item Details Sheet (With Smart Package Upgrades & Highlighted Savings)
+                selectedDetailItem?.let { item ->
+                    UniversalItemDetailsSheet(
+                        item = item,
+                        onDismissRequest = { selectedDetailItem = null },
+                        onAddToCart = { selectedItem ->
+                            cartItems.add(
+                                CartItem(
+                                    id = "cart_${System.currentTimeMillis()}",
+                                    title = selectedItem.name,
+                                    subtitle = "${selectedItem.displayItemType} • ${selectedItem.displaySample}",
+                                    price = selectedItem.price,
+                                    mrp = if (selectedItem.mrp > 0) selectedItem.mrp else selectedItem.price + 500,
+                                    type = selectedItem.displayItemType
+                                )
+                            )
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Added ${selectedItem.name} to Cart")
+                            }
+                        },
+                        onUpgradeToPackage = { pkg ->
+                            cartItems.clear()
+                            cartItems.add(
+                                CartItem(
+                                    id = "cart_${System.currentTimeMillis()}",
+                                    title = pkg.name,
+                                    subtitle = "${pkg.testCount ?: 104} Biomarkers • Complete Screening",
+                                    price = pkg.price,
+                                    mrp = pkg.mrp,
+                                    type = "Health Package"
+                                )
+                            )
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Upgraded to ${pkg.name}! Saved 57% OFF.")
+                            }
+                        }
+                    )
+                }
+
+                // Cart View Sheet (Opens when user clicks floating cart bar or cart action)
+                if (showCartSheet) {
+                    CartViewSheet(
+                        cartItems = cartItems,
+                        onDismissRequest = { showCartSheet = false },
+                        onConfirmOrder = {
+                            cartItems.clear()
+                            showCartSheet = false
+                            selectedTab = 2 // Switch directly to live tracker
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Home Collection Confirmed! Phlebotomist Dispatched.")
+                            }
+                        }
+                    )
+                }
+
+                // Bottom Sheet Quick Menu (Matching iOS BottomSheetMenuView)
+                if (showBottomSheetMenu) {
+                    BottomSheetMenuView(
+                        user = user,
+                        onDismissRequest = { showBottomSheetMenu = false },
+                        onNavigateTab = { tabIndex, _ ->
+                            selectedTab = tabIndex
+                            showBottomSheetMenu = false
+                        },
+                        onLogout = {
+                            showBottomSheetMenu = false
+                            loggedInUser = null
+                            selectedTab = 0
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Signed out")
+                            }
+                        }
+                    )
+                }
+
+                // Notification Center Sheet
+                if (showNotificationCenter) {
+                    NotificationCenterSheet(
+                        onDismissRequest = { showNotificationCenter = false }
+                    )
+                }
+
+                // Location Picker Bottom Sheet
+                if (showLocationSheet) {
+                    LocationPickerBottomSheet(
+                        onDismissRequest = { showLocationSheet = false },
+                        onSelectAddress = { address ->
+                            showLocationSheet = false
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Serving address updated: $address")
+                            }
+                        }
+                    )
+                }
+
+                // First-Login Google Phone Sheet
+                if (showGooglePhoneSheet) {
+                    GooglePhoneSheet(
+                        tempUser = user,
+                        onDismissRequest = { showGooglePhoneSheet = false },
+                        onConfirmPhone = { phone ->
+                            loggedInUser = user.copy(phone = phone)
+                            showGooglePhoneSheet = false
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Phone verified: $phone")
+                            }
+                        }
+                    )
+                }
+
+                // Role Switcher Modal
+                if (showRoleSwitchSheet) {
+                    ModalBottomSheet(
+                        onDismissRequest = { showRoleSwitchSheet = false },
+                        containerColor = PureWhite
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp)
+                                .padding(bottom = 32.dp)
+                        ) {
+                            Text(
+                                text = "Switch User Workspace",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Slate900
+                            )
+                            Text(
+                                text = "Select which MedMarg module console to open:",
+                                fontSize = 12.sp,
+                                color = Slate500
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                            UserRole.entries.forEach { role ->
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 4.dp)
+                                        .clickable {
+                                            loggedInUser = loggedInUser?.copy(role = role)
+                                            showRoleSwitchSheet = false
+                                            coroutineScope.launch {
+                                                snackbarHostState.showSnackbar("Switched to ${role.displayName}")
+                                            }
+                                        },
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (loggedInUser?.role == role) MedTealLight else Slate50
+                                    ),
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        if (loggedInUser?.role == role) MedTealPrimary else Slate200
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(14.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(10.dp)
+                                                .clip(CircleShape)
+                                                .background(Color(role.badgeColorHex))
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(
+                                            text = role.displayName,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (loggedInUser?.role == role) MedTealPrimary else Slate900
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-            }
-        ) { innerPadding ->
-            NavHost(
-                navController = navController,
-                startDestination = Screen.Home.route,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {
-                composable(Screen.Home.route) {
-                    HomeScreen(
-                        onNavigate = { route -> navController.navigate(route) },
-                        onSelectLabTest = { test, labPricing ->
-                            cartItems.add(
-                                CartItem(
-                                    id = "cart_${System.currentTimeMillis()}",
-                                    title = test.name,
-                                    subtitle = "${test.parametersCount} Parameters • ${labPricing.tatHours}h TAT",
-                                    providerName = labPricing.labName,
-                                    price = labPricing.discountedPrice,
-                                    originalPrice = labPricing.originalPrice,
-                                    serviceType = ServiceType.LAB_TEST,
-                                    appointmentDate = "Tomorrow, 08:00 AM",
-                                    isHomeCollection = labPricing.homeCollectionAvailable
-                                )
-                            )
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Added ${test.name} (${labPricing.labName}) to Cart")
-                            }
-                        }
-                    )
-                }
 
-                composable(Screen.Diagnostics.route) {
-                    DiagnosticsScreen(
-                        onSelectLabTest = { test, labPricing ->
-                            cartItems.add(
-                                CartItem(
-                                    id = "cart_${System.currentTimeMillis()}",
-                                    title = test.name,
-                                    subtitle = "${test.parametersCount} Parameters",
-                                    providerName = labPricing.labName,
-                                    price = labPricing.discountedPrice,
-                                    originalPrice = labPricing.originalPrice,
-                                    serviceType = ServiceType.LAB_TEST
-                                )
-                            )
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Added ${test.name} (${labPricing.labName}) to Cart")
-                            }
-                        }
-                    )
-                }
-
-                composable(Screen.Scans.route) {
-                    ScansScreen(
-                        onSelectScanCenter = { scan, pricing ->
-                            cartItems.add(
-                                CartItem(
-                                    id = "cart_scan_${System.currentTimeMillis()}",
-                                    title = scan.name,
-                                    subtitle = pricing.machineSpec,
-                                    providerName = pricing.centerName,
-                                    price = pricing.price,
-                                    originalPrice = pricing.originalPrice,
-                                    serviceType = ServiceType.SCAN_RADIOLOGY,
-                                    appointmentDate = pricing.nextSlot,
-                                    isHomeCollection = false
-                                )
-                            )
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Scan slot booked at ${pricing.centerName}")
-                            }
-                        }
-                    )
-                }
-
-                composable(Screen.Doctors.route) {
-                    DoctorsScreen(
-                        onBookDoctor = { doctor ->
-                            cartItems.add(
-                                CartItem(
-                                    id = "cart_doc_${System.currentTimeMillis()}",
-                                    title = "Consultation: ${doctor.name}",
-                                    subtitle = doctor.specialty,
-                                    providerName = doctor.clinicOrHospital,
-                                    price = doctor.fee,
-                                    originalPrice = doctor.fee,
-                                    serviceType = ServiceType.DOCTOR_CONSULT,
-                                    appointmentDate = doctor.nextSlot,
-                                    isHomeCollection = false
-                                )
-                            )
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Consultation booked with ${doctor.name}")
-                            }
-                        }
-                    )
-                }
-
-                composable(Screen.Pharmacy.route) {
-                    PharmacyScreen(
-                        onAddToCart = { medicine, isGeneric ->
-                            val (title, price, origPrice) = if (isGeneric && medicine.genericAlternative != null) {
-                                Triple(medicine.genericAlternative.name, medicine.genericAlternative.discountedPrice, medicine.genericAlternative.mrp)
-                            } else {
-                                Triple(medicine.name, medicine.price, medicine.mrp)
-                            }
-                            cartItems.add(
-                                CartItem(
-                                    id = "cart_med_${System.currentTimeMillis()}",
-                                    title = title,
-                                    subtitle = medicine.packSize,
-                                    providerName = if (isGeneric) "MedMarg Generics" else medicine.manufacturer,
-                                    price = price,
-                                    originalPrice = origPrice,
-                                    serviceType = ServiceType.PHARMACY,
-                                    isHomeCollection = true
-                                )
-                            )
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Added $title to Cart")
-                            }
-                        }
-                    )
-                }
-
-                composable(Screen.HealthLocker.route) {
-                    HealthLockerScreen()
-                }
-
-                composable(Screen.Insurance.route) {
-                    InsuranceScreen()
-                }
-
-                composable(Screen.Booking.route) {
-                    BookingScreen(
-                        cartItems = cartItems,
-                        onRemoveItem = { cartItems.remove(it) },
-                        onConfirmBooking = {
-                            cartItems.clear()
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("🎉 Booking Confirmed! Phlebotomist/Appointment details sent via SMS & WhatsApp.")
-                            }
-                            navController.navigate(Screen.Home.route)
-                        }
-                    )
+                // Sidebar Drawer (Animated Slide-In, Matching iOS SidebarView)
+                AnimatedVisibility(
+                    visible = showSidebar,
+                    enter = slideInHorizontally(initialOffsetX = { -it }) + fadeIn(),
+                    exit = slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.5f))
+                            .clickable { showSidebar = false }
+                    ) {
+                        SidebarView(
+                            user = user,
+                            onNavigateTab = { tabIndex, _ ->
+                                selectedTab = tabIndex
+                                showSidebar = false
+                            },
+                            onLogout = {
+                                showSidebar = false
+                                loggedInUser = null
+                                selectedTab = 0
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Signed out")
+                                }
+                            },
+                            onClose = { showSidebar = false }
+                        )
+                    }
                 }
             }
         }

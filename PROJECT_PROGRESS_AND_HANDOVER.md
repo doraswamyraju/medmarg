@@ -1,95 +1,124 @@
 # MedMarg Healthcare Ecosystem — Project Progress & Handover Document
 
-**Date:** 06 September 2026  
-**Status:** Phase 1 Core Ecosystem Completed & Pushed to Git (`origin/main`)  
-**Next Session Starting Point:** Dedicated Firebase & Google Cloud Project Setup for MedMarg
+**Date:** 18 September 2026  
+**Status:** Native Android Patient Module Completed with 100% iOS Parity & Master Catalog Integration  
+**Next Session Starting Point:** Dedicated Firebase OAuth / Google Cloud Multiplatform Deployment & Backend API Synchronization
 
 ---
 
 ## 📌 Executive Summary of Completed Work
 
-During this session, we transformed MedMarg into a complete omnichannel healthcare platform with synchronized architecture across **Web (React/Vite)**, **iOS (Swift/SwiftUI)**, and **Backend (Express API)**, ready for live testing on Hostinger VPS (`147.93.107.21:5085`).
+During this session, we built and refined the **MedMarg Patient Module** in native Android (Kotlin + Jetpack Compose) with strict 1:1 design and functional parity to the iOS SwiftUI application (`ios/ContentView.swift` and `ios/Shared/Components/`), adopting a **single-provider MedMarg branding** architecture.
 
 ---
 
-## 1. 🏠 Rich Home Page Implementation (Web & iOS)
-- **Life-Stage & Family Wellness Plans:**
-  - **His Wellness Comprehensive** (78 tests, ₹1,699 — Testosterone, PSA, Cardiac, Liver, Stamina).
-  - **Her Wellness & Hormone Harmony** (84 tests, ₹1,799 — PCOS/PCOD, Ultra-sensitive Thyroid, Ferritin, Calcium).
-  - **Family Complete Health Shield** (110+ tests, ₹4,499 for 4 members — couples, pediatric & geriatric screening).
-- **Disease & Vital Biomarkers:**
-  - Disease Panels: Diabetes Comprehensive, Cardiac & Lipid Risk, Liver LFT, Kidney RFT, Allergy Screen.
-  - Vital Panels: Vitamin D3 & B12, Complete Hemogram (CBC + ESR), Thyroid Total (T3/T4/TSH).
-- **Smart AI Recommendations:**
-  - Age-based packages (20–35 yrs, 35–50 yrs, 50+ Senior Citizens).
-  - Health concerns (Hair Fall/Skin Health, Fatigue/Gut Wellness).
-- **Direct 1-Tap Order Channels:**
-  - **WhatsApp Direct Ordering** (`https://wa.me/919876543210`) with automated pre-filled patient info.
-  - **Direct Hotline Calling** (`tel:+919876543210`).
-  - **Upload Prescription** action.
+## 1. 🏥 Single-Provider Brand Architecture & Master Catalog
+- **Single-Provider Experience:** The patient only interacts with **MedMarg** as the trusted healthcare provider. No third-party laboratory marketplace comparison is exposed to the patient.
+- **Master Diagnostic Catalog (913+ Tests):**
+  - Copied `catalogData.json` to Android assets (`app/src/main/assets/catalogData.json`).
+  - Built [CatalogStore.kt](file:///d:/MedMarg/app/src/main/java/com/medmarg/patient/data/CatalogStore.kt) with reactive Kotlin Coroutines/Flow to dynamically query 913+ tests, profiles, and life-stage packages.
+  - Implemented `findContainingPackages(item)` for dynamic smart package recommendations.
 
 ---
 
-## 2. 🔬 Universal Item Details View with Connected Smart Packages & Highlighted Savings
-- Clicking **ANY** test, profile, or package card in Home or Labs & Tests opens a dedicated details sheet/modal.
-- **Biomarker Metrics:** Fasting hours requirement (8–10h vs Not Required), sample tubes needed (Serum, EDTA, Fluoride, Urine), turnaround time (TAT), and biomarker parameter count.
-- **Connected Smart Packages Upgrades:** When viewing an individual test (e.g. Thyroid, HbA1c, CBC, Lipid Panel), the app dynamically detects and showcases containing packages (`Thyrocare Aarogyam Complete 1.3` and `MedMarg Master Health Checkup`).
-- **Highlighted Savings:** Explicitly showcases savings like **"Save ₹2,001 (57% OFF) by upgrading to the Full Body Package"** with 1-click upgrade buttons.
+## 2. 🔝 Clean Top Bar (`TopbarView.kt`) — Matching iOS `TopbarView.swift`
+- **4-Element Layout:**
+  1. **Hamburger Menu Toggle** (left): Opens the slide-out navigation drawer.
+  2. **Official MedMarg Logo & Scrollable Welcome Label** (center/left): Displays `R.drawable.logo` (`height: 24dp`) and single-line scrollable `Welcome, [Name] ([Role])`.
+  3. **Notification Bell** (right): Features an unread indicator red badge.
+  4. **Red Logout Power Button** (far right): 1-tap sign-out action.
+- *Cart icon has been completely removed from the top bar to match the iOS design.*
 
 ---
 
-## 3. 📱 Synchronized 5-Tab Navigation System
-Synchronized across **Bottom Navbar**, **Sidebar Drawer**, and **Bottom Sheet Menu**:
-1. `HOME`: Wellness categories, instant order channels, AI recommenders.
-2. `TESTS` (`Labs & Tests`): 913+ pathology catalog with search, fasting, and sample filters.
-3. `TRACK`: Live phlebotomist tracker, ETA countdown, and IoT cold-chain temperature telemetry (4.2°C).
-4. `REPORTS`: Encrypted Digital Health Locker with Google Drive sync.
-5. `PROFILE`: User account settings, phone number verification, linked family profiles, and role switcher.
+## 3. 🗂️ Accordion Sidebar Drawer (`SidebarView.kt`) — Matching iOS `SidebarView.swift`
+- **Header:** Horizontal MedMarg logo (`height: 32dp`), close button, user role badge (`user.role.displayName`), and user email.
+- **Accordion Main Modules with Expandable/Collapsible Sub-Options:**
+  - 🏠 **Home:** `His Wellness`, `Her Wellness`, `Family Wellness`, `Disease Screening`
+  - 🧪 **Labs & Tests:** `All Pathology Tests`, `Health Packages`, `Diagnostic Profiles`
+  - 🛵 **Track:** `Live Sample Tracking`, `IoT Cold-Chain Telemetry`
+  - 📋 **Reports:** `NABL PDF Reports`, `Biomarker Trends`, `Doctor Prescriptions`
+  - 👤 **Profile:** `Patient Account`, `Linked Family`, `Addresses`
+  - *(Super Admin accordion modules for Tests, Labs, Hospitals, Pharmacies, Agents, Inventory, and Users are also fully supported).*
+- **Footer Bar:** **Profile & Settings** on the left and a red **Logout Power Action Button** on the right.
 
 ---
 
-## 4. 🛒 Floating Add to Cart & Streamlined Fasting Slot Checkout
-- **Floating Sticky Bottom Bar:** Visible whenever the cart has items; displays item count, preview names, live savings badge (`Save ₹X`), total price, and direct checkout trigger.
-- **Interactive Checkout Flow:** Early-morning fasting time-slot selectors (06:30 AM–07:30 AM, 07:30 AM–08:30 AM, etc.), home collection address, and payment confirmation.
+## 4. 📱 Bottom Navigation Bar (`BottomNavbarView.kt`) & Gesture Sheet
+- **5 Core Patient Navigation Tabs:** Home, Labs & Tests, Track (center highlighted with live glowing red dot), Reports, and Profile.
+- **No Horizontal Drag Handle Line:** Removed the visual grey line near the Track button for a clean appearance.
+- **Vertical Swipe-Up Gesture:** Integrated `pointerInput` vertical drag detection so swiping up from anywhere on the bottom navigation bar smoothly opens the **Workspace Hub Bottom Sheet**.
 
 ---
 
-## 5. 🔐 Authentic Google Sign-In & First-Login Phone Number Prompt
-- **OAuth / Google Flow:** Integrates with `/api/v1/auth/google`.
-- **First-Login Phone Detection:** If `user.phone` is missing on first Google login, opens a prompt requiring a valid 10-digit mobile number for home collection and report SMS before launching the portal.
-- **Demo Credentials:** Saved in [DEMO_CREDENTIALS.md](file:///Users/doraswamyrajumeesala/Documents/MedMarg/DEMO_CREDENTIALS.md).
+## 5. 📑 Workspace Hub Bottom Sheet (`BottomSheetMenuView.kt`)
+- **Header:** MedMarg Logo, **"Workspace Hub"**, **"All Modules & Quick Navigation"**, and Close button.
+- **Interactive Module Cards:**
+  - Complete cards for **Home**, **Labs & Tests**, **Track**, **Reports**, and **Profile**.
+  - Includes icon boxes, titles, descriptions, chevron indicators, and horizontal scrollable sub-tab chips (`[His Wellness]`, `[Health Packages]`, `[Cold-Chain Temp]`, etc.).
+  - Tapping any card or chip immediately selects that tab/sub-tab and dismisses the sheet.
 
 ---
 
-## 6. 🛵 Complete Sample Collection Agent (Phlebotomist) Panel
-- **Operational Fleet Console (iOS & Web):**
-  - Live On-Duty / Off-Duty toggle.
-  - Real-time IoT Cold-Chain Box Temperature Telemetry (**4.2°C Optimal Range**).
-  - Assigned patient doorstep pickups with Google Maps navigation and direct calling.
-  - Barcode / RFID sample tube scanning checklist (Serum SST, EDTA, Fluoride, Urine).
-  - Sample handoff to Renigunta NABL processing hub.
+## 6. 🛒 Floating Cart Bar & Checkout Sheet (`FloatingCartBar.kt` & `CartViewSheet.kt`)
+- **Floating Cart Bar:**
+  - Floats stickily right above the bottom navbar whenever the cart has items.
+  - Features an Amber Gold circular badge with the item count (`[1]`), total price (`₹1499`), green savings badge (`Save ₹2001`), subtitle (`Free 60-Min Home Sample Pickup Included`), and `View Cart →` pill button.
+  - Entire bar is clickable and opens the cart bottom sheet.
+- **Cart View Bottom Sheet:**
+  - Displays "Healthcare Cart & Checkout" with teal "Close".
+  - Selected tests listing with price and red "Remove" action.
+  - "HOME COLLECTION DETAILS" box (Fasting Slot: Tomorrow 07:30 AM - 08:30 AM & Address).
+  - "BILL SUMMARY" (MRP, Marketplace Discount, Free Sample Collection, Total Payable).
+  - Teal "Confirm Free Home Collection" CTA button that clears the cart and triggers live tracking.
 
 ---
 
-## 7. 🛠️ Build & Codebase Verification
-- **iOS App (`MedMarg.xcodeproj`):** Verified clean build with `xcodebuild` (`** BUILD SUCCEEDED **`).
-- **Web App (`web/`):** React components cleanly structured, routed, and tested.
-- **Git State:** All changes committed and pushed to `origin main` (Commit `4f4eb41` / `2b08149`).
+## 7. 🔍 Universal Item Details Sheet (`UniversalItemDetailsSheet.kt`)
+- Opens when tapping any test, profile, or package card.
+- Displays full diagnostic specifications: Sample type (Serum SST, EDTA, Fluoride, Urine), Fasting hours requirement (8-10h), and Turnaround Time (TAT).
+- **Connected Smart Packages Upgrades:** Detects containing packages and displays highlighted savings (e.g., **"Save ₹2,001 (57% OFF)"** with 1-tap upgrade).
 
 ---
 
-## 🚀 Tomorrow's Plan: Dedicated Firebase & Google Cloud Setup
+## 8. 📈 Health & Vitals Dashboard Graphical Presentation
+- Built [BiomarkerChart.kt](file:///d:/MedMarg/app/src/main/java/com/medmarg/patient/ui/components/BiomarkerChart.kt):
+  - `BiomarkerTrendChart`: High-fidelity Canvas-drawn multi-point curve graphs with normal green reference zones, spline interpolation, area gradient fills, and dual-series (Systolic & Diastolic BP) support.
+  - `BiomarkerSparkline`: Mini inline graphic trend curves on vital cards.
+- Integrated in [HomeScreen.kt](file:///d:/MedMarg/app/src/main/java/com/medmarg/patient/ui/screens/HomeScreen.kt) with an interactive toggle:
+  - `[📊 Quick Vitals Snapshot]` (sparklines on Blood Pressure, Blood Glucose, Heart Rate, SpO2, Weight/BMI, Activity)
+  - `[📈 Graphical Trends (7-Day)]` (curve graphs for BP, Glucose, and Heart Rate).
+- Longitudinal biomarker analysis graphs integrated into [HealthLockerScreen.kt](file:///d:/MedMarg/app/src/main/java/com/medmarg/patient/ui/screens/HealthLockerScreen.kt).
 
-When we resume tomorrow, we will execute the following:
+---
 
-1. **Create Dedicated Firebase / Google Cloud Project:**
-   - Project Name: `MedMarg` / `medmarg-health`
-   - Configure OAuth 2.0 Consent Screen with official MedMarg branding and logo.
-2. **Generate New OAuth 2.0 Client IDs:**
-   - **Web Client ID:** Authorized origins for `http://147.93.107.21:5085`, `https://medmarg.com`, and `http://localhost:3000`.
-   - **iOS Client ID:** Download `GoogleService-Info.plist` (Bundle ID: `com.medmarg.app`).
-   - **Android Client ID:** Generate `google-services.json` (Package: `com.medmarg.app`).
-3. **Update Web & Backend Configs:**
-   - Update `GOOGLE_CLIENT_ID` in `web/src/pages/LoginPage.jsx`.
-   - Add Firebase Admin SDK credentials in `backend/` for server-side token validation.
-4. **Deploy & Live Test:** Rebuild on VPS and test end-to-end Google authentication and patient booking.
+## 9. 🛵 Live Delivery-Style Phlebotomist Tracking (`TrackScreen.kt`)
+- **Realistic Canvas Vector City Map:** Complete street grid, arterial highways, green parks, water features, and animated route polyline.
+- **Live Moving Vehicle Marker:** Moving scooter icon with dynamic radar pulse halo, heading orientation, and real-time speed telemetry (`28 km/h`).
+- **Live Delivery HUD:**
+  - Real-time ETA countdown (`12 mins`, `1.4 km remaining`) with progress bar.
+  - **4-Digit Handover Security OTP:** `OTP: 4 8 9 2`.
+  - **Phlebotomist Profile Card:** Ramesh Kumar (4.9 ★, 1,420 collections), Hero Electric vehicle, 1-tap Direct Call & WhatsApp buttons.
+  - **Cold-Chain IoT Sensor Status:** `4.2°C Active` (Optimal 2°C - 8°C).
+  - **Vacutainer Tube Checklist:** Gold SST, Purple EDTA, Grey Fluoride barcoded tubes.
+  - **Step-by-Step Sample Journey Timeline.**
+
+---
+
+## 10. 👤 Customer Profile, Multi-Address & Auth Lifecycle
+- [ProfileScreen.kt](file:///d:/MedMarg/app/src/main/java/com/medmarg/patient/ui/screens/ProfileScreen.kt): Verified phone, ABDM ID, health metrics, saved addresses manager, linked family members, and Health Connect sync.
+- [LoginScreen.kt](file:///d:/MedMarg/app/src/main/java/com/medmarg/patient/ui/screens/LoginScreen.kt): Official logo and emblem, demo account quick-switchers, and Google Sign-In with 10-digit phone verification ([GooglePhoneSheet.kt](file:///d:/MedMarg/app/src/main/java/com/medmarg/patient/ui/components/GooglePhoneSheet.kt)).
+
+---
+
+## 📋 Comprehensive Implementation Roadmap & Next Session Plan
+
+When we resume in the next session, we will execute the following:
+
+1. **Google Cloud & Firebase Production Credentials Setup:**
+   - Configure OAuth 2.0 Consent Screen for MedMarg (`https://medmarg.com`).
+   - Add `google-services.json` to `app/` and `GoogleService-Info.plist` to `ios/`.
+2. **Synchronize Web React & iOS SwiftUI:**
+   - Align Web `web/src/pages/PatientDashboard.jsx` and iOS `ios/ContentView.swift` with the newly refined vector map tracking, graphical vitals presentation, and unified catalog data.
+3. **Backend API Live Fulfillment Verification:**
+   - Verify sample collection booking, IoT cold-chain telemetry updates, and direct Google Drive PDF report delivery on Hostinger VPS (`147.93.107.21:5085`).
