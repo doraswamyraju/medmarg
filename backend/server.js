@@ -80,22 +80,38 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// SINGLE LOGIN & ROLE AUTO-DETECTION ENDPOINT
+// SINGLE LOGIN & ROLE AUTO-DETECTION ENDPOINT (EMAIL/PHONE & PASSWORD OR OTP)
 app.post('/api/v1/auth/login', (req, res) => {
-    const { identifier } = req.body;
+    const { identifier, password, authMode } = req.body;
 
     if (!identifier) {
-        return res.status(400).json({ error: 'Mobile, Email or ABHA identifier is required.' });
+        return res.status(400).json({ error: 'Mobile number or Email address is required.' });
     }
 
     const idLower = identifier.trim().toLowerCase();
 
-    // Auto-detect role based on identifier or credentials
+    // Comprehensive role auto-detection based on credentials/email/phone
     let detectedRole = 'PATIENT';
     let name = 'Patient User';
-    let organization = 'Bangalore, Indiranagar';
+    let organization = 'MedMarg Healthcare Patient Portal';
 
-    if (idLower.includes('lab') || idLower.includes('lal') || idLower.includes('pathlabs') || idLower.includes('thyrocare')) {
+    if (idLower.includes('admin') || idLower === 'superadmin') {
+        detectedRole = 'ADMIN';
+        name = 'MedMarg Super Admin';
+        organization = 'MedMarg Platform Governance & Central Command';
+    } else if (idLower.includes('staff') || idLower.includes('ops')) {
+        detectedRole = 'STAFF';
+        name = 'MedMarg Operations Staff';
+        organization = 'MedMarg Central Operations Desk';
+    } else if (idLower.includes('freelance') || idLower.includes('gig')) {
+        detectedRole = 'FREELANCER_AGENT';
+        name = 'Suresh Phlebotomy (Freelancer)';
+        organization = 'MedMarg Freelance Phlebotomist Network';
+    } else if (idLower.includes('salaried') || idLower.includes('agent') || idLower.includes('phlebo')) {
+        detectedRole = 'SALARIED_AGENT';
+        name = 'Ramesh Kumar (Salaried Agent AG-01)';
+        organization = 'MedMarg In-House Fleet (Zone 1)';
+    } else if (idLower.includes('lab') || idLower.includes('lal') || idLower.includes('thyrocare')) {
         detectedRole = 'DIAGNOSTIC_LAB';
         name = 'MedMarg Central Pathology Hub';
         organization = 'MedMarg Central Diagnostics (NABL Certified)';
@@ -105,16 +121,12 @@ app.post('/api/v1/auth/login', (req, res) => {
         organization = 'Aarthi Scans & Radiology Center (3.0T MRI)';
     } else if (idLower.includes('dr') || idLower.includes('doctor') || idLower.includes('ananya')) {
         detectedRole = 'DOCTOR';
-        name = 'Dr. Ananya Sharma';
+        name = 'Dr. Ananya Sharma, MD';
         organization = 'MedMarg Care Clinic (In-Clinic OPD Practice)';
     } else if (idLower.includes('pharmacy') || idLower.includes('chemist') || idLower.includes('medplus')) {
         detectedRole = 'PHARMACY';
         name = 'MedPlus Chemist Admin';
         organization = 'MedPlus Pharmacy (Generic & Branded Dispenser)';
-    } else if (idLower.includes('admin')) {
-        detectedRole = 'ADMIN';
-        name = 'MedMarg Super Admin';
-        organization = 'MedMarg Platform Governance';
     }
 
     return res.json({
@@ -123,8 +135,9 @@ app.post('/api/v1/auth/login', (req, res) => {
         user: {
             id: `usr_${Date.now()}`,
             name,
+            email: idLower.includes('@') ? idLower : `${idLower}@medmarg.com`,
             identifier,
-            phone: idLower.match(/^\+?[0-9]{10,13}$/) ? identifier : '',
+            phone: idLower.match(/^\+?[0-9]{10,13}$/) ? identifier : '+91 9876543210',
             role: detectedRole,
             organization
         }

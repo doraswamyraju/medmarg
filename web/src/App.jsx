@@ -7,6 +7,7 @@ import ScanCenterDashboard from './pages/ScanCenterDashboard';
 import DoctorDashboard from './pages/DoctorDashboard';
 import PharmacyDashboard from './pages/PharmacyDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import StaffDashboard from './pages/StaffDashboard';
 import PhlebotomistDashboard from './pages/PhlebotomistDashboard';
 
 export default function App() {
@@ -53,29 +54,45 @@ export default function App() {
     navigateToLogin();
   };
 
-  // 1. If user has actively logged in, show their specific role dashboard
+  // 1. If user has authenticated, route directly to their specific role dashboard
   if (currentUser) {
     switch (currentUser.role) {
-      case 'DIAGNOSTIC_LAB':
-        return <LabPartnerDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
-      case 'SCAN_CENTER':
-        return <ScanCenterDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
-      case 'DOCTOR':
-        return <DoctorDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
-      case 'PHARMACY':
-        return <PharmacyDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
+      case 'ADMIN':
+      case 'SUPER_ADMIN':
+        return <AdminDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
+      
+      case 'STAFF':
+      case 'MEDMARG_STAFF':
+        return <StaffDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
+      
+      case 'FREELANCER_AGENT':
+        return <PhlebotomistDashboard user={currentUser} agentType="FREELANCE" onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
+      
+      case 'SALARIED_AGENT':
       case 'COLLECTION_AGENT':
       case 'AGENT':
-        return <PhlebotomistDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
-      case 'ADMIN':
-        return <AdminDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
+        return <PhlebotomistDashboard user={currentUser} agentType="SALARIED" onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
+      
+      case 'DIAGNOSTIC_LAB':
+        return <LabPartnerDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
+      
+      case 'SCAN_CENTER':
+        return <ScanCenterDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
+      
+      case 'DOCTOR':
+        return <DoctorDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
+      
+      case 'PHARMACY':
+        return <PharmacyDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
+      
       case 'PATIENT':
+      case 'CUSTOMER':
       default:
         return <PatientDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
     }
   }
 
-  // 2. If at /login or view is LOGIN, render the All Panels Login Aggregator
+  // 2. If at /login or view is LOGIN, render the Login Module
   if (currentView === 'LOGIN' || window.location.pathname.includes('/login')) {
     return <LoginPage onLoginSuccess={handleLoginSuccess} onBackToHome={navigateToHome} />;
   }
