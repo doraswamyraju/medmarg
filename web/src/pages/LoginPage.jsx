@@ -168,9 +168,24 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
     }
   };
 
+  // Auto-load Google Identity Services script if not already present
+  useEffect(() => {
+    if (!window.google?.accounts) {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
   // Handle Google Sign-In with standard Google Identity Services (GSI)
   const handleGoogleSignIn = () => {
     setError('');
+
+    // Check if accessing via IP address directly (Google OAuth blocks raw IP redirect URIs)
+    const hostname = window.location.hostname;
+    const isIpAddress = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(hostname);
 
     if (window.google?.accounts?.oauth2) {
       try {
@@ -213,7 +228,12 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
       }
     }
 
-    // Direct Google OAuth URI fallback
+    if (isIpAddress) {
+      setError(`Google OAuth requires a domain name (like medmarg.com or localhost). When accessing via IP address (${hostname}), please sign in using Email & Password below.`);
+      return;
+    }
+
+    // Direct Google OAuth URI fallback (For domains like medmarg.com or localhost)
     const origin = window.location.origin;
     const redirectUri = `${origin}/login`;
     const authParams = new URLSearchParams({
