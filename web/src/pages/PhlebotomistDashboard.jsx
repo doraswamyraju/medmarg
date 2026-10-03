@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { 
-  Bicycle, 
+  Bike, 
   MapPin, 
   Phone, 
   CheckCircle2, 
