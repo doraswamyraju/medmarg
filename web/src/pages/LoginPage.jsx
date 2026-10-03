@@ -22,8 +22,8 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Google Sign-In Client ID
-  const GOOGLE_CLIENT_ID = '167766774028-lrhfc69ubgv0po3kp9gup09cfvd82jlu.apps.googleusercontent.com';
+  // Google Sign-In Client ID (MedMarg Healthcare Project)
+  const GOOGLE_CLIENT_ID = '836240579937-e35j4q9nn1t43dl3hjdva2lt7evo0jcf.apps.googleusercontent.com';
 
   // Handle Standard Email / Phone & Password Submit
   const handleAuthSubmit = async (e) => {
