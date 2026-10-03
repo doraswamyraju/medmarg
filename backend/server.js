@@ -80,53 +80,85 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// SINGLE LOGIN & ROLE AUTO-DETECTION ENDPOINT (EMAIL/PHONE & PASSWORD OR OTP)
+// DEMO USERS DATABASE STORE
+const DEMO_USERS_DB = [
+    { id: 'usr_admin', email: 'admin@medmarg.com', phone: '9999999999', password: 'password123', name: 'MedMarg Super Admin', role: 'ADMIN', organization: 'MedMarg Platform Governance & Central Command' },
+    { id: 'usr_staff', email: 'staff@medmarg.com', phone: '9888888888', password: 'password123', name: 'MedMarg Operations Staff', role: 'STAFF', organization: 'MedMarg Central Operations Desk' },
+    { id: 'usr_patient', email: 'patient@medmarg.com', phone: '9876543210', password: 'password123', name: 'Rahul Sharma (Patient)', role: 'PATIENT', organization: 'MedMarg Patient Portal (Tirupati)' },
+    { id: 'usr_salaried', email: 'salaried@medmarg.com', phone: '9777777777', password: 'password123', name: 'Ramesh Kumar (Salaried Agent AG-01)', role: 'SALARIED_AGENT', organization: 'MedMarg In-House Fleet (Zone 1)' },
+    { id: 'usr_freelance', email: 'freelance@medmarg.com', phone: '9666666666', password: 'password123', name: 'Suresh Phlebo (Freelance Agent)', role: 'FREELANCER_AGENT', organization: 'MedMarg Freelance Phlebotomist Network' },
+    { id: 'usr_doctor', email: 'doctor@medmarg.com', phone: '9555555555', password: 'password123', name: 'Dr. Ananya Sharma, MD', role: 'DOCTOR', organization: 'MedMarg Care Clinic (OPD Practice)' },
+    { id: 'usr_lab', email: 'lab@medmarg.com', phone: '9444444444', password: 'password123', name: 'MedMarg Central Pathology Hub', role: 'DIAGNOSTIC_LAB', organization: 'MedMarg Central Diagnostics (NABL Certified)' },
+    { id: 'usr_scans', email: 'scans@medmarg.com', phone: '9333333333', password: 'password123', name: 'Aarthi Scans Operations', role: 'SCAN_CENTER', organization: 'Aarthi Scans & Radiology Center (3.0T MRI)' }
+];
+
+// SINGLE LOGIN (EMAIL / PHONE & PASSWORD)
 app.post('/api/v1/auth/login', (req, res) => {
-    const { identifier, password, authMode } = req.body;
+    const { identifier, password } = req.body;
 
     if (!identifier) {
-        return res.status(400).json({ error: 'Mobile number or Email address is required.' });
+        return res.status(400).json({ error: 'Email address or Mobile number is required.' });
     }
 
-    const idLower = identifier.trim().toLowerCase();
+    const cleanId = identifier.trim().toLowerCase().replace(/\s+/g, '');
 
-    // Comprehensive role auto-detection based on credentials/email/phone
+    // Search in DEMO_USERS_DB first
+    const foundUser = DEMO_USERS_DB.find(u => 
+        u.email.toLowerCase() === cleanId || 
+        u.phone === cleanId || 
+        u.phone === cleanId.replace(/\D/g, '') ||
+        cleanId.includes(u.email.split('@')[0])
+    );
+
+    if (foundUser) {
+        return res.json({
+            success: true,
+            token: `jwt_medmarg_${Date.now()}`,
+            user: {
+                id: foundUser.id,
+                name: foundUser.name,
+                email: foundUser.email,
+                phone: foundUser.phone,
+                identifier: identifier,
+                role: foundUser.role,
+                organization: foundUser.organization
+            }
+        });
+    }
+
+    // Dynamic Role Auto-Detection fallback
     let detectedRole = 'PATIENT';
-    let name = 'Patient User';
+    let name = 'Customer Patient';
     let organization = 'MedMarg Healthcare Patient Portal';
 
-    if (idLower.includes('admin') || idLower === 'superadmin') {
+    if (cleanId.includes('admin') || cleanId === 'superadmin') {
         detectedRole = 'ADMIN';
         name = 'MedMarg Super Admin';
         organization = 'MedMarg Platform Governance & Central Command';
-    } else if (idLower.includes('staff') || idLower.includes('ops')) {
+    } else if (cleanId.includes('staff') || cleanId.includes('ops')) {
         detectedRole = 'STAFF';
         name = 'MedMarg Operations Staff';
         organization = 'MedMarg Central Operations Desk';
-    } else if (idLower.includes('freelance') || idLower.includes('gig')) {
+    } else if (cleanId.includes('freelance') || cleanId.includes('gig')) {
         detectedRole = 'FREELANCER_AGENT';
         name = 'Suresh Phlebotomy (Freelancer)';
         organization = 'MedMarg Freelance Phlebotomist Network';
-    } else if (idLower.includes('salaried') || idLower.includes('agent') || idLower.includes('phlebo')) {
+    } else if (cleanId.includes('salaried') || cleanId.includes('agent') || cleanId.includes('phlebo')) {
         detectedRole = 'SALARIED_AGENT';
         name = 'Ramesh Kumar (Salaried Agent AG-01)';
         organization = 'MedMarg In-House Fleet (Zone 1)';
-    } else if (idLower.includes('lab') || idLower.includes('lal') || idLower.includes('thyrocare')) {
+    } else if (cleanId.includes('lab') || cleanId.includes('lal') || cleanId.includes('thyrocare')) {
         detectedRole = 'DIAGNOSTIC_LAB';
         name = 'MedMarg Central Pathology Hub';
-        organization = 'MedMarg Central Diagnostics (NABL Certified)';
-    } else if (idLower.includes('scan') || idLower.includes('aarthi') || idLower.includes('mri')) {
+        organization = 'MedMarg Central Diagnostics';
+    } else if (cleanId.includes('scan') || cleanId.includes('aarthi') || cleanId.includes('mri')) {
         detectedRole = 'SCAN_CENTER';
         name = 'Aarthi Scans Operations';
-        organization = 'Aarthi Scans & Radiology Center (3.0T MRI)';
-    } else if (idLower.includes('dr') || idLower.includes('doctor') || idLower.includes('ananya')) {
+        organization = 'Aarthi Scans & Radiology Center';
+    } else if (cleanId.includes('dr') || cleanId.includes('doctor')) {
         detectedRole = 'DOCTOR';
         name = 'Dr. Ananya Sharma, MD';
-        organization = 'MedMarg Care Clinic (In-Clinic OPD Practice)';
-    } else if (idLower.includes('pharmacy') || idLower.includes('chemist') || idLower.includes('medplus')) {
-        detectedRole = 'PHARMACY';
-        name = 'MedPlus Chemist Admin';
-        organization = 'MedPlus Pharmacy (Generic & Branded Dispenser)';
+        organization = 'MedMarg Care Clinic';
     }
 
     return res.json({
@@ -135,9 +167,9 @@ app.post('/api/v1/auth/login', (req, res) => {
         user: {
             id: `usr_${Date.now()}`,
             name,
-            email: idLower.includes('@') ? idLower : `${idLower}@medmarg.com`,
+            email: cleanId.includes('@') ? cleanId : `${cleanId}@medmarg.com`,
+            phone: cleanId.match(/^[0-9]{10,12}$/) ? cleanId : '9876543210',
             identifier,
-            phone: idLower.match(/^\+?[0-9]{10,13}$/) ? identifier : '+91 9876543210',
             role: detectedRole,
             organization
         }
