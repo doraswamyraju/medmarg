@@ -183,9 +183,14 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
   const handleGoogleSignIn = () => {
     setError('');
 
-    // Check if accessing via IP address directly (Google OAuth blocks raw IP redirect URIs)
+    // Check if accessing via IP address directly (Google OAuth blocks raw IP origins/redirect URIs)
     const hostname = window.location.hostname;
     const isIpAddress = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(hostname);
+
+    if (isIpAddress) {
+      setError(`Google OAuth requires a registered domain name (like medmarg.com or localhost). When accessing via IP address (${hostname}), please sign in using Email & Password below.`);
+      return;
+    }
 
     if (window.google?.accounts?.oauth2) {
       try {
@@ -226,11 +231,6 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
       } catch (e) {
         console.warn('GSI client init error:', e);
       }
-    }
-
-    if (isIpAddress) {
-      setError(`Google OAuth requires a domain name (like medmarg.com or localhost). When accessing via IP address (${hostname}), please sign in using Email & Password below.`);
-      return;
     }
 
     // Direct Google OAuth URI fallback (For domains like medmarg.com or localhost)
