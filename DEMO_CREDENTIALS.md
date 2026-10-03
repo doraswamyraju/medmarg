@@ -1,24 +1,27 @@
 # MedMarg Healthcare Platform — Demo Account Credentials
 
-This document stores the demo credentials for rapid testing, role previews, and administration across the MedMarg Omnichannel Ecosystem.
+This document stores the official demo credentials for testing and administration across the MedMarg Ecosystem.
 
 ---
 
-## 👥 Universal Demo Credentials by Role
+## 👥 Master Credentials Table
 
-| Role | Name | Identifier / Email | Test Password | Organization / Facility |
-| :--- | :--- | :--- | :--- | :--- |
-| **PATIENT** | Rahul Sharma | `patient@medmarg.com`<br>`+91 98765 43210`<br>`patient` | `password123` | Patient / Customer Portal<br>(Air Bypass Road, Tirupati) |
-| **DIAGNOSTIC LAB** | Dr. Lal / Thyrocare Admin | `lab@medmarg.com`<br>`lab.lal@medmarg.com`<br>`lab` | `password123` | NABL Central Processing Hub<br>(Renigunta Road, Tirupati) |
-| **SCAN CENTER** | Aarthi Scans Operations | `scans@medmarg.com`<br>`aarthi.scans@medmarg.com`<br>`scans` | `password123` | Radiology & 3.0T MRI Center<br>(Tirupati) |
-| **DOCTOR** | Dr. Ananya Sharma, MD | `doctor@medmarg.com`<br>`dr.ananya@medmarg.com`<br>`doctor` | `password123` | In-Clinic OPD Practice<br>(MedMarg Care Clinic, Tirupati) |
-| **PHARMACY** | MedPlus Chemist Admin | `pharmacy@medmarg.com`<br>`chemist@medplus.com`<br>`pharmacy` | `password123` | Generic & Branded Dispenser<br>(Tirupati Hub) |
-| **SUPER ADMIN** | MedMarg Super Admin | `admin@medmarg.com`<br>`admin` | `password123` | Platform Governance & Lab Audits<br>(Central Hub) |
-| **COLLECTION AGENT**| Ramesh Kumar (Phlebo AG-01)| `agent@medmarg.com`<br>`agent` | `password123` | Field Phlebotomy Fleet<br>(Tirupati Hub) |
+All demo accounts use the standard test password: **`password123`**
+
+| User Role | Role Key | Email Identifier | Mobile Identifier | Test Password | Organization / Facility |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Super Admin** | `SUPER_ADMIN` | `admin@medmarg.com` | `9999999999` | `password123` | MedMarg Central Command & Governance |
+| **MedMarg Staff** | `STAFF` | `staff@medmarg.com` | `9888888888` | `password123` | MedMarg Central Operations Desk |
+| **Patient / Customer** | `PATIENT` | `patient@medmarg.com` | `9876543210` | `password123` | Patient Portal (Tirupati Hub) |
+| **Salaried Agent** | `SALARIED_AGENT` | `salaried@medmarg.com` | `9777777777` | `password123` | In-House Phlebotomy Fleet (Zone 1) |
+| **Freelance Agent** | `FREELANCER_AGENT` | `freelance@medmarg.com` | `9666666666` | `password123` | Independent Phlebotomist Network |
+| **Doctor** | `DOCTOR` | `doctor@medmarg.com` | `9555555555` | `password123` | MedMarg Care Clinic (OPD Practice) |
+| **Diagnostic Lab** | `DIAGNOSTIC_LAB` | `lab@medmarg.com` | `9444444444` | `password123` | NABL Central Processing Hub |
+| **Scan / MRI Center** | `SCAN_CENTER` | `scans@medmarg.com` | `9333333333` | `password123` | Radiology & 3.0T MRI Center |
 
 ---
 
-## 🔑 Login Notes:
-- **Mobile OTP Demo:** Any 6-digit code (e.g. `123456`) is accepted in demo environment.
-- **Google Social Sign-In:** Authenticates user profile and verifies if a 10-digit mobile number is linked. If not available, user is prompted to link mobile number on first login.
-- **Single Sign-In System:** Automatically detects role and presents the designated portal.
+## 🔑 Login Instructions:
+1. Enter either **Email Address** OR **Mobile Number** (e.g. `admin@medmarg.com` or `9876543210`).
+2. Enter the password: **`password123`**.
+3. Click **Sign In to Dashboard**. The system automatically authenticates credentials, detects your user role, and routes directly to your respective portal.
