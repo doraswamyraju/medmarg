@@ -750,28 +750,50 @@ app.post('/api/v1/admin/partners/register', (req, res) => {
 });
 
 // TERRITORIES DB STORE
-let territories = [
-    { id: 'ZONE-01', name: 'Zone 1: Tirupati Central & Air Bypass Rd', pincodes: ['517501', '517507'], primaryAgentId: 'AG-01', primaryAgentName: 'Ramesh Kumar', color: '#38BDF8', maxDailyQuota: 15, activeOrders: 9 },
-    { id: 'ZONE-02', name: 'Zone 2: Alipiri, Zoo Park & SVU Campus', pincodes: ['517502'], primaryAgentId: 'AG-02', primaryAgentName: 'Suresh Babu', color: '#10B981', maxDailyQuota: 15, activeOrders: 7 },
-    { id: 'ZONE-03', name: 'Zone 3: Renigunta Rd & Tiruchanoor', pincodes: ['517503', '517506'], primaryAgentId: 'AG-03', primaryAgentName: 'Mahesh V', color: '#F59E0B', maxDailyQuota: 15, activeOrders: 4 },
-    { id: 'ZONE-04', name: 'Zone 4: Chandragiri & Outer Suburbs', pincodes: ['517101'], primaryAgentId: 'FREELANCE_BROADCAST', primaryAgentName: 'Gig Freelancer Broadcast Zone', color: '#A855F7', maxDailyQuota: 999, activeOrders: 2 }
-];
-
 app.get('/api/v1/admin/territories', (req, res) => {
-    res.json({ success: true, territories });
+    res.json({ success: true, territories: dbStore.territories || [] });
 });
 
 app.post('/api/v1/admin/territories', (req, res) => {
-    const { id, primaryAgentId, primaryAgentName, maxDailyQuota } = req.body;
-    const zone = territories.find(t => t.id === id);
+    const { id, name, pincodes, primaryAgentId, primaryAgentName, color, maxDailyQuota, polygonCoords } = req.body;
+    if (!dbStore.territories) dbStore.territories = [];
+    
+    let zone = dbStore.territories.find(t => t.id === id);
     if (zone) {
+        if (name) zone.name = name;
+        if (pincodes) zone.pincodes = Array.isArray(pincodes) ? pincodes : pincodes.split(',').map(p => p.trim());
         if (primaryAgentId) zone.primaryAgentId = primaryAgentId;
         if (primaryAgentName) zone.primaryAgentName = primaryAgentName;
-        if (maxDailyQuota) zone.maxDailyQuota = Number(maxDailyQuota);
+        if (color) zone.color = color;
+        if (maxDailyQuota !== undefined) zone.maxDailyQuota = Number(maxDailyQuota);
+        if (polygonCoords) zone.polygonCoords = polygonCoords;
         saveDbStore();
-        return res.json({ success: true, territory: zone, message: 'Territory mapping updated.' });
+        return res.json({ success: true, territory: zone, message: 'Territory zone updated successfully.' });
+    } else {
+        const newZone = {
+            id: id || `ZONE-${String(dbStore.territories.length + 1).padStart(2, '0')}`,
+            name: name || `Zone ${dbStore.territories.length + 1}`,
+            pincodes: Array.isArray(pincodes) ? pincodes : (pincodes ? pincodes.split(',').map(p => p.trim()) : ['517501']),
+            primaryAgentId: primaryAgentId || 'AG-01',
+            primaryAgentName: primaryAgentName || 'Ramesh Kumar',
+            color: color || '#38BDF8',
+            maxDailyQuota: Number(maxDailyQuota) || 15,
+            activeOrders: 0,
+            status: 'ACTIVE',
+            polygonCoords: polygonCoords || "50,50 150,50 150,150 50,150"
+        };
+        dbStore.territories.push(newZone);
+        saveDbStore();
+        return res.json({ success: true, territory: newZone, message: 'New territory zone created successfully.' });
     }
-    res.status(404).json({ error: 'Territory not found' });
+});
+
+app.delete('/api/v1/admin/territories/:id', (req, res) => {
+    const { id } = req.params;
+    if (!dbStore.territories) dbStore.territories = [];
+    dbStore.territories = dbStore.territories.filter(t => t.id !== id);
+    saveDbStore();
+    res.json({ success: true, message: `Territory ${id} deleted successfully.` });
 });
 
 // AUTOMATED DISPATCH CASCADE ENGINE (3-TIER)
@@ -779,7 +801,7 @@ app.post('/api/v1/admin/dispatch/auto', (req, res) => {
     const { orderId, pincode } = req.body;
     
     // Find matching territory
-    const matchedZone = territories.find(t => t.pincodes.includes(pincode)) || territories[0];
+    const matchedZone = (dbStore.territories && dbStore.territories.find(t => t.pincodes.includes(pincode))) || (dbStore.territories && dbStore.territories[0]) || { name: 'Default Zone', primaryAgentId: 'AG-01' };
     const primaryAgent = dbStore.salariedAgents.find(a => a.id === matchedZone.primaryAgentId);
 
     // Tier 1: Check Primary Salaried Agent Quota Limit (max 15/day)
