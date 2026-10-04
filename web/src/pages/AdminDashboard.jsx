@@ -1,76 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  ShieldCheck, 
-  CheckCircle2, 
-  XCircle, 
-  TrendingUp, 
-  Users, 
-  DollarSign, 
   FlaskConical, 
   Building2, 
   Stethoscope, 
-  Pill, 
-  Activity, 
-  Search, 
-  Filter, 
-  Eye, 
-  Edit3, 
-  Trash2, 
-  PlusCircle, 
-  DownloadCloud, 
-  Server, 
-  Clock, 
-  MapPin, 
-  Phone, 
-  AlertTriangle, 
-  Check, 
-  ChevronRight, 
-  ChevronDown, 
-  Settings, 
-  BarChart3, 
-  CreditCard, 
-  FileText,
-  Thermometer,
-  Truck,
-  Sparkles,
+  DollarSign, 
   RefreshCw,
-  LogOut,
-  FolderHeart,
+  BarChart3, 
   Package,
-  Layers,
-  Percent,
-  Plus,
   Boxes,
-  ClipboardList,
   Compass,
   UserCheck,
-  UserPlus,
-  Shield,
-  Tag,
-  FileSpreadsheet,
   Navigation,
-  Radio,
-  Send,
-  Zap,
-  CheckCircle,
-  HelpCircle
+  Truck
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
-import { getCatalogState, saveCatalogState, calculateAggregatedSamples, calculateFastingRequirement } from '../data/catalogStore';
+import { getCatalogState, saveCatalogState } from '../data/catalogStore';
 import { API_BASE, safeFetch } from '../data/apiConfig';
-import RealMapView from '../components/RealMapView';
+
+// Role-Specific Modular Feature Subcomponents (src/components/admin/)
+import CatalogManagementTab from '../components/admin/CatalogManagementTab';
+import LiveOrdersDispatchTab from '../components/admin/LiveOrdersDispatchTab';
+import RealTimeFleetGpsTab from '../components/admin/RealTimeFleetGpsTab';
+import TerritoryManagementTab from '../components/admin/TerritoryManagementTab';
+import FreelancerDeskTab from '../components/admin/FreelancerDeskTab';
+import SalariedFleetTab from '../components/admin/SalariedFleetTab';
+import StockInventoryTab from '../components/admin/StockInventoryTab';
+import LabsManagementTab from '../components/admin/LabsManagementTab';
+import PartnerQueueTab from '../components/admin/PartnerQueueTab';
+import FinancialsTab from '../components/admin/FinancialsTab';
+import OverviewKpiTab from '../components/admin/OverviewKpiTab';
 
 export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   // Navigation State
   const [activeTab, setActiveTab] = useState('TESTS_MGMT'); 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
 
-  // Master Catalog State (Tests: 913, Profiles: 87, Packages: 4+)
+  // Master Catalog State
   const [catalog, setCatalog] = useState(getCatalogState() || initialCatalog);
-  const [testsSubTab, setTestsSubTab] = useState('TESTS'); // 'TESTS' | 'PROFILES' | 'PACKAGES' | 'SYNC_HUB'
-  const [filterFasting, setFilterFasting] = useState('ALL');
-  const [filterSample, setFilterSample] = useState('ALL');
 
   // Google Sheets Sync State
   const [isSyncingSheets, setIsSyncingSheets] = useState(false);
@@ -78,53 +44,6 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   const [syncLogs, setSyncLogs] = useState([
     { timestamp: 'Just now', action: 'Desktop tests data.xlsx ingestion verified (913 Tests, 87 Profiles).', status: 'SUCCESS' }
   ]);
-
-  // Modals for Tests, Profiles & Packages
-  const [showCreateTestModal, setShowCreateTestModal] = useState(false);
-  const [showCreateProfileModal, setShowCreateProfileModal] = useState(false);
-  const [showPackageBuilderModal, setShowPackageBuilderModal] = useState(false);
-  const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
-  
-  const [editingItem, setEditingItem] = useState(null);
-
-  // New Test Form
-  const [testForm, setTestForm] = useState({
-    code: '',
-    name: '',
-    sampleType: 'SERUM',
-    fasting: 'NO',
-    mrp: 499,
-    price: 299,
-    tatHours: 24,
-    description: ''
-  });
-
-  // New Profile Form
-  const [profileForm, setProfileForm] = useState({
-    code: '',
-    name: '',
-    sampleType: 'SERUM',
-    fasting: 'NO',
-    mrp: 1499,
-    price: 899,
-    tatHours: 24,
-    description: ''
-  });
-
-  // Visual Package Builder State
-  const [packageBuilderForm, setPackageBuilderForm] = useState({
-    name: '',
-    code: '',
-    tagline: 'Comprehensive Health & Biomarker Screening',
-    category: 'Full Body Wellness',
-    mrp: 2999,
-    price: 1299,
-    selectedProfiles: ['APASTS', 'BEAP'],
-    selectedTests: ['AHGLU', 'VITDC', 'SGPT'],
-    tatHours: 24,
-    description: ''
-  });
-  const [builderSearch, setBuilderSearch] = useState('');
 
   // Live Orders State
   const [orders, setOrders] = useState([
@@ -166,8 +85,6 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { id: 'P-103', name: 'Dr. Anita Roy', type: 'Health & Diet Coach', city: 'Bangalore', phone: '+91 98800 67890', email: 'anita.health@gmail.com', status: 'PRE_REGISTERED' }
   ]);
 
-  const [broadcastMessageSent, setBroadcastMessageSent] = useState(false);
-
   // Financial Transactions State
   const [transactions, setTransactions] = useState([
     { id: 'TXN-901', orderId: 'MM-8921', patient: 'Rahul Sharma', mode: 'Prepaid (Razorpay)', amount: 899, status: 'PAID_SUCCESS', date: 'Today 07:30 AM' },
@@ -181,26 +98,13 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { id: 'LAB-03', name: 'Dr. Lal PathLabs Hub', type: 'Accredited Lab Partner', city: 'Tirupati (Renigunta Rd)', nabl: 'NABL-AP-3104', status: 'ACTIVE', assignedMargin: '15%', activeOrders: 5 }
   ]);
 
-  // Territory Marking & Management Studio State
+  // Territory Marking State
   const [territories, setTerritories] = useState([
     { id: 'ZONE-01', name: 'Zone 1: Tirupati Central & Air Bypass Rd', pincodes: ['517501', '517507'], primaryAgentId: 'AG-01', primaryAgentName: 'Ramesh Kumar', color: '#38BDF8', maxDailyQuota: 15, activeOrders: 9, status: 'ACTIVE', polygonCoords: "20,20 220,15 200,110 30,100" },
     { id: 'ZONE-02', name: 'Zone 2: Alipiri, Zoo Park & SVU Campus', pincodes: ['517502'], primaryAgentId: 'AG-02', primaryAgentName: 'Suresh Babu', color: '#10B981', maxDailyQuota: 15, activeOrders: 7, status: 'ACTIVE', polygonCoords: "230,15 480,30 450,120 210,110" },
     { id: 'ZONE-03', name: 'Zone 3: Renigunta Rd & Tiruchanoor', pincodes: ['517503', '517506'], primaryAgentId: 'AG-03', primaryAgentName: 'Mahesh V', color: '#F59E0B', maxDailyQuota: 15, activeOrders: 4, status: 'ACTIVE', polygonCoords: "30,115 200,115 180,195 20,185" },
     { id: 'ZONE-04', name: 'Zone 4: Chandragiri & Outer Suburbs', pincodes: ['517101'], primaryAgentId: 'FREELANCE_BROADCAST', primaryAgentName: 'Gig Freelancer Broadcast Zone', color: '#A855F7', maxDailyQuota: 999, activeOrders: 2, status: 'ACTIVE', polygonCoords: "210,125 480,125 460,195 190,195" }
   ]);
-  const [selectedZoneId, setSelectedZoneId] = useState('ZONE-01');
-  const [showTerritoryModal, setShowTerritoryModal] = useState(false);
-  const [editingTerritory, setEditingTerritory] = useState(null);
-  const [territoryForm, setTerritoryForm] = useState({
-    id: '',
-    name: '',
-    pincodes: '',
-    primaryAgentId: 'AG-01',
-    primaryAgentName: 'Ramesh Kumar',
-    color: '#38BDF8',
-    maxDailyQuota: 15,
-    polygonCoords: '20,20 220,15 200,110 30,100'
-  });
 
   // Fetch live database records for Orders, Freelancers, Indents, Partners & Territories
   useEffect(() => {
@@ -219,9 +123,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
         if (indRes.indents && indRes.indents.length > 0) setIndents(indRes.indents);
         if (partRes.partners && partRes.partners.length > 0) setPartnerQueue(partRes.partners);
         if (terrRes.territories && terrRes.territories.length > 0) setTerritories(terrRes.territories);
-      } catch (err) {
-        // Fallback to local db store initial state
-      }
+      } catch (err) {}
     }
     loadDbRecords();
   }, []);
@@ -251,125 +153,6 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
       })
       .catch(() => {});
   }, []);
-
-  // Save Test Handler
-  const handleSaveTest = async (e) => {
-    e.preventDefault();
-    const newTest = {
-      id: editingItem ? editingItem.id : `TEST_${catalog.tests.length + 1}`,
-      serialNo: editingItem ? editingItem.serialNo : catalog.tests.length + 1,
-      code: testForm.code.trim().toUpperCase(),
-      name: testForm.name.trim(),
-      sampleType: testForm.sampleType.trim().toUpperCase(),
-      fasting: testForm.fasting.trim().toUpperCase(),
-      category: 'Individual Test',
-      mrp: Number(testForm.mrp) || 499,
-      price: Number(testForm.price) || 299,
-      tatHours: Number(testForm.tatHours) || 24,
-      description: testForm.description || `Clinical laboratory test for ${testForm.name}.`,
-      active: true
-    };
-
-    let updatedTests = [...catalog.tests];
-    if (editingItem) {
-      updatedTests = updatedTests.map(t => t.id === editingItem.id ? newTest : t);
-    } else {
-      updatedTests.unshift(newTest);
-    }
-
-    const updatedCatalog = { ...catalog, tests: updatedTests };
-    setCatalog(updatedCatalog);
-    saveCatalogState(updatedCatalog);
-    setShowCreateTestModal(false);
-    setEditingItem(null);
-
-    try {
-      await fetch(`${API_BASE}/api/v1/catalog/tests`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTest)
-      });
-      setSyncLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), action: `Test '${newTest.name}' created and synced to Google Sheets.`, status: 'SUCCESS' }, ...prev]);
-    } catch (err) {}
-  };
-
-  // Save Profile Handler
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
-    const newProfile = {
-      id: editingItem ? editingItem.id : `PROF_${catalog.profiles.length + 1}`,
-      serialNo: editingItem ? editingItem.serialNo : catalog.profiles.length + 1,
-      code: profileForm.code.trim().toUpperCase(),
-      name: profileForm.name.trim(),
-      sampleType: profileForm.sampleType.trim().toUpperCase(),
-      fasting: profileForm.fasting.trim().toUpperCase(),
-      category: 'Diagnostic Profile',
-      mrp: Number(profileForm.mrp) || 1499,
-      price: Number(profileForm.price) || 899,
-      tatHours: Number(profileForm.tatHours) || 24,
-      description: profileForm.description || `Diagnostic profile panel for ${profileForm.name}.`,
-      active: true
-    };
-
-    let updatedProfiles = [...catalog.profiles];
-    if (editingItem) {
-      updatedProfiles = updatedProfiles.map(p => p.id === editingItem.id ? newProfile : p);
-    } else {
-      updatedProfiles.unshift(newProfile);
-    }
-
-    const updatedCatalog = { ...catalog, profiles: updatedProfiles };
-    setCatalog(updatedCatalog);
-    saveCatalogState(updatedCatalog);
-    setShowCreateProfileModal(false);
-    setEditingItem(null);
-  };
-
-  // Save Package Handler
-  const handleSavePackage = async (e) => {
-    e.preventDefault();
-    const sampleTypes = calculateAggregatedSamples(
-      packageBuilderForm.selectedProfiles,
-      packageBuilderForm.selectedTests,
-      catalog.profiles,
-      catalog.tests
-    );
-
-    const requiresFasting = calculateFastingRequirement(
-      packageBuilderForm.selectedProfiles,
-      packageBuilderForm.selectedTests,
-      catalog.profiles,
-      catalog.tests
-    );
-
-    const newPkg = {
-      id: `PKG_${Date.now()}`,
-      name: packageBuilderForm.name.trim(),
-      code: (packageBuilderForm.code || `MM_PKG_${Date.now().toString().slice(-4)}`).toUpperCase(),
-      tagline: packageBuilderForm.tagline,
-      category: packageBuilderForm.category,
-      mrp: Number(packageBuilderForm.mrp) || Number(packageBuilderForm.price) * 2,
-      price: Number(packageBuilderForm.price),
-      discountPercent: Math.round(((Number(packageBuilderForm.mrp) - Number(packageBuilderForm.price)) / Number(packageBuilderForm.mrp)) * 100) || 50,
-      fasting: requiresFasting ? 'YES' : 'NO',
-      fastingNote: requiresFasting ? '8-10 hours overnight fasting recommended' : 'No fasting required',
-      sampleTypes,
-      tatHours: Number(packageBuilderForm.tatHours) || 24,
-      popular: true,
-      profiles: packageBuilderForm.selectedProfiles,
-      tests: packageBuilderForm.selectedTests,
-      testCount: packageBuilderForm.selectedProfiles.length * 8 + packageBuilderForm.selectedTests.length,
-      description: packageBuilderForm.description || `Custom package composed of ${packageBuilderForm.selectedProfiles.length} profiles and ${packageBuilderForm.selectedTests.length} tests.`
-    };
-
-    const updatedCatalog = {
-      ...catalog,
-      packages: [newPkg, ...(catalog.packages || [])]
-    };
-    setCatalog(updatedCatalog);
-    saveCatalogState(updatedCatalog);
-    setShowPackageBuilderModal(false);
-  };
 
   // Manual Trigger Google Sheets Sync
   const triggerGoogleSheetsSync = async () => {
@@ -401,102 +184,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     }
   };
 
-  // Territory Management Handlers
-  const handleOpenCreateTerritory = () => {
-    setEditingTerritory(null);
-    setTerritoryForm({
-      id: `ZONE-${String(territories.length + 1).padStart(2, '0')}`,
-      name: `Zone ${territories.length + 1}: Tirupati Expansion Sector`,
-      pincodes: '517505, 517508',
-      primaryAgentId: 'AG-01',
-      primaryAgentName: 'Ramesh Kumar',
-      color: '#EC4899',
-      maxDailyQuota: 15,
-      polygonCoords: '210,125 480,125 460,195 190,195'
-    });
-    setShowTerritoryModal(true);
-  };
-
-  const handleOpenEditTerritory = (t) => {
-    setEditingTerritory(t);
-    setTerritoryForm({
-      id: t.id,
-      name: t.name,
-      pincodes: Array.isArray(t.pincodes) ? t.pincodes.join(', ') : t.pincodes,
-      primaryAgentId: t.primaryAgentId,
-      primaryAgentName: t.primaryAgentName,
-      color: t.color || '#38BDF8',
-      maxDailyQuota: t.maxDailyQuota || 15,
-      polygonCoords: t.polygonCoords || '20,20 220,15 200,110 30,100'
-    });
-    setShowTerritoryModal(true);
-  };
-
-  const handleSaveTerritory = async (e) => {
-    e.preventDefault();
-    const pincodeArr = territoryForm.pincodes.split(',').map(p => p.trim()).filter(Boolean);
-    const selectedAgentObj = salariedAgents.find(a => a.id === territoryForm.primaryAgentId) || { name: territoryForm.primaryAgentId === 'FREELANCE_BROADCAST' ? 'Gig Freelancer Broadcast Zone' : territoryForm.primaryAgentId };
-    
-    const payload = {
-      ...territoryForm,
-      pincodes: pincodeArr,
-      primaryAgentName: selectedAgentObj.name,
-      maxDailyQuota: Number(territoryForm.maxDailyQuota)
-    };
-
-    try {
-      const res = await safeFetch(`${API_BASE}/api/v1/admin/territories`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (data.success && data.territory) {
-        setTerritories(prev => {
-          const idx = prev.findIndex(t => t.id === data.territory.id);
-          if (idx >= 0) {
-            const next = [...prev];
-            next[idx] = data.territory;
-            return next;
-          }
-          return [...prev, data.territory];
-        });
-      }
-    } catch (err) {
-      setTerritories(prev => {
-        const idx = prev.findIndex(t => t.id === payload.id);
-        if (idx >= 0) {
-          const next = [...prev];
-          next[idx] = payload;
-          return next;
-        }
-        return [...prev, payload];
-      });
-    }
-    setShowTerritoryModal(false);
-  };
-
-  const handleQuickAllotAgent = async (zoneId, agentId) => {
-    const ag = salariedAgents.find(a => a.id === agentId) || { name: agentId === 'FREELANCE_BROADCAST' ? 'Gig Freelancer Broadcast Zone' : agentId };
-    setTerritories(prev => prev.map(t => t.id === zoneId ? { ...t, primaryAgentId: agentId, primaryAgentName: ag.name } : t));
-    try {
-      await safeFetch(`${API_BASE}/api/v1/admin/territories`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: zoneId, primaryAgentId: agentId, primaryAgentName: ag.name })
-      });
-    } catch (e) {}
-  };
-
-  const handleDeleteTerritory = async (zoneId) => {
-    if (!window.confirm(`Are you sure you want to delete Territory Zone ${zoneId}?`)) return;
-    setTerritories(prev => prev.filter(t => t.id !== zoneId));
-    try {
-      await safeFetch(`${API_BASE}/api/v1/admin/territories/${zoneId}`, { method: 'DELETE' });
-    } catch (e) {}
-  };
-
-  // Navigation Items according to super_admin.md
+  // Navigation Items
   const navMenuItems = [
     { key: 'TESTS_MGMT', label: 'Diagnostic Catalog & Sheets Sync', icon: FlaskConical, badge: `${(catalog.tests?.length || 913) + (catalog.profiles?.length || 87)}` },
     { key: 'LIVE_ORDERS', label: 'Live Orders & Dispatch Override', icon: Package, badge: `${orders.length}` },
@@ -510,22 +198,6 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { key: 'FINANCIALS', label: 'Transactions & Payout Approvals', icon: DollarSign, badge: 'Razorpay' },
     { key: 'OVERVIEW', label: 'Omnipresent KPI Command Center', icon: BarChart3 }
   ];
-
-  // Filtering for Tests / Profiles in Admin Table
-  const filteredAdminTests = (catalog.tests || []).filter(t => {
-    const q = searchTerm.toLowerCase();
-    const matchQuery = !q || (t.name && t.name.toLowerCase().includes(q)) || (t.code && t.code.toLowerCase().includes(q));
-    const matchFasting = filterFasting === 'ALL' || t.fasting === filterFasting;
-    const matchSample = filterSample === 'ALL' || (t.sampleType && t.sampleType.includes(filterSample));
-    return matchQuery && matchFasting && matchSample;
-  });
-
-  const filteredAdminProfiles = (catalog.profiles || []).filter(p => {
-    const q = searchTerm.toLowerCase();
-    const matchQuery = !q || (p.name && p.name.toLowerCase().includes(q)) || (p.code && p.code.toLowerCase().includes(q));
-    const matchFasting = filterFasting === 'ALL' || p.fasting === filterFasting;
-    return matchQuery && matchFasting;
-  });
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#0B132B', color: '#F1F5F9', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -650,1404 +322,104 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
           </div>
         </header>
 
-        {/* Dynamic Workspace Body */}
+        {/* Dynamic Modular Workspace Body */}
         <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
           
           {/* TAB 1: DIAGNOSTIC CATALOG & GOOGLE SHEETS SYNC */}
           {activeTab === 'TESTS_MGMT' && (
-            <div>
-              {/* Subtabs Bar */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #334155', paddingBottom: '0.85rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  {[
-                    { key: 'TESTS', label: 'Single Tests', icon: FlaskConical, count: catalog.tests?.length || 913 },
-                    { key: 'PROFILES', label: 'Diagnostic Profiles', icon: Layers, count: catalog.profiles?.length || 87 },
-                    { key: 'PACKAGES', label: 'Health Packages', icon: Package, count: catalog.packages?.length || 4 },
-                    { key: 'SYNC_HUB', label: 'Google Sheets Two-Way Sync', icon: FileSpreadsheet }
-                  ].map(st => {
-                    const isSel = testsSubTab === st.key;
-                    const IconC = st.icon;
-                    return (
-                      <button
-                        key={st.key}
-                        onClick={() => setTestsSubTab(st.key)}
-                        style={{
-                          padding: '0.6rem 1.1rem',
-                          borderRadius: '10px',
-                          border: 'none',
-                          backgroundColor: isSel ? '#006B70' : '#1E293B',
-                          color: isSel ? '#FFF' : '#94A3B8',
-                          fontWeight: '800',
-                          fontSize: '0.88rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.5rem'
-                        }}
-                      >
-                        <IconC size={16} color={isSel ? '#FBBF24' : '#94A3B8'} />
-                        {st.label} {st.count !== undefined ? `(${st.count})` : ''}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.6rem' }}>
-                  {testsSubTab === 'TESTS' && (
-                    <button 
-                      onClick={() => { setEditingItem(null); setTestForm({ code: '', name: '', sampleType: 'SERUM', fasting: 'NO', mrp: 499, price: 299, tatHours: 24, description: '' }); setShowCreateTestModal(true); }}
-                      style={{ padding: '0.6rem 1.2rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                    >
-                      <PlusCircle size={16} /> Add Test to Master
-                    </button>
-                  )}
-                  {testsSubTab === 'PROFILES' && (
-                    <button 
-                      onClick={() => { setEditingItem(null); setProfileForm({ code: '', name: '', sampleType: 'SERUM', fasting: 'NO', mrp: 1499, price: 899, tatHours: 24, description: '' }); setShowCreateProfileModal(true); }}
-                      style={{ padding: '0.6rem 1.2rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                    >
-                      <PlusCircle size={16} /> Add Profile to Master
-                    </button>
-                  )}
-                  {testsSubTab === 'PACKAGES' && (
-                    <button 
-                      onClick={() => setShowPackageBuilderModal(true)}
-                      style={{ padding: '0.6rem 1.2rem', backgroundColor: '#F59E0B', color: '#0F172A', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                    >
-                      <Plus size={16} /> Visual Package Builder
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* TESTS LIST */}
-              {testsSubTab === 'TESTS' && (
-                <div>
-                  <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-                    <div style={{ position: 'relative', flex: 1, minWidth: '280px' }}>
-                      <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '12px' }} />
-                      <input
-                        type="text"
-                        placeholder="Search 913 tests by name, test code, or sample type..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ width: '100%', padding: '0.7rem 1rem 0.7rem 2.4rem', backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.88rem', outline: 'none' }}
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
-                      <thead>
-                        <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8' }}>
-                          <th style={{ padding: '1rem 1.25rem' }}>SERIAL / CODE</th>
-                          <th style={{ padding: '1rem' }}>TEST NAME</th>
-                          <th style={{ padding: '1rem' }}>SAMPLE TYPE</th>
-                          <th style={{ padding: '1rem' }}>FASTING</th>
-                          <th style={{ padding: '1rem' }}>PRICE (₹)</th>
-                          <th style={{ padding: '1rem' }}>TAT</th>
-                          <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>ACTIONS</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredAdminTests.slice(0, 50).map(test => (
-                          <tr key={test.id || test.code} style={{ borderBottom: '1px solid #334155' }}>
-                            <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#67E8F9', fontWeight: '700' }}>
-                              #{test.serialNo || '-'} • {test.code}
-                            </td>
-                            <td style={{ padding: '1rem', fontWeight: '700', color: '#FFF' }}>
-                              {test.name}
-                            </td>
-                            <td style={{ padding: '1rem', color: '#CBD5E1' }}>
-                              <span style={{ backgroundColor: 'rgba(255,255,255,0.08)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
-                                {test.sampleType || 'SERUM'}
-                              </span>
-                            </td>
-                            <td style={{ padding: '1rem' }}>
-                              <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '800', backgroundColor: test.fasting === 'YES' ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)', color: test.fasting === 'YES' ? '#FBBF24' : '#34D399' }}>
-                                {test.fasting}
-                              </span>
-                            </td>
-                            <td style={{ padding: '1rem', color: '#FBBF24', fontWeight: '900' }}>₹{test.price}</td>
-                            <td style={{ padding: '1rem', color: '#94A3B8' }}>{test.tatHours || 24}h</td>
-                            <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
-                              <button 
-                                onClick={() => { setEditingItem(test); setTestForm(test); setShowCreateTestModal(true); }}
-                                style={{ background: 'none', border: 'none', color: '#38BDF8', cursor: 'pointer', marginRight: '0.6rem' }}
-                              >
-                                <Edit3 size={16} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* PROFILES LIST */}
-              {testsSubTab === 'PROFILES' && (
-                <div>
-                  <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
-                      <thead>
-                        <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8' }}>
-                          <th style={{ padding: '1rem 1.25rem' }}>PROFILE CODE</th>
-                          <th style={{ padding: '1rem' }}>PROFILE NAME</th>
-                          <th style={{ padding: '1rem' }}>SAMPLE TYPE</th>
-                          <th style={{ padding: '1rem' }}>FASTING</th>
-                          <th style={{ padding: '1rem' }}>PRICE (₹)</th>
-                          <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>ACTIONS</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredAdminProfiles.map(profile => (
-                          <tr key={profile.id || profile.code} style={{ borderBottom: '1px solid #334155' }}>
-                            <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#FBBF24', fontWeight: '800' }}>
-                              {profile.code}
-                            </td>
-                            <td style={{ padding: '1rem', fontWeight: '700', color: '#FFF' }}>
-                              {profile.name}
-                            </td>
-                            <td style={{ padding: '1rem', color: '#CBD5E1' }}>
-                              <span style={{ backgroundColor: 'rgba(255,255,255,0.08)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
-                                {profile.sampleType || 'SERUM'}
-                              </span>
-                            </td>
-                            <td style={{ padding: '1rem' }}>
-                              <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '800', backgroundColor: profile.fasting === 'YES' ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)', color: profile.fasting === 'YES' ? '#FBBF24' : '#34D399' }}>
-                                {profile.fasting}
-                              </span>
-                            </td>
-                            <td style={{ padding: '1rem', color: '#67E8F9', fontWeight: '900' }}>₹{profile.price}</td>
-                            <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
-                              <button 
-                                onClick={() => { setEditingItem(profile); setProfileForm(profile); setShowCreateProfileModal(true); }}
-                                style={{ background: 'none', border: 'none', color: '#38BDF8', cursor: 'pointer' }}
-                              >
-                                <Edit3 size={16} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-
-              {/* HEALTH PACKAGES */}
-              {testsSubTab === 'PACKAGES' && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
-                  {(catalog.packages || []).map(pkg => (
-                    <div key={pkg.id} style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1.5px solid #334155', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                          <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.55rem', borderRadius: '4px', fontWeight: '800' }}>
-                            {pkg.discountPercent}% OFF • {pkg.category}
-                          </span>
-                          <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontFamily: 'monospace' }}>
-                            {pkg.code}
-                          </span>
-                        </div>
-
-                        <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#FFF', marginTop: '0.5rem' }}>
-                          {pkg.name}
-                        </h3>
-                        <p style={{ fontSize: '0.84rem', color: '#94A3B8', marginTop: '0.3rem', lineHeight: 1.4 }}>
-                          {pkg.tagline || pkg.description}
-                        </p>
-                      </div>
-
-                      <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FBBF24' }}>₹{pkg.price}</span>
-                          <span style={{ fontSize: '0.8rem', color: '#64748B', textDecoration: 'line-through', marginLeft: '0.4rem' }}>₹{pkg.mrp}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* GOOGLE SHEETS SYNC HUB */}
-              {testsSubTab === 'SYNC_HUB' && (
-                <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1.5px solid #006B70', padding: '2rem' }}>
-                  <h2 style={{ fontSize: '1.6rem', fontWeight: '900', color: '#FFF' }}>Google Sheets Live Sync Engine</h2>
-                  <p style={{ color: '#94A3B8', marginTop: '0.5rem' }}>Connected Sheet ID: 1W37T0qzCZDYoBYPIG5MsWZeBZrict_BfDUx9itGSZp0</p>
-                  <button onClick={triggerGoogleSheetsSync} style={{ marginTop: '1.5rem', padding: '0.85rem 1.75rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '900', cursor: 'pointer' }}>
-                    Trigger Manual Refresh & Sync
-                  </button>
-                </div>
-              )}
-            </div>
+            <CatalogManagementTab 
+              catalog={catalog} 
+              setCatalog={setCatalog} 
+              saveCatalogState={saveCatalogState} 
+              triggerGoogleSheetsSync={triggerGoogleSheetsSync} 
+              isSyncingSheets={isSyncingSheets} 
+              syncLogs={syncLogs} 
+            />
           )}
 
           {/* TAB 2: LIVE ORDERS & DISPATCH OVERRIDE */}
           {activeTab === 'LIVE_ORDERS' && (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <div>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Live Order Queue & Manual Dispatch Override</h2>
-                  <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>View patient bookings, generate 4-digit doorstep security OTPs, and force reassign phlebotomists.</p>
-                </div>
-              </div>
-
-              <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8' }}>
-                      <th style={{ padding: '1rem 1.25rem' }}>ORDER ID</th>
-                      <th style={{ padding: '1rem' }}>PATIENT & CITY</th>
-                      <th style={{ padding: '1rem' }}>BOOKED ITEMS</th>
-                      <th style={{ padding: '1rem' }}>ASSIGNED AGENT</th>
-                      <th style={{ padding: '1rem' }}>OTP CODE</th>
-                      <th style={{ padding: '1rem' }}>STATUS</th>
-                      <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>OVERRIDE</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map(ord => (
-                      <tr key={ord.id} style={{ borderBottom: '1px solid #334155' }}>
-                        <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#67E8F9', fontWeight: '800' }}>{ord.id}</td>
-                        <td style={{ padding: '1rem' }}>
-                          <div style={{ fontWeight: '800', color: '#FFF' }}>{ord.patientName}</div>
-                          <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>📍 {ord.address}</div>
-                        </td>
-                        <td style={{ padding: '1rem', color: '#CBD5E1' }}>{ord.items}</td>
-                        <td style={{ padding: '1rem', color: '#FBBF24', fontWeight: '700' }}>{ord.assignedAgent}</td>
-                        <td style={{ padding: '1rem', fontFamily: 'monospace', color: '#34D399', fontWeight: '900' }}>OTP: {ord.otp}</td>
-                        <td style={{ padding: '1rem' }}>
-                          <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '800', backgroundColor: ord.status === 'EN_ROUTE' ? 'rgba(56,189,248,0.2)' : ord.status === 'SAMPLE_COLLECTED' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)', color: ord.status === 'EN_ROUTE' ? '#38BDF8' : ord.status === 'SAMPLE_COLLECTED' ? '#34D399' : '#FBBF24' }}>
-                            {ord.status}
-                          </span>
-                        </td>
-                        <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
-                          <button 
-                            onClick={() => alert(`Reassigning Order ${ord.id}...`)}
-                            style={{ padding: '0.35rem 0.75rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '800', cursor: 'pointer' }}
-                          >
-                            Reassign Agent
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <LiveOrdersDispatchTab 
+              orders={orders} 
+            />
           )}
 
-          {/* TAB 3: REAL-TIME FLEET MAP & TERRITORY RADAR */}
+          {/* TAB 3: REAL-TIME FLEET MAP & COLD-CHAIN */}
           {activeTab === 'GPS_RADAR' && (
-            <div>
-              <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-                <div>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Real-Time Phlebotomist Fleet GPS Map & IoT Cold-Chain Radar</h2>
-                  <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Live GPS telemetry, marked territory polygon zones, and IoT carry-bag temperatures (2°C - 8°C).</p>
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <button
-                    onClick={() => setActiveTab('TERRITORY_MGMT')}
-                    style={{ padding: '0.65rem 1.2rem', backgroundColor: '#1E293B', color: '#67E8F9', border: '1.5px solid #006B70', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem' }}
-                  >
-                    <Compass size={16} color="#67E8F9" /> Manage Territories & Allotment
-                  </button>
-
-                  <button
-                    onClick={async () => {
-                      try {
-                        const res = await safeFetch(`${API_BASE}/api/v1/admin/dispatch/auto`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ orderId: 'MM-8921', pincode: '517501' })
-                        });
-                        const data = await res.json();
-                        alert(`⚡ 3-TIER AUTO-DISPATCH ENGINE RESULT:\n\nTier: ${data.tier}\nAssigned To: ${data.assignedAgent}\nMessage: ${data.message}`);
-                      } catch (e) {
-                        alert('⚡ Auto-Dispatch Engine: Assigned to Primary Salaried Agent Ramesh Kumar (AG-01).');
-                      }
-                    }}
-                    style={{ padding: '0.65rem 1.2rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem' }}
-                  >
-                    <Zap size={16} color="#FBBF24" /> Test Dispatch Cascade
-                  </button>
-                </div>
-              </div>
-
-              {/* Visual Interactive Map Canvas */}
-              <div style={{ backgroundColor: '#1E293B', borderRadius: '22px', border: '1.5px solid #334155', padding: '1.5rem', marginBottom: '1.75rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <div>
-                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#67E8F9', letterSpacing: '0.05em' }}>
-                      INTERACTIVE CITY RADAR MAP & MARKED TERRITORY POLYGONS (TIRUPATI REGION)
-                    </span>
-                    <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>Click pins or zones to inspect active agent status</div>
-                  </div>
-                  <span style={{ fontSize: '0.78rem', color: '#34D399', fontWeight: '800', backgroundColor: 'rgba(16,185,129,0.15)', padding: '0.25rem 0.65rem', borderRadius: '20px' }}>
-                    ● {salariedAgents.length} SALARIED AGENTS LIVE
-                  </span>
-                </div>
-
-                {/* Real Geographic Map Visualizer */}
-                <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #334155' }}>
-                  <RealMapView 
-                    territories={territories} 
-                    orders={orders} 
-                    salariedAgents={salariedAgents} 
-                    height="380px" 
-                  />
-                </div>
-              </div>
-
-              {/* Agent Telemetry Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
-                {salariedAgents.map(ag => (
-                  <div key={ag.id} style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1.5px solid #334155', padding: '1.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.78rem', color: '#34D399', fontWeight: '800' }}>● GPS ACTIVE</span>
-                      <span style={{ fontSize: '0.78rem', color: '#38BDF8', fontWeight: '800' }}>Temp: {ag.temp}</span>
-                    </div>
-
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#FFF', marginTop: '0.5rem' }}>{ag.name} ({ag.id})</h3>
-                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: '0.2rem' }}>📍 Mapped Zone: {ag.area}</div>
-
-                    <div style={{ marginTop: '1.25rem', padding: '1rem', backgroundColor: '#0F172A', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                      <span>Quota Meter: <strong style={{ color: '#FBBF24' }}>{ag.samplesToday} / {ag.maxDailyQuota} Orders</strong></span>
-                      <span style={{ color: '#34D399', fontWeight: '800' }}>IoT Sensor Normal</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <RealTimeFleetGpsTab 
+              salariedAgents={salariedAgents} 
+              territories={territories} 
+              orders={orders} 
+              setActiveTab={setActiveTab} 
+            />
           )}
 
-          {/* TAB 3.5: DEDICATED TERRITORY MARKING & FLEET ALLOTMENT STUDIO */}
+          {/* TAB 4: TERRITORY MARKING & FLEET ALLOTMENT STUDIO */}
           {activeTab === 'TERRITORY_MGMT' && (
-            <div>
-              <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-                <div>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Territory Polygon Marking & Phlebotomist Allotment Studio</h2>
-                  <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Mark city zones, bind pincode clusters, allot phlebotomist agents, set daily quotas, and configure 3-Tier auto-dispatch cascades.</p>
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <button
-                    onClick={handleOpenCreateTerritory}
-                    style={{ padding: '0.65rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem' }}
-                  >
-                    <PlusCircle size={16} color="#FBBF24" /> Create New Territory Zone
-                  </button>
-                </div>
-              </div>
-
-              {/* Interactive Radar Visualizer */}
-              <div style={{ backgroundColor: '#1E293B', borderRadius: '22px', border: '1.5px solid #334155', padding: '1.5rem', marginBottom: '1.75rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <div>
-                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#67E8F9', letterSpacing: '0.05em' }}>
-                      INTERACTIVE CITY MAP CANVAS — {territories.length} ACTIVE ZONES CONFIGURED
-                    </span>
-                    <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>Select a zone chip or click a map polygon to inspect and re-allot phlebotomists</div>
-                  </div>
-                  <span style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '800', backgroundColor: 'rgba(245,158,11,0.15)', padding: '0.25rem 0.65rem', borderRadius: '20px' }}>
-                    ⚡ 3-Tier Dispatch Connected
-                  </span>
-                </div>
-
-                {/* Real Geographic Map Studio */}
-                <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #334155' }}>
-                  <RealMapView 
-                    territories={territories} 
-                    orders={orders} 
-                    salariedAgents={salariedAgents} 
-                    height="400px" 
-                  />
-                </div>
-              </div>
-
-              {/* Territory Management Cards Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
-                {territories.map(t => {
-                  const isSel = selectedZoneId === t.id;
-                  const assignedAgentObj = salariedAgents.find(a => a.id === t.primaryAgentId);
-                  const activeCount = t.activeOrders || 0;
-                  const maxQuota = t.maxDailyQuota || 15;
-                  const pct = Math.min(100, Math.round((activeCount / maxQuota) * 100));
-
-                  return (
-                    <div 
-                      key={t.id} 
-                      style={{ 
-                        backgroundColor: '#1E293B', 
-                        borderRadius: '20px', 
-                        border: isSel ? `2px solid ${t.color || '#38BDF8'}` : '1.5px solid #334155', 
-                        padding: '1.5rem',
-                        position: 'relative'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                        <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '900', backgroundColor: `${t.color || '#38BDF8'}22`, color: t.color || '#38BDF8', border: `1px solid ${t.color || '#38BDF8'}` }}>
-                          {t.id}
-                        </span>
-                        <div style={{ display: 'flex', gap: '0.4rem' }}>
-                          <button 
-                            onClick={() => handleOpenEditTerritory(t)}
-                            style={{ padding: '0.25rem 0.55rem', backgroundColor: '#0F172A', color: '#67E8F9', border: '1px solid #334155', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer' }}
-                          >
-                            ✏️ Edit
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteTerritory(t.id)}
-                            style={{ padding: '0.25rem 0.55rem', backgroundColor: '#451A1A', color: '#FCA5A5', border: '1px solid #7F1D1D', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer' }}
-                          >
-                            🗑️ Delete
-                          </button>
-                        </div>
-                      </div>
-
-                      <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#FFF' }}>{t.name}</h3>
-
-                      {/* Covered Pincodes */}
-                      <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: '700' }}>📌 Covered Pincodes:</span>
-                        {(Array.isArray(t.pincodes) ? t.pincodes : [t.pincodes]).map(pin => (
-                          <span key={pin} style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', backgroundColor: '#0F172A', color: '#FBBF24', borderRadius: '4px', fontWeight: '800', border: '1px solid #334155' }}>
-                            {pin}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Allotment Control */}
-                      <div style={{ marginTop: '1rem', backgroundColor: '#0F172A', padding: '1rem', borderRadius: '14px', border: '1px solid #334155' }}>
-                        <label style={{ fontSize: '0.75rem', color: '#67E8F9', fontWeight: '800', display: 'block', marginBottom: '0.35rem' }}>
-                          👤 PRIMARY ALLOTTED PHLEBOTOMIST:
-                        </label>
-                        <select
-                          value={t.primaryAgentId}
-                          onChange={(e) => handleQuickAllotAgent(t.id, e.target.value)}
-                          style={{ width: '100%', padding: '0.55rem', backgroundColor: '#1E293B', color: '#FFF', border: '1.5px solid #006B70', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}
-                        >
-                          <optgroup label="Salaried Phlebotomist Fleet (Quota 15/day)">
-                            {salariedAgents.map(ag => (
-                              <option key={ag.id} value={ag.id}>
-                                {ag.name} ({ag.id}) — {ag.samplesToday}/15 Today
-                              </option>
-                            ))}
-                          </optgroup>
-                          <optgroup label="Gig / Freelance Broadcast">
-                            <option value="FREELANCE_BROADCAST">
-                              📡 FCM Push Broadcast to All Certified Freelancers
-                            </option>
-                          </optgroup>
-                        </select>
-                      </div>
-
-                      {/* Quota Bar */}
-                      <div style={{ marginTop: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#94A3B8', marginBottom: '0.25rem' }}>
-                          <span>Zone Capacity Meter:</span>
-                          <span style={{ color: pct >= 90 ? '#EF4444' : pct >= 60 ? '#FBBF24' : '#34D399', fontWeight: '800' }}>
-                            {activeCount} / {maxQuota} Orders ({pct}%)
-                          </span>
-                        </div>
-                        <div style={{ height: '8px', width: '100%', backgroundColor: '#0F172A', borderRadius: '4px', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${pct}%`, backgroundColor: t.color || '#38BDF8', borderRadius: '4px', transition: 'width 0.3s ease' }} />
-                        </div>
-                      </div>
-
-                      <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Tier 1 Allotted: {t.primaryAgentName}</span>
-                        <button
-                          onClick={async () => {
-                            try {
-                              const testPin = (Array.isArray(t.pincodes) ? t.pincodes[0] : t.pincodes) || '517501';
-                              const res = await safeFetch(`${API_BASE}/api/v1/admin/dispatch/auto`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ orderId: 'MM-8921', pincode: testPin })
-                              });
-                              const data = await res.json();
-                              alert(`⚡ DISPATCH CASCADE FOR ${t.name}:\n\nTier: ${data.tier}\nAssigned Agent: ${data.assignedAgent}\nQuota Remaining: ${data.quotaRemaining}\nMessage: ${data.message}`);
-                            } catch (e) {
-                              alert(`⚡ Dispatched to Primary Salaried Agent ${t.primaryAgentName} for ${t.name}.`);
-                            }
-                          }}
-                          style={{ padding: '0.35rem 0.75rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-                        >
-                          <Zap size={12} color="#FBBF24" /> Test Cascade
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            <TerritoryManagementTab 
+              territories={territories} 
+              setTerritories={setTerritories} 
+              salariedAgents={salariedAgents} 
+              orders={orders} 
+            />
           )}
 
-          {/* TAB 4: FREELANCERS QUALIFICATION VERIFICATION DESK */}
+          {/* TAB 5: FREELANCER QUALIFICATION DESK */}
           {activeTab === 'FREELANCERS' && (
-            <div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Freelance Phlebotomist Qualification & Verification Desk</h2>
-                <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Review DMLT / Vocational MLT degrees, Paramedical Council certificates, and credit ₹2,000 Inventory Wallet upon approval.</p>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
-                {freelancers.map(fl => (
-                  <div key={fl.id} style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: fl.status === 'PENDING_VERIFICATION' ? '1.5px solid #F59E0B' : '1px solid #334155', padding: '1.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '800', backgroundColor: fl.status === 'APPROVED' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)', color: fl.status === 'APPROVED' ? '#34D399' : '#FBBF24' }}>
-                        {fl.status}
-                      </span>
-                      <span style={{ fontSize: '0.78rem', color: '#67E8F9', fontWeight: '800' }}>Registration Fee: ₹{fl.feeAmount} PAID</span>
-                    </div>
-
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#FFF', marginTop: '0.5rem' }}>{fl.name}</h3>
-                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: '0.2rem' }}>🎓 {fl.qualification} • {fl.experience}</div>
-                    <div style={{ fontSize: '0.82rem', color: '#CBD5E1', marginTop: '0.2rem' }}>📜 Paramedical Reg: {fl.paramedicalCert}</div>
-
-                    <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.75rem' }}>
-                      {fl.status === 'PENDING_VERIFICATION' ? (
-                        <>
-                          <button 
-                            onClick={async () => {
-                              try {
-                                await safeFetch(`${API_BASE}/api/v1/admin/freelancers/verify`, {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({ id: fl.id, status: 'APPROVED' })
-                                });
-                              } catch (e) {}
-                              setFreelancers(freelancers.map(f => f.id === fl.id ? { ...f, status: 'APPROVED', walletBalance: 2000 } : f));
-                              alert(`Approved ${fl.name}! Status updated in backend database & ₹2,000 credited to Inventory Wallet.`);
-                            }}
-                            style={{ flex: 1, padding: '0.65rem', backgroundColor: '#10B981', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer' }}
-                          >
-                            ✓ Approve DMLT & Credit Wallet
-                          </button>
-                          <button 
-                            onClick={() => setFreelancers(freelancers.map(f => f.id === fl.id ? { ...f, status: 'REJECTED' } : f))}
-                            style={{ padding: '0.65rem 1rem', backgroundColor: 'rgba(239,68,68,0.2)', color: '#EF4444', border: '1px solid #EF4444', borderRadius: '10px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}
-                          >
-                            Reject
-                          </button>
-                        </>
-                      ) : (
-                        <div style={{ fontSize: '0.85rem', color: '#34D399', fontWeight: '800' }}>✓ Wallet Balance Active: ₹{fl.walletBalance}</div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <FreelancerDeskTab 
+              freelancers={freelancers} 
+              setFreelancers={setFreelancers} 
+            />
           )}
 
-          {/* TAB 5: SALARIED FLEET & TERRITORY ALLOTMENT STUDIO */}
+          {/* TAB 6: SALARIED FLEET & QUOTAS STUDIO */}
           {activeTab === 'SALARIED_FLEET' && (
-            <div>
-              <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Territory Marking & Salaried Fleet Allotment Studio</h2>
-                  <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Mark city zones, assign primary salaried collection agents, and set daily quota limits (max 15/day).</p>
-                </div>
-                
-                {/* Auto Dispatch Test Simulator */}
-                <button
-                  onClick={async () => {
-                    try {
-                      const res = await safeFetch(`${API_BASE}/api/v1/admin/dispatch/auto`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ orderId: 'MM-8921', pincode: '517501' })
-                      });
-                      const data = await res.json();
-                      alert(`⚡ AUTO-DISPATCH CASCADE ENGINE TEST:\n\nResult: ${data.tier}\nAssigned To: ${data.assignedAgent}\nMessage: ${data.message}`);
-                    } catch (e) {
-                      alert('⚡ Dispatch Cascade Engine Executed: Primary Agent Ramesh Kumar (AG-01) assigned. Quota: 9/15.');
-                    }
-                  }}
-                  style={{ padding: '0.7rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
-                  <Zap size={16} color="#FBBF24" /> Run Dispatch Cascade Test
-                </button>
-              </div>
-
-              {/* Territory Visual Map & Agent Allotment Grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.75rem', marginBottom: '2rem' }}>
-                
-                {/* Visual Territory Polygon Map Box */}
-                <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1px solid #334155', padding: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#67E8F9', letterSpacing: '0.05em' }}>
-                      INTERACTIVE CITY TERRITORY MAP (TIRUPATI REGION)
-                    </div>
-                    <span style={{ fontSize: '0.75rem', color: '#34D399', fontWeight: '800' }}>● Live GPS Active</span>
-                  </div>
-
-                  {/* SVG Canvas Map Visualizer */}
-                  <div style={{ backgroundColor: '#0F172A', borderRadius: '16px', border: '1px solid #334155', padding: '1.5rem', height: '240px', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', zIndex: 10 }}>
-                      <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', backgroundColor: 'rgba(56,189,248,0.2)', color: '#38BDF8', borderRadius: '6px', fontWeight: '800' }}>Zone 1: Central (AG-01)</span>
-                      <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', backgroundColor: 'rgba(16,185,129,0.2)', color: '#34D399', borderRadius: '6px', fontWeight: '800' }}>Zone 2: SVU (AG-02)</span>
-                      <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', backgroundColor: 'rgba(245,158,11,0.2)', color: '#FBBF24', borderRadius: '6px', fontWeight: '800' }}>Zone 3: Renigunta (AG-03)</span>
-                    </div>
-
-                    <svg viewBox="0 0 400 160" style={{ width: '100%', height: '140px', position: 'absolute', inset: 0 }}>
-                      {/* Polygon Zone Boundaries */}
-                      <polygon points="10,20 180,10 160,90 20,80" fill="rgba(56,189,248,0.12)" stroke="#38BDF8" strokeWidth="2" strokeDasharray="4" />
-                      <polygon points="190,10 380,30 360,100 170,90" fill="rgba(16,185,129,0.12)" stroke="#34D399" strokeWidth="2" strokeDasharray="4" />
-                      <polygon points="20,95 170,95 150,150 10,140" fill="rgba(245,158,11,0.12)" stroke="#FBBF24" strokeWidth="2" strokeDasharray="4" />
-
-                      {/* Agent Pins */}
-                      <circle cx="90" cy="50" r="6" fill="#38BDF8" />
-                      <text x="102" y="54" fill="#FFF" fontSize="10" fontWeight="bold">AG-01 (28km/h • 4.2°C)</text>
-
-                      <circle cx="270" cy="55" r="6" fill="#34D399" />
-                      <text x="282" y="59" fill="#FFF" fontSize="10" fontWeight="bold">AG-02 (31km/h • 3.8°C)</text>
-
-                      <circle cx="80" cy="120" r="6" fill="#FBBF24" />
-                      <text x="92" y="124" fill="#FFF" fontSize="10" fontWeight="bold">AG-03 (En-Route)</text>
-                    </svg>
-
-                    <div style={{ fontSize: '0.75rem', color: '#94A3B8', zIndex: 10, textAlign: 'right' }}>
-                      Pincodes Mapped: 517501, 517502, 517503, 517507
-                    </div>
-                  </div>
-                </div>
-
-                {/* Dispatch Cascade Logic Rules Info Card */}
-                <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1px solid #334155', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#FFF', marginBottom: '0.85rem' }}>
-                      3-Tier Collection Dispatch Cascade
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.84rem' }}>
-                      <div style={{ padding: '0.75rem', backgroundColor: '#0F172A', borderRadius: '10px', borderLeft: '4px solid #38BDF8' }}>
-                        <strong style={{ color: '#38BDF8' }}>1. Primary Salaried Agent</strong>
-                        <div style={{ color: '#94A3B8', fontSize: '0.78rem', marginTop: '0.15rem' }}>Checks territory pincode and assigns to dedicated salaried agent if under 15 orders/day quota.</div>
-                      </div>
-                      <div style={{ padding: '0.75rem', backgroundColor: '#0F172A', borderRadius: '10px', borderLeft: '4px solid #FBBF24' }}>
-                        <strong style={{ color: '#FBBF24' }}>2. Secondary Salaried Agent</strong>
-                        <div style={{ color: '#94A3B8', fontSize: '0.78rem', marginTop: '0.15rem' }}>If primary agent is at 15/15 capacity, falls back to nearby zone salaried agent.</div>
-                      </div>
-                      <div style={{ padding: '0.75rem', backgroundColor: '#0F172A', borderRadius: '10px', borderLeft: '4px solid #A855F7' }}>
-                        <strong style={{ color: '#A855F7' }}>3. FCM Gig Freelancer Broadcast</strong>
-                        <div style={{ color: '#94A3B8', fontSize: '0.78rem', marginTop: '0.15rem' }}>If all salaried agents hit 15 orders/day, triggers high-priority FCM Push Broadcast to freelancers.</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Agent Quotas Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
-                {salariedAgents.map(ag => (
-                  <div key={ag.id} style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1px solid #334155', padding: '1.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#FFF' }}>{ag.name} ({ag.id})</h3>
-                      <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', backgroundColor: '#006B70', color: '#FFF', borderRadius: '6px', fontWeight: '800' }}>
-                        Quota: {ag.samplesToday} / {ag.maxDailyQuota}
-                      </span>
-                    </div>
-
-                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: '0.4rem' }}>📍 Territory: {ag.area}</div>
-                    
-                    <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      <label style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '700' }}>Daily Capacity Quota Limit (Orders/Day):</label>
-                      <input 
-                        type="number" 
-                        defaultValue={ag.maxDailyQuota} 
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setSalariedAgents(salariedAgents.map(a => a.id === ag.id ? { ...a, maxDailyQuota: val } : a));
-                        }}
-                        style={{ padding: '0.55rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontWeight: '800', width: '120px' }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <SalariedFleetTab 
+              salariedAgents={salariedAgents} 
+              setSalariedAgents={setSalariedAgents} 
+            />
           )}
 
-          {/* TAB 6: INVENTORY STOCKS & INDENT APPROVALS */}
+          {/* TAB 7: STOCK INVENTORY & INDENT APPROVALS */}
           {activeTab === 'INVENTORY' && (
-            <div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Stock Tube Inventory & Indent Replenishment Requests</h2>
-                <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Gold SST tubes, Purple EDTA, Grey Fluoride stock catalog and agent replenishment approvals.</p>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                {/* Stock Tube Items */}
-                <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1px solid #334155', padding: '1.5rem' }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#FFF', marginBottom: '1rem' }}>Central Inventory Stock Catalog</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                    {inventoryStock.map(stk => (
-                      <div key={stk.code} style={{ backgroundColor: '#0F172A', padding: '1rem', borderRadius: '12px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <div style={{ fontWeight: '800', color: '#FFF', fontSize: '0.92rem' }}>{stk.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{stk.category} • Code: {stk.code}</div>
-                        </div>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#67E8F9' }}>{stk.stock} {stk.unit}</div>
-                          <div style={{ fontSize: '0.72rem', color: '#34D399' }}>In Stock</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Agent Indents Approval Box */}
-                <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1px solid #334155', padding: '1.5rem' }}>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#FFF', marginBottom: '1rem' }}>Agent Indent Replenishment Requests</h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                    {indents.map(ind => (
-                      <div key={ind.id} style={{ backgroundColor: '#0F172A', padding: '1rem', borderRadius: '12px', border: ind.status === 'PENDING_APPROVAL' ? '1px solid #F59E0B' : '1px solid #334155' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontWeight: '800', color: '#FFF' }}>{ind.agentName}</span>
-                          <span style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '800', backgroundColor: ind.status === 'PENDING_APPROVAL' ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)', color: ind.status === 'PENDING_APPROVAL' ? '#FBBF24' : '#34D399' }}>
-                            {ind.status}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '0.82rem', color: '#94A3B8', marginTop: '0.4rem' }}>Requested: {ind.requestedItems}</div>
-                        
-                        {ind.status === 'PENDING_APPROVAL' && (
-                          <button 
-                            onClick={() => {
-                              setIndents(indents.map(i => i.id === ind.id ? { ...i, status: 'APPROVED_DISPATCHED' } : i));
-                              alert(`Indent ${ind.id} Approved & Dispatched to Agent!`);
-                            }}
-                            style={{ marginTop: '0.75rem', padding: '0.55rem 1rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer' }}
-                          >
-                            Approve Stock Replenishment
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <StockInventoryTab 
+              inventoryStock={inventoryStock} 
+              indents={indents} 
+              setIndents={setIndents} 
+            />
           )}
 
-          {/* TAB 7: DESIGNATED PROCESSING LABS */}
+          {/* TAB 8: DESIGNATED PROCESSING LABS */}
           {activeTab === 'LABS' && (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <div>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Regional NABL Processing Labs</h2>
-                  <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Internal routing of diagnostic samples based on lab accreditation and region.</p>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
-                {labPartners.map(lab => (
-                  <div key={lab.id} style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', padding: '1.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.72rem', backgroundColor: '#E0F2F1', color: '#006B70', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800' }}>
-                        {lab.nabl}
-                      </span>
-                      <span style={{ fontSize: '0.75rem', color: '#34D399', fontWeight: '700' }}>● {lab.status}</span>
-                    </div>
-
-                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#FFF', marginTop: '0.5rem' }}>{lab.name}</h3>
-                    <div style={{ fontSize: '0.82rem', color: '#94A3B8', marginTop: '0.2rem' }}>📍 {lab.city} • {lab.type}</div>
-
-                    <div style={{ marginTop: '1.25rem', padding: '0.85rem', backgroundColor: '#0F172A', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                      <span>Active Routed Orders: <strong style={{ color: '#FBBF24' }}>{lab.activeOrders}</strong></span>
-                      <span>Margin: <strong style={{ color: '#67E8F9' }}>{lab.assignedMargin}</strong></span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <LabsManagementTab 
+              labPartners={labPartners} 
+            />
           )}
 
-          {/* TAB 8: PARTNER PRE-REGISTRATION QUEUE & BROADCAST */}
+          {/* TAB 9: PARTNER PRE-REGISTRATION QUEUE */}
           {activeTab === 'PARTNERS_QUEUE' && (
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <div>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Healthcare Partner Pre-Registration Queue</h2>
-                  <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Doctors, Diagnostic Labs, Scan/MRI Centers, and Health Coaches pre-registered from landing page footer.</p>
-                </div>
-
-                <button 
-                  onClick={() => {
-                    setBroadcastMessageSent(true);
-                    setTimeout(() => setBroadcastMessageSent(false), 4000);
-                  }}
-                  style={{ padding: '0.75rem 1.5rem', backgroundColor: '#F59E0B', color: '#0F172A', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
-                  <Send size={16} /> 1-Click Launch Broadcast (SMS + WhatsApp)
-                </button>
-              </div>
-
-              {broadcastMessageSent && (
-                <div style={{ padding: '1rem', backgroundColor: '#065F46', color: '#A7F3D0', borderRadius: '14px', fontWeight: '800', marginBottom: '1.5rem', textAlign: 'center' }}>
-                  ✓ Multi-Channel Launch Broadcast Sent to All {partnerQueue.length} Pre-Registered Healthcare Partners!
-                </div>
-              )}
-
-              <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8' }}>
-                      <th style={{ padding: '1rem 1.25rem' }}>ID</th>
-                      <th style={{ padding: '1rem' }}>ESTABLISHMENT / DOCTOR NAME</th>
-                      <th style={{ padding: '1rem' }}>PARTNER TYPE</th>
-                      <th style={{ padding: '1rem' }}>CITY</th>
-                      <th style={{ padding: '1rem' }}>CONTACT DETAILS</th>
-                      <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>STATUS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {partnerQueue.map(p => (
-                      <tr key={p.id} style={{ borderBottom: '1px solid #334155' }}>
-                        <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#FBBF24', fontWeight: '800' }}>{p.id}</td>
-                        <td style={{ padding: '1rem', fontWeight: '800', color: '#FFF' }}>{p.name}</td>
-                        <td style={{ padding: '1rem', color: '#67E8F9' }}>{p.type}</td>
-                        <td style={{ padding: '1rem', color: '#CBD5E1' }}>📍 {p.city}</td>
-                        <td style={{ padding: '1rem', color: '#94A3B8' }}>📞 {p.phone} • {p.email}</td>
-                        <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
-                          <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '800', backgroundColor: 'rgba(56,189,248,0.2)', color: '#38BDF8' }}>
-                            {p.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <PartnerQueueTab 
+              partnerQueue={partnerQueue} 
+            />
           )}
 
-          {/* TAB 9: FINANCIALS & PAYOUT APPROVALS */}
+          {/* TAB 10: FINANCIAL TRANSACTIONS */}
           {activeTab === 'FINANCIALS' && (
-            <div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Financial Transactions & Wallet Payout Approvals</h2>
-                <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Razorpay prepaid logs, doorstep QR collections, and freelancer wallet payout approvals.</p>
-              </div>
-
-              <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8' }}>
-                      <th style={{ padding: '1rem 1.25rem' }}>TRANSACTION ID</th>
-                      <th style={{ padding: '1rem' }}>ORDER ID</th>
-                      <th style={{ padding: '1rem' }}>PATIENT</th>
-                      <th style={{ padding: '1rem' }}>PAYMENT MODE</th>
-                      <th style={{ padding: '1rem' }}>AMOUNT (₹)</th>
-                      <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>STATUS</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transactions.map(txn => (
-                      <tr key={txn.id} style={{ borderBottom: '1px solid #334155' }}>
-                        <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#67E8F9', fontWeight: '800' }}>{txn.id}</td>
-                        <td style={{ padding: '1rem', color: '#FBBF24', fontWeight: '700' }}>{txn.orderId}</td>
-                        <td style={{ padding: '1rem', color: '#FFF', fontWeight: '700' }}>{txn.patient}</td>
-                        <td style={{ padding: '1rem', color: '#CBD5E1' }}>{txn.mode}</td>
-                        <td style={{ padding: '1rem', fontWeight: '900', color: '#34D399' }}>₹{txn.amount}</td>
-                        <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
-                          <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '800', backgroundColor: 'rgba(16,185,129,0.2)', color: '#34D399' }}>
-                            {txn.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <FinancialsTab 
+              transactions={transactions} 
+            />
           )}
 
-          {/* TAB 10: OMNIPRESENT KPI OVERVIEW */}
+          {/* TAB 11: OMNIPRESENT KPI OVERVIEW */}
           {activeTab === 'OVERVIEW' && (
-            <div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
-                <div style={{ backgroundColor: '#1E293B', padding: '1.5rem', borderRadius: '18px', border: '1px solid #334155' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: '700' }}>TOTAL TESTS IN CATALOG</div>
-                  <div style={{ fontSize: '2rem', fontWeight: '900', color: '#67E8F9', marginTop: '0.3rem' }}>{catalog.tests?.length || 913}</div>
-                </div>
-                <div style={{ backgroundColor: '#1E293B', padding: '1.5rem', borderRadius: '18px', border: '1px solid #334155' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: '700' }}>TOTAL PROFILES IN CATALOG</div>
-                  <div style={{ fontSize: '2rem', fontWeight: '900', color: '#FBBF24', marginTop: '0.3rem' }}>{catalog.profiles?.length || 87}</div>
-                </div>
-                <div style={{ backgroundColor: '#1E293B', padding: '1.5rem', borderRadius: '18px', border: '1px solid #334155' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: '700' }}>ACTIVE PACKAGES</div>
-                  <div style={{ fontSize: '2rem', fontWeight: '900', color: '#34D399', marginTop: '0.3rem' }}>{catalog.packages?.length || 4}</div>
-                </div>
-                <div style={{ backgroundColor: '#1E293B', padding: '1.5rem', borderRadius: '18px', border: '1px solid #334155' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: '700' }}>HEALTHCARE PARTNERS QUEUE</div>
-                  <div style={{ fontSize: '2rem', fontWeight: '900', color: '#A78BFA', marginTop: '0.3rem' }}>{partnerQueue.length}</div>
-                </div>
-              </div>
-            </div>
+            <OverviewKpiTab 
+              catalog={catalog} 
+              partnerQueue={partnerQueue} 
+            />
           )}
 
         </main>
       </div>
-
-      {/* MODAL 1: ADD / EDIT TEST */}
-      {showCreateTestModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
-          <div style={{ backgroundColor: '#1E293B', borderRadius: '22px', maxWidth: '520px', width: '100%', padding: '2rem', border: '1px solid #334155' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#FFF' }}>
-                {editingItem ? 'Edit Test' : 'Add New Clinical Test to Master'}
-              </h3>
-              <button onClick={() => setShowCreateTestModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
-            </div>
-
-            <form onSubmit={handleSaveTest} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Test Code</label>
-                  <input
-                    type="text"
-                    value={testForm.code}
-                    onChange={(e) => setTestForm({ ...testForm, code: e.target.value })}
-                    placeholder="e.g. VITDC"
-                    required
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#67E8F9', fontWeight: '800', marginTop: '0.2rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Test Name</label>
-                  <input
-                    type="text"
-                    value={testForm.name}
-                    onChange={(e) => setTestForm({ ...testForm, name: e.target.value })}
-                    placeholder="e.g. 25-OH VITAMIN D (TOTAL)"
-                    required
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontWeight: '700', marginTop: '0.2rem' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Sample Type</label>
-                  <input
-                    type="text"
-                    value={testForm.sampleType}
-                    onChange={(e) => setTestForm({ ...testForm, sampleType: e.target.value })}
-                    placeholder="SERUM / EDTA / URINE"
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', marginTop: '0.2rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Fasting Required?</label>
-                  <select
-                    value={testForm.fasting}
-                    onChange={(e) => setTestForm({ ...testForm, fasting: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', marginTop: '0.2rem' }}
-                  >
-                    <option value="NO">NO</option>
-                    <option value="YES">YES</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '700' }}>MedMarg Price (₹)</label>
-                  <input
-                    type="number"
-                    value={testForm.price}
-                    onChange={(e) => setTestForm({ ...testForm, price: e.target.value })}
-                    required
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #F59E0B', borderRadius: '8px', color: '#FBBF24', fontWeight: '800', marginTop: '0.2rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Standard MRP (₹)</label>
-                  <input
-                    type="number"
-                    value={testForm.mrp}
-                    onChange={(e) => setTestForm({ ...testForm, mrp: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#94A3B8', marginTop: '0.2rem' }}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                style={{ marginTop: '0.75rem', padding: '0.85rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer' }}
-              >
-                {editingItem ? 'Update Test' : 'Save Test & Sync to Google Sheets'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 2: ADD / EDIT PROFILE */}
-      {showCreateProfileModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
-          <div style={{ backgroundColor: '#1E293B', borderRadius: '22px', maxWidth: '520px', width: '100%', padding: '2rem', border: '1px solid #334155' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#FFF' }}>
-                {editingItem ? 'Edit Profile' : 'Add Diagnostic Profile to Master'}
-              </h3>
-              <button onClick={() => setShowCreateProfileModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
-            </div>
-
-            <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Profile Code</label>
-                  <input
-                    type="text"
-                    value={profileForm.code}
-                    onChange={(e) => setProfileForm({ ...profileForm, code: e.target.value })}
-                    placeholder="e.g. APCOM"
-                    required
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FBBF24', fontWeight: '800', marginTop: '0.2rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Profile Name</label>
-                  <input
-                    type="text"
-                    value={profileForm.name}
-                    onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                    placeholder="e.g. ALLERGY COMPREHENSIVE PROFILE"
-                    required
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontWeight: '700', marginTop: '0.2rem' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Sample Type</label>
-                  <input
-                    type="text"
-                    value={profileForm.sampleType}
-                    onChange={(e) => setProfileForm({ ...profileForm, sampleType: e.target.value })}
-                    placeholder="SERUM / EDTA"
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', marginTop: '0.2rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Fasting Required?</label>
-                  <select
-                    value={profileForm.fasting}
-                    onChange={(e) => setProfileForm({ ...profileForm, fasting: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', marginTop: '0.2rem' }}
-                  >
-                    <option value="NO">NO</option>
-                    <option value="YES">YES</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '700' }}>MedMarg Price (₹)</label>
-                  <input
-                    type="number"
-                    value={profileForm.price}
-                    onChange={(e) => setProfileForm({ ...profileForm, price: e.target.value })}
-                    required
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #F59E0B', borderRadius: '8px', color: '#FBBF24', fontWeight: '800', marginTop: '0.2rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Standard MRP (₹)</label>
-                  <input
-                    type="number"
-                    value={profileForm.mrp}
-                    onChange={(e) => setProfileForm({ ...profileForm, mrp: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#94A3B8', marginTop: '0.2rem' }}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                style={{ marginTop: '0.75rem', padding: '0.85rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer' }}
-              >
-                {editingItem ? 'Update Profile' : 'Save Profile & Sync to Google Sheets'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 3: VISUAL PACKAGE BUILDER */}
-      {showPackageBuilderModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
-          <div style={{ backgroundColor: '#1E293B', borderRadius: '24px', maxWidth: '900px', width: '100%', padding: '2rem', border: '2px solid #F59E0B', maxHeight: '90vh', overflowY: 'auto' }}>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <div>
-                <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
-                  ADMIN STUDIO
-                </span>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#FFF', marginTop: '0.3rem' }}>
-                  Visual Health Package Builder
-                </h2>
-              </div>
-              <button onClick={() => setShowPackageBuilderModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.25rem', cursor: 'pointer' }}>✕</button>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.75rem' }}>
-              <div>
-                <label style={{ fontSize: '0.82rem', fontWeight: '800', color: '#FBBF24', display: 'block', marginBottom: '0.4rem' }}>
-                  1. Search & Select Components (Profiles & Tests):
-                </label>
-                <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
-                  <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
-                  <input
-                    type="text"
-                    placeholder="Search from 87 profiles & 913 tests..."
-                    value={builderSearch}
-                    onChange={(e) => setBuilderSearch(e.target.value)}
-                    style={{ width: '100%', padding: '0.55rem 0.75rem 0.55rem 2rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.85rem' }}
-                  />
-                </div>
-
-                <div style={{ fontSize: '0.75rem', color: '#67E8F9', fontWeight: '800', marginBottom: '0.3rem' }}>
-                  🔬 PROFILES / PANELS ({catalog.profiles?.length || 87})
-                </div>
-                <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '1rem', paddingRight: '0.25rem' }}>
-                  {(catalog.profiles || []).filter(p => !builderSearch || p.name.toLowerCase().includes(builderSearch.toLowerCase()) || p.code.toLowerCase().includes(builderSearch.toLowerCase())).slice(0, 30).map(p => {
-                    const isSel = packageBuilderForm.selectedProfiles.includes(p.code);
-                    return (
-                      <div
-                        key={p.code}
-                        onClick={() => {
-                          if (isSel) setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: packageBuilderForm.selectedProfiles.filter(c => c !== p.code) });
-                          else setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: [...packageBuilderForm.selectedProfiles, p.code] });
-                        }}
-                        style={{ padding: '0.45rem 0.75rem', borderRadius: '6px', backgroundColor: isSel ? 'rgba(0,107,112,0.35)' : '#0F172A', border: isSel ? '1.5px solid #006B70' : '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '0.8rem' }}
-                      >
-                        <span style={{ color: '#FFF' }}>{isSel ? '✓ ' : '+ '}{p.name} ({p.code})</span>
-                        <span style={{ color: '#67E8F9', fontSize: '0.72rem' }}>{p.sampleType}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div style={{ fontSize: '0.75rem', color: '#FBBF24', fontWeight: '800', marginBottom: '0.3rem' }}>
-                  🧪 INDIVIDUAL TESTS ({catalog.tests?.length || 913})
-                </div>
-                <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingRight: '0.25rem' }}>
-                  {(catalog.tests || []).filter(t => !builderSearch || t.name.toLowerCase().includes(builderSearch.toLowerCase()) || t.code.toLowerCase().includes(builderSearch.toLowerCase())).slice(0, 40).map(t => {
-                    const isSel = packageBuilderForm.selectedTests.includes(t.code);
-                    return (
-                      <div
-                        key={t.code}
-                        onClick={() => {
-                          if (isSel) setPackageBuilderForm({ ...packageBuilderForm, selectedTests: packageBuilderForm.selectedTests.filter(c => c !== t.code) });
-                          else setPackageBuilderForm({ ...packageBuilderForm, selectedTests: [...packageBuilderForm.selectedTests, t.code] });
-                        }}
-                        style={{ padding: '0.45rem 0.75rem', borderRadius: '6px', backgroundColor: isSel ? 'rgba(245,158,11,0.25)' : '#0F172A', border: isSel ? '1.5px solid #F59E0B' : '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '0.8rem' }}
-                      >
-                        <span style={{ color: '#FFF' }}>{isSel ? '✓ ' : '+ '}{t.name} ({t.code})</span>
-                        <span style={{ color: '#FBBF24', fontSize: '0.72rem' }}>{t.sampleType}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <form onSubmit={handleSavePackage} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Package Name</label>
-                    <input
-                      type="text"
-                      value={packageBuilderForm.name}
-                      onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, name: e.target.value })}
-                      placeholder="e.g. Master Executive Health Shield"
-                      required
-                      style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', marginTop: '0.2rem' }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
-                    <div>
-                      <label style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '800' }}>Package Price (₹)</label>
-                      <input
-                        type="number"
-                        value={packageBuilderForm.price}
-                        onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, price: e.target.value })}
-                        required
-                        style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1.5px solid #F59E0B', borderRadius: '8px', color: '#FBBF24', fontWeight: '800', marginTop: '0.2rem' }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Market MRP (₹)</label>
-                      <input
-                        type="number"
-                        value={packageBuilderForm.mrp}
-                        onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, mrp: e.target.value })}
-                        style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#94A3B8', marginTop: '0.2rem' }}
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    style={{ marginTop: '0.75rem', padding: '0.85rem', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', color: '#0F172A', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer' }}
-                  >
-                    Publish Package to Live Catalog
-                  </button>
-                </form>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 4: CREATE / EDIT TERRITORY ZONE */}
-      {showTerritoryModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
-          <div style={{ backgroundColor: '#1E293B', borderRadius: '24px', maxWidth: '600px', width: '100%', padding: '2rem', border: '2px solid #006B70' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <div>
-                <span style={{ fontSize: '0.72rem', backgroundColor: 'rgba(0,107,112,0.3)', color: '#67E8F9', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
-                  TERRITORY MANAGEMENT
-                </span>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF', marginTop: '0.3rem' }}>
-                  {editingTerritory ? `Edit Territory: ${editingTerritory.id}` : 'Create New Territory Zone'}
-                </h2>
-              </div>
-              <button onClick={() => setShowTerritoryModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.25rem', cursor: 'pointer' }}>✕</button>
-            </div>
-
-            <form onSubmit={handleSaveTerritory} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone ID</label>
-                  <input
-                    type="text"
-                    value={territoryForm.id}
-                    onChange={(e) => setTerritoryForm({ ...territoryForm, id: e.target.value })}
-                    placeholder="ZONE-05"
-                    required
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#67E8F9', fontWeight: '800', marginTop: '0.2rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone Name & Description</label>
-                  <input
-                    type="text"
-                    value={territoryForm.name}
-                    onChange={(e) => setTerritoryForm({ ...territoryForm, name: e.target.value })}
-                    placeholder="e.g. Zone 5: Tiruchanoor & Outer South"
-                    required
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', marginTop: '0.2rem' }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '800' }}>📌 Covered Pincodes (Comma Separated)</label>
-                <input
-                  type="text"
-                  value={territoryForm.pincodes}
-                  onChange={(e) => setTerritoryForm({ ...territoryForm, pincodes: e.target.value })}
-                  placeholder="517501, 517507, 517505"
-                  required
-                  style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1.5px solid #F59E0B', borderRadius: '8px', color: '#FFF', fontWeight: '800', marginTop: '0.2rem' }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#67E8F9', fontWeight: '800' }}>👤 Primary Allotted Phlebotomist</label>
-                  <select
-                    value={territoryForm.primaryAgentId}
-                    onChange={(e) => {
-                      const selId = e.target.value;
-                      const ag = salariedAgents.find(a => a.id === selId) || { name: selId === 'FREELANCE_BROADCAST' ? 'Gig Freelancer Broadcast Zone' : selId };
-                      setTerritoryForm({ ...territoryForm, primaryAgentId: selId, primaryAgentName: ag.name });
-                    }}
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1.5px solid #006B70', borderRadius: '8px', color: '#FFF', fontWeight: '800', marginTop: '0.2rem' }}
-                  >
-                    <optgroup label="Salaried Phlebotomist Fleet">
-                      {salariedAgents.map(ag => (
-                        <option key={ag.id} value={ag.id}>{ag.name} ({ag.id})</option>
-                      ))}
-                    </optgroup>
-                    <optgroup label="Gig / Freelance Broadcast">
-                      <option value="FREELANCE_BROADCAST">📡 Gig Freelancer Broadcast Zone</option>
-                    </optgroup>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Max Daily Quota</label>
-                  <input
-                    type="number"
-                    value={territoryForm.maxDailyQuota}
-                    onChange={(e) => setTerritoryForm({ ...territoryForm, maxDailyQuota: e.target.value })}
-                    required
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FBBF24', fontWeight: '800', marginTop: '0.2rem' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid #334155', marginBottom: '0.5rem' }}>
-                <div style={{ backgroundColor: '#0F172A', padding: '0.4rem 0.75rem', fontSize: '0.75rem', color: '#67E8F9', fontWeight: '800', borderBottom: '1px solid #334155' }}>
-                  🗺️ REAL MAP BOUNDARY & PIN LOCATOR — CLICK ANYWHERE ON MAP TO PICK ZONE CENTER
-                </div>
-                <RealMapView 
-                  territories={territories} 
-                  salariedAgents={salariedAgents} 
-                  height="220px" 
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone Color Accent</label>
-                  <input
-                    type="color"
-                    value={territoryForm.color}
-                    onChange={(e) => setTerritoryForm({ ...territoryForm, color: e.target.value })}
-                    style={{ width: '100%', height: '42px', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', cursor: 'pointer', marginTop: '0.2rem' }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Geographic Sector Preset</label>
-                  <select
-                    value={territoryForm.polygonCoords}
-                    onChange={(e) => setTerritoryForm({ ...territoryForm, polygonCoords: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.82rem', marginTop: '0.2rem' }}
-                  >
-                    <option value="20,20 220,15 200,110 30,100">Zone 1: Tirupati Central Sector</option>
-                    <option value="230,15 480,30 450,120 210,110">Zone 2: North / SVU / Alipiri Sector</option>
-                    <option value="30,115 200,115 180,195 20,185">Zone 3: East / Renigunta / Tiruchanoor Sector</option>
-                    <option value="210,125 480,125 460,195 190,195">Zone 4: West / Chandragiri Suburbs Sector</option>
-                  </select>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                style={{ marginTop: '0.5rem', padding: '0.85rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-              >
-                <CheckCircle size={18} color="#34D399" /> Save Territory Zone & Activate 3-Tier Allotment
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }
