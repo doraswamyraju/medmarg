@@ -2000,9 +2000,20 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                 </div>
               </div>
 
+              <div style={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid #334155', marginBottom: '0.5rem' }}>
+                <div style={{ backgroundColor: '#0F172A', padding: '0.4rem 0.75rem', fontSize: '0.75rem', color: '#67E8F9', fontWeight: '800', borderBottom: '1px solid #334155' }}>
+                  🗺️ REAL MAP BOUNDARY & PIN LOCATOR — CLICK ANYWHERE ON MAP TO PICK ZONE CENTER
+                </div>
+                <RealMapView 
+                  territories={territories} 
+                  salariedAgents={salariedAgents} 
+                  height="220px" 
+                />
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone Color</label>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone Color Accent</label>
                   <input
                     type="color"
                     value={territoryForm.color}
@@ -2012,25 +2023,25 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>SVG Map Polygon Shape Preset</label>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Geographic Sector Preset</label>
                   <select
                     value={territoryForm.polygonCoords}
                     onChange={(e) => setTerritoryForm({ ...territoryForm, polygonCoords: e.target.value })}
                     style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.82rem', marginTop: '0.2rem' }}
                   >
-                    <option value="20,20 220,15 200,110 30,100">Zone 1 Polygon (Central Sector)</option>
-                    <option value="230,15 480,30 450,120 210,110">Zone 2 Polygon (North/SVU Sector)</option>
-                    <option value="30,115 200,115 180,195 20,185">Zone 3 Polygon (East/Renigunta Sector)</option>
-                    <option value="210,125 480,125 460,195 190,195">Zone 4 Polygon (West/Outer Sector)</option>
+                    <option value="20,20 220,15 200,110 30,100">Zone 1: Tirupati Central Sector</option>
+                    <option value="230,15 480,30 450,120 210,110">Zone 2: North / SVU / Alipiri Sector</option>
+                    <option value="30,115 200,115 180,195 20,185">Zone 3: East / Renigunta / Tiruchanoor Sector</option>
+                    <option value="210,125 480,125 460,195 190,195">Zone 4: West / Chandragiri Suburbs Sector</option>
                   </select>
                 </div>
               </div>
 
               <button
                 type="submit"
-                style={{ marginTop: '0.75rem', padding: '0.85rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer' }}
+                style={{ marginTop: '0.5rem', padding: '0.85rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
               >
-                Save Territory Zone & Activate 3-Tier Allotment
+                <CheckCircle size={18} color="#34D399" /> Save Territory Zone & Activate 3-Tier Allotment
               </button>
             </form>
           </div>
