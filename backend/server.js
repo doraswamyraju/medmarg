@@ -635,12 +635,127 @@ app.get('/api/v1/tests', (req, res) => {
     });
 });
 
+// -------------------------------------------------------------
+// PERSISTENT DB STORE (ORDERS, FREELANCERS, INDENTS, PARTNERS)
+// -------------------------------------------------------------
+const DB_STORE_FILE = path.join(__dirname, 'data/dbStore.json');
+
+let dbStore = {
+    orders: [],
+    freelancers: [],
+    salariedAgents: [],
+    inventoryStock: [],
+    indents: [],
+    partnerQueue: [],
+    transactions: []
+};
+
+function loadDbStore() {
+    try {
+        if (fs.existsSync(DB_STORE_FILE)) {
+            const raw = fs.readFileSync(DB_STORE_FILE, 'utf8');
+            dbStore = JSON.parse(raw);
+            console.log(`Loaded DB Store: ${dbStore.orders.length} orders, ${dbStore.freelancers.length} freelancers, ${dbStore.partnerQueue.length} pre-registered partners.`);
+        }
+    } catch (err) {
+        console.error('Failed to load dbStore.json:', err.message);
+    }
+}
+
+function saveDbStore() {
+    try {
+        fs.writeFileSync(DB_STORE_FILE, JSON.stringify(dbStore, null, 2), 'utf8');
+    } catch (err) {
+        console.error('Failed to save dbStore.json:', err.message);
+    }
+}
+
+loadDbStore();
+
+// DB API ENDPOINTS
+app.get('/api/v1/admin/orders', (req, res) => {
+    res.json({ success: true, orders: dbStore.orders });
+});
+
+app.post('/api/v1/admin/orders', (req, res) => {
+    const newOrder = {
+        id: `MM-${Math.floor(1000 + Math.random() * 9000)}`,
+        status: 'BOOKED',
+        otp: Math.floor(1000 + Math.random() * 9000).toString(),
+        createdAt: new Date().toLocaleTimeString(),
+        ...req.body
+    };
+    dbStore.orders.unshift(newOrder);
+    saveDbStore();
+    res.status(201).json({ success: true, order: newOrder });
+});
+
+app.post('/api/v1/admin/orders/assign', (req, res) => {
+    const { orderId, assignedAgent } = req.body;
+    const order = dbStore.orders.find(o => o.id === orderId);
+    if (order) {
+        order.assignedAgent = assignedAgent;
+        order.status = 'EN_ROUTE';
+        saveDbStore();
+        return res.json({ success: true, order });
+    }
+    res.status(404).json({ error: 'Order not found' });
+});
+
+app.get('/api/v1/admin/freelancers', (req, res) => {
+    res.json({ success: true, freelancers: dbStore.freelancers });
+});
+
+app.post('/api/v1/admin/freelancers/verify', (req, res) => {
+    const { id, status } = req.body;
+    const fl = dbStore.freelancers.find(f => f.id === id);
+    if (fl) {
+        fl.status = status;
+        if (status === 'APPROVED') fl.walletBalance = 2000;
+        saveDbStore();
+        return res.json({ success: true, freelancer: fl });
+    }
+    res.status(404).json({ error: 'Freelancer not found' });
+});
+
+app.get('/api/v1/admin/indents', (req, res) => {
+    res.json({ success: true, indents: dbStore.indents });
+});
+
+app.post('/api/v1/admin/indents/approve', (req, res) => {
+    const { id } = req.body;
+    const ind = dbStore.indents.find(i => i.id === id);
+    if (ind) {
+        ind.status = 'APPROVED_DISPATCHED';
+        saveDbStore();
+        return res.json({ success: true, indent: ind });
+    }
+    res.status(404).json({ error: 'Indent not found' });
+});
+
+app.get('/api/v1/admin/partners', (req, res) => {
+    res.json({ success: true, partners: dbStore.partnerQueue });
+});
+
+app.post('/api/v1/admin/partners/register', (req, res) => {
+    const newPartner = {
+        id: `P-${Math.floor(100 + Math.random() * 900)}`,
+        status: 'PRE_REGISTERED',
+        createdAt: new Date().toISOString(),
+        ...req.body
+    };
+    dbStore.partnerQueue.unshift(newPartner);
+    saveDbStore();
+    res.status(201).json({ success: true, partner: newPartner });
+});
+
 // Start Server
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`=======================================================`);
     console.log(` MedMarg Backend API running on port ${PORT}`);
+    console.log(` Database Store Active: ${dbStore.orders.length} Orders | ${dbStore.freelancers.length} Freelancers | ${dbStore.partnerQueue.length} Pre-Registered Partners`);
     console.log(` Unified Diagnostics: ${catalogState.tests.length} Tests | ${catalogState.profiles.length} Profiles | ${catalogState.packages.length} Packages`);
-    console.log(` Google Sheets & Drive Storage: ACTIVE`);
     console.log(` Health Check: http://localhost:${PORT}/api/health`);
     console.log(`=======================================================`);
 });
+

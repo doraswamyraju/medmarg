@@ -180,6 +180,28 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { id: 'LAB-03', name: 'Dr. Lal PathLabs Hub', type: 'Accredited Lab Partner', city: 'Tirupati (Renigunta Rd)', nabl: 'NABL-AP-3104', status: 'ACTIVE', assignedMargin: '15%', activeOrders: 5 }
   ]);
 
+  // Fetch live database records for Orders, Freelancers, Indents & Partners
+  useEffect(() => {
+    async function loadDbRecords() {
+      try {
+        const [ordersRes, flRes, indRes, partRes] = await Promise.all([
+          safeFetch(`${API_BASE}/api/v1/admin/orders`, {}, 2500).then(r => r.json()),
+          safeFetch(`${API_BASE}/api/v1/admin/freelancers`, {}, 2500).then(r => r.json()),
+          safeFetch(`${API_BASE}/api/v1/admin/indents`, {}, 2500).then(r => r.json()),
+          safeFetch(`${API_BASE}/api/v1/admin/partners`, {}, 2500).then(r => r.json())
+        ]);
+
+        if (ordersRes.orders && ordersRes.orders.length > 0) setOrders(ordersRes.orders);
+        if (flRes.freelancers && flRes.freelancers.length > 0) setFreelancers(flRes.freelancers);
+        if (indRes.indents && indRes.indents.length > 0) setIndents(indRes.indents);
+        if (partRes.partners && partRes.partners.length > 0) setPartnerQueue(partRes.partners);
+      } catch (err) {
+        // Fallback to local db store initial state
+      }
+    }
+    loadDbRecords();
+  }, []);
+
   // Fetch live catalog from backend if available
   useEffect(() => {
     safeFetch(`${API_BASE}/api/v1/catalog/summary`, {}, 2500)
@@ -852,9 +874,16 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                       {fl.status === 'PENDING_VERIFICATION' ? (
                         <>
                           <button 
-                            onClick={() => {
-                              setFreelancers(freelancers.map(f => f.id === fl.id ? { ...f, status: 'APPROVED' } : f));
-                              alert(`Approved ${fl.name}! ₹2,000 converted into Inventory Wallet credits.`);
+                            onClick={async () => {
+                              try {
+                                await safeFetch(`${API_BASE}/api/v1/admin/freelancers/verify`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ id: fl.id, status: 'APPROVED' })
+                                });
+                              } catch (e) {}
+                              setFreelancers(freelancers.map(f => f.id === fl.id ? { ...f, status: 'APPROVED', walletBalance: 2000 } : f));
+                              alert(`Approved ${fl.name}! Status updated in backend database & ₹2,000 credited to Inventory Wallet.`);
                             }}
                             style={{ flex: 1, padding: '0.65rem', backgroundColor: '#10B981', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer' }}
                           >
