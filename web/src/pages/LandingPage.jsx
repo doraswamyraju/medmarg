@@ -337,7 +337,7 @@ export default function LandingPage({ onNavigateLogin }) {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }}></span>
-                <span style={{ color: '#E2E8F0', fontSize: '0.85rem', fontWeight: '800', letterSpacing: '0.05em' }}>LIVE DELIVERY-STYLE TRACKER</span>
+                <span style={{ color: '#E2E8F0', fontSize: '0.85rem', fontWeight: '800', letterSpacing: '0.05em' }}>REAL-TIME LOGISTICS RADAR TRACKER</span>
               </div>
               <span style={{ color: '#F59E0B', fontSize: '0.8rem', fontWeight: '800' }}>ETA: 12 MINS</span>
             </div>
@@ -496,7 +496,7 @@ export default function LandingPage({ onNavigateLogin }) {
               </div>
 
               <h2 style={{ fontSize: '2.5rem', fontWeight: '900', color: '#FFFFFF', lineHeight: '1.18', marginBottom: '1rem' }}>
-                Swiggy/Zomato-Style Live Map Tracking & 4°C Cold-Chain Telemetry
+                State-of-the-Art Precision GPS Map Tracking & 4°C Cold-Chain Telemetry
               </h2>
 
               <p style={{ color: '#94A3B8', fontSize: '1.05rem', lineHeight: '1.6', marginBottom: '2rem' }}>
