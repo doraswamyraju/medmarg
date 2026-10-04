@@ -112,5 +112,55 @@
   "transactions": [
     { "id": "TXN-901", "orderId": "MM-8921", "patient": "Rahul Sharma", "mode": "Prepaid (Razorpay)", "amount": 899, "status": "PAID_SUCCESS", "date": "Today 07:30 AM" },
     { "id": "TXN-902", "orderId": "MM-8922", "patient": "Priya Verma", "mode": "Doorstep UPI QR", "amount": 1499, "status": "PAID_SUCCESS", "date": "Today 08:15 AM" }
+  ],
+  "territories": [
+    {
+      "id": "ZONE-01",
+      "name": "Zone 1: Tirupati Central & Air Bypass Rd",
+      "pincodes": ["517501", "517507"],
+      "primaryAgentId": "AG-01",
+      "primaryAgentName": "Ramesh Kumar",
+      "color": "#38BDF8",
+      "maxDailyQuota": 15,
+      "activeOrders": 9,
+      "status": "ACTIVE",
+      "polygonCoords": "20,20 220,15 200,110 30,100"
+    },
+    {
+      "id": "ZONE-02",
+      "name": "Zone 2: Alipiri, Zoo Park & SVU Campus",
+      "pincodes": ["517502"],
+      "primaryAgentId": "AG-02",
+      "primaryAgentName": "Suresh Babu",
+      "color": "#10B981",
+      "maxDailyQuota": 15,
+      "activeOrders": 7,
+      "status": "ACTIVE",
+      "polygonCoords": "230,15 480,30 450,120 210,110"
+    },
+    {
+      "id": "ZONE-03",
+      "name": "Zone 3: Renigunta Rd & Tiruchanoor",
+      "pincodes": ["517503", "517506"],
+      "primaryAgentId": "AG-03",
+      "primaryAgentName": "Mahesh V",
+      "color": "#F59E0B",
+      "maxDailyQuota": 15,
+      "activeOrders": 4,
+      "status": "ACTIVE",
+      "polygonCoords": "30,115 200,115 180,195 20,185"
+    },
+    {
+      "id": "ZONE-04",
+      "name": "Zone 4: Chandragiri & Outer Suburbs",
+      "pincodes": ["517101"],
+      "primaryAgentId": "FREELANCE_BROADCAST",
+      "primaryAgentName": "Gig Freelancer Broadcast Zone",
+      "color": "#A855F7",
+      "maxDailyQuota": 999,
+      "activeOrders": 2,
+      "status": "ACTIVE",
+      "polygonCoords": "210,125 480,125 460,195 190,195"
+    }
   ]
 }

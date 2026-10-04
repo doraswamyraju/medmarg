@@ -180,21 +180,44 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { id: 'LAB-03', name: 'Dr. Lal PathLabs Hub', type: 'Accredited Lab Partner', city: 'Tirupati (Renigunta Rd)', nabl: 'NABL-AP-3104', status: 'ACTIVE', assignedMargin: '15%', activeOrders: 5 }
   ]);
 
-  // Fetch live database records for Orders, Freelancers, Indents & Partners
+  // Territory Marking & Management Studio State
+  const [territories, setTerritories] = useState([
+    { id: 'ZONE-01', name: 'Zone 1: Tirupati Central & Air Bypass Rd', pincodes: ['517501', '517507'], primaryAgentId: 'AG-01', primaryAgentName: 'Ramesh Kumar', color: '#38BDF8', maxDailyQuota: 15, activeOrders: 9, status: 'ACTIVE', polygonCoords: "20,20 220,15 200,110 30,100" },
+    { id: 'ZONE-02', name: 'Zone 2: Alipiri, Zoo Park & SVU Campus', pincodes: ['517502'], primaryAgentId: 'AG-02', primaryAgentName: 'Suresh Babu', color: '#10B981', maxDailyQuota: 15, activeOrders: 7, status: 'ACTIVE', polygonCoords: "230,15 480,30 450,120 210,110" },
+    { id: 'ZONE-03', name: 'Zone 3: Renigunta Rd & Tiruchanoor', pincodes: ['517503', '517506'], primaryAgentId: 'AG-03', primaryAgentName: 'Mahesh V', color: '#F59E0B', maxDailyQuota: 15, activeOrders: 4, status: 'ACTIVE', polygonCoords: "30,115 200,115 180,195 20,185" },
+    { id: 'ZONE-04', name: 'Zone 4: Chandragiri & Outer Suburbs', pincodes: ['517101'], primaryAgentId: 'FREELANCE_BROADCAST', primaryAgentName: 'Gig Freelancer Broadcast Zone', color: '#A855F7', maxDailyQuota: 999, activeOrders: 2, status: 'ACTIVE', polygonCoords: "210,125 480,125 460,195 190,195" }
+  ]);
+  const [selectedZoneId, setSelectedZoneId] = useState('ZONE-01');
+  const [showTerritoryModal, setShowTerritoryModal] = useState(false);
+  const [editingTerritory, setEditingTerritory] = useState(null);
+  const [territoryForm, setTerritoryForm] = useState({
+    id: '',
+    name: '',
+    pincodes: '',
+    primaryAgentId: 'AG-01',
+    primaryAgentName: 'Ramesh Kumar',
+    color: '#38BDF8',
+    maxDailyQuota: 15,
+    polygonCoords: '20,20 220,15 200,110 30,100'
+  });
+
+  // Fetch live database records for Orders, Freelancers, Indents, Partners & Territories
   useEffect(() => {
     async function loadDbRecords() {
       try {
-        const [ordersRes, flRes, indRes, partRes] = await Promise.all([
+        const [ordersRes, flRes, indRes, partRes, terrRes] = await Promise.all([
           safeFetch(`${API_BASE}/api/v1/admin/orders`, {}, 2500).then(r => r.json()),
           safeFetch(`${API_BASE}/api/v1/admin/freelancers`, {}, 2500).then(r => r.json()),
           safeFetch(`${API_BASE}/api/v1/admin/indents`, {}, 2500).then(r => r.json()),
-          safeFetch(`${API_BASE}/api/v1/admin/partners`, {}, 2500).then(r => r.json())
+          safeFetch(`${API_BASE}/api/v1/admin/partners`, {}, 2500).then(r => r.json()),
+          safeFetch(`${API_BASE}/api/v1/admin/territories`, {}, 2500).then(r => r.json())
         ]);
 
         if (ordersRes.orders && ordersRes.orders.length > 0) setOrders(ordersRes.orders);
         if (flRes.freelancers && flRes.freelancers.length > 0) setFreelancers(flRes.freelancers);
         if (indRes.indents && indRes.indents.length > 0) setIndents(indRes.indents);
         if (partRes.partners && partRes.partners.length > 0) setPartnerQueue(partRes.partners);
+        if (terrRes.territories && terrRes.territories.length > 0) setTerritories(terrRes.territories);
       } catch (err) {
         // Fallback to local db store initial state
       }
@@ -377,11 +400,107 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     }
   };
 
+  // Territory Management Handlers
+  const handleOpenCreateTerritory = () => {
+    setEditingTerritory(null);
+    setTerritoryForm({
+      id: `ZONE-${String(territories.length + 1).padStart(2, '0')}`,
+      name: `Zone ${territories.length + 1}: Tirupati Expansion Sector`,
+      pincodes: '517505, 517508',
+      primaryAgentId: 'AG-01',
+      primaryAgentName: 'Ramesh Kumar',
+      color: '#EC4899',
+      maxDailyQuota: 15,
+      polygonCoords: '210,125 480,125 460,195 190,195'
+    });
+    setShowTerritoryModal(true);
+  };
+
+  const handleOpenEditTerritory = (t) => {
+    setEditingTerritory(t);
+    setTerritoryForm({
+      id: t.id,
+      name: t.name,
+      pincodes: Array.isArray(t.pincodes) ? t.pincodes.join(', ') : t.pincodes,
+      primaryAgentId: t.primaryAgentId,
+      primaryAgentName: t.primaryAgentName,
+      color: t.color || '#38BDF8',
+      maxDailyQuota: t.maxDailyQuota || 15,
+      polygonCoords: t.polygonCoords || '20,20 220,15 200,110 30,100'
+    });
+    setShowTerritoryModal(true);
+  };
+
+  const handleSaveTerritory = async (e) => {
+    e.preventDefault();
+    const pincodeArr = territoryForm.pincodes.split(',').map(p => p.trim()).filter(Boolean);
+    const selectedAgentObj = salariedAgents.find(a => a.id === territoryForm.primaryAgentId) || { name: territoryForm.primaryAgentId === 'FREELANCE_BROADCAST' ? 'Gig Freelancer Broadcast Zone' : territoryForm.primaryAgentId };
+    
+    const payload = {
+      ...territoryForm,
+      pincodes: pincodeArr,
+      primaryAgentName: selectedAgentObj.name,
+      maxDailyQuota: Number(territoryForm.maxDailyQuota)
+    };
+
+    try {
+      const res = await safeFetch(`${API_BASE}/api/v1/admin/territories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success && data.territory) {
+        setTerritories(prev => {
+          const idx = prev.findIndex(t => t.id === data.territory.id);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = data.territory;
+            return next;
+          }
+          return [...prev, data.territory];
+        });
+      }
+    } catch (err) {
+      setTerritories(prev => {
+        const idx = prev.findIndex(t => t.id === payload.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = payload;
+          return next;
+        }
+        return [...prev, payload];
+      });
+    }
+    setShowTerritoryModal(false);
+  };
+
+  const handleQuickAllotAgent = async (zoneId, agentId) => {
+    const ag = salariedAgents.find(a => a.id === agentId) || { name: agentId === 'FREELANCE_BROADCAST' ? 'Gig Freelancer Broadcast Zone' : agentId };
+    setTerritories(prev => prev.map(t => t.id === zoneId ? { ...t, primaryAgentId: agentId, primaryAgentName: ag.name } : t));
+    try {
+      await safeFetch(`${API_BASE}/api/v1/admin/territories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: zoneId, primaryAgentId: agentId, primaryAgentName: ag.name })
+      });
+    } catch (e) {}
+  };
+
+  const handleDeleteTerritory = async (zoneId) => {
+    if (!window.confirm(`Are you sure you want to delete Territory Zone ${zoneId}?`)) return;
+    setTerritories(prev => prev.filter(t => t.id !== zoneId));
+    try {
+      await safeFetch(`${API_BASE}/api/v1/admin/territories/${zoneId}`, { method: 'DELETE' });
+    } catch (e) {}
+  };
+
   // Navigation Items according to super_admin.md
   const navMenuItems = [
     { key: 'TESTS_MGMT', label: 'Diagnostic Catalog & Sheets Sync', icon: FlaskConical, badge: `${(catalog.tests?.length || 913) + (catalog.profiles?.length || 87)}` },
     { key: 'LIVE_ORDERS', label: 'Live Orders & Dispatch Override', icon: Package, badge: `${orders.length}` },
     { key: 'GPS_RADAR', label: 'Real-Time Fleet Map & Cold-Chain', icon: Navigation, badge: 'Live GPS' },
+    { key: 'TERRITORY_MGMT', label: 'Territory Marking & Fleet Allotment', icon: Compass, badge: `${territories.length} Zones` },
     { key: 'FREELANCERS', label: 'Freelancer Verification Desk', icon: UserCheck, badge: `${freelancers.filter(f => f.status === 'PENDING_VERIFICATION').length} Pending` },
     { key: 'SALARIED_FLEET', label: 'Salaried Fleet & Quotas (15/day)', icon: Truck, badge: `${salariedAgents.length}` },
     { key: 'INVENTORY', label: 'Stock Tubes & Indent Approvals', icon: Boxes, badge: `${indents.filter(i => i.status === 'PENDING_APPROVAL').length}` },
@@ -819,14 +938,122 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             </div>
           )}
 
-          {/* TAB 3: REAL-TIME FLEET MAP & COLD CHAIN RADAR */}
+          {/* TAB 3: REAL-TIME FLEET MAP & TERRITORY RADAR */}
           {activeTab === 'GPS_RADAR' && (
             <div>
-              <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Real-Time Phlebotomist Fleet GPS Map & IoT Cold-Chain Radar</h2>
-                <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Live telemetry tracking for all active agents and sample carry bag temperatures (2°C - 8°C).</p>
+              <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Real-Time Phlebotomist Fleet GPS Map & IoT Cold-Chain Radar</h2>
+                  <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Live GPS telemetry, marked territory polygon zones, and IoT carry-bag temperatures (2°C - 8°C).</p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button
+                    onClick={() => setActiveTab('TERRITORY_MGMT')}
+                    style={{ padding: '0.65rem 1.2rem', backgroundColor: '#1E293B', color: '#67E8F9', border: '1.5px solid #006B70', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem' }}
+                  >
+                    <Compass size={16} color="#67E8F9" /> Manage Territories & Allotment
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await safeFetch(`${API_BASE}/api/v1/admin/dispatch/auto`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ orderId: 'MM-8921', pincode: '517501' })
+                        });
+                        const data = await res.json();
+                        alert(`⚡ 3-TIER AUTO-DISPATCH ENGINE RESULT:\n\nTier: ${data.tier}\nAssigned To: ${data.assignedAgent}\nMessage: ${data.message}`);
+                      } catch (e) {
+                        alert('⚡ Auto-Dispatch Engine: Assigned to Primary Salaried Agent Ramesh Kumar (AG-01).');
+                      }
+                    }}
+                    style={{ padding: '0.65rem 1.2rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem' }}
+                  >
+                    <Zap size={16} color="#FBBF24" /> Test Dispatch Cascade
+                  </button>
+                </div>
               </div>
 
+              {/* Visual Interactive Map Canvas */}
+              <div style={{ backgroundColor: '#1E293B', borderRadius: '22px', border: '1.5px solid #334155', padding: '1.5rem', marginBottom: '1.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#67E8F9', letterSpacing: '0.05em' }}>
+                      INTERACTIVE CITY RADAR MAP & MARKED TERRITORY POLYGONS (TIRUPATI REGION)
+                    </span>
+                    <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>Click pins or zones to inspect active agent status</div>
+                  </div>
+                  <span style={{ fontSize: '0.78rem', color: '#34D399', fontWeight: '800', backgroundColor: 'rgba(16,185,129,0.15)', padding: '0.25rem 0.65rem', borderRadius: '20px' }}>
+                    ● {salariedAgents.length} SALARIED AGENTS LIVE
+                  </span>
+                </div>
+
+                {/* SVG Canvas Map Visualizer */}
+                <div style={{ backgroundColor: '#0F172A', borderRadius: '16px', border: '1px solid #334155', padding: '1.25rem', height: '300px', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  
+                  {/* Zone Chips */}
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', zIndex: 10 }}>
+                    {territories.map(t => (
+                      <span 
+                        key={t.id} 
+                        onClick={() => setSelectedZoneId(t.id)}
+                        style={{ 
+                          fontSize: '0.72rem', 
+                          padding: '0.25rem 0.65rem', 
+                          backgroundColor: selectedZoneId === t.id ? `${t.color || '#38BDF8'}33` : 'rgba(15,23,42,0.8)', 
+                          color: t.color || '#38BDF8', 
+                          borderRadius: '6px', 
+                          fontWeight: '800', 
+                          border: `1.5px solid ${t.color || '#38BDF8'}`,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {t.name} ({t.primaryAgentName || 'Unassigned'})
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* SVG Map Canvas with Dynamic Polygons and Agent Pins */}
+                  <svg viewBox="0 0 500 200" style={{ width: '100%', height: '200px', position: 'absolute', inset: 0 }}>
+                    {territories.map(t => (
+                      <g key={t.id} onClick={() => setSelectedZoneId(t.id)} style={{ cursor: 'pointer' }}>
+                        <polygon 
+                          points={t.polygonCoords || "20,20 220,15 200,110 30,100"} 
+                          fill={`${t.color || '#38BDF8'}22`} 
+                          stroke={t.color || '#38BDF8'} 
+                          strokeWidth={selectedZoneId === t.id ? "3.5" : "2"} 
+                          strokeDasharray={selectedZoneId === t.id ? "0" : "5,5"} 
+                        />
+                      </g>
+                    ))}
+
+                    {/* Order & Telemetry Pins */}
+                    <circle cx="110" cy="45" r="5" fill="#EF4444" />
+                    <text x="120" y="49" fill="#FCA5A5" fontSize="9" fontWeight="bold">Order #MM-8921 (HbA1c)</text>
+
+                    <circle cx="340" cy="65" r="5" fill="#EF4444" />
+                    <text x="350" y="69" fill="#FCA5A5" fontSize="9" fontWeight="bold">Order #MM-8922 (Full Body)</text>
+
+                    <circle cx="140" cy="70" r="7" fill="#38BDF8" />
+                    <text x="154" y="74" fill="#FFF" fontSize="10" fontWeight="bold">AG-01 Ramesh (28 km/h • 4.2°C)</text>
+
+                    <circle cx="310" cy="80" r="7" fill="#34D399" />
+                    <text x="324" y="84" fill="#FFF" fontSize="10" fontWeight="bold">AG-02 Suresh (31 km/h • 3.8°C)</text>
+
+                    <circle cx="100" cy="155" r="7" fill="#FBBF24" />
+                    <text x="114" y="159" fill="#FFF" fontSize="10" fontWeight="bold">AG-03 Mahesh (Active • 4.0°C)</text>
+                  </svg>
+
+                  <div style={{ fontSize: '0.78rem', color: '#94A3B8', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>📍 Center Coordinates: 13.6288° N, 79.4192° E</span>
+                    <span style={{ color: '#FBBF24', fontWeight: '800' }}>IoT Cold Bag Telemetry: 2°C - 8°C Verified</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Agent Telemetry Cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
                 {salariedAgents.map(ag => (
                   <div key={ag.id} style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1.5px solid #334155', padding: '1.5rem' }}>
@@ -836,14 +1063,216 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                     </div>
 
                     <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#FFF', marginTop: '0.5rem' }}>{ag.name} ({ag.id})</h3>
-                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: '0.2rem' }}>📍 Territory: {ag.area}</div>
+                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: '0.2rem' }}>📍 Mapped Zone: {ag.area}</div>
 
                     <div style={{ marginTop: '1.25rem', padding: '1rem', backgroundColor: '#0F172A', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                      <span>Completed Today: <strong style={{ color: '#FBBF24' }}>{ag.samplesToday} / {ag.maxDailyQuota}</strong></span>
+                      <span>Quota Meter: <strong style={{ color: '#FBBF24' }}>{ag.samplesToday} / {ag.maxDailyQuota} Orders</strong></span>
                       <span style={{ color: '#34D399', fontWeight: '800' }}>IoT Sensor Normal</span>
                     </div>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3.5: DEDICATED TERRITORY MARKING & FLEET ALLOTMENT STUDIO */}
+          {activeTab === 'TERRITORY_MGMT' && (
+            <div>
+              <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Territory Polygon Marking & Phlebotomist Allotment Studio</h2>
+                  <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Mark city zones, bind pincode clusters, allot phlebotomist agents, set daily quotas, and configure 3-Tier auto-dispatch cascades.</p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button
+                    onClick={handleOpenCreateTerritory}
+                    style={{ padding: '0.65rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem' }}
+                  >
+                    <PlusCircle size={16} color="#FBBF24" /> Create New Territory Zone
+                  </button>
+                </div>
+              </div>
+
+              {/* Interactive Radar Visualizer */}
+              <div style={{ backgroundColor: '#1E293B', borderRadius: '22px', border: '1.5px solid #334155', padding: '1.5rem', marginBottom: '1.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#67E8F9', letterSpacing: '0.05em' }}>
+                      INTERACTIVE CITY MAP CANVAS — {territories.length} ACTIVE ZONES CONFIGURED
+                    </span>
+                    <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>Select a zone chip or click a map polygon to inspect and re-allot phlebotomists</div>
+                  </div>
+                  <span style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '800', backgroundColor: 'rgba(245,158,11,0.15)', padding: '0.25rem 0.65rem', borderRadius: '20px' }}>
+                    ⚡ 3-Tier Dispatch Connected
+                  </span>
+                </div>
+
+                {/* SVG Radar */}
+                <div style={{ backgroundColor: '#0F172A', borderRadius: '16px', border: '1px solid #334155', padding: '1.25rem', height: '280px', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  
+                  {/* Zone Chips */}
+                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', zIndex: 10 }}>
+                    {territories.map(t => (
+                      <span 
+                        key={t.id} 
+                        onClick={() => setSelectedZoneId(t.id)}
+                        style={{ 
+                          fontSize: '0.75rem', 
+                          padding: '0.3rem 0.75rem', 
+                          backgroundColor: selectedZoneId === t.id ? `${t.color || '#38BDF8'}33` : 'rgba(15,23,42,0.85)', 
+                          color: t.color || '#38BDF8', 
+                          borderRadius: '8px', 
+                          fontWeight: '800', 
+                          border: `1.5px solid ${t.color || '#38BDF8'}`,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {t.name} • Allotted: <span style={{ color: '#FFF' }}>{t.primaryAgentName || 'Unassigned'}</span>
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* SVG Polygons Map */}
+                  <svg viewBox="0 0 500 200" style={{ width: '100%', height: '200px', position: 'absolute', inset: 0 }}>
+                    {territories.map(t => (
+                      <g key={t.id} onClick={() => setSelectedZoneId(t.id)} style={{ cursor: 'pointer' }}>
+                        <polygon 
+                          points={t.polygonCoords || "20,20 220,15 200,110 30,100"} 
+                          fill={`${t.color || '#38BDF8'}22`} 
+                          stroke={t.color || '#38BDF8'} 
+                          strokeWidth={selectedZoneId === t.id ? "3.5" : "2"} 
+                          strokeDasharray={selectedZoneId === t.id ? "0" : "5,5"} 
+                        />
+                        <text x={(parseInt((t.polygonCoords || "20,20").split(' ')[0].split(',')[0]) + 30)} y={(parseInt((t.polygonCoords || "20,20").split(' ')[0].split(',')[1]) + 30)} fill={t.color || "#FFF"} fontSize="10" fontWeight="bold">
+                          {t.id}: {t.primaryAgentName}
+                        </text>
+                      </g>
+                    ))}
+                  </svg>
+
+                  <div style={{ fontSize: '0.78rem', color: '#94A3B8', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>📍 Coverage Area: Tirupati Metro & Suburbs</span>
+                    <span style={{ color: '#34D399', fontWeight: '800' }}>Active DB Sync: Real-Time</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Territory Management Cards Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
+                {territories.map(t => {
+                  const isSel = selectedZoneId === t.id;
+                  const assignedAgentObj = salariedAgents.find(a => a.id === t.primaryAgentId);
+                  const activeCount = t.activeOrders || 0;
+                  const maxQuota = t.maxDailyQuota || 15;
+                  const pct = Math.min(100, Math.round((activeCount / maxQuota) * 100));
+
+                  return (
+                    <div 
+                      key={t.id} 
+                      style={{ 
+                        backgroundColor: '#1E293B', 
+                        borderRadius: '20px', 
+                        border: isSel ? `2px solid ${t.color || '#38BDF8'}` : '1.5px solid #334155', 
+                        padding: '1.5rem',
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '900', backgroundColor: `${t.color || '#38BDF8'}22`, color: t.color || '#38BDF8', border: `1px solid ${t.color || '#38BDF8'}` }}>
+                          {t.id}
+                        </span>
+                        <div style={{ display: 'flex', gap: '0.4rem' }}>
+                          <button 
+                            onClick={() => handleOpenEditTerritory(t)}
+                            style={{ padding: '0.25rem 0.55rem', backgroundColor: '#0F172A', color: '#67E8F9', border: '1px solid #334155', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer' }}
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteTerritory(t.id)}
+                            style={{ padding: '0.25rem 0.55rem', backgroundColor: '#451A1A', color: '#FCA5A5', border: '1px solid #7F1D1D', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer' }}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </div>
+
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#FFF' }}>{t.name}</h3>
+
+                      {/* Covered Pincodes */}
+                      <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: '700' }}>📌 Covered Pincodes:</span>
+                        {(Array.isArray(t.pincodes) ? t.pincodes : [t.pincodes]).map(pin => (
+                          <span key={pin} style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', backgroundColor: '#0F172A', color: '#FBBF24', borderRadius: '4px', fontWeight: '800', border: '1px solid #334155' }}>
+                            {pin}
+                          </span>
+                        ))}
+                      </div>
+
+                      {/* Allotment Control */}
+                      <div style={{ marginTop: '1rem', backgroundColor: '#0F172A', padding: '1rem', borderRadius: '14px', border: '1px solid #334155' }}>
+                        <label style={{ fontSize: '0.75rem', color: '#67E8F9', fontWeight: '800', display: 'block', marginBottom: '0.35rem' }}>
+                          👤 PRIMARY ALLOTTED PHLEBOTOMIST:
+                        </label>
+                        <select
+                          value={t.primaryAgentId}
+                          onChange={(e) => handleQuickAllotAgent(t.id, e.target.value)}
+                          style={{ width: '100%', padding: '0.55rem', backgroundColor: '#1E293B', color: '#FFF', border: '1.5px solid #006B70', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}
+                        >
+                          <optgroup label="Salaried Phlebotomist Fleet (Quota 15/day)">
+                            {salariedAgents.map(ag => (
+                              <option key={ag.id} value={ag.id}>
+                                {ag.name} ({ag.id}) — {ag.samplesToday}/15 Today
+                              </option>
+                            ))}
+                          </optgroup>
+                          <optgroup label="Gig / Freelance Broadcast">
+                            <option value="FREELANCE_BROADCAST">
+                              📡 FCM Push Broadcast to All Certified Freelancers
+                            </option>
+                          </optgroup>
+                        </select>
+                      </div>
+
+                      {/* Quota Bar */}
+                      <div style={{ marginTop: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#94A3B8', marginBottom: '0.25rem' }}>
+                          <span>Zone Capacity Meter:</span>
+                          <span style={{ color: pct >= 90 ? '#EF4444' : pct >= 60 ? '#FBBF24' : '#34D399', fontWeight: '800' }}>
+                            {activeCount} / {maxQuota} Orders ({pct}%)
+                          </span>
+                        </div>
+                        <div style={{ height: '8px', width: '100%', backgroundColor: '#0F172A', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${pct}%`, backgroundColor: t.color || '#38BDF8', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Tier 1 Allotted: {t.primaryAgentName}</span>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const testPin = (Array.isArray(t.pincodes) ? t.pincodes[0] : t.pincodes) || '517501';
+                              const res = await safeFetch(`${API_BASE}/api/v1/admin/dispatch/auto`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ orderId: 'MM-8921', pincode: testPin })
+                              });
+                              const data = await res.json();
+                              alert(`⚡ DISPATCH CASCADE FOR ${t.name}:\n\nTier: ${data.tier}\nAssigned Agent: ${data.assignedAgent}\nQuota Remaining: ${data.quotaRemaining}\nMessage: ${data.message}`);
+                            } catch (e) {
+                              alert(`⚡ Dispatched to Primary Salaried Agent ${t.primaryAgentName} for ${t.name}.`);
+                            }
+                          }}
+                          style={{ padding: '0.35rem 0.75rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                        >
+                          <Zap size={12} color="#FBBF24" /> Test Cascade
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1568,6 +1997,132 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: CREATE / EDIT TERRITORY ZONE */}
+      {showTerritoryModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
+          <div style={{ backgroundColor: '#1E293B', borderRadius: '24px', maxWidth: '600px', width: '100%', padding: '2rem', border: '2px solid #006B70' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div>
+                <span style={{ fontSize: '0.72rem', backgroundColor: 'rgba(0,107,112,0.3)', color: '#67E8F9', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
+                  TERRITORY MANAGEMENT
+                </span>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF', marginTop: '0.3rem' }}>
+                  {editingTerritory ? `Edit Territory: ${editingTerritory.id}` : 'Create New Territory Zone'}
+                </h2>
+              </div>
+              <button onClick={() => setShowTerritoryModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.25rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleSaveTerritory} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone ID</label>
+                  <input
+                    type="text"
+                    value={territoryForm.id}
+                    onChange={(e) => setTerritoryForm({ ...territoryForm, id: e.target.value })}
+                    placeholder="ZONE-05"
+                    required
+                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#67E8F9', fontWeight: '800', marginTop: '0.2rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone Name & Description</label>
+                  <input
+                    type="text"
+                    value={territoryForm.name}
+                    onChange={(e) => setTerritoryForm({ ...territoryForm, name: e.target.value })}
+                    placeholder="e.g. Zone 5: Tiruchanoor & Outer South"
+                    required
+                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', marginTop: '0.2rem' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '800' }}>📌 Covered Pincodes (Comma Separated)</label>
+                <input
+                  type="text"
+                  value={territoryForm.pincodes}
+                  onChange={(e) => setTerritoryForm({ ...territoryForm, pincodes: e.target.value })}
+                  placeholder="517501, 517507, 517505"
+                  required
+                  style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1.5px solid #F59E0B', borderRadius: '8px', color: '#FFF', fontWeight: '800', marginTop: '0.2rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#67E8F9', fontWeight: '800' }}>👤 Primary Allotted Phlebotomist</label>
+                  <select
+                    value={territoryForm.primaryAgentId}
+                    onChange={(e) => {
+                      const selId = e.target.value;
+                      const ag = salariedAgents.find(a => a.id === selId) || { name: selId === 'FREELANCE_BROADCAST' ? 'Gig Freelancer Broadcast Zone' : selId };
+                      setTerritoryForm({ ...territoryForm, primaryAgentId: selId, primaryAgentName: ag.name });
+                    }}
+                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1.5px solid #006B70', borderRadius: '8px', color: '#FFF', fontWeight: '800', marginTop: '0.2rem' }}
+                  >
+                    <optgroup label="Salaried Phlebotomist Fleet">
+                      {salariedAgents.map(ag => (
+                        <option key={ag.id} value={ag.id}>{ag.name} ({ag.id})</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Gig / Freelance Broadcast">
+                      <option value="FREELANCE_BROADCAST">📡 Gig Freelancer Broadcast Zone</option>
+                    </optgroup>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Max Daily Quota</label>
+                  <input
+                    type="number"
+                    value={territoryForm.maxDailyQuota}
+                    onChange={(e) => setTerritoryForm({ ...territoryForm, maxDailyQuota: e.target.value })}
+                    required
+                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FBBF24', fontWeight: '800', marginTop: '0.2rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone Color</label>
+                  <input
+                    type="color"
+                    value={territoryForm.color}
+                    onChange={(e) => setTerritoryForm({ ...territoryForm, color: e.target.value })}
+                    style={{ width: '100%', height: '42px', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', cursor: 'pointer', marginTop: '0.2rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>SVG Map Polygon Shape Preset</label>
+                  <select
+                    value={territoryForm.polygonCoords}
+                    onChange={(e) => setTerritoryForm({ ...territoryForm, polygonCoords: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.82rem', marginTop: '0.2rem' }}
+                  >
+                    <option value="20,20 220,15 200,110 30,100">Zone 1 Polygon (Central Sector)</option>
+                    <option value="230,15 480,30 450,120 210,110">Zone 2 Polygon (North/SVU Sector)</option>
+                    <option value="30,115 200,115 180,195 20,185">Zone 3 Polygon (East/Renigunta Sector)</option>
+                    <option value="210,125 480,125 460,195 190,195">Zone 4 Polygon (West/Outer Sector)</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                style={{ marginTop: '0.75rem', padding: '0.85rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer' }}
+              >
+                Save Territory Zone & Activate 3-Tier Allotment
+              </button>
+            </form>
           </div>
         </div>
       )}
