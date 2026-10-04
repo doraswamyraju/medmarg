@@ -1,0 +1,116 @@
+{
+  "orders": [
+    {
+      "id": "MM-8921",
+      "patientName": "Rahul Sharma",
+      "phone": "+91 98765 43210",
+      "city": "Tirupati",
+      "address": "Bairagipatteda, Tirupati",
+      "items": "HbA1c + Complete Blood Count",
+      "amount": 899,
+      "status": "EN_ROUTE",
+      "assignedAgent": "Ramesh Kumar (AG-01)",
+      "lab": "MedMarg Central Lab",
+      "otp": "4892",
+      "createdAt": "Today 07:30 AM"
+    },
+    {
+      "id": "MM-8922",
+      "patientName": "Priya Verma",
+      "phone": "+91 98765 88990",
+      "city": "Tirupati",
+      "address": "Air Bypass Road, Tirupati",
+      "items": "Master Full Body Profile (87 Biomarkers)",
+      "amount": 1499,
+      "status": "SAMPLE_COLLECTED",
+      "assignedAgent": "Suresh Babu (AG-02)",
+      "lab": "Apollo Diagnostics Hub",
+      "otp": "7104",
+      "createdAt": "Today 08:15 AM"
+    },
+    {
+      "id": "MM-8923",
+      "patientName": "Venkatesh R",
+      "phone": "+91 94400 55667",
+      "city": "Chittoor",
+      "address": "Gandhi Road, Chittoor",
+      "items": "Diabetic & Renal Health Check",
+      "amount": 699,
+      "status": "PENDING_DISPATCH",
+      "assignedAgent": "Unassigned",
+      "lab": "Dr. Lal PathLabs",
+      "otp": "1938",
+      "createdAt": "Today 09:00 AM"
+    }
+  ],
+  "freelancers": [
+    {
+      "id": "FL-101",
+      "name": "Ankit Sharma",
+      "phone": "+91 98765 22114",
+      "city": "Tirupati",
+      "qualification": "DMLT (Diploma Medical Lab Tech)",
+      "paramedicalCert": "AP-PMC-89102",
+      "experience": "3 Years",
+      "regFeePaid": true,
+      "feeAmount": 2000,
+      "walletBalance": 2000,
+      "status": "PENDING_VERIFICATION"
+    },
+    {
+      "id": "FL-102",
+      "name": "Sneha Reddy",
+      "phone": "+91 98765 33221",
+      "city": "Bangalore",
+      "qualification": "BSc MLT (Bachelor MLT)",
+      "paramedicalCert": "KA-PMC-44109",
+      "experience": "5 Years",
+      "regFeePaid": true,
+      "feeAmount": 2000,
+      "walletBalance": 2000,
+      "status": "APPROVED"
+    }
+  ],
+  "salariedAgents": [
+    {
+      "id": "AG-01",
+      "name": "Ramesh Kumar",
+      "phone": "+91 98765 11223",
+      "area": "Air Bypass & Alipiri",
+      "samplesToday": 9,
+      "maxDailyQuota": 15,
+      "temp": "4.2°C",
+      "status": "ACTIVE"
+    },
+    {
+      "id": "AG-02",
+      "name": "Suresh Babu",
+      "phone": "+91 98765 44332",
+      "area": "Renigunta Rd & Tiruchanoor",
+      "samplesToday": 7,
+      "maxDailyQuota": 15,
+      "temp": "3.8°C",
+      "status": "ACTIVE"
+    }
+  ],
+  "inventoryStock": [
+    { "code": "STK-01", "name": "Gold SST Gel Tubes (5ml)", "category": "Blood Containers", "stock": 4500, "unit": "Tubes", "reorderLevel": 1000 },
+    { "code": "STK-02", "name": "Purple EDTA Tubes (3ml)", "category": "Blood Containers", "stock": 3200, "unit": "Tubes", "reorderLevel": 800 },
+    { "code": "STK-03", "name": "Grey Fluoride Glucose Tubes (2ml)", "category": "Blood Containers", "stock": 2100, "unit": "Tubes", "reorderLevel": 500 },
+    { "code": "STK-04", "name": "Sterile Vacutainer Needles 21G", "category": "Phlebotomy Supplies", "stock": 5000, "unit": "Needles", "reorderLevel": 1200 },
+    { "code": "STK-05", "name": "IoT Cold Gel Carry Bags (2-8°C)", "category": "Cold Chain Equipment", "stock": 150, "unit": "Bags", "reorderLevel": 30 }
+  ],
+  "indents": [
+    { "id": "IND-501", "agentName": "Ramesh Kumar (AG-01)", "requestedItems": "50x Gold SST Tubes, 20x Purple EDTA Tubes", "status": "PENDING_APPROVAL", "date": "Today 08:30 AM" },
+    { "id": "IND-502", "agentName": "Suresh Babu (AG-02)", "requestedItems": "30x Purple EDTA Tubes, 10x Biohazard Bags", "status": "APPROVED_DISPATCHED", "date": "Yesterday" }
+  ],
+  "partnerQueue": [
+    { "id": "P-101", "name": "Dr. K. Sivasankar", "type": "Doctor / OPD Practice", "city": "Tirupati", "phone": "+91 94400 12345", "email": "dr.siva@gmail.com", "status": "PRE_REGISTERED" },
+    { "id": "P-102", "name": "Sri Diagnostics & Radiology Center", "type": "Radiology / MRI Center", "city": "Tirupati", "phone": "+91 98490 54321", "email": "sridiag@gmail.com", "status": "PRE_REGISTERED" },
+    { "id": "P-103", "name": "Dr. Anita Roy", "type": "Health & Diet Coach", "city": "Bangalore", "phone": "+91 98800 67890", "email": "anita.health@gmail.com", "status": "PRE_REGISTERED" }
+  ],
+  "transactions": [
+    { "id": "TXN-901", "orderId": "MM-8921", "patient": "Rahul Sharma", "mode": "Prepaid (Razorpay)", "amount": 899, "status": "PAID_SUCCESS", "date": "Today 07:30 AM" },
+    { "id": "TXN-902", "orderId": "MM-8922", "patient": "Priya Verma", "mode": "Doorstep UPI QR", "amount": 1499, "status": "PAID_SUCCESS", "date": "Today 08:15 AM" }
+  ]
+}

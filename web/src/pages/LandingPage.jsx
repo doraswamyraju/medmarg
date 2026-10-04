@@ -157,9 +157,22 @@ export default function LandingPage({ onNavigateLogin }) {
     return true;
   });
 
-  const handlePartnerSubmit = (e) => {
+  const handlePartnerSubmit = async (e) => {
     e.preventDefault();
     setPartnerSuccess(true);
+    try {
+      await safeFetch(`${API_BASE}/api/v1/admin/partners/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: partnerName,
+          type: partnerType,
+          phone: partnerPhone,
+          email: partnerEmail,
+          city: 'Tirupati'
+        })
+      });
+    } catch (err) {}
     setTimeout(() => setPartnerSuccess(false), 4000);
   };
 
