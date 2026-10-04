@@ -107,11 +107,17 @@ export default function RealMapView({
       attributionControl: false
     });
 
-    // Dark Matter Map Tiles (CartoDB)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    // OpenStreetMap Standard Free Tiles (No API key, No watermark)
+    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      subdomains: 'abcd'
+      attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
+
+    // Apply smooth dark mode styling to OpenStreetMap tiles
+    const tileContainer = tileLayer.getContainer();
+    if (tileContainer) {
+      tileContainer.style.filter = 'invert(90%) hue-rotate(180deg) brightness(95%) contrast(90%)';
+    }
 
     markersGroupRef.current = L.layerGroup().addTo(map);
     mapInstanceRef.current = map;
