@@ -749,13 +749,99 @@ app.post('/api/v1/admin/partners/register', (req, res) => {
     res.status(201).json({ success: true, partner: newPartner });
 });
 
+// TERRITORIES DB STORE
+let territories = [
+    { id: 'ZONE-01', name: 'Zone 1: Tirupati Central & Air Bypass Rd', pincodes: ['517501', '517507'], primaryAgentId: 'AG-01', primaryAgentName: 'Ramesh Kumar', color: '#38BDF8', maxDailyQuota: 15, activeOrders: 9 },
+    { id: 'ZONE-02', name: 'Zone 2: Alipiri, Zoo Park & SVU Campus', pincodes: ['517502'], primaryAgentId: 'AG-02', primaryAgentName: 'Suresh Babu', color: '#10B981', maxDailyQuota: 15, activeOrders: 7 },
+    { id: 'ZONE-03', name: 'Zone 3: Renigunta Rd & Tiruchanoor', pincodes: ['517503', '517506'], primaryAgentId: 'AG-03', primaryAgentName: 'Mahesh V', color: '#F59E0B', maxDailyQuota: 15, activeOrders: 4 },
+    { id: 'ZONE-04', name: 'Zone 4: Chandragiri & Outer Suburbs', pincodes: ['517101'], primaryAgentId: 'FREELANCE_BROADCAST', primaryAgentName: 'Gig Freelancer Broadcast Zone', color: '#A855F7', maxDailyQuota: 999, activeOrders: 2 }
+];
+
+app.get('/api/v1/admin/territories', (req, res) => {
+    res.json({ success: true, territories });
+});
+
+app.post('/api/v1/admin/territories', (req, res) => {
+    const { id, primaryAgentId, primaryAgentName, maxDailyQuota } = req.body;
+    const zone = territories.find(t => t.id === id);
+    if (zone) {
+        if (primaryAgentId) zone.primaryAgentId = primaryAgentId;
+        if (primaryAgentName) zone.primaryAgentName = primaryAgentName;
+        if (maxDailyQuota) zone.maxDailyQuota = Number(maxDailyQuota);
+        saveDbStore();
+        return res.json({ success: true, territory: zone, message: 'Territory mapping updated.' });
+    }
+    res.status(404).json({ error: 'Territory not found' });
+});
+
+// AUTOMATED DISPATCH CASCADE ENGINE (3-TIER)
+app.post('/api/v1/admin/dispatch/auto', (req, res) => {
+    const { orderId, pincode } = req.body;
+    
+    // Find matching territory
+    const matchedZone = territories.find(t => t.pincodes.includes(pincode)) || territories[0];
+    const primaryAgent = dbStore.salariedAgents.find(a => a.id === matchedZone.primaryAgentId);
+
+    // Tier 1: Check Primary Salaried Agent Quota Limit (max 15/day)
+    if (primaryAgent && primaryAgent.samplesToday < primaryAgent.maxDailyQuota) {
+        primaryAgent.samplesToday += 1;
+        const order = dbStore.orders.find(o => o.id === orderId);
+        if (order) {
+            order.assignedAgent = `${primaryAgent.name} (${primaryAgent.id})`;
+            order.status = 'EN_ROUTE';
+        }
+        saveDbStore();
+        return res.json({
+            success: true,
+            tier: 'TIER_1_PRIMARY_SALARIED',
+            assignedAgent: primaryAgent.name,
+            quotaRemaining: primaryAgent.maxDailyQuota - primaryAgent.samplesToday,
+            message: `Auto-dispatched to Primary Salaried Agent ${primaryAgent.name} for ${matchedZone.name}.`
+        });
+    }
+
+    // Tier 2: Check Secondary Salaried Agent in nearby zone
+    const backupAgent = dbStore.salariedAgents.find(a => a.id !== matchedZone.primaryAgentId && a.samplesToday < a.maxDailyQuota);
+    if (backupAgent) {
+        backupAgent.samplesToday += 1;
+        const order = dbStore.orders.find(o => o.id === orderId);
+        if (order) {
+            order.assignedAgent = `${backupAgent.name} (${backupAgent.id})`;
+            order.status = 'EN_ROUTE';
+        }
+        saveDbStore();
+        return res.json({
+            success: true,
+            tier: 'TIER_2_BACKUP_SALARIED',
+            assignedAgent: backupAgent.name,
+            quotaRemaining: backupAgent.maxDailyQuota - backupAgent.samplesToday,
+            message: `Primary quota full. Auto-dispatched to Backup Salaried Agent ${backupAgent.name}.`
+        });
+    }
+
+    // Tier 3: All Salaried Agents at max capacity -> Trigger FCM Broadcast to Freelancers
+    const order = dbStore.orders.find(o => o.id === orderId);
+    if (order) {
+        order.assignedAgent = 'Broadcasting to Freelancers...';
+        order.status = 'BROADCASTED';
+    }
+    saveDbStore();
+    return res.json({
+        success: true,
+        tier: 'TIER_3_FREELANCE_FCM_BROADCAST',
+        assignedAgent: 'Freelance Gig Network',
+        message: `All salaried agents hit 15 order/day capacity! High-priority FCM Push Broadcast triggered to verified Freelance Phlebotomists.`
+    });
+});
+
 // Start Server
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`=======================================================`);
     console.log(` MedMarg Backend API running on port ${PORT}`);
     console.log(` Database Store Active: ${dbStore.orders.length} Orders | ${dbStore.freelancers.length} Freelancers | ${dbStore.partnerQueue.length} Pre-Registered Partners`);
-    console.log(` Unified Diagnostics: ${catalogState.tests.length} Tests | ${catalogState.profiles.length} Profiles | ${catalogState.packages.length} Packages`);
+    console.log(` Dispatch Cascade & Territories Active: ${territories.length} Zones Managed`);
     console.log(` Health Check: http://localhost:${PORT}/api/health`);
     console.log(`=======================================================`);
 });
+
 
