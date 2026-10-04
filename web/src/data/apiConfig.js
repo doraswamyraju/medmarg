@@ -1,14 +1,18 @@
 // MedMarg Dynamic API Base URL configuration
-// Automatically targets current hostname (localhost on dev, VPS IP on production)
+// Automatically targets current hostname & protocol (https vs http)
 
-const isDev = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const isBrowser = typeof window !== 'undefined';
+const isDev = isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const protocol = isBrowser ? window.location.protocol : 'http:';
 
-export const API_BASE = typeof window !== 'undefined' && window.location.hostname
-    ? (isDev ? 'http://localhost:5080' : `http://${window.location.hostname}:5080`)
+export const API_BASE = isBrowser
+    ? (isDev 
+        ? 'http://localhost:5080' 
+        : `${protocol}//${window.location.hostname}${window.location.port ? ':' + window.location.port : ''}`)
     : 'http://localhost:5080';
 
 /**
- * Safe fetch helper with timeout so network delays/firewalls never hang the UI
+ * Safe fetch helper with fallback and timeout
  */
 export async function safeFetch(url, options = {}, timeoutMs = 3000) {
     const controller = new AbortController();

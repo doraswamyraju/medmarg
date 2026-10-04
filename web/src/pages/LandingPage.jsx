@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
   FlaskConical, 
@@ -37,42 +37,47 @@ import {
   FileText,
   Share2,
   Heart,
-  Droplet
+  Droplet,
+  CheckSquare,
+  Lock,
+  Zap,
+  Navigation
 } from 'lucide-react';
+import Header from '../components/Header';
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState } from '../data/catalogStore';
-import { API_BASE } from '../data/apiConfig';
+import { API_BASE, safeFetch } from '../data/apiConfig';
 
 export default function LandingPage({ onNavigateLogin }) {
-  const [catalog, setCatalog] = useState(getCatalogState() || initialCatalog);
-  const [catalogTab, setCatalogTab] = useState('ALL'); // 'ALL' | 'HIS' | 'HER' | 'FAMILY' | 'ORGAN' | 'DIABETES'
+  const [catalog, setCatalog] = useState(() => {
+    const localState = getCatalogState();
+    return (localState && localState.tests && localState.tests.length > 0) ? localState : initialCatalog;
+  });
+
+  const [catalogTab, setCatalogTab] = useState('ALL'); // 'ALL' | 'HIS' | 'HER' | 'FULL_BODY' | 'DIABETES' | 'ORGAN'
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   
   // Hero Carousel State
   const [currentSlide, setCurrentSlide] = useState(0);
-  
+
   // Active Modals
   const [activeItemModal, setActiveItemModal] = useState(null);
-  const [showPartnerModal, setShowPartnerModal] = useState(false);
-  const [partnerType, setPartnerType] = useState('DOCTOR');
   const [partnerSuccess, setPartnerSuccess] = useState(false);
 
   // Partner Form Inputs
+  const [partnerType, setPartnerType] = useState('DOCTOR');
   const [partnerName, setPartnerName] = useState('');
-  const [partnerEst, setPartnerEst] = useState('');
   const [partnerPhone, setPartnerPhone] = useState('');
   const [partnerEmail, setPartnerEmail] = useState('');
-  const [partnerCity, setPartnerCity] = useState('Tirupati');
-  const [partnerLicense, setPartnerLicense] = useState('');
 
-  // Featured Hero Banners (Super Admin Updated Promotions)
+  // Hero Promotional Banners (Super Admin Configured)
   const heroBanners = [
     {
       id: 1,
-      tag: '🔥 SUPER ADMIN FEATURED PACKAGE',
-      title: 'MedMarg Master Full Body Wellness Profile',
-      subtitle: 'Includes 87 Essential Biomarkers • Complete Hemogram, Lipid, LFT, KFT, Thyroid & HbA1c',
+      tag: '🔥 SUPER ADMIN FEATURED PROMOTION',
+      title: 'MedMarg Master Full Body Screening',
+      subtitle: 'Includes 87 Essential Biomarkers • Hemogram, Lipid Profile, LFT, KFT, Thyroid TSH & HbA1c',
       mrp: '₹3,500',
       price: '₹1,499',
       savings: 'SAVE 57% (₹2,001 OFF)',
@@ -82,21 +87,21 @@ export default function LandingPage({ onNavigateLogin }) {
     },
     {
       id: 2,
-      tag: '🛡️ SEASONAL HEALTH ASSESSMENT',
-      title: 'Fever & Dengue Complete Diagnostic Shield',
-      subtitle: 'Rapid Dengue NS1, IgG/IgM, Malarial Antigen, Complete Blood Count & Urine Analysis',
+      tag: '🛡️ SEASONAL FEVER & VIRAL SHIELD',
+      title: 'Dengue & Complete Fever Panel',
+      subtitle: 'Dengue NS1 Antigen, IgG/IgM, Malarial Antigen, Complete Blood Count (CBC) & Urine Culture',
       mrp: '₹1,200',
       price: '₹499',
       savings: 'SAVE 58% (₹701 OFF)',
-      badge: '60-Min Fast Track Pickup',
+      badge: '60-Min Express Pickup',
       bgGradient: 'linear-gradient(135deg, #0F766E 0%, #134E4A 100%)',
       accentColor: '#F59E0B'
     },
     {
       id: 3,
-      tag: '🫀 SPECIALIZED CARDIAC & DIABETES CHECK',
-      title: 'Advanced Heart & Metabolic Screening',
-      subtitle: 'High Sensitivity CRP, ApoB, HbA1c, Fasting Blood Sugar, Lipid Profile & Kidney Check',
+      tag: '🫀 CARDIAC & METABOLIC CHECK',
+      title: 'Advanced Heart Risk & Diabetic Profile',
+      subtitle: 'High Sensitivity CRP, ApoB, HbA1c, Fasting Sugar, Lipid Profile & Renal Check',
       mrp: '₹2,800',
       price: '₹1,199',
       savings: 'SAVE 57% (₹1,601 OFF)',
@@ -114,48 +119,41 @@ export default function LandingPage({ onNavigateLogin }) {
     return () => clearInterval(timer);
   }, [heroBanners.length]);
 
-  // Sync Live Catalog from API if available
+  // Robust Catalog Fetching with Protocol Matching & Safe Fallback
   useEffect(() => {
-    fetch(`${API_BASE}/api/v1/catalog/summary`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          Promise.all([
-            fetch(`${API_BASE}/api/v1/catalog/packages`).then(r => r.json()),
-            fetch(`${API_BASE}/api/v1/catalog/profiles`).then(r => r.json()),
-            fetch(`${API_BASE}/api/v1/catalog/tests?limit=1000`).then(r => r.json())
-          ]).then(([pkgs, profs, tsts]) => {
-            if (pkgs.packages && profs.profiles && tsts.tests) {
-              setCatalog({
-                packages: pkgs.packages,
-                profiles: profs.profiles,
-                tests: tsts.tests
-              });
-            }
-          }).catch(() => {});
+    async function loadApiCatalog() {
+      try {
+        const res = await safeFetch(`${API_BASE}/api/v1/catalog/tests?limit=1000`, {}, 3000);
+        const data = await res.json();
+        if (data.success && data.tests && data.tests.length > 0) {
+          setCatalog(prev => ({
+            ...prev,
+            tests: data.tests,
+            packages: prev.packages && prev.packages.length > 0 ? prev.packages : initialCatalog.packages,
+            profiles: prev.profiles && prev.profiles.length > 0 ? prev.profiles : initialCatalog.profiles
+          }));
         }
-      })
-      .catch(() => {});
+      } catch (err) {
+        // Safe fallback to catalogData.json
+      }
+    }
+    loadApiCatalog();
   }, []);
 
-  const handlePartnerSubmit = (e) => {
-    e.preventDefault();
-    setPartnerSuccess(true);
-    setTimeout(() => {
-      setPartnerSuccess(false);
-      setShowPartnerModal(false);
-    }, 4000);
-  };
+  // Filter Catalog Items for Live Search & Category Tabs
+  const allTests = catalog.tests || initialCatalog.tests || [];
+  const allPackages = catalog.packages || initialCatalog.packages || [];
+  const allProfiles = catalog.profiles || initialCatalog.profiles || [];
 
-  // Filter Catalog Items
-  const allPackages = catalog.packages || [];
-  const filteredPackages = allPackages.filter(pkg => {
-    const query = searchQuery.toLowerCase();
-    const matchesSearch = !query || 
-      (pkg.name && pkg.name.toLowerCase().includes(query)) ||
-      (pkg.category && pkg.category.toLowerCase().includes(query));
+  // Instant Live Auto-Complete Search Results (Tests, Profiles & Packages)
+  const searchResults = searchQuery.trim() ? [
+    ...allPackages.filter(p => (p.name && p.name.toLowerCase().includes(searchQuery.toLowerCase())) || (p.code && p.code.toLowerCase().includes(searchQuery.toLowerCase()))).map(p => ({ ...p, itemType: 'PACKAGE' })),
+    ...allProfiles.filter(pr => (pr.name && pr.name.toLowerCase().includes(searchQuery.toLowerCase())) || (pr.code && pr.code.toLowerCase().includes(searchQuery.toLowerCase()))).map(pr => ({ ...pr, itemType: 'PROFILE' })),
+    ...allTests.filter(t => (t.name && t.name.toLowerCase().includes(searchQuery.toLowerCase())) || (t.code && t.code.toLowerCase().includes(searchQuery.toLowerCase()))).map(t => ({ ...t, itemType: 'TEST' }))
+  ].slice(0, 8) : [];
 
-    if (!matchesSearch) return false;
+  // Filtered Cards Grid based on selected category tab
+  const displayedPackages = allPackages.filter(pkg => {
     if (catalogTab === 'HIS') return pkg.category?.includes('Men') || pkg.name?.includes('His') || pkg.name?.includes('Men');
     if (catalogTab === 'HER') return pkg.category?.includes('Women') || pkg.name?.includes('Her') || pkg.name?.includes('Women');
     if (catalogTab === 'ORGAN') return pkg.category?.includes('Organ') || pkg.name?.includes('Liver') || pkg.name?.includes('Kidney');
@@ -163,62 +161,26 @@ export default function LandingPage({ onNavigateLogin }) {
     return true;
   });
 
+  const handlePartnerSubmit = (e) => {
+    e.preventDefault();
+    setPartnerSuccess(true);
+    setTimeout(() => setPartnerSuccess(false), 4000);
+  };
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', color: '#0F172A', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
-      {/* 🔝 TOP ANNOUNCEMENT & HEADER BAR */}
-      <div style={{ backgroundColor: '#005F60', color: '#FFFFFF', padding: '0.45rem 1.5rem', fontSize: '0.82rem', fontWeight: '700', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Sparkles size={15} color="#F59E0B" />
-          <span>MedMarg Central Diagnostics: 914+ Pathology Tests & Full Body Profiles | Free Home Sample Collection Included</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.78rem' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><MapPin size={13} /> Tirupati, Andhra Pradesh</span>
-        </div>
-      </div>
+      {/* 🔝 DEDICATED HEADER COMPONENT (Single Logo, No Duplicate Text, City Dropdown, Sleek Nav) */}
+      <Header onNavigateLogin={onNavigateLogin} />
 
-      <header style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', padding: '1rem 2rem', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <img src="/logo.png" alt="MedMarg" style={{ height: '40px', objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; }} />
-            <span style={{ fontSize: '1.5rem', fontWeight: '900', color: '#005F60', letterSpacing: '-0.02em' }}>MedMarg</span>
-          </div>
-
-          {/* Navigation Links */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: '1.75rem', fontWeight: '700', fontSize: '0.9rem', color: '#334155' }}>
-            <a href="#catalog" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <FlaskConical size={16} color="#005F60" /> Diagnostics & Tests ({filteredPackages.length + 900}+)
-            </a>
-            <a href="#features" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Activity size={16} color="#005F60" /> Health Vitals & Locker
-            </a>
-            <a href="#upcoming" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Stethoscope size={16} color="#005F60" /> Upcoming Doctors & MRI
-            </a>
-            <a href="#trust" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <ShieldCheck size={16} color="#005F60" /> Trust & Safety
-            </a>
-          </nav>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            <button
-              onClick={onNavigateLogin}
-              style={{ padding: '0.65rem 1.35rem', backgroundColor: '#005F60', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 14px rgba(0,95,96,0.25)', transition: 'transform 0.15s' }}
-            >
-              Sign In / Book Now <ArrowRight size={16} />
-            </button>
-          </div>
-        </div>
-      </header>
-
-      {/* 🖼️ SECTION 1: HERO CAROUSEL & UNIVERSAL SEARCH */}
+      {/* 🖼️ SECTION 1: HERO SLIDER & VIBRANT SEARCH WITH INSTANT AUTO-COMPLETE */}
       <section style={{ backgroundColor: '#0F172A', padding: '3.5rem 1.5rem 4.5rem', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '3rem', alignItems: 'center' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1.25fr 0.75fr', gap: '3rem', alignItems: 'center' }}>
           
-          {/* Left Column: Carousel & Tagline */}
-          <div>
+          {/* Left Column: Carousel & Vibrant Search */}
+          <div style={{ zIndex: 10 }}>
             {/* Active Banner Slide */}
-            <div style={{ transition: 'all 0.5s ease-in-out' }}>
+            <div>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.85rem', backgroundColor: 'rgba(56, 189, 248, 0.15)', color: heroBanners[currentSlide].accentColor, borderRadius: '20px', fontSize: '0.8rem', fontWeight: '800', marginBottom: '1rem', border: `1px solid ${heroBanners[currentSlide].accentColor}40` }}>
                 <Sparkles size={14} /> {heroBanners[currentSlide].tag}
               </div>
@@ -232,9 +194,9 @@ export default function LandingPage({ onNavigateLogin }) {
               </p>
 
               {/* Price & Savings Pill */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.75rem' }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem' }}>
-                  <span style={{ fontSize: '2.1rem', fontWeight: '900', color: '#FFFFFF' }}>{heroBanners[currentSlide].price}</span>
+                  <span style={{ fontSize: '2.2rem', fontWeight: '900', color: '#FFFFFF' }}>{heroBanners[currentSlide].price}</span>
                   <span style={{ fontSize: '1.1rem', color: '#64748B', textDecoration: 'line-through', fontWeight: '700' }}>{heroBanners[currentSlide].mrp}</span>
                 </div>
                 <div style={{ padding: '0.4rem 0.85rem', backgroundColor: '#10B981', color: '#FFF', borderRadius: '10px', fontSize: '0.85rem', fontWeight: '800' }}>
@@ -244,7 +206,7 @@ export default function LandingPage({ onNavigateLogin }) {
             </div>
 
             {/* Slider Navigation Dots */}
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2.25rem' }}>
               {heroBanners.map((banner, index) => (
                 <button
                   key={banner.id}
@@ -254,19 +216,105 @@ export default function LandingPage({ onNavigateLogin }) {
               ))}
             </div>
 
-            {/* Universal Multi-Filter Search Bar */}
-            <div style={{ backgroundColor: '#FFFFFF', padding: '0.65rem 0.85rem', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', border: '2px solid #005F60' }}>
-              <Search size={22} color="#005F60" />
-              <input
-                type="text"
-                placeholder="Search 914+ tests (Thyroid, Lipid, HbA1c, Vitamin D, Dengue, Complete Blood Count)..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                style={{ flex: 1, border: 'none', outline: 'none', fontSize: '0.98rem', fontWeight: '600', color: '#0F172A' }}
-              />
-              <a href="#catalog" style={{ textDecoration: 'none', padding: '0.75rem 1.4rem', backgroundColor: '#005F60', color: '#FFF', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '800', cursor: 'pointer' }}>
-                Search & Book
-              </a>
+            {/* 🌟 VIBRANT & UNIQUE LIVE AUTO-COMPLETE SEARCH BAR */}
+            <div style={{ position: 'relative', maxWidth: '620px' }}>
+              <div style={{ 
+                backgroundColor: '#FFFFFF', 
+                padding: '0.65rem 0.85rem', 
+                borderRadius: '20px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.75rem', 
+                boxShadow: '0 20px 45px rgba(0,95,96,0.35)', 
+                border: '3.5px solid #005F60',
+                transition: 'all 0.2s ease-in-out'
+              }}>
+                <Search size={24} color="#005F60" />
+                <input
+                  type="text"
+                  placeholder="Type to search 914+ tests (e.g. HbA1c, Thyroid, Lipid, CBC, Liver)..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setIsSearchFocused(true);
+                  }}
+                  onFocus={() => setIsSearchFocused(true)}
+                  style={{ flex: 1, border: 'none', outline: 'none', fontSize: '1rem', fontWeight: '700', color: '#0F172A', backgroundColor: 'transparent' }}
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}>
+                    <X size={18} />
+                  </button>
+                )}
+                <button onClick={onNavigateLogin} style={{ padding: '0.8rem 1.5rem', backgroundColor: '#005F60', color: '#FFF', border: 'none', borderRadius: '14px', fontSize: '0.92rem', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 14px rgba(0,95,96,0.3)' }}>
+                  Search & Book <ArrowRight size={16} />
+                </button>
+              </div>
+
+              {/* ⚡ INSTANT VIBRANT AUTO-COMPLETE DROPDOWN RESULTS */}
+              {isSearchFocused && searchQuery.trim() && (
+                <div style={{ 
+                  position: 'absolute', 
+                  top: '115%', 
+                  left: 0, 
+                  right: 0, 
+                  backgroundColor: '#FFFFFF', 
+                  borderRadius: '20px', 
+                  border: '2px solid #005F60', 
+                  boxShadow: '0 25px 60px rgba(0,0,0,0.4)', 
+                  zIndex: 1000, 
+                  overflow: 'hidden',
+                  padding: '0.75rem'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', borderBottom: '1px solid #E2E8F0', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#005F60', letterSpacing: '0.05em' }}>
+                      FOUND {searchResults.length} MATCHING DIAGNOSTIC TESTS & PACKAGES
+                    </span>
+                    <button onClick={() => setIsSearchFocused(false)} style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '700' }}>Close ✕</button>
+                  </div>
+
+                  {searchResults.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '360px', overflowY: 'auto' }}>
+                      {searchResults.map(item => (
+                        <div 
+                          key={item.id || item.code}
+                          onClick={() => {
+                            setActiveItemModal(item);
+                            setIsSearchFocused(false);
+                          }}
+                          style={{ padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #F1F5F9', backgroundColor: '#F8FAFC', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ fontSize: '0.72rem', fontWeight: '800', padding: '0.15rem 0.45rem', backgroundColor: item.itemType === 'PACKAGE' ? '#FEF3C7' : '#E0F2F1', color: item.itemType === 'PACKAGE' ? '#92400E' : '#005F60', borderRadius: '6px' }}>
+                                {item.itemType || 'TEST'}
+                              </span>
+                              <span style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.92rem' }}>{item.name}</span>
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.2rem' }}>
+                              {item.category || 'Pathology Test'} • {item.fasting === 'YES' || item.fastingRequiredHours > 0 ? '8-10h Fasting Required' : 'No Fasting Required'}
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                            <div style={{ textAlign: 'right' }}>
+                              <div style={{ fontSize: '1rem', fontWeight: '900', color: '#005F60' }}>₹{item.price}</div>
+                              {item.mrp && <div style={{ fontSize: '0.75rem', color: '#94A3B8', textDecoration: 'line-through' }}>MRP ₹{item.mrp}</div>}
+                            </div>
+                            <button onClick={onNavigateLogin} style={{ padding: '0.4rem 0.85rem', backgroundColor: '#005F60', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800', cursor: 'pointer' }}>
+                              Book →
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ padding: '1.5rem', textAlign: 'center', color: '#64748B', fontSize: '0.88rem' }}>
+                      No matching tests found. Showing master catalog below.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Quick Category Chips */}
@@ -335,17 +383,17 @@ export default function LandingPage({ onNavigateLogin }) {
         </div>
       </section>
 
-      {/* 🧪 SECTION 2: LIVE CATALOG & SMART PACKAGE UPGRADE SHOWCASE */}
+      {/* 🧪 SECTION 2: MASTER DIAGNOSTIC CATALOG & ORGAN HEALTH CARDS */}
       <section id="catalog" style={{ padding: '4.5rem 1.5rem', backgroundColor: '#FFFFFF' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
           
           <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-            <span style={{ color: '#005F60', fontSize: '0.85rem', fontWeight: '800', letterSpacing: '0.08em' }}>MASTER DIAGNOSTIC CATALOG</span>
+            <span style={{ color: '#005F60', fontSize: '0.85rem', fontWeight: '800', letterSpacing: '0.08em' }}>DIAGNOSTIC NETWORK</span>
             <h2 style={{ fontSize: '2.25rem', fontWeight: '900', color: '#0F172A', marginTop: '0.35rem' }}>
-              Explore 914+ Tests & Curated Health Packages
+              Master Diagnostic Tests & Curated Packages
             </h2>
             <p style={{ color: '#64748B', fontSize: '0.95rem', marginTop: '0.5rem', maxWidth: '650px', margin: '0.5rem auto 0' }}>
-              All tests include 100% Free Home Sample Collection, digital NABL reports on WhatsApp, and smart package savings.
+              Browse 914+ tests with 100% Free Home Collection, digital NABL reports on WhatsApp, and smart package savings.
             </p>
           </div>
 
@@ -388,8 +436,8 @@ export default function LandingPage({ onNavigateLogin }) {
 
           {/* Cards Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.75rem' }}>
-            {filteredPackages.slice(0, 6).map(pkg => (
-              <div key={pkg.id} style={{ backgroundColor: '#FFF', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '1.75rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)', position: 'relative' }}>
+            {displayedPackages.slice(0, 6).map(pkg => (
+              <div key={pkg.id} style={{ backgroundColor: '#FFF', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '1.75rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 10px 30px -10px rgba(0,0,0,0.05)' }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.85rem' }}>
                     <span style={{ padding: '0.3rem 0.75rem', backgroundColor: '#E0F2F1', color: '#005F60', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '800' }}>
@@ -407,7 +455,6 @@ export default function LandingPage({ onNavigateLogin }) {
                     {pkg.description || pkg.tagline}
                   </p>
 
-                  {/* Spec Tags */}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
                     <span style={{ padding: '0.25rem 0.6rem', backgroundColor: '#F1F5F9', color: '#475569', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                       <Droplet size={13} color="#0284C7" /> Serum SST / EDTA
@@ -421,7 +468,6 @@ export default function LandingPage({ onNavigateLogin }) {
                   </div>
                 </div>
 
-                {/* Card Footer Price & Action */}
                 <div style={{ paddingTop: '1rem', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A' }}>₹{pkg.price}</div>
@@ -438,14 +484,59 @@ export default function LandingPage({ onNavigateLogin }) {
         </div>
       </section>
 
-      {/* 📱 SECTION 3: CORE MEDMARG APP FEATURES SHOWCASE */}
-      <section id="features" style={{ padding: '4.5rem 1.5rem', backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
+      {/* 🛵 SECTION 3: WHAT IS THE LIVE DELIVERY-STYLE PHLEBOTOMIST TRACKER? */}
+      <section id="tracker" style={{ padding: '4.5rem 1.5rem', backgroundColor: '#0F172A', color: '#FFF' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
           
           <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
-            <span style={{ color: '#005F60', fontSize: '0.85rem', fontWeight: '800', letterSpacing: '0.08em' }}>APPLICATION HIGHLIGHTS</span>
+            <span style={{ color: '#38BDF8', fontSize: '0.85rem', fontWeight: '800', letterSpacing: '0.08em' }}>EXPLAINING MEDMARG LOGISTICS</span>
+            <h2 style={{ fontSize: '2.25rem', fontWeight: '900', color: '#FFFFFF', marginTop: '0.35rem' }}>
+              What is the Live Delivery-Style Tracker?
+            </h2>
+            <p style={{ color: '#94A3B8', fontSize: '0.98rem', marginTop: '0.5rem', maxWidth: '720px', margin: '0.5rem auto 0', lineHeight: '1.5' }}>
+              Just like tracking a ride or food delivery app (Swiggy / Uber), MedMarg provides real-time GPS visibility for your home sample collection phlebotomist!
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+            
+            <div style={{ backgroundColor: '#1E293B', padding: '2rem', borderRadius: '20px', border: '1px solid #334155' }}>
+              <Navigation size={32} color="#38BDF8" style={{ marginBottom: '1rem' }} />
+              <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#FFF', marginBottom: '0.4rem' }}>1. Live Moving GPS Map</h4>
+              <p style={{ color: '#94A3B8', fontSize: '0.88rem', lineHeight: '1.5' }}>
+                Watch your assigned phlebotomist moving live on an interactive city map with speed telemetry (`28 km/h`) and precise ETA countdown (`12 mins`).
+              </p>
+            </div>
+
+            <div style={{ backgroundColor: '#1E293B', padding: '2rem', borderRadius: '20px', border: '1px solid #334155' }}>
+              <ShieldCheck size={32} color="#10B981" style={{ marginBottom: '1rem' }} />
+              <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#FFF', marginBottom: '0.4rem' }}>2. 4-Digit Security OTP</h4>
+              <p style={{ color: '#94A3B8', fontSize: '0.88rem', lineHeight: '1.5' }}>
+                Your app displays an encrypted 4-digit code (`OTP: 4892`). Share this code with your phlebotomist on arrival to verify identity before sample collection.
+              </p>
+            </div>
+
+            <div style={{ backgroundColor: '#1E293B', padding: '2rem', borderRadius: '20px', border: '1px solid #334155' }}>
+              <Thermometer size={32} color="#F59E0B" style={{ marginBottom: '1rem' }} />
+              <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#FFF', marginBottom: '0.4rem' }}>3. IoT Cold-Chain Monitoring</h4>
+              <p style={{ color: '#94A3B8', fontSize: '0.88rem', lineHeight: '1.5' }}>
+                View continuous temperature sensor readings (`4.2°C Active`) inside the agent's carry bag to ensure sample integrity during transit.
+              </p>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* 📊 SECTION 4: HEALTH VITALS & BIOMARKER RADAR */}
+      <section id="vitals" style={{ padding: '4.5rem 1.5rem', backgroundColor: '#F8FAFC' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+          
+          <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
+            <span style={{ color: '#005F60', fontSize: '0.85rem', fontWeight: '800', letterSpacing: '0.08em' }}>APPLICATION FEATURE SHOWCASE</span>
             <h2 style={{ fontSize: '2.25rem', fontWeight: '900', color: '#0F172A', marginTop: '0.35rem' }}>
-              Built for Complete Health Monitoring
+              Health Vitals Radar & NABL Health Locker
             </h2>
             <p style={{ color: '#64748B', fontSize: '0.95rem', marginTop: '0.5rem' }}>
               Track vitals, store digital NABL reports, manage family members, and share diagnostic history.
@@ -454,18 +545,16 @@ export default function LandingPage({ onNavigateLogin }) {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
             
-            {/* Feature 1: Vitals & Graphical Trends */}
             <div style={{ backgroundColor: '#FFF', padding: '2rem', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.03)' }}>
               <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#E0F2F1', color: '#005F60', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <Activity size={24} />
               </div>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#0F172A', marginBottom: '0.5rem' }}>Vitals & Biomarker Trends</h3>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#0F172A', marginBottom: '0.5rem' }}>Vitals & Graphical Curves</h3>
               <p style={{ color: '#64748B', fontSize: '0.88rem', lineHeight: '1.5' }}>
                 Track Blood Pressure, Blood Glucose, Heart Rate, SpO2, and BMI with Canvas-drawn curve graphs and normal reference zones.
               </p>
             </div>
 
-            {/* Feature 2: NABL Health Locker */}
             <div style={{ backgroundColor: '#FFF', padding: '2rem', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.03)' }}>
               <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#E0F2F1', color: '#005F60', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <FolderHeart size={24} />
@@ -476,7 +565,6 @@ export default function LandingPage({ onNavigateLogin }) {
               </p>
             </div>
 
-            {/* Feature 3: Linked Family Manager */}
             <div style={{ backgroundColor: '#FFF', padding: '2rem', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.03)' }}>
               <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#E0F2F1', color: '#005F60', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <Users size={24} />
@@ -487,7 +575,6 @@ export default function LandingPage({ onNavigateLogin }) {
               </p>
             </div>
 
-            {/* Feature 4: 1-Click Doctor Sharing */}
             <div style={{ backgroundColor: '#FFF', padding: '2rem', borderRadius: '20px', border: '1px solid #E2E8F0', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.03)' }}>
               <div style={{ width: '48px', height: '48px', borderRadius: '14px', backgroundColor: '#E0F2F1', color: '#005F60', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
                 <Share2 size={24} />
@@ -503,7 +590,7 @@ export default function LandingPage({ onNavigateLogin }) {
         </div>
       </section>
 
-      {/* 🔮 SECTION 4: UPCOMING ECOSYSTEM EXTENSIONS */}
+      {/* 🔮 SECTION 5: UPCOMING ECOSYSTEM EXTENSIONS */}
       <section id="upcoming" style={{ padding: '4.5rem 1.5rem', backgroundColor: '#FFFFFF' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
           
@@ -552,47 +639,7 @@ export default function LandingPage({ onNavigateLogin }) {
         </div>
       </section>
 
-      {/* 🛡️ SECTION 5: TRUST FACTORS & ACCREDITATION */}
-      <section id="trust" style={{ padding: '4.5rem 1.5rem', backgroundColor: '#0F172A', color: '#FFF' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', textAlign: 'center' }}>
-          
-          <span style={{ color: '#38BDF8', fontSize: '0.85rem', fontWeight: '800', letterSpacing: '0.08em' }}>QUALITY ASSURANCE</span>
-          <h2 style={{ fontSize: '2.25rem', fontWeight: '900', color: '#FFFFFF', marginTop: '0.35rem' }}>
-            Why Patients & Doctors Trust MedMarg
-          </h2>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem', marginTop: '3.5rem', textAlign: 'left' }}>
-            
-            <div style={{ backgroundColor: '#1E293B', padding: '2rem', borderRadius: '20px', border: '1px solid #334155' }}>
-              <Award size={32} color="#10B981" style={{ marginBottom: '1rem' }} />
-              <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#FFF', marginBottom: '0.4rem' }}>100% NABL & ISO Certified</h4>
-              <p style={{ color: '#94A3B8', fontSize: '0.85rem', lineHeight: '1.5' }}>
-                All samples are processed in NABL accredited central diagnostic laboratories adhering to strict international precision standards.
-              </p>
-            </div>
-
-            <div style={{ backgroundColor: '#1E293B', padding: '2rem', borderRadius: '20px', border: '1px solid #334155' }}>
-              <Thermometer size={32} color="#38BDF8" style={{ marginBottom: '1rem' }} />
-              <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#FFF', marginBottom: '0.4rem' }}>IoT Cold-Chain Security</h4>
-              <p style={{ color: '#94A3B8', fontSize: '0.85rem', lineHeight: '1.5' }}>
-                Continuous temperature telemetry maintains sample carry bags within the optimal 2°C–8°C range from sample pickup to lab delivery.
-              </p>
-            </div>
-
-            <div style={{ backgroundColor: '#1E293B', padding: '2rem', borderRadius: '20px', border: '1px solid #334155' }}>
-              <ShieldCheck size={32} color="#F59E0B" style={{ marginBottom: '1rem' }} />
-              <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#FFF', marginBottom: '0.4rem' }}>4-Digit Handover OTP</h4>
-              <p style={{ color: '#94A3B8', fontSize: '0.85rem', lineHeight: '1.5' }}>
-                Verify identity at your doorstep using an encrypted 4-digit security code before handing over samples to our certified phlebotomist.
-              </p>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* 💼 SECTION 6: MULTI-PORTAL SYSTEM LOGIN GATEWAY */}
+      {/* 💼 SECTION 6: MULTI-PORTAL ENTERPRISE LOGIN GATEWAY */}
       <section style={{ padding: '4.5rem 1.5rem', backgroundColor: '#F8FAFC' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', textAlign: 'center' }}>
           
@@ -696,7 +743,6 @@ export default function LandingPage({ onNavigateLogin }) {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
                 <img src="/logo.png" alt="MedMarg" style={{ height: '36px', objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; }} />
-                <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>MedMarg</span>
               </div>
               <p style={{ color: '#94A3B8', fontSize: '0.88rem', lineHeight: '1.6', maxWidth: '340px' }}>
                 Single-provider trusted healthcare diagnostic network and phlebotomy logistics platform. Operating 100% NABL certified lab quality.
@@ -714,7 +760,7 @@ export default function LandingPage({ onNavigateLogin }) {
             </div>
 
             <div>
-              <h5 style={{ color: '#FFF', fontSize: '0.9rem', fontWeight: '800', marginBottom: '1rem' }}>Platform Architecture</h5>
+              <h5 style={{ color: '#FFF', fontSize: '0.9rem', fontWeight: '800', marginBottom: '1rem' }}>Platform Specs</h5>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.85rem' }}>
                 <li><a href="/backend_structure.md" style={{ color: 'inherit', textDecoration: 'none' }}>backend_structure.md</a></li>
                 <li><a href="/overview.md" style={{ color: 'inherit', textDecoration: 'none' }}>overview.md Context Anchor</a></li>
@@ -741,6 +787,58 @@ export default function LandingPage({ onNavigateLogin }) {
 
         </div>
       </footer>
+
+      {/* 📑 ITEM SPECIFICATION DETAILS MODAL */}
+      {activeItemModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '580px', width: '100%', padding: '2rem', border: '1px solid #E2E8F0', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', position: 'relative' }}>
+            <button onClick={() => setActiveItemModal(null)} style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}>
+              <X size={22} />
+            </button>
+
+            <div style={{ display: 'inline-block', padding: '0.25rem 0.65rem', backgroundColor: '#E0F2F1', color: '#005F60', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '800', marginBottom: '0.85rem' }}>
+              {activeItemModal.itemType || 'DIAGNOSTIC TEST'}
+            </div>
+
+            <h2 style={{ fontSize: '1.6rem', fontWeight: '900', color: '#0F172A', marginBottom: '0.5rem' }}>
+              {activeItemModal.name}
+            </h2>
+
+            <p style={{ color: '#64748B', fontSize: '0.92rem', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+              {activeItemModal.description || `Comprehensive diagnostic test panel for ${activeItemModal.name}. Includes free home sample collection and digital NABL report sync.`}
+            </p>
+
+            <div style={{ backgroundColor: '#F8FAFC', padding: '1.25rem', borderRadius: '16px', border: '1px solid #E2E8F0', marginBottom: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748B' }}>CONTAINER TYPE</span>
+                <div style={{ fontSize: '0.92rem', fontWeight: '800', color: '#0F172A', marginTop: '0.2rem' }}>{activeItemModal.sampleType || 'Serum SST Tube'}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748B' }}>FASTING REQUIREMENT</span>
+                <div style={{ fontSize: '0.92rem', fontWeight: '800', color: '#0F172A', marginTop: '0.2rem' }}>{activeItemModal.fasting === 'YES' || activeItemModal.fastingRequiredHours > 0 ? '8-10 Hours Fasting' : 'No Fasting Required'}</div>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748B' }}>TURNAROUND TIME</span>
+                <div style={{ fontSize: '0.92rem', fontWeight: '800', color: '#0F172A', marginTop: '0.2rem' }}>{activeItemModal.tatHours || 24} Hours</div>
+              </div>
+              <div>
+                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#64748B' }}>REPORT DELIVERY</span>
+                <div style={{ fontSize: '0.92rem', fontWeight: '800', color: '#10B981', marginTop: '0.2rem' }}>WhatsApp & Drive PDF</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#005F60' }}>₹{activeItemModal.price}</div>
+                {activeItemModal.mrp && <div style={{ fontSize: '0.82rem', color: '#94A3B8', textDecoration: 'line-through' }}>MRP ₹{activeItemModal.mrp}</div>}
+              </div>
+              <button onClick={() => { setActiveItemModal(null); onNavigateLogin(); }} style={{ padding: '0.85rem 1.75rem', backgroundColor: '#005F60', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '0.95rem', fontWeight: '800', cursor: 'pointer' }}>
+                Proceed to Book Pickup →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
