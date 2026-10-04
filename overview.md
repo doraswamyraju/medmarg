@@ -1,6 +1,7 @@
 # MedMarg Healthcare Ecosystem — Project Master Overview (`overview.md`)
 
-**Date & Status:** 3 October 2026 — Active Phase 1 Execution  
+**Date & Status:** 4 October 2026 — Active Phase 1 Execution  
+**Live Staging URL:** `https://medmarg.sriddha.com` (VPS IP: `147.93.107.21`)  
 **Project Mission:** Single-provider trusted healthcare diagnostic ecosystem and phlebotomy logistics platform.  
 **Supported Platforms:** Web (React / Vite), Native Android (Kotlin + Jetpack Compose), Native iOS (SwiftUI)  
 **Unified Backend:** Node.js (Express) + PostgreSQL + Firebase Auth/FCM + Google Cloud Drive API

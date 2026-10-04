@@ -1,7 +1,8 @@
 # MedMarg Healthcare Ecosystem — Single Backend Architecture & API Specification (`backend_structure.md`)
 
-**Version:** 3.0.0  
+**Version:** 3.1.0  
 **Status:** Active Master Single-Backend & Workflow Specification  
+**Live Staging Domain:** `https://medmarg.sriddha.com` (VPS: `147.93.107.21`)  
 **Supported Clients:** Web (React / Vite), Android (Kotlin + Jetpack Compose), iOS (SwiftUI)
 
 ---
