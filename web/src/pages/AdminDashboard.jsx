@@ -58,6 +58,7 @@ import {
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState, saveCatalogState, calculateAggregatedSamples, calculateFastingRequirement } from '../data/catalogStore';
 import { API_BASE, safeFetch } from '../data/apiConfig';
+import RealMapView from '../components/RealMapView';
 
 export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   // Navigation State
@@ -990,66 +991,14 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                   </span>
                 </div>
 
-                {/* SVG Canvas Map Visualizer */}
-                <div style={{ backgroundColor: '#0F172A', borderRadius: '16px', border: '1px solid #334155', padding: '1.25rem', height: '300px', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  
-                  {/* Zone Chips */}
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', zIndex: 10 }}>
-                    {territories.map(t => (
-                      <span 
-                        key={t.id} 
-                        onClick={() => setSelectedZoneId(t.id)}
-                        style={{ 
-                          fontSize: '0.72rem', 
-                          padding: '0.25rem 0.65rem', 
-                          backgroundColor: selectedZoneId === t.id ? `${t.color || '#38BDF8'}33` : 'rgba(15,23,42,0.8)', 
-                          color: t.color || '#38BDF8', 
-                          borderRadius: '6px', 
-                          fontWeight: '800', 
-                          border: `1.5px solid ${t.color || '#38BDF8'}`,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {t.name} ({t.primaryAgentName || 'Unassigned'})
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* SVG Map Canvas with Dynamic Polygons and Agent Pins */}
-                  <svg viewBox="0 0 500 200" style={{ width: '100%', height: '200px', position: 'absolute', inset: 0 }}>
-                    {territories.map(t => (
-                      <g key={t.id} onClick={() => setSelectedZoneId(t.id)} style={{ cursor: 'pointer' }}>
-                        <polygon 
-                          points={t.polygonCoords || "20,20 220,15 200,110 30,100"} 
-                          fill={`${t.color || '#38BDF8'}22`} 
-                          stroke={t.color || '#38BDF8'} 
-                          strokeWidth={selectedZoneId === t.id ? "3.5" : "2"} 
-                          strokeDasharray={selectedZoneId === t.id ? "0" : "5,5"} 
-                        />
-                      </g>
-                    ))}
-
-                    {/* Order & Telemetry Pins */}
-                    <circle cx="110" cy="45" r="5" fill="#EF4444" />
-                    <text x="120" y="49" fill="#FCA5A5" fontSize="9" fontWeight="bold">Order #MM-8921 (HbA1c)</text>
-
-                    <circle cx="340" cy="65" r="5" fill="#EF4444" />
-                    <text x="350" y="69" fill="#FCA5A5" fontSize="9" fontWeight="bold">Order #MM-8922 (Full Body)</text>
-
-                    <circle cx="140" cy="70" r="7" fill="#38BDF8" />
-                    <text x="154" y="74" fill="#FFF" fontSize="10" fontWeight="bold">AG-01 Ramesh (28 km/h • 4.2°C)</text>
-
-                    <circle cx="310" cy="80" r="7" fill="#34D399" />
-                    <text x="324" y="84" fill="#FFF" fontSize="10" fontWeight="bold">AG-02 Suresh (31 km/h • 3.8°C)</text>
-
-                    <circle cx="100" cy="155" r="7" fill="#FBBF24" />
-                    <text x="114" y="159" fill="#FFF" fontSize="10" fontWeight="bold">AG-03 Mahesh (Active • 4.0°C)</text>
-                  </svg>
-
-                  <div style={{ fontSize: '0.78rem', color: '#94A3B8', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>📍 Center Coordinates: 13.6288° N, 79.4192° E</span>
-                    <span style={{ color: '#FBBF24', fontWeight: '800' }}>IoT Cold Bag Telemetry: 2°C - 8°C Verified</span>
-                  </div>
+                {/* Real Geographic Map Visualizer */}
+                <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #334155' }}>
+                  <RealMapView 
+                    territories={territories} 
+                    orders={orders} 
+                    salariedAgents={salariedAgents} 
+                    height="380px" 
+                  />
                 </div>
               </div>
 
@@ -1108,53 +1057,14 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                   </span>
                 </div>
 
-                {/* SVG Radar */}
-                <div style={{ backgroundColor: '#0F172A', borderRadius: '16px', border: '1px solid #334155', padding: '1.25rem', height: '280px', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  
-                  {/* Zone Chips */}
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', zIndex: 10 }}>
-                    {territories.map(t => (
-                      <span 
-                        key={t.id} 
-                        onClick={() => setSelectedZoneId(t.id)}
-                        style={{ 
-                          fontSize: '0.75rem', 
-                          padding: '0.3rem 0.75rem', 
-                          backgroundColor: selectedZoneId === t.id ? `${t.color || '#38BDF8'}33` : 'rgba(15,23,42,0.85)', 
-                          color: t.color || '#38BDF8', 
-                          borderRadius: '8px', 
-                          fontWeight: '800', 
-                          border: `1.5px solid ${t.color || '#38BDF8'}`,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {t.name} • Allotted: <span style={{ color: '#FFF' }}>{t.primaryAgentName || 'Unassigned'}</span>
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* SVG Polygons Map */}
-                  <svg viewBox="0 0 500 200" style={{ width: '100%', height: '200px', position: 'absolute', inset: 0 }}>
-                    {territories.map(t => (
-                      <g key={t.id} onClick={() => setSelectedZoneId(t.id)} style={{ cursor: 'pointer' }}>
-                        <polygon 
-                          points={t.polygonCoords || "20,20 220,15 200,110 30,100"} 
-                          fill={`${t.color || '#38BDF8'}22`} 
-                          stroke={t.color || '#38BDF8'} 
-                          strokeWidth={selectedZoneId === t.id ? "3.5" : "2"} 
-                          strokeDasharray={selectedZoneId === t.id ? "0" : "5,5"} 
-                        />
-                        <text x={(parseInt((t.polygonCoords || "20,20").split(' ')[0].split(',')[0]) + 30)} y={(parseInt((t.polygonCoords || "20,20").split(' ')[0].split(',')[1]) + 30)} fill={t.color || "#FFF"} fontSize="10" fontWeight="bold">
-                          {t.id}: {t.primaryAgentName}
-                        </text>
-                      </g>
-                    ))}
-                  </svg>
-
-                  <div style={{ fontSize: '0.78rem', color: '#94A3B8', zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>📍 Coverage Area: Tirupati Metro & Suburbs</span>
-                    <span style={{ color: '#34D399', fontWeight: '800' }}>Active DB Sync: Real-Time</span>
-                  </div>
+                {/* Real Geographic Map Studio */}
+                <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #334155' }}>
+                  <RealMapView 
+                    territories={territories} 
+                    orders={orders} 
+                    salariedAgents={salariedAgents} 
+                    height="400px" 
+                  />
                 </div>
               </div>
 
