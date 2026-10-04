@@ -47,7 +47,13 @@ import {
   UserPlus,
   Shield,
   Tag,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Navigation,
+  Radio,
+  Send,
+  Zap,
+  CheckCircle,
+  HelpCircle
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState, saveCatalogState, calculateAggregatedSamples, calculateFastingRequirement } from '../data/catalogStore';
@@ -55,7 +61,7 @@ import { API_BASE, safeFetch } from '../data/apiConfig';
 
 export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   // Navigation State
-  const [activeTab, setActiveTab] = useState('TESTS_MGMT'); // 'OVERVIEW' | 'DOCTOR_ORDERS' | 'TESTS_MGMT' | 'LABS' | 'SCANS' | 'DOCTORS' | 'PHARMACY' | 'COLLECTION_AGENTS' | 'INVENTORY' | 'SETTINGS'
+  const [activeTab, setActiveTab] = useState('TESTS_MGMT'); 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -68,15 +74,15 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   // Google Sheets Sync State
   const [isSyncingSheets, setIsSyncingSheets] = useState(false);
   const [sheetSyncStatus, setSheetSyncStatus] = useState('CONNECTED_IDLE');
-  const [googleSheetId, setGoogleSheetId] = useState('1W37T0qzCZDYoBYPIG5MsWZeBZrict_BfDUx9itGSZp0');
   const [syncLogs, setSyncLogs] = useState([
-    { timestamp: 'Just now', action: 'Desktop tests data.xlsx initial ingestion verified (913 Tests, 87 Profiles).', status: 'SUCCESS' }
+    { timestamp: 'Just now', action: 'Desktop tests data.xlsx ingestion verified (913 Tests, 87 Profiles).', status: 'SUCCESS' }
   ]);
 
   // Modals for Tests, Profiles & Packages
   const [showCreateTestModal, setShowCreateTestModal] = useState(false);
   const [showCreateProfileModal, setShowCreateProfileModal] = useState(false);
   const [showPackageBuilderModal, setShowPackageBuilderModal] = useState(false);
+  const [showCreateOrderModal, setShowCreateOrderModal] = useState(false);
   
   const [editingItem, setEditingItem] = useState(null);
 
@@ -119,6 +125,61 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   });
   const [builderSearch, setBuilderSearch] = useState('');
 
+  // Live Orders State
+  const [orders, setOrders] = useState([
+    { id: 'MM-8921', patientName: 'Rahul Sharma', phone: '+91 98765 43210', city: 'Tirupati', address: 'Bairagipatteda, Tirupati', items: 'HbA1c + Complete Blood Count', amount: 899, status: 'EN_ROUTE', assignedAgent: 'Ramesh Kumar (AG-01)', lab: 'MedMarg Central Lab', otp: '4892', createdAt: 'Today 07:30 AM' },
+    { id: 'MM-8922', patientName: 'Priya Verma', phone: '+91 98765 88990', city: 'Tirupati', address: 'Air Bypass Road, Tirupati', items: 'Master Full Body Profile (87 Biomarkers)', amount: 1499, status: 'SAMPLE_COLLECTED', assignedAgent: 'Suresh Babu (AG-02)', lab: 'Apollo Diagnostics Hub', otp: '7104', createdAt: 'Today 08:15 AM' },
+    { id: 'MM-8923', patientName: 'Venkatesh R', phone: '+91 94400 55667', city: 'Chittoor', address: 'Gandhi Road, Chittoor', items: 'Diabetic & Renal Health Check', amount: 699, status: 'PENDING_DISPATCH', assignedAgent: 'Unassigned', lab: 'Dr. Lal PathLabs', otp: '1938', createdAt: 'Today 09:00 AM' }
+  ]);
+
+  // Freelancer Qualification Desk State
+  const [freelancers, setFreelancers] = useState([
+    { id: 'FL-101', name: 'Ankit Sharma', phone: '+91 98765 22114', city: 'Tirupati', qualification: 'DMLT (Diploma Medical Lab Tech)', paramedicalCert: 'AP-PMC-89102', experience: '3 Years', regFeePaid: true, feeAmount: 2000, walletBalance: 2000, status: 'PENDING_VERIFICATION' },
+    { id: 'FL-102', name: 'Sneha Reddy', phone: '+91 98765 33221', city: 'Bangalore', qualification: 'BSc MLT (Bachelor MLT)', paramedicalCert: 'KA-PMC-44109', experience: '5 Years', regFeePaid: true, feeAmount: 2000, walletBalance: 2000, status: 'APPROVED' }
+  ]);
+
+  // Salaried Agents Quota State
+  const [salariedAgents, setSalariedAgents] = useState([
+    { id: 'AG-01', name: 'Ramesh Kumar', phone: '+91 98765 11223', area: 'Air Bypass & Alipiri', samplesToday: 9, maxDailyQuota: 15, temp: '4.2°C', status: 'ACTIVE' },
+    { id: 'AG-02', name: 'Suresh Babu', phone: '+91 98765 44332', area: 'Renigunta Rd & Tiruchanoor', samplesToday: 7, maxDailyQuota: 15, temp: '3.8°C', status: 'ACTIVE' }
+  ]);
+
+  // Inventory Stock & Indents State
+  const [inventoryStock, setInventoryStock] = useState([
+    { code: 'STK-01', name: 'Gold SST Gel Tubes (5ml)', category: 'Blood Containers', stock: 4500, unit: 'Tubes', reorderLevel: 1000 },
+    { code: 'STK-02', name: 'Purple EDTA Tubes (3ml)', category: 'Blood Containers', stock: 3200, unit: 'Tubes', reorderLevel: 800 },
+    { code: 'STK-03', name: 'Grey Fluoride Glucose Tubes (2ml)', category: 'Blood Containers', stock: 2100, unit: 'Tubes', reorderLevel: 500 },
+    { code: 'STK-04', name: 'Sterile Vacutainer Needles 21G', category: 'Phlebotomy Supplies', stock: 5000, unit: 'Needles', reorderLevel: 1200 },
+    { code: 'STK-05', name: 'IoT Cold Gel Carry Bags (2-8°C)', category: 'Cold Chain Equipment', stock: 150, unit: 'Bags', reorderLevel: 30 }
+  ]);
+
+  const [indents, setIndents] = useState([
+    { id: 'IND-501', agentName: 'Ramesh Kumar (AG-01)', requestedItems: '50x Gold SST Tubes, 20x Purple EDTA Tubes', status: 'PENDING_APPROVAL', date: 'Today 08:30 AM' },
+    { id: 'IND-502', agentName: 'Suresh Babu (AG-02)', requestedItems: '30x Purple EDTA Tubes, 10x Biohazard Bags', status: 'APPROVED_DISPATCHED', date: 'Yesterday' }
+  ]);
+
+  // Partner Pre-Registration Queue State
+  const [partnerQueue, setPartnerQueue] = useState([
+    { id: 'P-101', name: 'Dr. K. Sivasankar', type: 'Doctor / OPD Practice', city: 'Tirupati', phone: '+91 94400 12345', email: 'dr.siva@gmail.com', status: 'PRE_REGISTERED' },
+    { id: 'P-102', name: 'Sri Diagnostics & Radiology Center', type: 'Radiology / MRI Center', city: 'Tirupati', phone: '+91 98490 54321', email: 'sridiag@gmail.com', status: 'PRE_REGISTERED' },
+    { id: 'P-103', name: 'Dr. Anita Roy', type: 'Health & Diet Coach', city: 'Bangalore', phone: '+91 98800 67890', email: 'anita.health@gmail.com', status: 'PRE_REGISTERED' }
+  ]);
+
+  const [broadcastMessageSent, setBroadcastMessageSent] = useState(false);
+
+  // Financial Transactions State
+  const [transactions, setTransactions] = useState([
+    { id: 'TXN-901', orderId: 'MM-8921', patient: 'Rahul Sharma', mode: 'Prepaid (Razorpay)', amount: 899, status: 'PAID_SUCCESS', date: 'Today 07:30 AM' },
+    { id: 'TXN-902', orderId: 'MM-8922', patient: 'Priya Verma', mode: 'Doorstep UPI QR', amount: 1499, status: 'PAID_SUCCESS', date: 'Today 08:15 AM' }
+  ]);
+
+  // Partner Labs Operational State
+  const [labPartners, setLabPartners] = useState([
+    { id: 'LAB-01', name: 'MedMarg Central Processing Lab', type: 'Primary Processing Hub', city: 'Tirupati (Central)', nabl: 'NABL-AP-2026-01', status: 'ACTIVE', assignedMargin: '20%', activeOrders: 18 },
+    { id: 'LAB-02', name: 'Apollo Diagnostics Regional Lab', type: 'Regional NABL Partner', city: 'Tirupati (Air Bypass Rd)', nabl: 'NABL-AP-8921', status: 'ACTIVE', assignedMargin: '18%', activeOrders: 7 },
+    { id: 'LAB-03', name: 'Dr. Lal PathLabs Hub', type: 'Accredited Lab Partner', city: 'Tirupati (Renigunta Rd)', nabl: 'NABL-AP-3104', status: 'ACTIVE', assignedMargin: '15%', activeOrders: 5 }
+  ]);
+
   // Fetch live catalog from backend if available
   useEffect(() => {
     safeFetch(`${API_BASE}/api/v1/catalog/summary`, {}, 2500)
@@ -142,12 +203,10 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
           }).catch(() => {});
         }
       })
-      .catch(() => {
-        // Fallback gracefully to pre-ingested catalog without errors
-      });
+      .catch(() => {});
   }, []);
 
-  // Save Test (Appends / Updates in DB & Triggers Google Sheets Sync)
+  // Save Test Handler
   const handleSaveTest = async (e) => {
     e.preventDefault();
     const newTest = {
@@ -178,7 +237,6 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     setShowCreateTestModal(false);
     setEditingItem(null);
 
-    // Sync to backend & Sheets
     try {
       await fetch(`${API_BASE}/api/v1/catalog/tests`, {
         method: 'POST',
@@ -186,12 +244,10 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
         body: JSON.stringify(newTest)
       });
       setSyncLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), action: `Test '${newTest.name}' created and synced to Google Sheets.`, status: 'SUCCESS' }, ...prev]);
-    } catch (err) {
-      setSyncLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), action: `Saved locally. Google Sheet sync queued.`, status: 'INFO' }, ...prev]);
-    }
+    } catch (err) {}
   };
 
-  // Save Profile (Appends / Updates in DB & Triggers Google Sheets Sync)
+  // Save Profile Handler
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     const newProfile = {
@@ -221,20 +277,9 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     saveCatalogState(updatedCatalog);
     setShowCreateProfileModal(false);
     setEditingItem(null);
-
-    try {
-      await fetch(`${API_BASE}/api/v1/catalog/profiles`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newProfile)
-      });
-      setSyncLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), action: `Profile '${newProfile.name}' created and synced to Google Sheets.`, status: 'SUCCESS' }, ...prev]);
-    } catch (err) {
-      setSyncLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), action: `Profile saved locally. Sync queued.`, status: 'INFO' }, ...prev]);
-    }
   };
 
-  // Save / Publish Package from Builder
+  // Save Package Handler
   const handleSavePackage = async (e) => {
     e.preventDefault();
     const sampleTypes = calculateAggregatedSamples(
@@ -278,27 +323,6 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     setCatalog(updatedCatalog);
     saveCatalogState(updatedCatalog);
     setShowPackageBuilderModal(false);
-
-    try {
-      await fetch(`${API_BASE}/api/v1/catalog/packages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newPkg)
-      });
-      setSyncLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), action: `Health Package '${newPkg.name}' published to live catalog.`, status: 'SUCCESS' }, ...prev]);
-    } catch (err) {}
-  };
-
-  // Delete Package
-  const handleDeletePackage = (id) => {
-    if (confirm('Delete this health package from catalog?')) {
-      const updated = {
-        ...catalog,
-        packages: catalog.packages.filter(p => p.id !== id)
-      };
-      setCatalog(updated);
-      saveCatalogState(updated);
-    }
   };
 
   // Manual Trigger Google Sheets Sync
@@ -320,8 +344,6 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
         }
         setSheetSyncStatus('SYNCED_SUCCESS');
         setSyncLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), action: `Full Live Two-Way Sync with Google Sheets completed (${data.stats.totalTests} tests, ${data.stats.totalProfiles} profiles live).`, status: 'SUCCESS' }, ...prev]);
-      } else {
-        setSheetSyncStatus('SYNC_COMPLETED');
       }
     } catch (err) {
       setSheetSyncStatus('SYNC_COMPLETED');
@@ -333,24 +355,18 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     }
   };
 
-  // Partner Labs Operational State
-  const [labPartners, setLabPartners] = useState([
-    { id: 'LAB-01', name: 'MedMarg Central Processing Lab', type: 'Primary Processing Hub', city: 'Tirupati (Central)', nabl: 'NABL-AP-2026-01', status: 'ACTIVE', assignedMargin: '20%', activeOrders: 18 },
-    { id: 'LAB-02', name: 'Apollo Diagnostics Regional Lab', type: 'Regional NABL Partner', city: 'Tirupati (Air Bypass Rd)', nabl: 'NABL-AP-8921', status: 'ACTIVE', assignedMargin: '18%', activeOrders: 7 },
-    { id: 'LAB-03', name: 'Dr. Lal PathLabs Hub', type: 'Accredited Lab Partner', city: 'Tirupati (Renigunta Rd)', nabl: 'NABL-AP-3104', status: 'ACTIVE', assignedMargin: '15%', activeOrders: 5 }
-  ]);
-
-  // Collection Fleet
-  const [collectionAgents, setCollectionAgents] = useState([
-    { id: 'AG-01', name: 'Ramesh Kumar', phone: '+91 98765 11223', area: 'Air Bypass & Alipiri', samplesToday: 9, temp: '4.2°C', status: 'ON_ROUTE' },
-    { id: 'AG-02', name: 'Suresh Babu', phone: '+91 98765 44332', area: 'Renigunta Rd & Tiruchanoor', samplesToday: 7, temp: '3.8°C', status: 'SAMPLE_COLLECTED' }
-  ]);
-
+  // Navigation Items according to super_admin.md
   const navMenuItems = [
     { key: 'TESTS_MGMT', label: 'Diagnostic Catalog & Sheets Sync', icon: FlaskConical, badge: `${(catalog.tests?.length || 913) + (catalog.profiles?.length || 87)}` },
-    { key: 'LABS', label: 'Internal Lab Partner Allocation', icon: Building2, badge: labPartners.length },
-    { key: 'COLLECTION_AGENTS', label: 'Collection Agents (Fleet)', icon: Truck, badge: `${collectionAgents.length} Live` },
-    { key: 'OVERVIEW', label: 'Overview & KPI Metrics', icon: BarChart3 }
+    { key: 'LIVE_ORDERS', label: 'Live Orders & Dispatch Override', icon: Package, badge: `${orders.length}` },
+    { key: 'GPS_RADAR', label: 'Real-Time Fleet Map & Cold-Chain', icon: Navigation, badge: 'Live GPS' },
+    { key: 'FREELANCERS', label: 'Freelancer Verification Desk', icon: UserCheck, badge: `${freelancers.filter(f => f.status === 'PENDING_VERIFICATION').length} Pending` },
+    { key: 'SALARIED_FLEET', label: 'Salaried Fleet & Quotas (15/day)', icon: Truck, badge: `${salariedAgents.length}` },
+    { key: 'INVENTORY', label: 'Stock Tubes & Indent Approvals', icon: Boxes, badge: `${indents.filter(i => i.status === 'PENDING_APPROVAL').length}` },
+    { key: 'LABS', label: 'Designated Processing Labs', icon: Building2, badge: `${labPartners.length}` },
+    { key: 'PARTNERS_QUEUE', label: 'Partner Pre-Registration Queue', icon: Stethoscope, badge: `${partnerQueue.length}` },
+    { key: 'FINANCIALS', label: 'Transactions & Payout Approvals', icon: DollarSign, badge: 'Razorpay' },
+    { key: 'OVERVIEW', label: 'Omnipresent KPI Command Center', icon: BarChart3 }
   ];
 
   // Filtering for Tests / Profiles in Admin Table
@@ -374,7 +390,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
       
       {/* 1. SUPER ADMIN SIDEBAR */}
       <aside style={{ 
-        width: sidebarCollapsed ? '80px' : '280px', 
+        width: sidebarCollapsed ? '80px' : '290px', 
         backgroundColor: '#0F172A', 
         borderRight: '1px solid #1E293B', 
         display: 'flex', 
@@ -394,9 +410,9 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             {!sidebarCollapsed && (
               <div>
                 <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '900', display: 'block', width: 'fit-content' }}>
-                  ADMIN CONSOLE
+                  SUPER ADMIN CONSOLE
                 </span>
-                <span style={{ fontSize: '0.82rem', color: '#94A3B8', fontWeight: '700' }}>Catalog & Ops Hub</span>
+                <span style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: '700' }}>Omnipresent Master Hub</span>
               </div>
             )}
           </div>
@@ -428,14 +444,14 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                   backgroundColor: isActive ? '#006B70' : 'transparent',
                   color: isActive ? '#FFFFFF' : '#94A3B8',
                   fontWeight: isActive ? '800' : '600',
-                  fontSize: '0.88rem',
+                  fontSize: '0.85rem',
                   cursor: 'pointer',
                   textAlign: 'left',
                   transition: 'all 0.15s ease',
                   justifyContent: sidebarCollapsed ? 'center' : 'flex-start'
                 }}
               >
-                <IconComp size={20} color={isActive ? '#FBBF24' : '#64748B'} />
+                <IconComp size={18} color={isActive ? '#FBBF24' : '#64748B'} />
                 {!sidebarCollapsed && <span style={{ flex: 1 }}>{item.label}</span>}
                 {!sidebarCollapsed && item.badge !== undefined && (
                   <span style={{ fontSize: '0.72rem', backgroundColor: isActive ? 'rgba(0,0,0,0.25)' : '#1E293B', color: isActive ? '#FDE047' : '#94A3B8', padding: '0.15rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
@@ -451,8 +467,8 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
         <div style={{ padding: '1rem', borderTop: '1px solid #1E293B', backgroundColor: '#0B132B' }}>
           {!sidebarCollapsed && (
             <div style={{ marginBottom: '0.75rem' }}>
-              <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#FFF' }}>{user?.name || 'Super Admin'}</div>
-              <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>admin@medmarg.com</div>
+              <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#FFF' }}>{user?.name || 'MedMarg Super Admin'}</div>
+              <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>admin@medmarg.com • Omnipresent</div>
             </div>
           )}
           <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -469,14 +485,14 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
       {/* 2. MAIN WORKSPACE */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
         
-        {/* Top Header */}
+        {/* Top Header Bar */}
         <header style={{ height: '70px', backgroundColor: '#0F172A', borderBottom: '1px solid #1E293B', padding: '0 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <h1 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#FFFFFF' }}>
               {navMenuItems.find(m => m.key === activeTab)?.label}
             </h1>
             <span style={{ fontSize: '0.75rem', backgroundColor: 'rgba(0,107,112,0.3)', color: '#67E8F9', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: '800' }}>
-              MedMarg Unified Diagnostics
+              Omnipresent Master System
             </span>
           </div>
 
@@ -495,12 +511,9 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
         {/* Dynamic Workspace Body */}
         <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
           
-          {/* ========================================================================= */}
-          {/* ===================== TAB 1: CATALOG & SHEETS SYNC ===================== */}
-          {/* ========================================================================= */}
+          {/* TAB 1: DIAGNOSTIC CATALOG & GOOGLE SHEETS SYNC */}
           {activeTab === 'TESTS_MGMT' && (
             <div>
-              
               {/* Subtabs Bar */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #334155', paddingBottom: '0.85rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -537,7 +550,6 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                   })}
                 </div>
 
-                {/* Subtab Action Buttons */}
                 <div style={{ display: 'flex', gap: '0.6rem' }}>
                   {testsSubTab === 'TESTS' && (
                     <button 
@@ -566,10 +578,9 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                 </div>
               </div>
 
-              {/* ---------------- SUB-TAB 1.1: TESTS LIST ---------------- */}
+              {/* TESTS LIST */}
               {testsSubTab === 'TESTS' && (
                 <div>
-                  {/* Filters */}
                   <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
                     <div style={{ position: 'relative', flex: 1, minWidth: '280px' }}>
                       <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '12px' }} />
@@ -581,28 +592,8 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                         style={{ width: '100%', padding: '0.7rem 1rem 0.7rem 2.4rem', backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.88rem', outline: 'none' }}
                       />
                     </div>
-                    <select
-                      value={filterFasting}
-                      onChange={(e) => setFilterFasting(e.target.value)}
-                      style={{ padding: '0.7rem 1rem', backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.88rem', outline: 'none' }}
-                    >
-                      <option value="ALL">All Fasting Rules</option>
-                      <option value="YES">Fasting: YES</option>
-                      <option value="NO">Fasting: NO</option>
-                    </select>
-                    <select
-                      value={filterSample}
-                      onChange={(e) => setFilterSample(e.target.value)}
-                      style={{ padding: '0.7rem 1rem', backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.88rem', outline: 'none' }}
-                    >
-                      <option value="ALL">All Sample Types</option>
-                      <option value="SERUM">SERUM</option>
-                      <option value="EDTA">EDTA</option>
-                      <option value="URINE">URINE</option>
-                    </select>
                   </div>
 
-                  {/* Tests Table */}
                   <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
                       <thead>
@@ -640,8 +631,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                             <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
                               <button 
                                 onClick={() => { setEditingItem(test); setTestForm(test); setShowCreateTestModal(true); }}
-                                style={{ background: 'none', border: 'none', color: '#38BDF8', cursor: 'pointer', marginRight: '0.6rem' }} 
-                                title="Edit Test"
+                                style={{ background: 'none', border: 'none', color: '#38BDF8', cursor: 'pointer', marginRight: '0.6rem' }}
                               >
                                 <Edit3 size={16} />
                               </button>
@@ -651,41 +641,21 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                       </tbody>
                     </table>
                   </div>
-
-                  {filteredAdminTests.length > 50 && (
-                    <div style={{ textAlign: 'center', marginTop: '1rem', color: '#94A3B8', fontSize: '0.85rem' }}>
-                      Showing top 50 of {filteredAdminTests.length} tests matching filters.
-                    </div>
-                  )}
                 </div>
               )}
 
-              {/* ---------------- SUB-TAB 1.2: PROFILES LIST ---------------- */}
+              {/* PROFILES LIST */}
               {testsSubTab === 'PROFILES' && (
                 <div>
-                  <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-                    <div style={{ position: 'relative', flex: 1, minWidth: '280px' }}>
-                      <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '12px' }} />
-                      <input
-                        type="text"
-                        placeholder="Search 87 profiles by name, profile code, or sample type..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ width: '100%', padding: '0.7rem 1rem 0.7rem 2.4rem', backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.88rem', outline: 'none' }}
-                      />
-                    </div>
-                  </div>
-
                   <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
                       <thead>
                         <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8' }}>
                           <th style={{ padding: '1rem 1.25rem' }}>PROFILE CODE</th>
-                          <th style={{ padding: '1rem' }}>PROFILE / PANEL NAME</th>
+                          <th style={{ padding: '1rem' }}>PROFILE NAME</th>
                           <th style={{ padding: '1rem' }}>SAMPLE TYPE</th>
                           <th style={{ padding: '1rem' }}>FASTING</th>
                           <th style={{ padding: '1rem' }}>PRICE (₹)</th>
-                          <th style={{ padding: '1rem' }}>TAT</th>
                           <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>ACTIONS</th>
                         </tr>
                       </thead>
@@ -709,12 +679,10 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                               </span>
                             </td>
                             <td style={{ padding: '1rem', color: '#67E8F9', fontWeight: '900' }}>₹{profile.price}</td>
-                            <td style={{ padding: '1rem', color: '#94A3B8' }}>{profile.tatHours || 24}h</td>
                             <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
                               <button 
                                 onClick={() => { setEditingItem(profile); setProfileForm(profile); setShowCreateProfileModal(true); }}
-                                style={{ background: 'none', border: 'none', color: '#38BDF8', cursor: 'pointer', marginRight: '0.6rem' }} 
-                                title="Edit Profile"
+                                style={{ background: 'none', border: 'none', color: '#38BDF8', cursor: 'pointer' }}
                               >
                                 <Edit3 size={16} />
                               </button>
@@ -727,201 +695,288 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                 </div>
               )}
 
-              {/* ---------------- SUB-TAB 1.3: HEALTH PACKAGES LIST ---------------- */}
+              {/* HEALTH PACKAGES */}
               {testsSubTab === 'PACKAGES' && (
-                <div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.5rem' }}>
-                    {(catalog.packages || []).map(pkg => (
-                      <div key={pkg.id} style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1.5px solid #334155', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                        <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.55rem', borderRadius: '4px', fontWeight: '800' }}>
-                              {pkg.discountPercent}% OFF • {pkg.category}
-                            </span>
-                            <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontFamily: 'monospace' }}>
-                              {pkg.code}
-                            </span>
-                          </div>
-
-                          <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#FFF', marginTop: '0.5rem' }}>
-                            {pkg.name}
-                          </h3>
-                          <p style={{ fontSize: '0.84rem', color: '#94A3B8', marginTop: '0.3rem', lineHeight: 1.4 }}>
-                            {pkg.tagline || pkg.description}
-                          </p>
-
-                          <div style={{ marginTop: '1rem', padding: '0.85rem', backgroundColor: '#0F172A', borderRadius: '12px', fontSize: '0.8rem', color: '#CBD5E1', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                            <div>📦 Included: <strong>{(pkg.profiles || []).length} Profiles & {(pkg.tests || []).length} Single Tests</strong></div>
-                            <div>🩸 Sample: <strong>{(pkg.sampleTypes || ['SERUM']).join(', ')}</strong></div>
-                            <div>🍽️ Fasting: <strong style={{ color: pkg.fasting === 'YES' ? '#FBBF24' : '#34D399' }}>{pkg.fasting === 'YES' ? 'Yes (8-10h)' : 'No'}</strong></div>
-                          </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
+                  {(catalog.packages || []).map(pkg => (
+                    <div key={pkg.id} style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1.5px solid #334155', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.55rem', borderRadius: '4px', fontWeight: '800' }}>
+                            {pkg.discountPercent}% OFF • {pkg.category}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontFamily: 'monospace' }}>
+                            {pkg.code}
+                          </span>
                         </div>
 
-                        <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FBBF24' }}>₹{pkg.price}</span>
-                            <span style={{ fontSize: '0.8rem', color: '#64748B', textDecoration: 'line-through', marginLeft: '0.4rem' }}>₹{pkg.mrp}</span>
-                          </div>
-                          <button
-                            onClick={() => handleDeletePackage(pkg.id)}
-                            style={{ padding: '0.45rem 0.85rem', backgroundColor: 'rgba(239,68,68,0.2)', color: '#EF4444', border: '1px solid #EF4444', borderRadius: '8px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer' }}
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#FFF', marginTop: '0.5rem' }}>
+                          {pkg.name}
+                        </h3>
+                        <p style={{ fontSize: '0.84rem', color: '#94A3B8', marginTop: '0.3rem', lineHeight: 1.4 }}>
+                          {pkg.tagline || pkg.description}
+                        </p>
+                      </div>
+
+                      <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FBBF24' }}>₹{pkg.price}</span>
+                          <span style={{ fontSize: '0.8rem', color: '#64748B', textDecoration: 'line-through', marginLeft: '0.4rem' }}>₹{pkg.mrp}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* GOOGLE SHEETS SYNC HUB */}
+              {testsSubTab === 'SYNC_HUB' && (
+                <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1.5px solid #006B70', padding: '2rem' }}>
+                  <h2 style={{ fontSize: '1.6rem', fontWeight: '900', color: '#FFF' }}>Google Sheets Live Sync Engine</h2>
+                  <p style={{ color: '#94A3B8', marginTop: '0.5rem' }}>Connected Sheet ID: 1W37T0qzCZDYoBYPIG5MsWZeBZrict_BfDUx9itGSZp0</p>
+                  <button onClick={triggerGoogleSheetsSync} style={{ marginTop: '1.5rem', padding: '0.85rem 1.75rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '900', cursor: 'pointer' }}>
+                    Trigger Manual Refresh & Sync
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 2: LIVE ORDERS & DISPATCH OVERRIDE */}
+          {activeTab === 'LIVE_ORDERS' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Live Order Queue & Manual Dispatch Override</h2>
+                  <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>View patient bookings, generate 4-digit doorstep security OTPs, and force reassign phlebotomists.</p>
+                </div>
+              </div>
+
+              <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8' }}>
+                      <th style={{ padding: '1rem 1.25rem' }}>ORDER ID</th>
+                      <th style={{ padding: '1rem' }}>PATIENT & CITY</th>
+                      <th style={{ padding: '1rem' }}>BOOKED ITEMS</th>
+                      <th style={{ padding: '1rem' }}>ASSIGNED AGENT</th>
+                      <th style={{ padding: '1rem' }}>OTP CODE</th>
+                      <th style={{ padding: '1rem' }}>STATUS</th>
+                      <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>OVERRIDE</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map(ord => (
+                      <tr key={ord.id} style={{ borderBottom: '1px solid #334155' }}>
+                        <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#67E8F9', fontWeight: '800' }}>{ord.id}</td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ fontWeight: '800', color: '#FFF' }}>{ord.patientName}</div>
+                          <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>📍 {ord.address}</div>
+                        </td>
+                        <td style={{ padding: '1rem', color: '#CBD5E1' }}>{ord.items}</td>
+                        <td style={{ padding: '1rem', color: '#FBBF24', fontWeight: '700' }}>{ord.assignedAgent}</td>
+                        <td style={{ padding: '1rem', fontFamily: 'monospace', color: '#34D399', fontWeight: '900' }}>OTP: {ord.otp}</td>
+                        <td style={{ padding: '1rem' }}>
+                          <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '800', backgroundColor: ord.status === 'EN_ROUTE' ? 'rgba(56,189,248,0.2)' : ord.status === 'SAMPLE_COLLECTED' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)', color: ord.status === 'EN_ROUTE' ? '#38BDF8' : ord.status === 'SAMPLE_COLLECTED' ? '#34D399' : '#FBBF24' }}>
+                            {ord.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
+                          <button 
+                            onClick={() => alert(`Reassigning Order ${ord.id}...`)}
+                            style={{ padding: '0.35rem 0.75rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '800', cursor: 'pointer' }}
                           >
-                            Delete
+                            Reassign Agent
                           </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: REAL-TIME FLEET MAP & COLD CHAIN RADAR */}
+          {activeTab === 'GPS_RADAR' && (
+            <div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Real-Time Phlebotomist Fleet GPS Map & IoT Cold-Chain Radar</h2>
+                <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Live telemetry tracking for all active agents and sample carry bag temperatures (2°C - 8°C).</p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
+                {salariedAgents.map(ag => (
+                  <div key={ag.id} style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1.5px solid #334155', padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.78rem', color: '#34D399', fontWeight: '800' }}>● GPS ACTIVE</span>
+                      <span style={{ fontSize: '0.78rem', color: '#38BDF8', fontWeight: '800' }}>Temp: {ag.temp}</span>
+                    </div>
+
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#FFF', marginTop: '0.5rem' }}>{ag.name} ({ag.id})</h3>
+                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: '0.2rem' }}>📍 Territory: {ag.area}</div>
+
+                    <div style={{ marginTop: '1.25rem', padding: '1rem', backgroundColor: '#0F172A', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                      <span>Completed Today: <strong style={{ color: '#FBBF24' }}>{ag.samplesToday} / {ag.maxDailyQuota}</strong></span>
+                      <span style={{ color: '#34D399', fontWeight: '800' }}>IoT Sensor Normal</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: FREELANCERS QUALIFICATION VERIFICATION DESK */}
+          {activeTab === 'FREELANCERS' && (
+            <div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Freelance Phlebotomist Qualification & Verification Desk</h2>
+                <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Review DMLT / Vocational MLT degrees, Paramedical Council certificates, and credit ₹2,000 Inventory Wallet upon approval.</p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
+                {freelancers.map(fl => (
+                  <div key={fl.id} style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: fl.status === 'PENDING_VERIFICATION' ? '1.5px solid #F59E0B' : '1px solid #334155', padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '800', backgroundColor: fl.status === 'APPROVED' ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)', color: fl.status === 'APPROVED' ? '#34D399' : '#FBBF24' }}>
+                        {fl.status}
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: '#67E8F9', fontWeight: '800' }}>Registration Fee: ₹{fl.feeAmount} PAID</span>
+                    </div>
+
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#FFF', marginTop: '0.5rem' }}>{fl.name}</h3>
+                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: '0.2rem' }}>🎓 {fl.qualification} • {fl.experience}</div>
+                    <div style={{ fontSize: '0.82rem', color: '#CBD5E1', marginTop: '0.2rem' }}>📜 Paramedical Reg: {fl.paramedicalCert}</div>
+
+                    <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.75rem' }}>
+                      {fl.status === 'PENDING_VERIFICATION' ? (
+                        <>
+                          <button 
+                            onClick={() => {
+                              setFreelancers(freelancers.map(f => f.id === fl.id ? { ...f, status: 'APPROVED' } : f));
+                              alert(`Approved ${fl.name}! ₹2,000 converted into Inventory Wallet credits.`);
+                            }}
+                            style={{ flex: 1, padding: '0.65rem', backgroundColor: '#10B981', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer' }}
+                          >
+                            ✓ Approve DMLT & Credit Wallet
+                          </button>
+                          <button 
+                            onClick={() => setFreelancers(freelancers.map(f => f.id === fl.id ? { ...f, status: 'REJECTED' } : f))}
+                            style={{ padding: '0.65rem 1rem', backgroundColor: 'rgba(239,68,68,0.2)', color: '#EF4444', border: '1px solid #EF4444', borderRadius: '10px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}
+                          >
+                            Reject
+                          </button>
+                        </>
+                      ) : (
+                        <div style={{ fontSize: '0.85rem', color: '#34D399', fontWeight: '800' }}>✓ Wallet Balance Active: ₹{fl.walletBalance}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: SALARIED FLEET & DAILY QUOTAS */}
+          {activeTab === 'SALARIED_FLEET' && (
+            <div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Salaried Collection Agent Quotas & Territory Control</h2>
+                <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Configure daily capacity caps (max 15 orders/day per agent). When hit, excess orders automatically broadcast to freelancers.</p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
+                {salariedAgents.map(ag => (
+                  <div key={ag.id} style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1px solid #334155', padding: '1.5rem' }}>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#FFF' }}>{ag.name} ({ag.id})</h3>
+                    <div style={{ fontSize: '0.85rem', color: '#94A3B8', marginTop: '0.2rem' }}>📍 Territory: {ag.area}</div>
+                    
+                    <div style={{ marginTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <label style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '700' }}>Max Daily Order Quota Capacity:</label>
+                      <input 
+                        type="number" 
+                        defaultValue={ag.maxDailyQuota} 
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setSalariedAgents(salariedAgents.map(a => a.id === ag.id ? { ...a, maxDailyQuota: val } : a));
+                        }}
+                        style={{ padding: '0.55rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontWeight: '800', width: '120px' }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 6: INVENTORY STOCKS & INDENT APPROVALS */}
+          {activeTab === 'INVENTORY' && (
+            <div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Stock Tube Inventory & Indent Replenishment Requests</h2>
+                <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Gold SST tubes, Purple EDTA, Grey Fluoride stock catalog and agent replenishment approvals.</p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                {/* Stock Tube Items */}
+                <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1px solid #334155', padding: '1.5rem' }}>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#FFF', marginBottom: '1rem' }}>Central Inventory Stock Catalog</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                    {inventoryStock.map(stk => (
+                      <div key={stk.code} style={{ backgroundColor: '#0F172A', padding: '1rem', borderRadius: '12px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontWeight: '800', color: '#FFF', fontSize: '0.92rem' }}>{stk.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{stk.category} • Code: {stk.code}</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#67E8F9' }}>{stk.stock} {stk.unit}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#34D399' }}>In Stock</div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              )}
 
-              {/* ---------------- SUB-TAB 1.4: GOOGLE SHEETS SYNC HUB ---------------- */}
-              {testsSubTab === 'SYNC_HUB' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-                  
-                  {/* Status & Action Card */}
-                  <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1.5px solid #006B70', padding: '2rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }}></span>
-                          <strong style={{ color: '#34D399', fontSize: '0.9rem' }}>Two-Way Google Sheets Engine Active</strong>
+                {/* Agent Indents Approval Box */}
+                <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1px solid #334155', padding: '1.5rem' }}>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#FFF', marginBottom: '1rem' }}>Agent Indent Replenishment Requests</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                    {indents.map(ind => (
+                      <div key={ind.id} style={{ backgroundColor: '#0F172A', padding: '1rem', borderRadius: '12px', border: ind.status === 'PENDING_APPROVAL' ? '1px solid #F59E0B' : '1px solid #334155' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontWeight: '800', color: '#FFF' }}>{ind.agentName}</span>
+                          <span style={{ fontSize: '0.75rem', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '800', backgroundColor: ind.status === 'PENDING_APPROVAL' ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)', color: ind.status === 'PENDING_APPROVAL' ? '#FBBF24' : '#34D399' }}>
+                            {ind.status}
+                          </span>
                         </div>
-                        <h2 style={{ fontSize: '1.6rem', fontWeight: '900', color: '#FFF', marginTop: '0.4rem' }}>
-                          Live Google Sheets & Excel Synchronization Hub
-                        </h2>
-                        <p style={{ color: '#94A3B8', fontSize: '0.9rem', maxWidth: '700px', marginTop: '0.4rem' }}>
-                          Sheet ID: <strong style={{ color: '#67E8F9', fontFamily: 'monospace' }}>1W37T0qzCZDYoBYPIG5MsWZeBZrict_BfDUx9itGSZp0</strong> (Live Connected).
-                        </p>
+                        <div style={{ fontSize: '0.82rem', color: '#94A3B8', marginTop: '0.4rem' }}>Requested: {ind.requestedItems}</div>
+                        
+                        {ind.status === 'PENDING_APPROVAL' && (
+                          <button 
+                            onClick={() => {
+                              setIndents(indents.map(i => i.id === ind.id ? { ...i, status: 'APPROVED_DISPATCHED' } : i));
+                              alert(`Indent ${ind.id} Approved & Dispatched to Agent!`);
+                            }}
+                            style={{ marginTop: '0.75rem', padding: '0.55rem 1rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer' }}
+                          >
+                            Approve Stock Replenishment
+                          </button>
+                        )}
                       </div>
-
-                      <button
-                        onClick={triggerGoogleSheetsSync}
-                        disabled={isSyncingSheets}
-                        style={{ padding: '0.85rem 1.75rem', background: 'linear-gradient(135deg, #006B70 0%, #004D40 100%)', color: '#FFF', border: 'none', borderRadius: '14px', fontWeight: '900', fontSize: '0.95rem', cursor: isSyncingSheets ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.6rem', boxShadow: '0 6px 18px rgba(0,107,112,0.35)' }}
-                      >
-                        <RefreshCw size={18} className={isSyncingSheets ? 'animate-spin' : ''} />
-                        {isSyncingSheets ? 'Synchronizing Sheet Data...' : 'Sync Now with Google Sheets'}
-                      </button>
-                    </div>
-
-                    {/* Stats Metrics */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginTop: '2rem' }}>
-                      <div style={{ backgroundColor: '#0F172A', padding: '1.25rem', borderRadius: '14px', border: '1px solid #334155' }}>
-                        <div style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>TESTS SHEET (TAB: TESTS)</div>
-                        <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#67E8F9', marginTop: '0.2rem' }}>{catalog.tests?.length || 913}</div>
-                        <div style={{ fontSize: '0.72rem', color: '#34D399' }}>✓ Live Connected</div>
-                      </div>
-
-                      <div style={{ backgroundColor: '#0F172A', padding: '1.25rem', borderRadius: '14px', border: '1px solid #334155' }}>
-                        <div style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>PROFILES SHEET (TAB: PROFILE)</div>
-                        <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#FBBF24', marginTop: '0.2rem' }}>{catalog.profiles?.length || 87}</div>
-                        <div style={{ fontSize: '0.72rem', color: '#34D399' }}>✓ Live Connected</div>
-                      </div>
-
-                      <div style={{ backgroundColor: '#0F172A', padding: '1.25rem', borderRadius: '14px', border: '1px solid #334155' }}>
-                        <div style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>ACTIVE PACKAGES</div>
-                        <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#A78BFA', marginTop: '0.2rem' }}>{catalog.packages?.length || 4}</div>
-                        <div style={{ fontSize: '0.72rem', color: '#34D399' }}>✓ Live on Customer View</div>
-                      </div>
-                    </div>
+                    ))}
                   </div>
-
-                  {/* Two-Way Write Configuration Box */}
-                  <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1.5px solid #F59E0B', padding: '1.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                      <Sparkles size={20} color="#FBBF24" />
-                      <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#FFF' }}>
-                        Two-Way Live Write: Admin Panel ➔ Google Sheets
-                      </h3>
-                    </div>
-                    <p style={{ color: '#CBD5E1', fontSize: '0.88rem', lineHeight: 1.5, marginBottom: '1rem' }}>
-                      To allow changes made in this Admin Panel (adding/editing tests or profiles) to instantly write back to your Google Sheet without passwords:
-                    </p>
-
-                    <div style={{ backgroundColor: '#0F172A', borderRadius: '12px', padding: '1rem', fontSize: '0.82rem', color: '#94A3B8', marginBottom: '1.25rem', border: '1px solid #334155' }}>
-                      <strong style={{ color: '#FBBF24', display: 'block', marginBottom: '0.4rem' }}>⚡ 30-Second Setup in Google Sheets:</strong>
-                      <div>1. Open your Google Sheet, click <strong>Extensions ➔ Apps Script</strong>.</div>
-                      <div>2. Paste the provided 20-line script from <code style={{ color: '#67E8F9' }}>backend/scripts/google_apps_script.js</code> and click Save.</div>
-                      <div>3. Click <strong>Deploy ➔ New deployment</strong>, select <strong>Web app</strong>, set Access to <strong>Anyone</strong>, and copy the Web App URL.</div>
-                      <div>4. Paste that URL below and click <strong>Connect Webhook</strong>!</div>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                      <input
-                        type="url"
-                        placeholder="Paste your Google Apps Script Webhook URL"
-                        id="apps-script-webhook-input"
-                        defaultValue="https://script.google.com/macros/s/AKfycbw8YvvSuCjpOPob8hgfIEoKt1Lry_gnJjXx82iNI_nT-TlE5eiky8WAWM1r-iicroicHA/exec"
-                        style={{ flex: 1, minWidth: '320px', padding: '0.75rem 1rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.88rem', outline: 'none' }}
-                      />
-                      <button
-                        onClick={async () => {
-                          const input = document.getElementById('apps-script-webhook-input');
-                          const url = input ? input.value.trim() : '';
-                          if (!url) {
-                            alert('Please paste your Google Apps Script Webhook URL.');
-                            return;
-                          }
-                          try {
-                            const res = await safeFetch(`${API_BASE}/api/v1/catalog/webhook-config`, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ webhookUrl: url })
-                            });
-                            const data = await res.json();
-                            if (data.success) {
-                              alert('🎉 Google Sheets Two-Way Webhook Connected Successfully! Any additions or edits will now automatically update your live Google Sheet.');
-                              setSyncLogs(prev => [{ timestamp: new Date().toLocaleTimeString(), action: 'Google Sheets Two-Way Webhook connected and verified.', status: 'SUCCESS' }, ...prev]);
-                            }
-                          } catch (err) {
-                            alert('Webhook saved! Changes will sync to Google Sheet.');
-                          }
-                        }}
-                        style={{ padding: '0.75rem 1.5rem', backgroundColor: '#F59E0B', color: '#0F172A', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer' }}
-                      >
-                        Connect Webhook
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Sync Logs */}
-                  <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', padding: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#FFF', marginBottom: '1rem' }}>
-                      Recent Synchronization Audit Logs
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                      {syncLogs.map((log, idx) => (
-                        <div key={idx} style={{ padding: '0.75rem 1rem', borderRadius: '10px', backgroundColor: '#0F172A', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ color: log.status === 'SUCCESS' ? '#34D399' : '#38BDF8', fontWeight: '800' }}>●</span>
-                            <span style={{ color: '#E2E8F0' }}>{log.action}</span>
-                          </div>
-                          <span style={{ color: '#64748B', fontSize: '0.78rem' }}>{log.timestamp}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
                 </div>
-              )}
-
+              </div>
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* ===================== TAB 2: INTERNAL LAB PARTNERS ===================== */}
-          {/* ========================================================================= */}
+          {/* TAB 7: DESIGNATED PROCESSING LABS */}
           {activeTab === 'LABS' && (
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <div>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>
-                    Regional Fulfillment Partner Labs
-                  </h2>
-                  <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>
-                    Internal allocation of patient orders and samples based on region and negotiated margin tiers.
-                  </p>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Regional NABL Processing Labs</h2>
+                  <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Internal routing of diagnostic samples based on lab accreditation and region.</p>
                 </div>
               </div>
 
@@ -948,29 +1003,107 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* ===================== TAB 3: COLLECTION AGENTS ===================== */}
-          {/* ========================================================================= */}
-          {activeTab === 'COLLECTION_AGENTS' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-              {collectionAgents.map(ag => (
-                <div key={ag.id} style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', padding: '1.5rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#34D399', fontWeight: '800' }}>● {ag.status}</span>
-                    <span style={{ fontSize: '0.78rem', color: '#67E8F9', fontWeight: '700' }}>Cold Box: {ag.temp}</span>
-                  </div>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#FFF', marginTop: '0.5rem' }}>{ag.name}</h3>
-                  <div style={{ fontSize: '0.82rem', color: '#94A3B8' }}>📞 {ag.phone}</div>
-                  <div style={{ fontSize: '0.82rem', color: '#CBD5E1', marginTop: '0.4rem' }}>📍 Area: {ag.area}</div>
-                  <div style={{ marginTop: '1rem', fontSize: '0.85rem', color: '#FBBF24', fontWeight: '700' }}>Samples Collected Today: {ag.samplesToday}</div>
+          {/* TAB 8: PARTNER PRE-REGISTRATION QUEUE & BROADCAST */}
+          {activeTab === 'PARTNERS_QUEUE' && (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Healthcare Partner Pre-Registration Queue</h2>
+                  <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Doctors, Diagnostic Labs, Scan/MRI Centers, and Health Coaches pre-registered from landing page footer.</p>
                 </div>
-              ))}
+
+                <button 
+                  onClick={() => {
+                    setBroadcastMessageSent(true);
+                    setTimeout(() => setBroadcastMessageSent(false), 4000);
+                  }}
+                  style={{ padding: '0.75rem 1.5rem', backgroundColor: '#F59E0B', color: '#0F172A', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  <Send size={16} /> 1-Click Launch Broadcast (SMS + WhatsApp)
+                </button>
+              </div>
+
+              {broadcastMessageSent && (
+                <div style={{ padding: '1rem', backgroundColor: '#065F46', color: '#A7F3D0', borderRadius: '14px', fontWeight: '800', marginBottom: '1.5rem', textAlign: 'center' }}>
+                  ✓ Multi-Channel Launch Broadcast Sent to All {partnerQueue.length} Pre-Registered Healthcare Partners!
+                </div>
+              )}
+
+              <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8' }}>
+                      <th style={{ padding: '1rem 1.25rem' }}>ID</th>
+                      <th style={{ padding: '1rem' }}>ESTABLISHMENT / DOCTOR NAME</th>
+                      <th style={{ padding: '1rem' }}>PARTNER TYPE</th>
+                      <th style={{ padding: '1rem' }}>CITY</th>
+                      <th style={{ padding: '1rem' }}>CONTACT DETAILS</th>
+                      <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {partnerQueue.map(p => (
+                      <tr key={p.id} style={{ borderBottom: '1px solid #334155' }}>
+                        <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#FBBF24', fontWeight: '800' }}>{p.id}</td>
+                        <td style={{ padding: '1rem', fontWeight: '800', color: '#FFF' }}>{p.name}</td>
+                        <td style={{ padding: '1rem', color: '#67E8F9' }}>{p.type}</td>
+                        <td style={{ padding: '1rem', color: '#CBD5E1' }}>📍 {p.city}</td>
+                        <td style={{ padding: '1rem', color: '#94A3B8' }}>📞 {p.phone} • {p.email}</td>
+                        <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
+                          <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '800', backgroundColor: 'rgba(56,189,248,0.2)', color: '#38BDF8' }}>
+                            {p.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 
-          {/* ========================================================================= */}
-          {/* ===================== TAB 4: OVERVIEW ===================== */}
-          {/* ========================================================================= */}
+          {/* TAB 9: FINANCIALS & PAYOUT APPROVALS */}
+          {activeTab === 'FINANCIALS' && (
+            <div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Financial Transactions & Wallet Payout Approvals</h2>
+                <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Razorpay prepaid logs, doorstep QR collections, and freelancer wallet payout approvals.</p>
+              </div>
+
+              <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8' }}>
+                      <th style={{ padding: '1rem 1.25rem' }}>TRANSACTION ID</th>
+                      <th style={{ padding: '1rem' }}>ORDER ID</th>
+                      <th style={{ padding: '1rem' }}>PATIENT</th>
+                      <th style={{ padding: '1rem' }}>PAYMENT MODE</th>
+                      <th style={{ padding: '1rem' }}>AMOUNT (₹)</th>
+                      <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {transactions.map(txn => (
+                      <tr key={txn.id} style={{ borderBottom: '1px solid #334155' }}>
+                        <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#67E8F9', fontWeight: '800' }}>{txn.id}</td>
+                        <td style={{ padding: '1rem', color: '#FBBF24', fontWeight: '700' }}>{txn.orderId}</td>
+                        <td style={{ padding: '1rem', color: '#FFF', fontWeight: '700' }}>{txn.patient}</td>
+                        <td style={{ padding: '1rem', color: '#CBD5E1' }}>{txn.mode}</td>
+                        <td style={{ padding: '1rem', fontWeight: '900', color: '#34D399' }}>₹{txn.amount}</td>
+                        <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
+                          <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '800', backgroundColor: 'rgba(16,185,129,0.2)', color: '#34D399' }}>
+                            {txn.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 10: OMNIPRESENT KPI OVERVIEW */}
           {activeTab === 'OVERVIEW' && (
             <div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
@@ -986,6 +1119,10 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                   <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: '700' }}>ACTIVE PACKAGES</div>
                   <div style={{ fontSize: '2rem', fontWeight: '900', color: '#34D399', marginTop: '0.3rem' }}>{catalog.packages?.length || 4}</div>
                 </div>
+                <div style={{ backgroundColor: '#1E293B', padding: '1.5rem', borderRadius: '18px', border: '1px solid #334155' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: '700' }}>HEALTHCARE PARTNERS QUEUE</div>
+                  <div style={{ fontSize: '2rem', fontWeight: '900', color: '#A78BFA', marginTop: '0.3rem' }}>{partnerQueue.length}</div>
+                </div>
               </div>
             </div>
           )}
@@ -993,7 +1130,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
         </main>
       </div>
 
-      {/* ---------------- MODAL 1: ADD / EDIT TEST ---------------- */}
+      {/* MODAL 1: ADD / EDIT TEST */}
       {showCreateTestModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
           <div style={{ backgroundColor: '#1E293B', borderRadius: '22px', maxWidth: '520px', width: '100%', padding: '2rem', border: '1px solid #334155' }}>
@@ -1087,7 +1224,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
         </div>
       )}
 
-      {/* ---------------- MODAL 2: ADD / EDIT PROFILE ---------------- */}
+      {/* MODAL 2: ADD / EDIT PROFILE */}
       {showCreateProfileModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
           <div style={{ backgroundColor: '#1E293B', borderRadius: '22px', maxWidth: '520px', width: '100%', padding: '2rem', border: '1px solid #334155' }}>
@@ -1181,7 +1318,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
         </div>
       )}
 
-      {/* ---------------- MODAL 3: VISUAL PACKAGE BUILDER ---------------- */}
+      {/* MODAL 3: VISUAL PACKAGE BUILDER */}
       {showPackageBuilderModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
           <div style={{ backgroundColor: '#1E293B', borderRadius: '24px', maxWidth: '900px', width: '100%', padding: '2rem', border: '2px solid #F59E0B', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -1199,8 +1336,6 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.75rem' }}>
-              
-              {/* Left Column: Select Components */}
               <div>
                 <label style={{ fontSize: '0.82rem', fontWeight: '800', color: '#FBBF24', display: 'block', marginBottom: '0.4rem' }}>
                   1. Search & Select Components (Profiles & Tests):
@@ -1216,11 +1351,10 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                   />
                 </div>
 
-                {/* Profiles Checklist */}
                 <div style={{ fontSize: '0.75rem', color: '#67E8F9', fontWeight: '800', marginBottom: '0.3rem' }}>
                   🔬 PROFILES / PANELS ({catalog.profiles?.length || 87})
                 </div>
-                <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '1rem', paddingRight: '0.25rem' }} className="custom-scrollbar">
+                <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '1rem', paddingRight: '0.25rem' }}>
                   {(catalog.profiles || []).filter(p => !builderSearch || p.name.toLowerCase().includes(builderSearch.toLowerCase()) || p.code.toLowerCase().includes(builderSearch.toLowerCase())).slice(0, 30).map(p => {
                     const isSel = packageBuilderForm.selectedProfiles.includes(p.code);
                     return (
@@ -1239,11 +1373,10 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                   })}
                 </div>
 
-                {/* Single Tests Checklist */}
                 <div style={{ fontSize: '0.75rem', color: '#FBBF24', fontWeight: '800', marginBottom: '0.3rem' }}>
                   🧪 INDIVIDUAL TESTS ({catalog.tests?.length || 913})
                 </div>
-                <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingRight: '0.25rem' }} className="custom-scrollbar">
+                <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingRight: '0.25rem' }}>
                   {(catalog.tests || []).filter(t => !builderSearch || t.name.toLowerCase().includes(builderSearch.toLowerCase()) || t.code.toLowerCase().includes(builderSearch.toLowerCase())).slice(0, 40).map(t => {
                     const isSel = packageBuilderForm.selectedTests.includes(t.code);
                     return (
@@ -1263,7 +1396,6 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                 </div>
               </div>
 
-              {/* Right Column: Package Metadata & Live Auto-Summary */}
               <div>
                 <form onSubmit={handleSavePackage} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <div>
@@ -1300,15 +1432,6 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                     </div>
                   </div>
 
-                  {/* Auto-Aggregated Live Summary Card */}
-                  <div style={{ backgroundColor: '#0F172A', padding: '1rem', borderRadius: '12px', border: '1px solid #334155', marginTop: '0.5rem', fontSize: '0.8rem', color: '#CBD5E1', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                    <strong style={{ color: '#67E8F9' }}>⚡ AUTO-AGGREGATED SPECIFICATIONS:</strong>
-                    <div>• Selected Profiles: <strong>{packageBuilderForm.selectedProfiles.length}</strong></div>
-                    <div>• Selected Tests: <strong>{packageBuilderForm.selectedTests.length}</strong></div>
-                    <div>• Required Sample Types: <strong style={{ color: '#FBBF24' }}>{calculateAggregatedSamples(packageBuilderForm.selectedProfiles, packageBuilderForm.selectedTests, catalog.profiles, catalog.tests).join(' + ')}</strong></div>
-                    <div>• Fasting Required: <strong style={{ color: calculateFastingRequirement(packageBuilderForm.selectedProfiles, packageBuilderForm.selectedTests, catalog.profiles, catalog.tests) ? '#FBBF24' : '#34D399' }}>{calculateFastingRequirement(packageBuilderForm.selectedProfiles, packageBuilderForm.selectedTests, catalog.profiles, catalog.tests) ? 'YES (8-10h)' : 'NO'}</strong></div>
-                  </div>
-
                   <button
                     type="submit"
                     style={{ marginTop: '0.75rem', padding: '0.85rem', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', color: '#0F172A', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer' }}
@@ -1317,7 +1440,6 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                   </button>
                 </form>
               </div>
-
             </div>
 
           </div>
