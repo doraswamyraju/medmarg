@@ -195,3 +195,50 @@ Super Admin JWT tokens grant access to all endpoints, including dedicated admin 
 - `POST /api/v1/admin/catalog/manage`: Create, edit, activate/deactivate lab tests and packages.
 - `POST /api/v1/admin/reports/upload`: Upload, re-upload, or revoke NABL PDF test reports.
 - `POST /api/v1/admin/impersonate`: Generate a scoped preview session as any Customer, Staff, or Agent.
+
+---
+
+## 6. 🚀 VPS Deployment & Process Architecture Guide
+
+### 6.1 Server & Port Topology (Hostinger VPS: `147.93.107.21`)
+* **Live Domain:** `https://medmarg.sriddha.com`
+* **Reserved Port Allocation:**
+  - `5080`: **`medmarg-api`** (Unified Node.js / Express Backend & Static SPA Host)
+  - `5085`: **`medmarg-web`** (Optional standalone React SPA server via PM2 serve)
+  - *Ports `5000-5009` are reserved for other co-hosted services on the VPS.*
+
+### 6.2 Single Unified Process vs. Dual Process Architecture
+
+#### ❓ Do we need `medmarg-web` and `medmarg-api` separately?
+* **No, in production a Single Unified Process (`medmarg-api`) is the recommended best practice:**
+  1. `server.js` automatically detects `../web/dist` and serves the built React SPA on **Port 5080**.
+  2. Running a single process reduces VPS RAM & CPU overhead by 50%.
+  3. Eliminates cross-origin (CORS) preflight latencies since API and Frontend run on the exact same origin.
+  4. Simplifies PM2 process management to just **1 active process**.
+
+### 6.3 Standard VPS Deployment Commands
+```bash
+# 1. Update repo
+cd /var/www/medmarg
+git reset --hard
+git clean -fd
+git pull origin main
+
+# 2. Build React Frontend
+cd /var/www/medmarg/web
+npm install --legacy-peer-deps
+npm run build
+
+# 3. Start Unified Backend
+cd /var/www/medmarg/backend
+npm install --legacy-peer-deps
+pm2 delete medmarg-api 2>/dev/null || true
+PORT=5080 pm2 start server.js --name "medmarg-api"
+pm2 save
+```
+
+### 6.4 Crash Loop Prevention & Safety Architecture
+1. **Global Process Exception Handlers:** `process.on('uncaughtException')` and `process.on('unhandledRejection')` are registered in `server.js` to log errors safely rather than crashing the Node runtime.
+2. **Safe Scope Auditing:** Always ensure variables logged in `app.listen()` callbacks (such as `dbStore.territories`) are accessed with default fallback guards `(dbStore.territories || []).length`.
+3. **PM2 Reboot Persistence:** Always run `pm2 save` after starting or restarting services.
+

@@ -856,6 +856,17 @@ app.post('/api/v1/admin/dispatch/auto', (req, res) => {
     });
 });
 
+// SERVE STATIC REACT WEB FRONTEND (UNIFIED SINGLE-PROCESS HOSTING)
+const webDistPath = path.join(__dirname, '../web/dist');
+if (fs.existsSync(webDistPath)) {
+    console.log(`[Static Frontend] Serving built React SPA from: ${webDistPath}`);
+    app.use(express.static(webDistPath));
+    app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api')) return next();
+        res.sendFile(path.join(webDistPath, 'index.html'));
+    });
+}
+
 // Global error safety guards to prevent crash loops
 process.on('uncaughtException', (err) => {
     console.error('[CRITICAL] Uncaught Exception:', err);
