@@ -194,6 +194,73 @@ export default function AdminOffersManagerTab({ catalog = {} }) {
     }
   };
 
+  const handleSeedDefaultOffers = async () => {
+    const starterOffers = [
+      {
+        title: '⚡ 60-Minute Express Home Phlebotomy',
+        subtitle: 'Flat 60% OFF on Aarogyam Full Body Checkup',
+        code: 'EXPRESS60',
+        price: '₹1,499',
+        mrp: '₹3,500',
+        gradient: 'linear-gradient(135deg, #004D40 0%, #006B70 100%)',
+        badge: 'TOP CHOICE',
+        tagColor: '#FEF3C7',
+        tagText: '#B45309',
+        packageId: 'pkg_aarogyam_13',
+        active: true
+      },
+      {
+        title: '👵 Senior Citizen Diabetic & Cardiac Panel',
+        subtitle: 'HbA1c + Fasting Blood Sugar + Lipid Profile',
+        code: 'SENIORCARE',
+        price: '₹599',
+        mrp: '₹1,400',
+        gradient: 'linear-gradient(135deg, #1E3A8A 0%, #0284C7 100%)',
+        badge: 'POPULAR',
+        tagColor: '#E0F2FE',
+        tagText: '#0369A1',
+        packageId: 'pkg_mm_cardio_diab',
+        active: true
+      },
+      {
+        title: '🌸 Complete Women\'s Vitality & Hormone',
+        subtitle: 'Thyroid (T3/T4/TSH), Iron, Calcium & Vitamins D3/B12',
+        code: 'WOMENHEALTH',
+        price: '₹999',
+        mrp: '₹2,200',
+        gradient: 'linear-gradient(135deg, #581C87 0%, #9333EA 100%)',
+        badge: 'SPECIAL',
+        tagColor: '#F3E8FF',
+        tagText: '#6B21A8',
+        packageId: 'pkg_mm_women_well',
+        active: true
+      },
+      {
+        title: '👨‍👩‍👧 Family & Corporate Wellness Days',
+        subtitle: 'Book for 2+ Members & Get ₹500 MedMarg Wallet Cashback',
+        code: 'FAMILY500',
+        price: '₹500 Cashback',
+        mrp: 'Free Home Visit',
+        gradient: 'linear-gradient(135deg, #065F46 0%, #059669 100%)',
+        badge: 'CASHBACK',
+        tagColor: '#D1FAE5',
+        tagText: '#047857',
+        packageId: 'pkg_mm_master',
+        active: true
+      }
+    ];
+
+    for (const off of starterOffers) {
+      await safeFetch(`${API_BASE}/api/v1/offers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(off)
+      }, 3000);
+    }
+    fetchOffers();
+    showToast('Default starter offers generated successfully.');
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
@@ -233,6 +300,14 @@ export default function AdminOffersManagerTab({ catalog = {} }) {
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          {offers.length === 0 && (
+            <button
+              onClick={handleSeedDefaultOffers}
+              style={{ padding: '0.65rem 1.1rem', borderRadius: '12px', border: '1px solid #006B70', backgroundColor: '#E0F2F1', color: '#006B70', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <Sparkles size={15} /> Seed Default Offers
+            </button>
+          )}
           <button
             onClick={fetchOffers}
             style={{ padding: '0.65rem 1rem', borderRadius: '12px', border: '1px solid #CBD5E1', backgroundColor: '#F8FAFC', color: '#334155', fontWeight: '800', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
@@ -248,8 +323,45 @@ export default function AdminOffersManagerTab({ catalog = {} }) {
         </div>
       </div>
 
-      {/* Offers List & Live Preview */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
+      {/* Offers List or Empty State */}
+      {offers.length === 0 ? (
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '24px',
+          padding: '3.5rem 2rem',
+          textAlign: 'center',
+          border: '1.5px dashed #CBD5E1',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '1.25rem'
+        }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#E0F2F1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Sparkles size={32} color="#006B70" />
+          </div>
+          <div>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>No Offers Found in Database</h3>
+            <p style={{ fontSize: '0.86rem', color: '#64748B', maxWidth: '480px', margin: '0.4rem auto 0 auto', lineHeight: 1.45 }}>
+              Populate instant pre-built high-converting offer banners, or craft a new promotional banner from scratch.
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '0.85rem' }}>
+            <button
+              onClick={handleSeedDefaultOffers}
+              style={{ padding: '0.75rem 1.35rem', backgroundColor: '#006B70', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 14px rgba(0,107,112,0.25)' }}
+            >
+              <Sparkles size={16} /> Generate Starter Offers
+            </button>
+            <button
+              onClick={handleOpenAdd}
+              style={{ padding: '0.75rem 1.35rem', backgroundColor: '#F8FAFC', color: '#334155', border: '1px solid #CBD5E1', borderRadius: '12px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+            >
+              <Plus size={16} /> Create Custom Offer
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
         {offers.map((offer) => {
           const isActive = offer.active !== false;
           return (
@@ -352,6 +464,7 @@ export default function AdminOffersManagerTab({ catalog = {} }) {
           );
         })}
       </div>
+      )}
 
       {/* CREATE / EDIT OFFER MODAL */}
       {showModal && (
