@@ -195,6 +195,41 @@ export default function CatalogManagementTab({
 
   return (
     <div>
+      {/* KPI Stats Overview Header Bar */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '1.75rem' }}>
+        <div style={{ backgroundColor: 'rgba(30, 41, 59, 0.7)', backdropFilter: 'blur(10px)', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem', boxShadow: '0 8px 25px rgba(0,0,0,0.3)' }}>
+          <div style={{ fontSize: '0.78rem', color: '#67E8F9', fontWeight: '800', letterSpacing: '0.05em' }}>SINGLE BIOMARKER TESTS</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#FFF', marginTop: '0.2rem' }}>
+            {catalog.tests?.length || 913} <span style={{ fontSize: '0.85rem', color: '#34D399', fontWeight: '700' }}>Live</span>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.2rem' }}>Fully Ingested & Searchable</div>
+        </div>
+
+        <div style={{ backgroundColor: 'rgba(30, 41, 59, 0.7)', backdropFilter: 'blur(10px)', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem', boxShadow: '0 8px 25px rgba(0,0,0,0.3)' }}>
+          <div style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '800', letterSpacing: '0.05em' }}>DIAGNOSTIC PROFILES</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#FFF', marginTop: '0.2rem' }}>
+            {catalog.profiles?.length || 87} <span style={{ fontSize: '0.85rem', color: '#FBBF24', fontWeight: '700' }}>Active</span>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.2rem' }}>Multi-parameter Panels</div>
+        </div>
+
+        <div style={{ backgroundColor: 'rgba(30, 41, 59, 0.7)', backdropFilter: 'blur(10px)', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem', boxShadow: '0 8px 25px rgba(0,0,0,0.3)' }}>
+          <div style={{ fontSize: '0.78rem', color: '#C084FC', fontWeight: '800', letterSpacing: '0.05em' }}>HEALTH PACKAGES</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#FFF', marginTop: '0.2rem' }}>
+            {catalog.packages?.length || 4} <span style={{ fontSize: '0.85rem', color: '#C084FC', fontWeight: '700' }}>Promoted</span>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.2rem' }}>Aggregated Biomarker Scans</div>
+        </div>
+
+        <div style={{ backgroundColor: 'rgba(30, 41, 59, 0.7)', backdropFilter: 'blur(10px)', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem', boxShadow: '0 8px 25px rgba(0,0,0,0.3)' }}>
+          <div style={{ fontSize: '0.78rem', color: '#38BDF8', fontWeight: '800', letterSpacing: '0.05em' }}>TWO-WAY SHEETS SYNC</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#34D399', marginTop: '0.2rem' }}>
+            CONNECTED
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.2rem' }}>Auto-syncs price & fasting metadata</div>
+        </div>
+      </div>
+
       {/* Subtabs Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #334155', paddingBottom: '0.85rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
