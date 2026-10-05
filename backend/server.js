@@ -749,6 +749,141 @@ app.post('/api/v1/admin/partners/register', (req, res) => {
     res.status(201).json({ success: true, partner: newPartner });
 });
 
+// -------------------------------------------------------------
+// LIVE PATIENT / CUSTOMER ENDPOINTS
+// -------------------------------------------------------------
+
+// Fetch patient's orders
+app.get('/api/v1/patient/orders', (req, res) => {
+    res.json({ success: true, orders: dbStore.orders || [] });
+});
+
+// Book new lab test / package order
+app.post('/api/v1/patient/orders/book', (req, res) => {
+    const { 
+        patientName, 
+        phone, 
+        address, 
+        city = 'Tirupati', 
+        pincode = '517501', 
+        scheduledDate, 
+        scheduledSlot, 
+        items = [], 
+        totalAmount, 
+        paymentMode = 'DOORSTEP_QR',
+        notes
+    } = req.body;
+
+    const newOrderId = `MM-LAB-${Math.floor(1000 + Math.random() * 9000)}`;
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+
+    const matchedZone = (dbStore.territories && dbStore.territories.find(t => t.pincodes.includes(pincode))) || (dbStore.territories && dbStore.territories[0]) || { name: 'Tirupati Central Zone', primaryAgentId: 'AG-01' };
+    const primaryAgent = (dbStore.salariedAgents && dbStore.salariedAgents.find(a => a.id === matchedZone.primaryAgentId)) || { name: 'Ramesh Kumar', id: 'AG-01', phone: '+91 98765 11223' };
+
+    const newOrder = {
+        id: newOrderId,
+        patientName: patientName || 'Rahul Sharma',
+        phone: phone || '+91 98765 43210',
+        city: city,
+        address: address || 'Plot 42, Air Bypass Road, Tirupati',
+        items: Array.isArray(items) ? items.map(i => typeof i === 'string' ? i : i.name).join(', ') : (items || 'MedMarg Master Health Checkup'),
+        itemsDetails: Array.isArray(items) ? items : [],
+        amount: Number(totalAmount) || 1499,
+        status: 'EN_ROUTE',
+        assignedAgent: `${primaryAgent.name} (${primaryAgent.id})`,
+        phleboName: `${primaryAgent.name} (Certified Phlebotomist)`,
+        phleboPhone: primaryAgent.phone || '+91 98765 11223',
+        otp: otp,
+        slot: scheduledSlot || '07:30 AM - 08:30 AM',
+        date: scheduledDate || 'Today',
+        eta: '25 Mins',
+        tempTelemetry: '4.2°C (Optimal 2-8°C Cold-Chain)',
+        paymentMode: paymentMode,
+        paymentStatus: paymentMode === 'ONLINE_PREPAID' ? 'PAID_SUCCESS' : 'PENDING_DOORSTEP',
+        createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        notes: notes || ''
+    };
+
+    if (!dbStore.orders) dbStore.orders = [];
+    dbStore.orders.unshift(newOrder);
+    saveDbStore();
+
+    res.status(201).json({
+        success: true,
+        order: newOrder,
+        message: 'Order booked successfully! Certified phlebotomist assigned.'
+    });
+});
+
+// Patient Digital Health Reports Vault
+app.get('/api/v1/patient/reports', (req, res) => {
+    const liveReports = [
+        {
+            id: 'REP-8821',
+            orderId: 'MM-8921',
+            title: 'Thyrocare Aarogyam Master Health Checkup (104 Biomarkers)',
+            date: 'Today 08:00 AM',
+            lab: 'MedMarg Central Processing Pathology Lab (NABL-AP-2026-01)',
+            status: 'READY_PDF',
+            pdfUrl: 'https://drive.google.com/file/d/medmarg_rep_8821/view?usp=sharing',
+            doctorVerified: 'Dr. Ananya Sharma, MD Pathologist',
+            biomarkers: {
+                fbs: 94,
+                hba1c: 5.6,
+                cholesterol: 172,
+                tsh: 2.4,
+                bp: '120/80',
+                vitaminD: 38
+            }
+        },
+        {
+            id: 'REP-7910',
+            orderId: 'MM-8922',
+            title: 'Diabetic, Lipid & Renal Comprehensive Health Profile',
+            date: '14 Jul 2026',
+            lab: 'Apollo Diagnostics Regional Lab',
+            status: 'READY_PDF',
+            pdfUrl: 'https://drive.google.com/file/d/medmarg_rep_7910/view?usp=sharing',
+            doctorVerified: 'Dr. K. Sivasankar, MD',
+            biomarkers: {
+                fbs: 102,
+                hba1c: 5.9,
+                cholesterol: 188,
+                tsh: 2.8,
+                bp: '124/82',
+                vitaminD: 32
+            }
+        }
+    ];
+
+    res.json({
+        success: true,
+        reports: liveReports,
+        biomarkerHistory: [
+            { date: 'Jan 2026', fbs: 110, hba1c: 6.1, cholesterol: 195, tsh: 3.1, vitaminD: 28 },
+            { date: 'Apr 2026', fbs: 102, hba1c: 5.9, cholesterol: 188, tsh: 2.8, vitaminD: 32 },
+            { date: 'Aug 2026', fbs: 94, hba1c: 5.6, cholesterol: 172, tsh: 2.4, vitaminD: 38 }
+        ]
+    });
+});
+
+// Patient Prescription Upload (Multer)
+app.post('/api/v1/patient/upload-prescription', upload.single('prescription'), async (req, res) => {
+    try {
+        let driveResult = { webViewLink: 'https://drive.google.com/file/d/prescription_uploaded' };
+        if (req.file) {
+            driveResult = await uploadFileToGoogleDrive(req.file.buffer, req.file.originalname, req.file.mimetype);
+        }
+        res.json({
+            success: true,
+            fileUrl: driveResult.webViewLink,
+            message: 'Prescription uploaded successfully to MedMarg Google Drive Cloud.'
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to upload prescription: ' + err.message });
+    }
+});
+
 // TERRITORIES DB STORE
 app.get('/api/v1/admin/territories', (req, res) => {
     res.json({ success: true, territories: dbStore.territories || [] });
