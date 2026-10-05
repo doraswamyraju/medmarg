@@ -856,12 +856,25 @@ app.post('/api/v1/admin/dispatch/auto', (req, res) => {
     });
 });
 
+// Global error safety guards to prevent crash loops
+process.on('uncaughtException', (err) => {
+    console.error('[CRITICAL] Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('[CRITICAL] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 // Start Server
 app.listen(PORT, '0.0.0.0', () => {
+    const ordersCount = (dbStore.orders || []).length;
+    const flCount = (dbStore.freelancers || []).length;
+    const partnerCount = (dbStore.partnerQueue || []).length;
+    const zonesCount = (dbStore.territories || []).length;
+
     console.log(`=======================================================`);
     console.log(` MedMarg Backend API running on port ${PORT}`);
-    console.log(` Database Store Active: ${dbStore.orders.length} Orders | ${dbStore.freelancers.length} Freelancers | ${dbStore.partnerQueue.length} Pre-Registered Partners`);
-    console.log(` Dispatch Cascade & Territories Active: ${territories.length} Zones Managed`);
+    console.log(` Database Store Active: ${ordersCount} Orders | ${flCount} Freelancers | ${partnerCount} Pre-Registered Partners`);
+    console.log(` Dispatch Cascade & Territories Active: ${zonesCount} Zones Managed`);
     console.log(` Health Check: http://localhost:${PORT}/api/health`);
     console.log(`=======================================================`);
 });
