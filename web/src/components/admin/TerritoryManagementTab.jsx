@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { PlusCircle, Zap, CheckCircle } from 'lucide-react';
-import RealMapView from '../RealMapView';
+import { PlusCircle, Zap, CheckCircle, Edit3, Trash2, MapPin, RefreshCw, RotateCcw } from 'lucide-react';
+import RealMapView, { DEFAULT_TERRITORY_GEO } from '../RealMapView';
 import { API_BASE, safeFetch } from '../../data/apiConfig';
 
 export default function TerritoryManagementTab({
@@ -12,6 +12,16 @@ export default function TerritoryManagementTab({
   const [selectedZoneId, setSelectedZoneId] = useState('ZONE-01');
   const [showTerritoryModal, setShowTerritoryModal] = useState(false);
   const [editingTerritory, setEditingTerritory] = useState(null);
+
+  // Form & Drawing Mode State
+  const [isDrawingMode, setIsDrawingMode] = useState(true);
+  const [drawingPolygonPoints, setDrawingPolygonPoints] = useState([
+    [13.6350, 79.4120],
+    [13.6420, 79.4320],
+    [13.6220, 79.4380],
+    [13.6140, 79.4150]
+  ]);
+
   const [territoryForm, setTerritoryForm] = useState({
     id: '',
     name: '',
@@ -20,26 +30,43 @@ export default function TerritoryManagementTab({
     primaryAgentName: 'Ramesh Kumar',
     color: '#38BDF8',
     maxDailyQuota: 15,
-    polygonCoords: '20,20 220,15 200,110 30,100'
+    polygonCoords: '13.6350,79.4120 13.6420,79.4320 13.6220,79.4380 13.6140,79.4150'
   });
 
   const handleOpenCreateTerritory = () => {
     setEditingTerritory(null);
+    const newId = `ZONE-${String(territories.length + 1).padStart(2, '0')}`;
+    const defaultPts = [
+      [13.6420, 79.4320],
+      [13.6550, 79.4600],
+      [13.6300, 79.4750],
+      [13.6200, 79.4400]
+    ];
+    setDrawingPolygonPoints(defaultPts);
+    setIsDrawingMode(true);
     setTerritoryForm({
-      id: `ZONE-${String(territories.length + 1).padStart(2, '0')}`,
+      id: newId,
       name: `Zone ${territories.length + 1}: Tirupati Expansion Sector`,
       pincodes: '517505, 517508',
-      primaryAgentId: 'AG-01',
-      primaryAgentName: 'Ramesh Kumar',
+      primaryAgentId: salariedAgents[0]?.id || 'AG-01',
+      primaryAgentName: salariedAgents[0]?.name || 'Ramesh Kumar',
       color: '#EC4899',
       maxDailyQuota: 15,
-      polygonCoords: '210,125 480,125 460,195 190,195'
+      polygonCoords: defaultPts.map(p => p.join(',')).join(' ')
     });
     setShowTerritoryModal(true);
   };
 
   const handleOpenEditTerritory = (t) => {
     setEditingTerritory(t);
+    const polyPts = t.polygon || DEFAULT_TERRITORY_GEO.find(d => d.id === t.id)?.polygon || [
+      [13.6350, 79.4120],
+      [13.6420, 79.4320],
+      [13.6220, 79.4380],
+      [13.6140, 79.4150]
+    ];
+    setDrawingPolygonPoints(polyPts);
+    setIsDrawingMode(true);
     setTerritoryForm({
       id: t.id,
       name: t.name,
@@ -48,9 +75,33 @@ export default function TerritoryManagementTab({
       primaryAgentName: t.primaryAgentName,
       color: t.color || '#38BDF8',
       maxDailyQuota: t.maxDailyQuota || 15,
-      polygonCoords: t.polygonCoords || '20,20 220,15 200,110 30,100'
+      polygonCoords: polyPts.map(p => p.join(',')).join(' ')
     });
     setShowTerritoryModal(true);
+  };
+
+  const handlePointAdd = (newPoint) => {
+    const updated = [...drawingPolygonPoints, newPoint];
+    setDrawingPolygonPoints(updated);
+    setTerritoryForm(prev => ({
+      ...prev,
+      polygonCoords: updated.map(p => p.join(',')).join(' ')
+    }));
+  };
+
+  const handleUndoPoint = () => {
+    if (drawingPolygonPoints.length === 0) return;
+    const updated = drawingPolygonPoints.slice(0, -1);
+    setDrawingPolygonPoints(updated);
+    setTerritoryForm(prev => ({
+      ...prev,
+      polygonCoords: updated.map(p => p.join(',')).join(' ')
+    }));
+  };
+
+  const handleClearPoints = () => {
+    setDrawingPolygonPoints([]);
+    setTerritoryForm(prev => ({ ...prev, polygonCoords: '' }));
   };
 
   const handleSaveTerritory = async (e) => {
@@ -59,12 +110,20 @@ export default function TerritoryManagementTab({
     const selectedAgentObj = salariedAgents.find(a => a.id === territoryForm.primaryAgentId) || { 
       name: territoryForm.primaryAgentId === 'FREELANCE_BROADCAST' ? 'Gig Freelancer Broadcast Zone' : territoryForm.primaryAgentId 
     };
+
+    const finalPolygon = drawingPolygonPoints.length >= 3 ? drawingPolygonPoints : [
+      [13.6350, 79.4120],
+      [13.6420, 79.4320],
+      [13.6220, 79.4380],
+      [13.6140, 79.4150]
+    ];
     
     const payload = {
       ...territoryForm,
       pincodes: pincodeArr,
       primaryAgentName: selectedAgentObj.name,
-      maxDailyQuota: Number(territoryForm.maxDailyQuota)
+      maxDailyQuota: Number(territoryForm.maxDailyQuota),
+      polygon: finalPolygon
     };
 
     try {
@@ -135,7 +194,7 @@ export default function TerritoryManagementTab({
       <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Territory Polygon Marking & Phlebotomist Allotment Studio</h2>
-          <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Mark city zones, bind pincode clusters, allot phlebotomist agents, set daily quotas, and configure 3-Tier auto-dispatch cascades.</p>
+          <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Mark city zones directly on real maps, bind pincode clusters, allot phlebotomist agents, and set 3-Tier auto-dispatch cascades.</p>
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -143,7 +202,7 @@ export default function TerritoryManagementTab({
             onClick={handleOpenCreateTerritory}
             style={{ padding: '0.65rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem' }}
           >
-            <PlusCircle size={16} color="#FBBF24" /> Create New Territory Zone
+            <PlusCircle size={16} color="#FBBF24" /> Create & Mark New Territory Zone
           </button>
         </div>
       </div>
@@ -163,7 +222,7 @@ export default function TerritoryManagementTab({
         </div>
 
         {/* Real Geographic Map Component */}
-        <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #334155' }}>
+        <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #334155', position: 'relative', zIndex: 1 }}>
           <RealMapView 
             territories={territories} 
             orders={orders} 
@@ -199,9 +258,9 @@ export default function TerritoryManagementTab({
                 <div style={{ display: 'flex', gap: '0.4rem' }}>
                   <button 
                     onClick={() => handleOpenEditTerritory(t)}
-                    style={{ padding: '0.25rem 0.55rem', backgroundColor: '#0F172A', color: '#67E8F9', border: '1px solid #334155', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer' }}
+                    style={{ padding: '0.25rem 0.55rem', backgroundColor: '#0F172A', color: '#67E8F9', border: '1px solid #334155', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                   >
-                    ✏️ Edit
+                    ✏️ Mark / Edit Map
                   </button>
                   <button 
                     onClick={() => handleDeleteTerritory(t.id)}
@@ -291,21 +350,24 @@ export default function TerritoryManagementTab({
 
       {/* CREATE / EDIT TERRITORY ZONE MODAL */}
       {showTerritoryModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
-          <div style={{ backgroundColor: '#1E293B', borderRadius: '24px', maxWidth: '600px', width: '100%', padding: '2rem', border: '2px solid #006B70' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1.5rem' }}>
+          <div style={{ backgroundColor: '#1E293B', borderRadius: '24px', maxWidth: '780px', width: '100%', padding: '1.75rem', border: '2px solid #006B70', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}>
+            
+            {/* Modal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
               <div>
                 <span style={{ fontSize: '0.72rem', backgroundColor: 'rgba(0,107,112,0.3)', color: '#67E8F9', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
-                  TERRITORY MANAGEMENT
+                  MAP POLYGON MARKING STUDIO
                 </span>
                 <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF', marginTop: '0.3rem' }}>
-                  {editingTerritory ? `Edit Territory: ${editingTerritory.id}` : 'Create New Territory Zone'}
+                  {editingTerritory ? `Edit & Mark Territory: ${editingTerritory.id}` : 'Create & Mark New Territory Zone'}
                 </h2>
               </div>
               <button onClick={() => setShowTerritoryModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.25rem', cursor: 'pointer' }}>✕</button>
             </div>
 
             <form onSubmit={handleSaveTerritory} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
                 <div>
                   <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone ID</label>
@@ -319,7 +381,7 @@ export default function TerritoryManagementTab({
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone Name & Description</label>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone Name & Sector Description</label>
                   <input
                     type="text"
                     value={territoryForm.name}
@@ -341,6 +403,63 @@ export default function TerritoryManagementTab({
                   required
                   style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1.5px solid #F59E0B', borderRadius: '8px', color: '#FFF', fontWeight: '800', marginTop: '0.2rem' }}
                 />
+              </div>
+
+              {/* 🗺️ INTERACTIVE MAP DRAWING STUDIO */}
+              <div style={{ backgroundColor: '#0F172A', borderRadius: '16px', border: '1.5px solid #006B70', padding: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div>
+                    <div style={{ fontSize: '0.82rem', color: '#FBBF24', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <MapPin size={16} /> CLICK ON MAP TO MARK BOUNDARY CORNER VERTICES
+                    </div>
+                    <div style={{ fontSize: '0.74rem', color: '#94A3B8' }}>
+                      Place 3 or more points on the map to define the exact geographic polygon boundary.
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button
+                      type="button"
+                      onClick={handleUndoPoint}
+                      disabled={drawingPolygonPoints.length === 0}
+                      style={{ padding: '0.35rem 0.75rem', backgroundColor: '#1E293B', color: '#67E8F9', border: '1px solid #334155', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                    >
+                      <RotateCcw size={12} /> Undo Point
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearPoints}
+                      style={{ padding: '0.35rem 0.75rem', backgroundColor: '#451A1A', color: '#FCA5A5', border: '1px solid #7F1D1D', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                    >
+                      <RefreshCw size={12} /> Reset Boundary
+                    </button>
+                  </div>
+                </div>
+
+                {/* Map Canvas bounded inside modal */}
+                <div style={{ height: '300px', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid #334155', position: 'relative', zIndex: 1 }}>
+                  <RealMapView 
+                    territories={territories} 
+                    salariedAgents={salariedAgents} 
+                    isDrawingMode={isDrawingMode}
+                    drawingPolygonPoints={drawingPolygonPoints}
+                    onPointAdd={handlePointAdd}
+                    height="300px" 
+                  />
+                </div>
+
+                {/* Drawing Points Telemetry Bar */}
+                <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: '#94A3B8' }}>
+                  <span>
+                    Marked Coordinates ({drawingPolygonPoints.length} Vertices):
+                    <strong style={{ color: '#67E8F9', marginLeft: '0.4rem', fontFamily: 'monospace' }}>
+                      {drawingPolygonPoints.length >= 3 ? '✓ Valid Closed Polygon' : '⚠️ Click map to add at least 3 points'}
+                    </strong>
+                  </span>
+                  <span style={{ color: '#FBBF24', fontWeight: '800' }}>
+                    {drawingPolygonPoints.slice(0, 3).map(p => `[${p[0]},${p[1]}]`).join(' ')} {drawingPolygonPoints.length > 3 ? '...' : ''}
+                  </span>
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '0.75rem' }}>
@@ -378,48 +497,21 @@ export default function TerritoryManagementTab({
                 </div>
               </div>
 
-              <div style={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid #334155', marginBottom: '0.5rem' }}>
-                <div style={{ backgroundColor: '#0F172A', padding: '0.4rem 0.75rem', fontSize: '0.75rem', color: '#67E8F9', fontWeight: '800', borderBottom: '1px solid #334155' }}>
-                  🗺️ REAL MAP BOUNDARY & PIN LOCATOR — CLICK ANYWHERE ON MAP TO PICK ZONE CENTER
-                </div>
-                <RealMapView 
-                  territories={territories} 
-                  salariedAgents={salariedAgents} 
-                  height="220px" 
+              <div>
+                <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone Color Accent</label>
+                <input
+                  type="color"
+                  value={territoryForm.color}
+                  onChange={(e) => setTerritoryForm({ ...territoryForm, color: e.target.value })}
+                  style={{ width: '100%', height: '42px', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', cursor: 'pointer', marginTop: '0.2rem' }}
                 />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone Color Accent</label>
-                  <input
-                    type="color"
-                    value={territoryForm.color}
-                    onChange={(e) => setTerritoryForm({ ...territoryForm, color: e.target.value })}
-                    style={{ width: '100%', height: '42px', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', cursor: 'pointer', marginTop: '0.2rem' }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Geographic Sector Preset</label>
-                  <select
-                    value={territoryForm.polygonCoords}
-                    onChange={(e) => setTerritoryForm({ ...territoryForm, polygonCoords: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.82rem', marginTop: '0.2rem' }}
-                  >
-                    <option value="20,20 220,15 200,110 30,100">Zone 1: Tirupati Central Sector</option>
-                    <option value="230,15 480,30 450,120 210,110">Zone 2: North / SVU / Alipiri Sector</option>
-                    <option value="30,115 200,115 180,195 20,185">Zone 3: East / Renigunta / Tiruchanoor Sector</option>
-                    <option value="210,125 480,125 460,195 190,195">Zone 4: West / Chandragiri Suburbs Sector</option>
-                  </select>
-                </div>
               </div>
 
               <button
                 type="submit"
                 style={{ marginTop: '0.5rem', padding: '0.85rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
               >
-                <CheckCircle size={18} color="#34D399" /> Save Territory Zone & Activate 3-Tier Allotment
+                <CheckCircle size={18} color="#34D399" /> Save Territory Polygon & Activate Allotment
               </button>
             </form>
           </div>
