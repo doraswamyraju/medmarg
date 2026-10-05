@@ -31,11 +31,15 @@ export default function StockInventoryTab({
   setIndents: parentSetIndents = () => {},
   salariedAgents = [],
   freelancers = [],
+  subTab: propSubTab,
+  setSubTab: propSetSubTab,
   API_BASE,
   safeFetch
 }) {
-  // Active Sub-tab State
-  const [subTab, setSubTab] = useState('STOCK_KITS'); // 'STOCK_KITS' | 'PURCHASES' | 'INDENTS' | 'AGENT_INVENTORY' | 'EXTRA_USAGE_WASTE' | 'SCRAP_EXPIRY' | 'MOQ_ALERTS' | 'VENDORS'
+  // Active Sub-tab State (Controlled by sidebar or internal)
+  const [localSubTab, setLocalSubTab] = useState('STOCK_KITS');
+  const subTab = propSubTab !== undefined ? propSubTab : localSubTab;
+  const setSubTab = propSetSubTab || setLocalSubTab;
 
   // Master Stock & Kits State
   const [inventoryStock, setInventoryStock] = useState(

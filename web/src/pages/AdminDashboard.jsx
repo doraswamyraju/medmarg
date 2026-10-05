@@ -12,7 +12,15 @@ import {
   UserCheck,
   Navigation,
   Truck,
-  Users
+  Users,
+  ChevronDown,
+  ChevronRight,
+  ShoppingBag,
+  PackageCheck,
+  ShieldCheck,
+  Trash2,
+  Bell,
+  FileText
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState, saveCatalogState } from '../data/catalogStore';
@@ -36,6 +44,8 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   // Navigation State
   const [activeTab, setActiveTab] = useState('TESTS_MGMT'); 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [inventorySubTab, setInventorySubTab] = useState('STOCK_KITS');
+  const [inventoryExpanded, setInventoryExpanded] = useState(true);
 
   // Master Catalog State
   const [catalog, setCatalog] = useState(getCatalogState() || initialCatalog);
@@ -195,11 +205,23 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { key: 'TERRITORY_MGMT', label: 'Territories', icon: Compass, badge: `${territories.length} Zones` },
     { key: 'FREELANCERS', label: 'Freelancers', icon: UserCheck, badge: `${freelancers.filter(f => f.status === 'PENDING_VERIFICATION').length} Pending` },
     { key: 'SALARIED_FLEET', label: 'Fleet', icon: Truck, badge: `${salariedAgents.length}` },
-    { key: 'INVENTORY', label: 'Inventory', icon: Boxes, badge: `${indents.filter(i => i.status === 'PENDING_APPROVAL').length}` },
+    { key: 'INVENTORY', label: 'Inventory', icon: Boxes, badge: `${indents.filter(i => i.status === 'PENDING_APPROVAL').length || 1}` },
     { key: 'LABS', label: 'Labs', icon: Building2, badge: `${labPartners.length}` },
     { key: 'PARTNERS_QUEUE', label: 'Partners', icon: Stethoscope, badge: `${partnerQueue.length}` },
     { key: 'FINANCIALS', label: 'Financials', icon: DollarSign, badge: 'Razorpay' },
     { key: 'OVERVIEW', label: 'Overview', icon: BarChart3 }
+  ];
+
+  // Inventory Sub-menu Items (Rendered inside Sidebar Drawer)
+  const inventorySubMenuItems = [
+    { key: 'STOCK_KITS', label: '1. Stock & Kits', icon: Boxes },
+    { key: 'PURCHASES', label: '2. Purchases (GRN)', icon: ShoppingBag },
+    { key: 'INDENTS', label: '3. Agent Indents', icon: PackageCheck, badge: indents.filter(i => i.status === 'PENDING_APPROVAL').length || null, badgeColor: '#EF4444' },
+    { key: 'AGENT_INVENTORY', label: '4. Agent Bags', icon: Truck },
+    { key: 'EXTRA_USAGE_WASTE', label: '5. Extra Usage & Waivers', icon: ShieldCheck },
+    { key: 'SCRAP_EXPIRY', label: '6. Scrap & Expiry', icon: Trash2 },
+    { key: 'MOQ_ALERTS', label: '7. MOQ Alerts', icon: Bell },
+    { key: 'VENDORS', label: '8. Suppliers Master', icon: FileText }
   ];
 
   return (
@@ -247,36 +269,107 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
         <nav style={{ flex: 1, padding: '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto' }}>
           {navMenuItems.map((item) => {
             const IconComp = item.icon;
+            const isInventory = item.key === 'INVENTORY';
             const isActive = activeTab === item.key;
             return (
-              <button
-                key={item.key}
-                onClick={() => setActiveTab(item.key)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.85rem',
-                  padding: '0.75rem 1rem',
-                  borderRadius: '12px',
-                  border: 'none',
-                  backgroundColor: isActive ? '#006B70' : 'transparent',
-                  color: isActive ? '#FFFFFF' : '#475569',
-                  fontWeight: isActive ? '800' : '600',
-                  fontSize: '0.88rem',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  transition: 'all 0.15s ease',
-                  justify: sidebarCollapsed ? 'center' : 'flex-start'
-                }}
-              >
-                <IconComp size={18} color={isActive ? '#FBBF24' : '#64748B'} />
-                {!sidebarCollapsed && <span style={{ flex: 1 }}>{item.label}</span>}
-                {!sidebarCollapsed && item.badge !== undefined && (
-                  <span style={{ fontSize: '0.72rem', backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : '#F1F5F9', color: isActive ? '#FFFFFF' : '#475569', padding: '0.15rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
-                    {item.badge}
-                  </span>
+              <div key={item.key} style={{ display: 'flex', flexDirection: 'column' }}>
+                <button
+                  onClick={() => {
+                    if (isInventory) {
+                      if (activeTab !== 'INVENTORY') {
+                        setActiveTab('INVENTORY');
+                        setInventoryExpanded(true);
+                      } else {
+                        setInventoryExpanded(!inventoryExpanded);
+                      }
+                    } else {
+                      setActiveTab(item.key);
+                    }
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.85rem',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '12px',
+                    border: 'none',
+                    backgroundColor: isActive ? '#006B70' : 'transparent',
+                    color: isActive ? '#FFFFFF' : '#475569',
+                    fontWeight: isActive ? '800' : '600',
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.15s ease',
+                    justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                    width: '100%'
+                  }}
+                >
+                  <IconComp size={18} color={isActive ? '#FBBF24' : '#64748B'} />
+                  {!sidebarCollapsed && <span style={{ flex: 1 }}>{item.label}</span>}
+                  {!sidebarCollapsed && item.badge !== undefined && (
+                    <span style={{ fontSize: '0.72rem', backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : '#F1F5F9', color: isActive ? '#FFFFFF' : '#475569', padding: '0.15rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
+                      {item.badge}
+                    </span>
+                  )}
+                  {!sidebarCollapsed && isInventory && (
+                    <span style={{ marginLeft: '0.2rem', color: isActive ? '#FFFFFF' : '#94A3B8' }}>
+                      {inventoryExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </span>
+                  )}
+                </button>
+
+                {/* Sub Tabs Inside Sidebar for Inventory (Accordion matching Mobile SidebarView) */}
+                {isInventory && inventoryExpanded && !sidebarCollapsed && (
+                  <div style={{
+                    marginLeft: '1.25rem',
+                    paddingLeft: '0.6rem',
+                    borderLeft: '2px solid #E2E8F0',
+                    marginTop: '0.25rem',
+                    marginBottom: '0.35rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.2rem'
+                  }}>
+                    {inventorySubMenuItems.map(sub => {
+                      const SubIcon = sub.icon;
+                      const isSubActive = activeTab === 'INVENTORY' && inventorySubTab === sub.key;
+                      return (
+                        <button
+                          key={sub.key}
+                          onClick={() => {
+                            setActiveTab('INVENTORY');
+                            setInventorySubTab(sub.key);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.6rem',
+                            padding: '0.45rem 0.75rem',
+                            borderRadius: '8px',
+                            border: 'none',
+                            backgroundColor: isSubActive ? '#E0F2FE' : 'transparent',
+                            color: isSubActive ? '#006B70' : '#64748B',
+                            fontWeight: isSubActive ? '800' : '600',
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'all 0.12s ease',
+                            width: '100%'
+                          }}
+                        >
+                          <SubIcon size={14} color={isSubActive ? '#006B70' : '#94A3B8'} />
+                          <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.label}</span>
+                          {sub.badge && (
+                            <span style={{ fontSize: '0.65rem', backgroundColor: sub.badgeColor || '#006B70', color: '#FFF', padding: '0.1rem 0.35rem', borderRadius: '6px', fontWeight: '800' }}>
+                              {sub.badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 )}
-              </button>
+              </div>
             );
           })}
         </nav>
@@ -401,6 +494,8 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
               setIndents={setIndents} 
               salariedAgents={salariedAgents}
               freelancers={freelancers}
+              subTab={inventorySubTab}
+              setSubTab={setInventorySubTab}
               API_BASE={API_BASE}
               safeFetch={safeFetch}
             />
