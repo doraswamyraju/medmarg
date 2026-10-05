@@ -725,124 +725,235 @@ export default function CatalogManagementTab({
 
       {/* MODAL 3: VISUAL PACKAGE BUILDER */}
       {showPackageBuilderModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
-          <div style={{ backgroundColor: '#1E293B', borderRadius: '24px', maxWidth: '900px', width: '100%', padding: '2rem', border: '2px solid #F59E0B', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '1000px', width: '100%', padding: '2rem', border: '1px solid #E2E8F0', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '1rem' }}>
               <div>
                 <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
                   ADMIN STUDIO
                 </span>
-                <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#FFF', marginTop: '0.3rem' }}>
-                  Visual Health Package Builder
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem' }}>
+                  Visual Health Package Builder & Biomarker Aggregator
                 </h2>
+                <p style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '0.1rem' }}>
+                  Combine multi-parameter diagnostic profiles and single biomarker tests into promoted health packages.
+                </p>
               </div>
-              <button onClick={() => setShowPackageBuilderModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.25rem', cursor: 'pointer' }}>✕</button>
+              <button onClick={() => setShowPackageBuilderModal(false)} style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '1.25rem', cursor: 'pointer', padding: '0.5rem' }}>✕</button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.75rem' }}>
-              <div>
-                <label style={{ fontSize: '0.82rem', fontWeight: '800', color: '#FBBF24', display: 'block', marginBottom: '0.4rem' }}>
-                  1. Search & Select Components (Profiles & Tests):
-                </label>
-                <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
-                  <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
+              {/* LEFT COLUMN: Component Selection */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ position: 'relative' }}>
+                  <Search size={16} color="#64748B" style={{ position: 'absolute', left: '12px', top: '12px' }} />
                   <input
                     type="text"
-                    placeholder="Search from 87 profiles & 913 tests..."
+                    placeholder="Search from 87 profiles & 913 tests by name or code..."
                     value={builderSearch}
                     onChange={(e) => setBuilderSearch(e.target.value)}
-                    style={{ width: '100%', padding: '0.55rem 0.75rem 0.55rem 2rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.85rem' }}
+                    style={{ width: '100%', padding: '0.65rem 0.75rem 0.65rem 2.4rem', backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '10px', color: '#0F172A', fontSize: '0.85rem', outline: 'none' }}
                   />
                 </div>
 
-                <div style={{ fontSize: '0.75rem', color: '#67E8F9', fontWeight: '800', marginBottom: '0.3rem' }}>
-                  🔬 PROFILES / PANELS ({catalog.profiles?.length || 87})
-                </div>
-                <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '1rem', paddingRight: '0.25rem' }}>
-                  {(catalog.profiles || []).filter(p => !builderSearch || p.name.toLowerCase().includes(builderSearch.toLowerCase()) || p.code.toLowerCase().includes(builderSearch.toLowerCase())).slice(0, 30).map(p => {
-                    const isSel = packageBuilderForm.selectedProfiles.includes(p.code);
-                    return (
-                      <div
-                        key={p.code}
-                        onClick={() => {
-                          if (isSel) setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: packageBuilderForm.selectedProfiles.filter(c => c !== p.code) });
-                          else setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: [...packageBuilderForm.selectedProfiles, p.code] });
-                        }}
-                        style={{ padding: '0.45rem 0.75rem', borderRadius: '6px', backgroundColor: isSel ? 'rgba(0,107,112,0.35)' : '#0F172A', border: isSel ? '1.5px solid #006B70' : '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '0.8rem' }}
-                      >
-                        <span style={{ color: '#FFF' }}>{isSel ? '✓ ' : '+ '}{p.name} ({p.code})</span>
-                        <span style={{ color: '#67E8F9', fontSize: '0.72rem' }}>{p.sampleType}</span>
-                      </div>
-                    );
-                  })}
+                {/* Selected Basket Chips */}
+                <div style={{ backgroundColor: '#F1F5F9', borderRadius: '12px', padding: '0.85rem', border: '1px solid #CBD5E1' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#006B70', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                    Selected Package Components ({packageBuilderForm.selectedProfiles.length} Profiles, {packageBuilderForm.selectedTests.length} Tests)
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', maxHeight: '90px', overflowY: 'auto' }}>
+                    {packageBuilderForm.selectedProfiles.map(code => (
+                      <span key={code} style={{ fontSize: '0.72rem', backgroundColor: '#006B70', color: '#FFF', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                        🔬 {code}
+                        <button type="button" onClick={() => setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: packageBuilderForm.selectedProfiles.filter(c => c !== code) })} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', padding: 0, fontWeight: '900' }}>✕</button>
+                      </span>
+                    ))}
+                    {packageBuilderForm.selectedTests.map(code => (
+                      <span key={code} style={{ fontSize: '0.72rem', backgroundColor: '#B45309', color: '#FFF', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                        🧪 {code}
+                        <button type="button" onClick={() => setPackageBuilderForm({ ...packageBuilderForm, selectedTests: packageBuilderForm.selectedTests.filter(c => c !== code) })} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', padding: 0, fontWeight: '900' }}>✕</button>
+                      </span>
+                    ))}
+                    {packageBuilderForm.selectedProfiles.length === 0 && packageBuilderForm.selectedTests.length === 0 && (
+                      <span style={{ fontSize: '0.78rem', color: '#94A3B8', italic: true }}>No profiles or tests selected yet. Select items below.</span>
+                    )}
+                  </div>
                 </div>
 
-                <div style={{ fontSize: '0.75rem', color: '#FBBF24', fontWeight: '800', marginBottom: '0.3rem' }}>
-                  🧪 INDIVIDUAL TESTS ({catalog.tests?.length || 913})
+                {/* Profiles List */}
+                <div>
+                  <div style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800', marginBottom: '0.35rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>🔬 DIAGNOSTIC PROFILES & PANELS ({catalog.profiles?.length || 87})</span>
+                  </div>
+                  <div style={{ maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.5rem', backgroundColor: '#FFFFFF' }}>
+                    {(catalog.profiles || []).filter(p => !builderSearch || p.name.toLowerCase().includes(builderSearch.toLowerCase()) || p.code.toLowerCase().includes(builderSearch.toLowerCase())).slice(0, 40).map(p => {
+                      const isSel = packageBuilderForm.selectedProfiles.includes(p.code);
+                      return (
+                        <div
+                          key={p.code}
+                          onClick={() => {
+                            if (isSel) setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: packageBuilderForm.selectedProfiles.filter(c => c !== p.code) });
+                            else setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: [...packageBuilderForm.selectedProfiles, p.code] });
+                          }}
+                          style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', backgroundColor: isSel ? 'rgba(0,107,112,0.1)' : '#F8FAFC', border: isSel ? '1.5px solid #006B70' : '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '0.82rem' }}
+                        >
+                          <span style={{ color: isSel ? '#006B70' : '#0F172A', fontWeight: isSel ? '800' : '600' }}>{isSel ? '✓ ' : '+ '}{p.name} ({p.code})</span>
+                          <span style={{ color: '#006B70', fontSize: '0.72rem', backgroundColor: '#E0F2FE', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '700' }}>{p.sampleType || 'SERUM'}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-                <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', paddingRight: '0.25rem' }}>
-                  {(catalog.tests || []).filter(t => !builderSearch || t.name.toLowerCase().includes(builderSearch.toLowerCase()) || t.code.toLowerCase().includes(builderSearch.toLowerCase())).slice(0, 40).map(t => {
-                    const isSel = packageBuilderForm.selectedTests.includes(t.code);
-                    return (
-                      <div
-                        key={t.code}
-                        onClick={() => {
-                          if (isSel) setPackageBuilderForm({ ...packageBuilderForm, selectedTests: packageBuilderForm.selectedTests.filter(c => c !== t.code) });
-                          else setPackageBuilderForm({ ...packageBuilderForm, selectedTests: [...packageBuilderForm.selectedTests, t.code] });
-                        }}
-                        style={{ padding: '0.45rem 0.75rem', borderRadius: '6px', backgroundColor: isSel ? 'rgba(245,158,11,0.25)' : '#0F172A', border: isSel ? '1.5px solid #F59E0B' : '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '0.8rem' }}
-                      >
-                        <span style={{ color: '#FFF' }}>{isSel ? '✓ ' : '+ '}{t.name} ({t.code})</span>
-                        <span style={{ color: '#FBBF24', fontSize: '0.72rem' }}>{t.sampleType}</span>
-                      </div>
-                    );
-                  })}
+
+                {/* Tests List */}
+                <div>
+                  <div style={{ fontSize: '0.78rem', color: '#B45309', fontWeight: '800', marginBottom: '0.35rem', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>🧪 INDIVIDUAL BIOMARKER TESTS ({catalog.tests?.length || 913})</span>
+                  </div>
+                  <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.5rem', backgroundColor: '#FFFFFF' }}>
+                    {(catalog.tests || []).filter(t => !builderSearch || t.name.toLowerCase().includes(builderSearch.toLowerCase()) || t.code.toLowerCase().includes(builderSearch.toLowerCase())).slice(0, 50).map(t => {
+                      const isSel = packageBuilderForm.selectedTests.includes(t.code);
+                      return (
+                        <div
+                          key={t.code}
+                          onClick={() => {
+                            if (isSel) setPackageBuilderForm({ ...packageBuilderForm, selectedTests: packageBuilderForm.selectedTests.filter(c => c !== t.code) });
+                            else setPackageBuilderForm({ ...packageBuilderForm, selectedTests: [...packageBuilderForm.selectedTests, t.code] });
+                          }}
+                          style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', backgroundColor: isSel ? '#FEF3C7' : '#F8FAFC', border: isSel ? '1.5px solid #F59E0B' : '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '0.82rem' }}
+                        >
+                          <span style={{ color: isSel ? '#B45309' : '#0F172A', fontWeight: isSel ? '800' : '600' }}>{isSel ? '✓ ' : '+ '}{t.name} ({t.code})</span>
+                          <span style={{ color: '#B45309', fontSize: '0.72rem', backgroundColor: '#FEF3C7', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '700' }}>{t.sampleType || 'SERUM'}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
+              {/* RIGHT COLUMN: Package Form & Live Preview */}
               <div>
-                <form onSubmit={handleSavePackage} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <form onSubmit={handleSavePackage} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  
+                  {/* Live Card Preview Box */}
+                  <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '16px', padding: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                      <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800' }}>
+                        {Math.round(((Number(packageBuilderForm.mrp || 2999) - Number(packageBuilderForm.price || 1299)) / Number(packageBuilderForm.mrp || 2999)) * 100) || 50}% OFF • {packageBuilderForm.category}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'monospace', fontWeight: '800' }}>
+                        {packageBuilderForm.code || 'MM_PKG_NEW'}
+                      </span>
+                    </div>
+                    <div style={{ fontWeight: '900', fontSize: '1.05rem', color: '#0F172A' }}>
+                      {packageBuilderForm.name || 'Untitled Health Package'}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.15rem' }}>
+                      {packageBuilderForm.tagline}
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', fontSize: '0.75rem', flexWrap: 'wrap' }}>
+                      <span style={{ backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800' }}>
+                        {packageBuilderForm.selectedProfiles.length * 8 + packageBuilderForm.selectedTests.length} Total Biomarkers
+                      </span>
+                      <span style={{ backgroundColor: '#E0F2FE', color: '#0369A1', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800' }}>
+                        Fasting: {calculateFastingRequirement(packageBuilderForm.selectedProfiles, packageBuilderForm.selectedTests, catalog.profiles, catalog.tests) ? 'YES (8-10h)' : 'NO'}
+                      </span>
+                    </div>
+                  </div>
+
                   <div>
-                    <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Package Name</label>
+                    <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '700' }}>Package Name</label>
                     <input
                       type="text"
                       value={packageBuilderForm.name}
                       onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, name: e.target.value })}
                       placeholder="e.g. Master Executive Health Shield"
                       required
-                      style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', marginTop: '0.2rem' }}
+                      style={{ width: '100%', padding: '0.6rem 0.8rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontWeight: '700', fontSize: '0.88rem', marginTop: '0.2rem' }}
                     />
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                     <div>
-                      <label style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '800' }}>Package Price (₹)</label>
+                      <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '700' }}>Package Code</label>
+                      <input
+                        type="text"
+                        value={packageBuilderForm.code}
+                        onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, code: e.target.value })}
+                        placeholder="e.g. MM_EXEC_FB"
+                        style={{ width: '100%', padding: '0.6rem 0.8rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#006B70', fontWeight: '800', fontSize: '0.88rem', marginTop: '0.2rem', fontFamily: 'monospace' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '700' }}>Category</label>
+                      <select
+                        value={packageBuilderForm.category}
+                        onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, category: e.target.value })}
+                        style={{ width: '100%', padding: '0.6rem 0.8rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontWeight: '700', fontSize: '0.88rem', marginTop: '0.2rem' }}
+                      >
+                        <option value="Full Body Wellness">Full Body Wellness</option>
+                        <option value="Cardio & Diabetes">Cardio & Diabetes Care</option>
+                        <option value="Immunity & Allergy">Immunity & Allergy</option>
+                        <option value="Women Health">Women Health & Hormones</option>
+                        <option value="Senior Citizen Care">Senior Citizen Care</option>
+                        <option value="Metabolic Profile">Metabolic & Thyroid Profile</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '700' }}>Tagline / Catchphrase</label>
+                    <input
+                      type="text"
+                      value={packageBuilderForm.tagline}
+                      onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, tagline: e.target.value })}
+                      placeholder="e.g. Complete 85+ Vital Biomarkers & Full Body Evaluation"
+                      style={{ width: '100%', padding: '0.6rem 0.8rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem', marginTop: '0.2rem' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800' }}>Offer Price (₹)</label>
                       <input
                         type="number"
                         value={packageBuilderForm.price}
                         onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, price: e.target.value })}
                         required
-                        style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1.5px solid #F59E0B', borderRadius: '8px', color: '#FBBF24', fontWeight: '800', marginTop: '0.2rem' }}
+                        style={{ width: '100%', padding: '0.6rem 0.8rem', backgroundColor: '#FFFFFF', border: '1.5px solid #006B70', borderRadius: '8px', color: '#006B70', fontWeight: '900', fontSize: '0.88rem', marginTop: '0.2rem' }}
                       />
                     </div>
                     <div>
-                      <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Market MRP (₹)</label>
+                      <label style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700' }}>Market MRP (₹)</label>
                       <input
                         type="number"
                         value={packageBuilderForm.mrp}
                         onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, mrp: e.target.value })}
-                        style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#94A3B8', marginTop: '0.2rem' }}
+                        style={{ width: '100%', padding: '0.6rem 0.8rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#64748B', fontSize: '0.88rem', marginTop: '0.2rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700' }}>TAT (Hours)</label>
+                      <input
+                        type="number"
+                        value={packageBuilderForm.tatHours}
+                        onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, tatHours: e.target.value })}
+                        style={{ width: '100%', padding: '0.6rem 0.8rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem', marginTop: '0.2rem' }}
                       />
                     </div>
                   </div>
 
-                  <button
-                    type="submit"
-                    style={{ marginTop: '0.75rem', padding: '0.85rem', background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', color: '#0F172A', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer' }}
-                  >
-                    Publish Package to Live Catalog
-                  </button>
+                  <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                    <button type="button" onClick={() => setShowPackageBuilderModal(false)} style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}>Cancel</button>
+                    <button
+                      type="submit"
+                      style={{ padding: '0.65rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,107,112,0.25)' }}
+                    >
+                      Publish Package to Live Catalog
+                    </button>
+                  </div>
                 </form>
               </div>
             </div>
