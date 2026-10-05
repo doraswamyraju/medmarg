@@ -341,6 +341,9 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
           {activeTab === 'LIVE_ORDERS' && (
             <LiveOrdersDispatchTab 
               orders={orders} 
+              setOrders={setOrders}
+              salariedAgents={salariedAgents}
+              labPartners={labPartners}
             />
           )}
 
@@ -384,6 +387,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
           {activeTab === 'INVENTORY' && (
             <StockInventoryTab 
               inventoryStock={inventoryStock} 
+              setInventoryStock={setInventoryStock}
               indents={indents} 
               setIndents={setIndents} 
             />
@@ -393,6 +397,8 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
           {activeTab === 'LABS' && (
             <LabsManagementTab 
               labPartners={labPartners} 
+              setLabPartners={setLabPartners}
+              territories={territories}
             />
           )}
 
