@@ -22,10 +22,15 @@ export default function CatalogManagementTab({
   isSyncingSheets,
   syncLogs
 }) {
-  const [testsSubTab, setTestsSubTab] = useState('TESTS'); // 'TESTS' | 'PROFILES' | 'PACKAGES' | 'SYNC_HUB'
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterFasting, setFilterFasting] = useState('ALL');
-  const [filterSample, setFilterSample] = useState('ALL');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50); // 50 | 100 | 250 | 500 | 'ALL'
+
+  // Calculate paginated slice of tests
+  const totalDisplayTests = filteredTests.length;
+  const effectivePageSize = pageSize === 'ALL' ? totalDisplayTests : Number(pageSize);
+  const totalPages = Math.ceil(totalDisplayTests / (effectivePageSize || 1));
+  const startIndex = pageSize === 'ALL' ? 0 : (currentPage - 1) * effectivePageSize;
+  const paginatedTests = filteredTests.slice(startIndex, startIndex + effectivePageSize);
 
   // Modals
   const [showCreateTestModal, setShowCreateTestModal] = useState(false);
@@ -297,19 +302,61 @@ export default function CatalogManagementTab({
       {/* TESTS LIST */}
       {testsSubTab === 'TESTS' && (
         <div>
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+          {/* Search Bar & Page Controls Header */}
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ position: 'relative', flex: 1, minWidth: '280px' }}>
               <Search size={18} color="#64748B" style={{ position: 'absolute', left: '12px', top: '12px' }} />
               <input
                 type="text"
-                placeholder="Search 913 tests by name, test code, or sample type..."
+                placeholder={`Search ${catalog.tests?.length || 913} tests by name, code, or sample type...`}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                 style={{ width: '100%', padding: '0.7rem 1rem 0.7rem 2.4rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '10px', color: '#0F172A', fontSize: '0.88rem', outline: 'none' }}
               />
             </div>
+
+            {/* Page Size & Pagination Bar */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#475569', fontWeight: '700' }}>
+                <span>Show:</span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => { setPageSize(e.target.value); setCurrentPage(1); }}
+                  style={{ padding: '0.4rem 0.6rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontWeight: '800', cursor: 'pointer', fontSize: '0.82rem' }}
+                >
+                  <option value={50}>50 per page</option>
+                  <option value={100}>100 per page</option>
+                  <option value={250}>250 per page</option>
+                  <option value={500}>500 per page</option>
+                  <option value="ALL">Show All ({totalDisplayTests})</option>
+                </select>
+              </div>
+
+              {pageSize !== 'ALL' && totalPages > 1 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    style={{ padding: '0.4rem 0.75rem', backgroundColor: currentPage === 1 ? '#F1F5F9' : '#006B70', color: currentPage === 1 ? '#94A3B8' : '#FFF', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                  >
+                    ← Prev
+                  </button>
+                  <span style={{ fontSize: '0.82rem', fontWeight: '800', color: '#0F172A', padding: '0 0.3rem' }}>
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    style={{ padding: '0.4rem 0.75rem', backgroundColor: currentPage >= totalPages ? '#F1F5F9' : '#006B70', color: currentPage >= totalPages ? '#94A3B8' : '#FFF', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer' }}
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
+          {/* Tests Table Container */}
           <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
               <thead>
@@ -324,7 +371,7 @@ export default function CatalogManagementTab({
                 </tr>
               </thead>
               <tbody>
-                {filteredTests.slice(0, 50).map(test => (
+                {paginatedTests.map(test => (
                   <tr key={test.id || test.code} style={{ borderBottom: '1px solid #F1F5F9' }}>
                     <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#006B70', fontWeight: '700' }}>
                       #{test.serialNo || '-'} • {test.code}
@@ -356,6 +403,31 @@ export default function CatalogManagementTab({
                 ))}
               </tbody>
             </table>
+
+            {/* Bottom Pagination Bar */}
+            <div style={{ padding: '1rem 1.25rem', backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.84rem' }}>
+              <span style={{ color: '#64748B', fontWeight: '700' }}>
+                Showing {Math.min(startIndex + 1, totalDisplayTests)}–{Math.min(startIndex + effectivePageSize, totalDisplayTests)} of {totalDisplayTests} Biomarker Tests
+              </span>
+              {pageSize !== 'ALL' && totalPages > 1 && (
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    style={{ padding: '0.35rem 0.75rem', backgroundColor: currentPage === 1 ? '#E2E8F0' : '#006B70', color: currentPage === 1 ? '#94A3B8' : '#FFF', border: 'none', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    style={{ padding: '0.35rem 0.75rem', backgroundColor: currentPage >= totalPages ? '#E2E8F0' : '#006B70', color: currentPage >= totalPages ? '#94A3B8' : '#FFF', border: 'none', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer' }}
+                  >
+                    Next Page →
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
