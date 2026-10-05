@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Sparkles, 
   Search, 
@@ -23,6 +23,7 @@ import {
   Check,
   Plus
 } from 'lucide-react';
+import CareSeekerOffersCarousel from './CareSeekerOffersCarousel';
 
 export default function CareSeekerHomeTab({ 
   user, 
@@ -39,6 +40,7 @@ export default function CareSeekerHomeTab({
 }) {
   const [homeSearchQuery, setHomeSearchQuery] = useState('');
   const [activeSearchScope, setActiveSearchScope] = useState('TESTS'); // 'TESTS' | 'DOCTORS' | 'MEDICINES'
+  const searchInputRef = useRef(null);
 
   const topPackage = (catalog.packages && catalog.packages[0]) || {
     id: 'pkg_aarogyam_13',
@@ -68,10 +70,10 @@ export default function CareSeekerHomeTab({
   ].filter(item => (item.name || item.title || '').toLowerCase().includes(homeSearchQuery.toLowerCase())).slice(0, 6) : [];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
       
       {/* 1. UNIVERSAL HEALTHCARE SEARCH BAR */}
-      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '1.75rem', border: '1.5px solid #E2E8F0', boxShadow: '0 8px 24px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative' }}>
+      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '1.5rem', border: '1.5px solid #E2E8F0', boxShadow: '0 8px 24px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '0.85rem', position: 'relative' }}>
         
         {/* Scope Switcher Tabs */}
         <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
@@ -89,20 +91,20 @@ export default function CareSeekerHomeTab({
                   if (scope.active) setActiveSearchScope(scope.key);
                 }}
                 style={{
-                  padding: '0.5rem 1rem',
+                  padding: '0.45rem 0.9rem',
                   borderRadius: '10px',
                   border: 'none',
                   backgroundColor: isSel ? '#006B70' : '#F1F5F9',
                   color: isSel ? '#FFFFFF' : scope.active ? '#334155' : '#94A3B8',
                   fontWeight: '800',
-                  fontSize: '0.84rem',
+                  fontSize: '0.82rem',
                   cursor: scope.active ? 'pointer' : 'not-allowed',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.45rem'
+                  gap: '0.4rem'
                 }}
               >
-                <IconC size={15} color={isSel ? '#FBBF24' : '#64748B'} />
+                <IconC size={14} color={isSel ? '#FBBF24' : '#64748B'} />
                 <span>{scope.label}</span>
               </button>
             );
@@ -111,22 +113,23 @@ export default function CareSeekerHomeTab({
 
         {/* Search Input Box */}
         <div style={{ position: 'relative', width: '100%' }}>
-          <Search size={22} color="#006B70" style={{ position: 'absolute', left: '16px', top: '16px' }} />
+          <Search size={20} color="#006B70" style={{ position: 'absolute', left: '14px', top: '14px' }} />
           <input
+            ref={searchInputRef}
             type="text"
             placeholder="Search for any lab test, profile, or package (e.g. Vitamin D, Thyroid, Diabetes, CBC, Lipid Profile)..."
             value={homeSearchQuery}
             onChange={(e) => setHomeSearchQuery(e.target.value)}
             style={{
               width: '100%',
-              padding: '0.95rem 1rem 0.95rem 3.2rem',
-              borderRadius: '14px',
+              padding: '0.85rem 1rem 0.85rem 2.8rem',
+              borderRadius: '12px',
               border: '2px solid #006B70',
-              fontSize: '1rem',
+              fontSize: '0.95rem',
               outline: 'none',
               color: '#0F172A',
               fontWeight: '600',
-              boxShadow: '0 4px 14px rgba(0,107,112,0.1)'
+              boxShadow: '0 4px 12px rgba(0,107,112,0.08)'
             }}
           />
         </div>
@@ -136,8 +139,8 @@ export default function CareSeekerHomeTab({
           <div style={{
             position: 'absolute',
             top: '100%',
-            left: '1.75rem',
-            right: '1.75rem',
+            left: '1.5rem',
+            right: '1.5rem',
             backgroundColor: '#FFFFFF',
             borderRadius: '16px',
             border: '1.5px solid #CBD5E1',
@@ -207,106 +210,95 @@ export default function CareSeekerHomeTab({
         )}
       </div>
 
-      {/* 2. HERO DIRECT ORDER CHANNELS (WhatsApp, Call, 60-min Express & Prescription Upload) */}
+      {/* 2. HORIZONTAL SCROLLABLE OFFERS CAROUSEL */}
+      <CareSeekerOffersCarousel 
+        onSelectOffer={setSelectedDetailItem}
+        catalog={catalog}
+      />
+
+      {/* 3. STREAMLINED COMPACT 1-TAP HERO BLOCK */}
       <div style={{
         backgroundColor: '#004D40',
-        borderRadius: '24px',
-        padding: '2.25rem',
+        borderRadius: '20px',
+        padding: '1.5rem 1.75rem',
         color: '#FFFFFF',
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: '2rem',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: '1.5rem',
         alignItems: 'center',
-        boxShadow: '0 16px 36px -10px rgba(0,77,64,0.35)'
+        boxShadow: '0 12px 28px -6px rgba(0,77,64,0.3)'
       }}>
         <div>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900', marginBottom: '0.75rem' }}>
-            <Sparkles size={14} /> MULTI-LAB AGGREGATOR • 100% NABL ACCREDITED
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.6rem', borderRadius: '16px', fontSize: '0.72rem', fontWeight: '900', marginBottom: '0.4rem' }}>
+            <Sparkles size={13} /> 60-MIN EXPRESS HOME PHLEBOTOMY
           </div>
-          <h2 style={{ fontSize: '1.95rem', fontWeight: '900', lineHeight: 1.25, margin: 0 }}>
-            Book Diagnostic Tests or Upload Prescription in 1-Tap
-          </h2>
-          <p style={{ color: '#80CBC4', fontSize: '0.92rem', marginTop: '0.6rem', lineHeight: 1.5 }}>
-            Certified phlebotomists at your doorstep in 60 minutes across Tirupati with IoT cold-chain temperature telemetry (`2°C - 8°C`). Compare rates across Thyrocare, Apollo & MedMarg Central Hub.
+          <h3 style={{ fontSize: '1.45rem', fontWeight: '900', lineHeight: 1.25, margin: 0 }}>
+            Book Diagnostic Tests or Upload Prescription
+          </h3>
+          <p style={{ color: '#80CBC4', fontSize: '0.84rem', marginTop: '0.35rem', lineHeight: 1.4 }}>
+            Certified phlebotomists with IoT cold-chain telemetry (`2°C - 8°C`) across Tirupati.
           </p>
 
-          {/* Direct Order Channel Buttons */}
-          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1rem', flexWrap: 'wrap' }}>
             <button
               onClick={() => handleOrderWhatsApp()}
-              style={{ padding: '0.75rem 1.25rem', backgroundColor: '#25D366', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 12px rgba(37,211,102,0.3)' }}
+              style={{ padding: '0.6rem 1rem', backgroundColor: '#25D366', color: '#FFFFFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
             >
-              <MessageCircle size={18} /> Order on WhatsApp
+              <MessageCircle size={16} /> WhatsApp
             </button>
 
             <button
               onClick={handleOrderCall}
-              style={{ padding: '0.75rem 1.25rem', backgroundColor: '#0284C7', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+              style={{ padding: '0.6rem 1rem', backgroundColor: '#0284C7', color: '#FFFFFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
             >
-              <PhoneCall size={18} /> Call to Book
+              <PhoneCall size={16} /> Call Us
             </button>
 
             <button
               onClick={onOpenPrescriptionModal}
-              style={{ padding: '0.75rem 1.25rem', backgroundColor: '#F59E0B', color: '#0F172A', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 12px rgba(245,158,11,0.25)' }}
+              style={{ padding: '0.6rem 1rem', backgroundColor: '#F59E0B', color: '#0F172A', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
             >
-              <UploadCloud size={18} /> Upload Prescription
+              <UploadCloud size={16} /> Upload Prescription
             </button>
           </div>
         </div>
 
-        {/* Featured Smart Package Card with Standalone Savings Breakdown */}
+        {/* Featured Smart Package Mini Card */}
         <div 
           onClick={() => setSelectedDetailItem(topPackage)}
-          style={{ backgroundColor: '#003830', borderRadius: '22px', padding: '1.75rem', border: '1.5px solid #006B70', cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative' }}
+          style={{ backgroundColor: '#003830', borderRadius: '16px', padding: '1.25rem', border: '1.5px solid #006B70', cursor: 'pointer', transition: 'all 0.2s ease' }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: '900' }}>
+            <span style={{ fontSize: '0.7rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
               MOST POPULAR • {topPackage.params || 104} PARAMS
             </span>
-            <span style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '800' }}>★ 4.9 (1.8k+ Reviews)</span>
+            <span style={{ fontSize: '0.74rem', color: '#FBBF24', fontWeight: '800' }}>★ 4.9</span>
           </div>
 
-          <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#FFF', marginTop: '0.75rem', lineHeight: 1.3 }}>
+          <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#FFF', marginTop: '0.5rem', lineHeight: 1.3 }}>
             {topPackage.name || topPackage.title}
-          </h3>
-          <p style={{ fontSize: '0.82rem', color: '#80CBC4', marginTop: '0.35rem', lineHeight: 1.4 }}>
-            {topPackage.description || 'Full body health assessment with thyroid, cholesterol, liver, kidney, vitamins & CBC.'}
-          </p>
+          </h4>
 
-          <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.7rem', backgroundColor: 'rgba(255,255,255,0.1)', color: '#E0F2F1', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
-              ✓ Thyroid (T3/T4/TSH)
-            </span>
-            <span style={{ fontSize: '0.7rem', backgroundColor: 'rgba(255,255,255,0.1)', color: '#E0F2F1', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
-              ✓ Lipid Profile
-            </span>
-            <span style={{ fontSize: '0.7rem', backgroundColor: 'rgba(255,255,255,0.1)', color: '#E0F2F1', padding: '0.15rem 0.45rem', borderRadius: '4px' }}>
-              ✓ Liver LFT & Kidney KFT
-            </span>
-          </div>
-
-          <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #004D40', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ marginTop: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <span style={{ fontSize: '1.5rem', fontWeight: '900', color: '#FBBF24' }}>₹{topPackage.price || 1499}</span>
-              <span style={{ fontSize: '0.85rem', color: '#80CBC4', textDecoration: 'line-through', marginLeft: '0.5rem' }}>₹{topPackage.mrp || 3500}</span>
-              <span style={{ fontSize: '0.72rem', color: '#4ADE80', fontWeight: '800', marginLeft: '0.4rem' }}>(Save ₹2,001)</span>
+              <span style={{ fontSize: '1.35rem', fontWeight: '900', color: '#FBBF24' }}>₹{topPackage.price || 1499}</span>
+              <span style={{ fontSize: '0.8rem', color: '#80CBC4', textDecoration: 'line-through', marginLeft: '0.4rem' }}>₹{topPackage.mrp || 3500}</span>
             </div>
-            <span style={{ fontSize: '0.84rem', color: '#FFF', fontWeight: '800', backgroundColor: '#006B70', padding: '0.45rem 0.95rem', borderRadius: '10px' }}>
+            <span style={{ fontSize: '0.78rem', color: '#FFF', fontWeight: '800', backgroundColor: '#006B70', padding: '0.35rem 0.75rem', borderRadius: '8px' }}>
               View Details →
             </span>
           </div>
         </div>
       </div>
 
-      {/* 3. MULTI-LAB PARTNER AGGREGATOR GRID */}
+      {/* 4. MULTI-LAB PARTNER AGGREGATOR GRID */}
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
               Integrated Multi-Lab Processing Network
             </h3>
-            <p style={{ fontSize: '0.82rem', color: '#64748B', margin: '0.2rem 0 0 0' }}>
+            <p style={{ fontSize: '0.8rem', color: '#64748B', margin: '0.15rem 0 0 0' }}>
               Compare tests, B2B pricing, and TAT across leading accredited pathology networks.
             </p>
           </div>
@@ -364,7 +356,7 @@ export default function CareSeekerHomeTab({
         </div>
       </div>
 
-      {/* 4. HEALTH RISK SCREENING PANELS */}
+      {/* 5. HEALTH RISK SCREENING PANELS */}
       <div style={{ backgroundColor: '#FFFFFF', borderRadius: '22px', padding: '1.75rem', border: '1.5px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <div>
@@ -419,33 +411,6 @@ export default function CareSeekerHomeTab({
               </div>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* 5. TRUST & ACCREDITATION BANNER */}
-      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '1.75rem', border: '1.5px solid #E2E8F0', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <Shield size={32} color="#006B70" />
-          <div>
-            <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.95rem' }}>100% NABL & CAP Accredited</div>
-            <div style={{ fontSize: '0.8rem', color: '#64748B' }}>Certified processing pathology laboratories</div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <Award size={32} color="#0284C7" />
-          <div>
-            <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.95rem' }}>IoT Cold-Chain Telemetry</div>
-            <div style={{ fontSize: '0.8rem', color: '#64748B' }}>Live container temperature 2°C - 8°C</div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <Zap size={32} color="#F59E0B" />
-          <div>
-            <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.95rem' }}>60-Min Fast Home Pickup</div>
-            <div style={{ fontSize: '0.8rem', color: '#64748B' }}>Tirupati city-wide phlebotomist fleet</div>
-          </div>
         </div>
       </div>
 
