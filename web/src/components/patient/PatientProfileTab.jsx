@@ -117,10 +117,10 @@ export default function PatientProfileTab({
             <div>
               <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.72rem', backgroundColor: '#E0F2F1', color: '#006B70', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
-                  VERIFIED PATIENT
+                  VERIFIED CARE SEEKER
                 </span>
                 <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
-                  ABDM LINKED
+                  ABDM • COMING SOON
                 </span>
               </div>
               <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem' }}>{profileName}</h2>
@@ -153,7 +153,7 @@ export default function PatientProfileTab({
         </div>
       </div>
 
-      {/* 2. ABDM / ABHA DIGITAL HEALTH CARD */}
+      {/* 2. ABDM / ABHA DIGITAL HEALTH CARD - COMING SOON */}
       <div style={{
         backgroundColor: '#004D40',
         borderRadius: '24px',
@@ -163,29 +163,53 @@ export default function PatientProfileTab({
         gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
         gap: '1.5rem',
         alignItems: 'center',
-        boxShadow: '0 12px 30px rgba(0,77,64,0.3)'
+        boxShadow: '0 12px 30px rgba(0,77,64,0.25)',
+        position: 'relative',
+        overflow: 'hidden'
       }}>
         <div>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.74rem', fontWeight: '900', marginBottom: '0.6rem' }}>
-            <Shield size={14} /> AYUSHMAN BHARAT DIGITAL MISSION (ABDM)
+            <Shield size={14} /> AYUSHMAN BHARAT DIGITAL MISSION (ABDM) • COMING SOON
           </div>
-          <h3 style={{ fontSize: '1.35rem', fontWeight: '900', margin: 0 }}>Digital ABHA Health ID</h3>
-          <p style={{ fontSize: '0.84rem', color: '#80CBC4', marginTop: '0.35rem', lineHeight: 1.4 }}>
-            Directly linked to National Health Authority (NHA). All NABL test records seamlessly synchronized.
+          <h3 style={{ fontSize: '1.35rem', fontWeight: '900', margin: 0 }}>Digital ABHA Health ID & Records Sync</h3>
+          <p style={{ fontSize: '0.84rem', color: '#80CBC4', marginTop: '0.35rem', lineHeight: 1.5 }}>
+            MedMarg is undergoing National Health Authority (NHA / ABDM) sandbox certification. Live 14-digit ABHA creation, linking existing ABHA cards, and nationwide paperless report sync will be available soon.
           </p>
 
-          <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-            <div style={{ fontSize: '0.76rem', color: '#80CBC4' }}>ABHA NUMBER</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: '900', color: '#FFFFFF', letterSpacing: '2px', fontFamily: 'monospace' }}>
-              {abhaNumber}
+          <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <div style={{ backgroundColor: 'rgba(255,255,255,0.12)', padding: '0.5rem 0.85rem', borderRadius: '10px', fontSize: '0.78rem', color: '#FEF3C7', border: '1px dashed #80CBC4' }}>
+              ⏳ Sandbox Verification in Progress
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#FEF3C7' }}>ABHA Address: {abhaAddress}</div>
+            <button
+              onClick={() => alert('Thank you! You will be notified via WhatsApp & SMS as soon as ABHA integration goes live on MedMarg.')}
+              style={{
+                backgroundColor: '#FBBF24',
+                color: '#004D40',
+                border: 'none',
+                padding: '0.5rem 1rem',
+                borderRadius: '10px',
+                fontWeight: '900',
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+            >
+              🔔 Notify Me on Launch
+            </button>
           </div>
         </div>
 
-        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', padding: '1.25rem', color: '#0F172A', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '0.5rem', maxWidth: '240px', margin: '0 auto' }}>
-          <QrCode size={110} color="#004D40" />
-          <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#006B70' }}>Scan for ABDM Verification</div>
+        <div style={{ backgroundColor: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '18px', padding: '1.5rem', color: '#FFFFFF', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '0.6rem', maxWidth: '260px', margin: '0 auto' }}>
+          <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Shield size={30} color="#004D40" />
+          </div>
+          <div style={{ fontSize: '0.85rem', fontWeight: '900', color: '#FFFFFF' }}>ABDM Official Integration</div>
+          <div style={{ fontSize: '0.72rem', color: '#80CBC4', lineHeight: 1.4 }}>100% NHA compliant digital health records repository</div>
+          <div style={{ fontSize: '0.7rem', backgroundColor: 'rgba(251,191,36,0.2)', color: '#FBBF24', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: '800' }}>
+            Status: Coming Soon
+          </div>
         </div>
       </div>
 
@@ -305,7 +329,7 @@ export default function PatientProfileTab({
               </div>
 
               <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.72rem', color: '#64748B', fontFamily: 'monospace' }}>ABHA: {fam.abhaId || 'Linked'}</span>
+                <span style={{ fontSize: '0.72rem', color: '#006B70', fontWeight: '700' }}>ABHA Sync: Coming Soon</span>
               </div>
             </div>
           ))}

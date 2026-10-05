@@ -73,92 +73,214 @@ export default function CareSeekerHomeTab({
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
       
       {/* 1. UNIVERSAL HEALTHCARE SEARCH BAR */}
-      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '1.5rem', border: '1.5px solid #E2E8F0', boxShadow: '0 8px 24px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '0.85rem', position: 'relative' }}>
+      <div style={{
+        backgroundColor: '#FFFFFF',
+        borderRadius: '24px',
+        padding: '1.5rem 1.75rem',
+        border: '1.5px solid #E2E8F0',
+        boxShadow: '0 10px 30px rgba(0,77,64,0.06)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1rem',
+        position: 'relative'
+      }}>
         
         {/* Scope Switcher Tabs */}
-        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-          {[
-            { key: 'TESTS', label: 'Diagnostic Tests & Packages (913+ Live)', active: true, icon: FlaskConical },
-            { key: 'DOCTORS', label: 'Doctors & Clinics (Coming Soon)', active: false, icon: Stethoscope },
-            { key: 'MEDICINES', label: 'Medicines & Pharmacy (Coming Soon)', active: false, icon: Pill }
-          ].map(scope => {
-            const IconC = scope.icon;
-            const isSel = activeSearchScope === scope.key;
-            return (
-              <button
-                key={scope.key}
-                onClick={() => {
-                  if (scope.active) setActiveSearchScope(scope.key);
-                }}
-                style={{
-                  padding: '0.45rem 0.9rem',
-                  borderRadius: '10px',
-                  border: 'none',
-                  backgroundColor: isSel ? '#006B70' : '#F1F5F9',
-                  color: isSel ? '#FFFFFF' : scope.active ? '#334155' : '#94A3B8',
-                  fontWeight: '800',
-                  fontSize: '0.82rem',
-                  cursor: scope.active ? 'pointer' : 'not-allowed',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem'
-                }}
-              >
-                <IconC size={14} color={isSel ? '#FBBF24' : '#64748B'} />
-                <span>{scope.label}</span>
-              </button>
-            );
-          })}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            {[
+              { key: 'TESTS', label: 'Diagnostic Tests & Profiles (913+ Live)', active: true, icon: FlaskConical },
+              { key: 'DOCTORS', label: 'Doctors & Clinics (Coming Soon)', active: false, icon: Stethoscope },
+              { key: 'MEDICINES', label: 'Medicines & Pharmacy (Coming Soon)', active: false, icon: Pill }
+            ].map(scope => {
+              const IconC = scope.icon;
+              const isSel = activeSearchScope === scope.key;
+              return (
+                <button
+                  key={scope.key}
+                  onClick={() => {
+                    if (scope.active) setActiveSearchScope(scope.key);
+                  }}
+                  style={{
+                    padding: '0.45rem 0.9rem',
+                    borderRadius: '10px',
+                    border: isSel ? '1.5px solid #006B70' : '1px solid #E2E8F0',
+                    backgroundColor: isSel ? '#006B70' : '#F8FAFC',
+                    color: isSel ? '#FFFFFF' : scope.active ? '#334155' : '#94A3B8',
+                    fontWeight: '800',
+                    fontSize: '0.8rem',
+                    cursor: scope.active ? 'pointer' : 'not-allowed',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <IconC size={14} color={isSel ? '#FBBF24' : '#64748B'} />
+                  <span>{scope.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div style={{ fontSize: '0.74rem', color: '#006B70', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <Sparkles size={14} color="#006B70" />
+            <span>AI Universal Search</span>
+          </div>
         </div>
 
-        {/* Search Input Box */}
-        <div style={{ position: 'relative', width: '100%' }}>
-          <Search size={20} color="#006B70" style={{ position: 'absolute', left: '14px', top: '14px' }} />
+        {/* Search Input Box with Action Buttons */}
+        <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+          <div style={{
+            position: 'absolute',
+            left: '14px',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            width: '32px',
+            height: '32px',
+            borderRadius: '8px',
+            backgroundColor: '#E0F2F1',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none'
+          }}>
+            <Search size={18} color="#006B70" />
+          </div>
+
           <input
             ref={searchInputRef}
             type="text"
-            placeholder="Search for any lab test, profile, or package (e.g. Vitamin D, Thyroid, Diabetes, CBC, Lipid Profile)..."
+            placeholder="Search 913+ lab tests, health packages, or organs (e.g. Thyroid, Vitamin D, HbA1c, Liver LFT, CBC)..."
             value={homeSearchQuery}
             onChange={(e) => setHomeSearchQuery(e.target.value)}
             style={{
               width: '100%',
-              padding: '0.85rem 1rem 0.85rem 2.8rem',
-              borderRadius: '12px',
+              padding: '0.95rem 7.5rem 0.95rem 3.4rem',
+              borderRadius: '16px',
               border: '2px solid #006B70',
-              fontSize: '0.95rem',
+              fontSize: '0.96rem',
               outline: 'none',
               color: '#0F172A',
               fontWeight: '600',
-              boxShadow: '0 4px 12px rgba(0,107,112,0.08)'
+              backgroundColor: '#FAFCFC',
+              boxShadow: '0 4px 14px rgba(0,107,112,0.08)'
             }}
           />
+
+          <div style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            {homeSearchQuery && (
+              <button
+                onClick={() => setHomeSearchQuery('')}
+                style={{
+                  background: '#F1F5F9',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '24px',
+                  height: '24px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#64748B',
+                  fontWeight: '900',
+                  fontSize: '12px'
+                }}
+              >
+                ✕
+              </button>
+            )}
+            <button
+              onClick={() => {
+                setActiveTab('TESTS');
+                setCatalogSubTab('ALL_TESTS');
+              }}
+              style={{
+                backgroundColor: '#006B70',
+                color: '#FFFFFF',
+                border: 'none',
+                padding: '0.5rem 0.9rem',
+                borderRadius: '10px',
+                fontWeight: '800',
+                fontSize: '0.78rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem'
+              }}
+            >
+              <span>Explore Matrix</span>
+              <ArrowRight size={13} />
+            </button>
+          </div>
+        </div>
+
+        {/* Popular Quick Search Chips */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap', paddingTop: '0.2rem' }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: '800', color: '#64748B' }}>Popular Searches:</span>
+          {[
+            { label: '🩸 Complete Blood Count (CBC)', q: 'Complete Blood Count' },
+            { label: '⚡ Thyroid Profile (T3/T4/TSH)', q: 'Thyroid' },
+            { label: '🌿 HbA1c Diabetes', q: 'HbA1c' },
+            { label: '☀️ Vitamin D3 & B12', q: 'Vitamin' },
+            { label: '🛡️ Aarogyam Full Body', q: 'Aarogyam' },
+            { label: '🧪 Lipid Cholesterol', q: 'Lipid' }
+          ].map(chip => (
+            <button
+              key={chip.q}
+              onClick={() => setHomeSearchQuery(chip.q)}
+              style={{
+                padding: '0.25rem 0.65rem',
+                borderRadius: '20px',
+                border: '1px solid #E2E8F0',
+                backgroundColor: '#F8FAFC',
+                color: '#334155',
+                fontSize: '0.74rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#E0F2F1';
+                e.currentTarget.style.borderColor = '#006B70';
+                e.currentTarget.style.color = '#006B70';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
+                e.currentTarget.style.borderColor = '#E2E8F0';
+                e.currentTarget.style.color = '#334155';
+              }}
+            >
+              {chip.label}
+            </button>
+          ))}
         </div>
 
         {/* Live Search Autocomplete Dropdown */}
         {searchResults.length > 0 && (
           <div style={{
             position: 'absolute',
-            top: '100%',
+            top: 'calc(100% - 10px)',
             left: '1.5rem',
             right: '1.5rem',
             backgroundColor: '#FFFFFF',
-            borderRadius: '16px',
-            border: '1.5px solid #CBD5E1',
-            boxShadow: '0 16px 36px rgba(0,0,0,0.15)',
+            borderRadius: '20px',
+            border: '1.5px solid #006B70',
+            boxShadow: '0 20px 45px -10px rgba(0,77,64,0.25)',
             zIndex: 1100,
             overflow: 'hidden',
-            marginTop: '0.5rem',
             display: 'flex',
             flexDirection: 'column'
           }}>
-            <div style={{ padding: '0.75rem 1rem', backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', fontSize: '0.78rem', fontWeight: '800', color: '#64748B' }}>
-              MATCHING DIAGNOSTIC TESTS ({searchResults.length})
+            <div style={{ padding: '0.75rem 1.25rem', backgroundColor: '#F0FDF4', borderBottom: '1px solid #E2E8F0', fontSize: '0.78rem', fontWeight: '900', color: '#006B70', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>MATCHING DIAGNOSTIC TESTS & PANELS ({searchResults.length})</span>
+              <span style={{ fontSize: '0.72rem', color: '#059669' }}>Click to view details or add instantly</span>
             </div>
             {searchResults.map((res, rIdx) => (
               <div
                 key={(res.id || res.code) + '_' + rIdx}
                 style={{
-                  padding: '0.85rem 1.25rem',
+                  padding: '0.95rem 1.25rem',
                   borderBottom: '1px solid #F1F5F9',
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -177,29 +299,44 @@ export default function CareSeekerHomeTab({
                   style={{ flex: 1 }}
                 >
                   <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.7rem', backgroundColor: '#E0F2F1', color: '#006B70', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800' }}>
+                    <span style={{ fontSize: '0.68rem', backgroundColor: '#006B70', color: '#FFFFFF', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
                       {res.itemType}
                     </span>
-                    <span style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.92rem' }}>
+                    <span style={{ fontWeight: '900', color: '#0F172A', fontSize: '0.95rem' }}>
                       {res.name || res.title}
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.76rem', color: '#64748B', marginTop: '0.15rem' }}>
-                    {res.lab || 'MedMarg Central Hub'} • Fasting: {res.fasting || 'NO'} • 🩸 {res.sampleType || 'SERUM'}
+                  <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.2rem', display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                    <span>🔬 {res.lab || 'MedMarg Central Hub'}</span>
+                    <span>• Fasting: {res.fasting || 'NO'}</span>
+                    <span>• 🩸 {res.sampleType || 'SERUM'}</span>
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#006B70' }}>₹{res.price || 499}</div>
-                    <div style={{ fontSize: '0.72rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{res.mrp || 999}</div>
+                    <div style={{ fontSize: '1.15rem', fontWeight: '900', color: '#006B70' }}>₹{res.price || 499}</div>
+                    <div style={{ fontSize: '0.74rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{res.mrp || 999}</div>
                   </div>
                   <button
                     onClick={() => {
                       addToCart(res);
                       setHomeSearchQuery('');
                     }}
-                    style={{ padding: '0.45rem 0.95rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                    style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#006B70',
+                      color: '#FFF',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '0.82rem',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      boxShadow: '0 2px 8px rgba(0,107,112,0.2)'
+                    }}
                   >
                     <Plus size={14} /> Add
                   </button>
