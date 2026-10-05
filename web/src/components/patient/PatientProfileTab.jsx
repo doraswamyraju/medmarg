@@ -12,24 +12,37 @@ import {
   Edit3, 
   Save, 
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  Activity,
+  HeartPulse,
+  Camera,
+  FolderHeart
 } from 'lucide-react';
 
-export default function PatientProfileTab({ user, onLogout }) {
+export default function PatientProfileTab({
+  user,
+  onLogout,
+  onOpenAddressModal = () => {},
+  savedAddresses = [],
+  onSetActiveFamilyMember = () => {}
+}) {
   const [profileName, setProfileName] = useState(user?.name || 'Rahul Sharma');
   const [phone, setPhone] = useState(user?.phone || user?.identifier || '+91 98765 43210');
-  const [email, setEmail] = useState(user?.email || 'rahul.sharma@example.com');
+  const [email, setEmail] = useState(user?.email || 'rahul.sharma@medmarg.in');
   const [bloodGroup, setBloodGroup] = useState('O+ (Positive)');
   const [preferredLanguage, setPreferredLanguage] = useState('Telugu & English');
+  const [needleSensitivity, setNeedleSensitivity] = useState('Normal (Standard Butterfly Needle)');
+  const [avatarUrl, setAvatarUrl] = useState(user?.picture || user?.avatar || user?.photoURL || '');
 
   // ABHA Digital ID
   const abhaNumber = '91-4829-1029-4820';
   const abhaAddress = 'rahulsharma@abdm';
 
-  // Family Members
+  // Family Members with Health Profiles & Chronic Conditions
   const [familyMembers, setFamilyMembers] = useState([
-    { id: 'f1', name: 'Sunita Sharma', relation: 'Spouse', age: 31, gender: 'Female', bloodGroup: 'B+' },
-    { id: 'f2', name: 'Aarav Sharma', relation: 'Son', age: 6, gender: 'Male', bloodGroup: 'O+' }
+    { id: 'f1', name: 'Sunita Sharma', relation: 'Spouse', age: 31, gender: 'Female', bloodGroup: 'B+', chronicConditions: ['Thyroid (Hypothyroidism)'], abhaId: '91-3829-1920-1120' },
+    { id: 'f2', name: 'Aarav Sharma', relation: 'Son', age: 6, gender: 'Male', bloodGroup: 'O+', chronicConditions: ['None / Pediatric'], abhaId: '91-8839-4410-9921' },
+    { id: 'f3', name: 'K. Somasekhar Sharma', relation: 'Father', age: 64, gender: 'Male', bloodGroup: 'O+', chronicConditions: ['Type-2 Diabetes', 'Hypertension'], abhaId: '91-1192-3349-8812' }
   ]);
 
   const [showAddFamily, setShowAddFamily] = useState(false);
@@ -37,16 +50,8 @@ export default function PatientProfileTab({ user, onLogout }) {
   const [newFamilyRelation, setNewFamilyRelation] = useState('Spouse');
   const [newFamilyAge, setNewFamilyAge] = useState('');
   const [newFamilyGender, setNewFamilyGender] = useState('Female');
-
-  // Saved Addresses
-  const [savedAddresses, setSavedAddresses] = useState([
-    { id: 'a1', label: 'Home (Default)', address: 'Plot 42, Air Bypass Road, Tirupati, AP - 517501', isDefault: true },
-    { id: 'a2', label: 'Parents Home', address: 'Door 12-4/A, Gandhi Road, Tirupati, AP - 517502', isDefault: false }
-  ]);
-
-  const [showAddAddress, setShowAddAddress] = useState(false);
-  const [newAddrLabel, setNewAddrLabel] = useState('Office');
-  const [newAddrText, setNewAddrText] = useState('');
+  const [newFamilyCondition, setNewFamilyCondition] = useState('None');
+  const [newFamilyBlood, setNewFamilyBlood] = useState('O+');
 
   const handleAddFamilyMember = (e) => {
     e.preventDefault();
@@ -59,7 +64,9 @@ export default function PatientProfileTab({ user, onLogout }) {
         relation: newFamilyRelation,
         age: parseInt(newFamilyAge) || 25,
         gender: newFamilyGender,
-        bloodGroup: 'Unknown'
+        bloodGroup: newFamilyBlood,
+        chronicConditions: newFamilyCondition.split(',').map(s => s.trim()),
+        abhaId: `91-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`
       }
     ]);
     setNewFamilyName('');
@@ -71,32 +78,42 @@ export default function PatientProfileTab({ user, onLogout }) {
     setFamilyMembers(familyMembers.filter(f => f.id !== id));
   };
 
-  const handleAddAddress = (e) => {
-    e.preventDefault();
-    if (!newAddrText.trim()) return;
-    setSavedAddresses([
-      ...savedAddresses,
-      {
-        id: 'a_' + Date.now(),
-        label: newAddrLabel,
-        address: newAddrText,
-        isDefault: false
-      }
-    ]);
-    setNewAddrText('');
-    setShowAddAddress(false);
-  };
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '860px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '880px' }}>
       
-      {/* Patient Profile Card */}
+      {/* 1. PATIENT PROFILE & AVATAR CARD */}
       <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '2rem', border: '1.5px solid #E2E8F0', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid #E2E8F0' }}>
           <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
-            <div style={{ width: '68px', height: '68px', borderRadius: '50%', backgroundColor: '#004D40', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', fontWeight: '900', boxShadow: '0 4px 12px rgba(0,77,64,0.25)' }}>
-              {profileName ? profileName[0].toUpperCase() : 'R'}
+            
+            {/* Google / User Avatar */}
+            <div style={{ position: 'relative' }}>
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={profileName}
+                  style={{ width: '72px', height: '72px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #004D40', boxShadow: '0 4px 12px rgba(0,77,64,0.2)' }}
+                />
+              ) : (
+                <div style={{ width: '72px', height: '72px', borderRadius: '50%', backgroundColor: '#004D40', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', fontWeight: '900', boxShadow: '0 4px 12px rgba(0,77,64,0.25)' }}>
+                  {profileName ? profileName[0].toUpperCase() : 'R'}
+                </div>
+              )}
+              <label style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#006B70', color: '#FFF', borderRadius: '50%', padding: '4px', cursor: 'pointer', border: '2px solid #FFF' }}>
+                <Camera size={13} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    if (e.target.files[0]) {
+                      setAvatarUrl(URL.createObjectURL(e.target.files[0]));
+                    }
+                  }}
+                  style={{ display: 'none' }}
+                />
+              </label>
             </div>
+
             <div>
               <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.72rem', backgroundColor: '#E0F2F1', color: '#006B70', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
@@ -112,12 +129,12 @@ export default function PatientProfileTab({ user, onLogout }) {
           </div>
 
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Primary City</div>
+            <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Primary Healthcare City</div>
             <div style={{ fontSize: '1rem', fontWeight: '900', color: '#006B70' }}>📍 Tirupati, AP</div>
           </div>
         </div>
 
-        {/* Quick Vitals & Health Info */}
+        {/* Quick Vitals & Health Info Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
           <div style={{ backgroundColor: '#F8FAFC', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
             <div style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: '800' }}>BLOOD GROUP</div>
@@ -125,18 +142,18 @@ export default function PatientProfileTab({ user, onLogout }) {
           </div>
 
           <div style={{ backgroundColor: '#F8FAFC', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-            <div style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: '800' }}>AGE & GENDER</div>
-            <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#0F172A', marginTop: '0.2rem' }}>34 Years • Male</div>
+            <div style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: '800' }}>PREFERRED LANGUAGE</div>
+            <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#0F172A', marginTop: '0.2rem' }}>{preferredLanguage}</div>
           </div>
 
           <div style={{ backgroundColor: '#F8FAFC', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-            <div style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: '800' }}>COMMUNICATION</div>
-            <div style={{ fontSize: '0.95rem', fontWeight: '800', color: '#0F172A', marginTop: '0.2rem' }}>{preferredLanguage}</div>
+            <div style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: '800' }}>NEEDLE SENSITIVITY</div>
+            <div style={{ fontSize: '0.88rem', fontWeight: '800', color: '#006B70', marginTop: '0.2rem' }}>Butterfly Needle</div>
           </div>
         </div>
       </div>
 
-      {/* ABDM / ABHA Digital Health Card */}
+      {/* 2. ABDM / ABHA DIGITAL HEALTH CARD */}
       <div style={{
         backgroundColor: '#004D40',
         borderRadius: '24px',
@@ -172,29 +189,29 @@ export default function PatientProfileTab({ user, onLogout }) {
         </div>
       </div>
 
-      {/* Family Members Management */}
+      {/* 3. FAMILY MEMBERS HEALTH MANAGEMENT */}
       <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '2rem', border: '1.5px solid #E2E8F0', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>Family Members ({familyMembers.length})</h3>
-            <p style={{ fontSize: '0.82rem', color: '#64748B', margin: '0.2rem 0 0 0' }}>Book tests directly for dependents and family members.</p>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>Family Members Health Profiles ({familyMembers.length})</h3>
+            <p style={{ fontSize: '0.82rem', color: '#64748B', margin: '0.2rem 0 0 0' }}>Track longitudinal health records and book tests for dependents.</p>
           </div>
           <button
             onClick={() => setShowAddFamily(!showAddFamily)}
             style={{ padding: '0.55rem 1rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
           >
-            <Plus size={16} /> Add Member
+            <Plus size={16} /> Add Family Member
           </button>
         </div>
 
         {/* Add Family Member Form */}
         {showAddFamily && (
           <form onSubmit={handleAddFamilyMember} style={{ backgroundColor: '#F8FAFC', padding: '1.25rem', borderRadius: '16px', border: '1px solid #CBD5E1', marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.92rem' }}>Add New Family Member</div>
+            <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.92rem' }}>Add Family Member Health Profile</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.6rem' }}>
               <input
                 type="text"
-                placeholder="Full Name"
+                placeholder="Full Name *"
                 value={newFamilyName}
                 onChange={(e) => setNewFamilyName(e.target.value)}
                 required
@@ -229,6 +246,13 @@ export default function PatientProfileTab({ user, onLogout }) {
                 <option value="Male">Male</option>
                 <option value="Other">Other</option>
               </select>
+              <input
+                type="text"
+                placeholder="Chronic Conditions (e.g. Diabetic, Thyroid)"
+                value={newFamilyCondition}
+                onChange={(e) => setNewFamilyCondition(e.target.value)}
+                style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}
+              />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
               <button
@@ -242,39 +266,53 @@ export default function PatientProfileTab({ user, onLogout }) {
                 type="submit"
                 style={{ padding: '0.5rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer' }}
               >
-                Save Member
+                Save Family Profile
               </button>
             </div>
           </form>
         )}
 
         {/* Family Members Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem' }}>
           {familyMembers.map((fam) => (
-            <div key={fam.id} style={{ backgroundColor: '#F8FAFC', borderRadius: '16px', padding: '1rem 1.25rem', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div key={fam.id} style={{ backgroundColor: '#F8FAFC', borderRadius: '16px', padding: '1.25rem', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.75rem' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <span style={{ fontSize: '0.72rem', backgroundColor: '#E0F2F1', color: '#006B70', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800' }}>
                     {fam.relation}
                   </span>
-                  <span style={{ fontSize: '0.75rem', color: '#64748B' }}>{fam.age} yrs • {fam.gender}</span>
+                  <button
+                    onClick={() => handleRemoveFamilyMember(fam.id)}
+                    style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '0.2rem' }}
+                    title="Remove member"
+                  >
+                    <Trash2 size={15} />
+                  </button>
                 </div>
-                <h4 style={{ fontSize: '1rem', fontWeight: '800', color: '#0F172A', marginTop: '0.3rem' }}>{fam.name}</h4>
+                <h4 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0F172A', marginTop: '0.35rem' }}>{fam.name}</h4>
+                <div style={{ fontSize: '0.78rem', color: '#64748B' }}>{fam.age} yrs • {fam.gender} • Blood: {fam.bloodGroup}</div>
+                
+                {/* Chronic Conditions */}
+                {fam.chronicConditions && fam.chronicConditions.length > 0 && (
+                  <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginTop: '0.4rem' }}>
+                    {fam.chronicConditions.map((cond, cIdx) => (
+                      <span key={cIdx} style={{ fontSize: '0.7rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '700' }}>
+                        {cond}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <button
-                onClick={() => handleRemoveFamilyMember(fam.id)}
-                style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '0.4rem' }}
-                title="Remove family member"
-              >
-                <Trash2 size={16} />
-              </button>
+              <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.72rem', color: '#64748B', fontFamily: 'monospace' }}>ABHA: {fam.abhaId || 'Linked'}</span>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Saved Addresses Book */}
+      {/* 4. SAVED COLLECTION ADDRESSES */}
       <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '2rem', border: '1.5px solid #E2E8F0', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
           <div>
@@ -282,53 +320,18 @@ export default function PatientProfileTab({ user, onLogout }) {
             <p style={{ fontSize: '0.82rem', color: '#64748B', margin: '0.2rem 0 0 0' }}>Express home sample pickup points in Tirupati.</p>
           </div>
           <button
-            onClick={() => setShowAddAddress(!showAddAddress)}
+            onClick={onOpenAddressModal}
             style={{ padding: '0.55rem 1rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
           >
             <Plus size={16} /> Add Address
           </button>
         </div>
 
-        {showAddAddress && (
-          <form onSubmit={handleAddAddress} style={{ backgroundColor: '#F8FAFC', padding: '1.25rem', borderRadius: '16px', border: '1px solid #CBD5E1', marginBottom: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.92rem' }}>Add New Address</div>
-            <div style={{ display: 'flex', gap: '0.6rem' }}>
-              <input
-                type="text"
-                placeholder="Label (e.g. Office, Clinic, In-Laws)"
-                value={newAddrLabel}
-                onChange={(e) => setNewAddrLabel(e.target.value)}
-                style={{ width: '160px', padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}
-              />
-              <input
-                type="text"
-                placeholder="Full Door No, Street, Landmark, Tirupati Pin Code"
-                value={newAddrText}
-                onChange={(e) => setNewAddrText(e.target.value)}
-                required
-                style={{ flex: 1, padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}
-              />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-              <button
-                type="button"
-                onClick={() => setShowAddAddress(false)}
-                style={{ padding: '0.5rem 1rem', backgroundColor: '#E2E8F0', color: '#334155', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '0.82rem', cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                style={{ padding: '0.5rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer' }}
-              >
-                Save Address
-              </button>
-            </div>
-          </form>
-        )}
-
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {savedAddresses.map((addr) => (
+          {(savedAddresses.length > 0 ? savedAddresses : [
+            { id: 'a1', label: 'Home', address: 'Plot 42, Air Bypass Road, Tirupati, AP - 517501', isDefault: true },
+            { id: 'a2', label: 'Parents', address: 'Door 12-4/A, Gandhi Road, Tirupati, AP - 517502', isDefault: false }
+          ]).map((addr) => (
             <div key={addr.id} style={{ backgroundColor: '#F8FAFC', borderRadius: '16px', padding: '1rem 1.25rem', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'flex-start' }}>
                 <MapPin size={18} color="#006B70" style={{ marginTop: '2px', flexShrink: 0 }} />
@@ -349,7 +352,7 @@ export default function PatientProfileTab({ user, onLogout }) {
         </div>
       </div>
 
-      {/* Account Controls & Sign Out */}
+      {/* Sign Out Button */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem' }}>
         <div style={{ fontSize: '0.82rem', color: '#64748B' }}>
           MedMarg Healthcare Engine v2.4 • Client ID: MM-PAT-90182
