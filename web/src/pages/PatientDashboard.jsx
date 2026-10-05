@@ -7,7 +7,7 @@ import {
   User, 
   ShoppingBag, 
   Gift, 
-  Building2,
+  HeartPulse,
   CheckCircle2
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
@@ -15,20 +15,21 @@ import { getCatalogState, filterCatalogItems } from '../data/catalogStore';
 import { API_BASE } from '../data/apiConfig';
 
 // Role-Specific Modular Subcomponents (src/components/patient/)
-import PatientHomeTab from '../components/patient/PatientHomeTab';
+import CareSeekerHomeTab from '../components/patient/CareSeekerHomeTab';
 import PatientCatalogMatrixTab from '../components/patient/PatientCatalogMatrixTab';
-import PatientTrackingTab from '../components/patient/PatientTrackingTab';
+import CareSeekerVitalsModule from '../components/patient/CareSeekerVitalsModule';
+import CareSeekerTrackingTab from '../components/patient/CareSeekerTrackingTab';
 import PatientReportsTab from '../components/patient/PatientReportsTab';
 import PatientProfileTab from '../components/patient/PatientProfileTab';
 import PatientReferralAndCorporate from '../components/patient/PatientReferralAndCorporate';
-import PatientAddressModal from '../components/patient/PatientAddressModal';
+import CareSeekerAddressModal from '../components/patient/CareSeekerAddressModal';
 import PatientCartDrawer from '../components/patient/PatientCartDrawer';
-import PatientCheckoutModal from '../components/patient/PatientCheckoutModal';
-import PatientUniversalItemSheet from '../components/patient/PatientUniversalItemSheet';
-import PatientPrescriptionModal from '../components/patient/PatientPrescriptionModal';
+import CareSeekerCheckoutModal from '../components/patient/CareSeekerCheckoutModal';
+import CareSeekerUniversalItemSheet from '../components/patient/CareSeekerUniversalItemSheet';
+import CareSeekerPrescriptionModal from '../components/patient/CareSeekerPrescriptionModal';
 
 export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
-  // 6 CORE NAVIGATION TABS: HOME, TESTS, TRACK, REPORTS, REFER_CORP, PROFILE
+  // 7 CORE NAVIGATION TABS: HOME, TESTS, VITALS, TRACK, REPORTS, REFER_CORP, PROFILE
   const [activeTab, setActiveTab] = useState('HOME');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -77,8 +78,8 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
       phleboName: 'Ramesh Kumar (Certified Phlebotomist)',
       phleboPhone: '+91 98765 11223',
       status: 'ENROUTE',
-      eta: '25 Mins',
-      tempTelemetry: '4.2°C (Optimal Cold-Chain)',
+      eta: '14 Mins',
+      tempTelemetry: '3.8°C (Optimal Cold-Chain)',
       handoverOtp: '4821',
       items: [
         { name: 'MedMarg Master Health Checkup', price: 1499 },
@@ -115,7 +116,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
       .catch(() => {});
   }, []);
 
-  // Fetch live patient orders from backend
+  // Fetch live orders from backend
   useEffect(() => {
     fetch(`${API_BASE}/api/v1/patient/orders`)
       .then(res => res.json())
@@ -174,7 +175,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
 
   const handleOrderWhatsApp = (customText = '') => {
     const defaultMsg = encodeURIComponent(
-      `Hello MedMarg, I would like to book a Diagnostic Health Test / Home Sample Collection.\n\nPatient Name: ${user?.name || 'Rahul Sharma'}\nContact: ${user?.phone || user?.identifier || '+91 98765 43210'}\nLocation: Tirupati, AP\n${customText ? `Requested Test: ${customText}` : ''}`
+      `Hello MedMarg, I would like to book a Diagnostic Health Checkup / Home Sample Collection.\n\nCare Seeker Name: ${user?.name || 'Rahul Sharma'}\nContact: ${user?.phone || user?.identifier || '+91 98765 43210'}\nLocation: Tirupati, AP\n${customText ? `Requested Test: ${customText}` : ''}`
     );
     window.open(`https://wa.me/919876543210?text=${defaultMsg}`, '_blank');
   };
@@ -201,10 +202,11 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   const navMenuItems = [
     { key: 'HOME', label: 'Home', icon: HomeIcon },
     { key: 'TESTS', label: 'Labs & Tests Matrix', icon: FlaskConical, badge: `${catalog.tests?.length || 913}+` },
+    { key: 'VITALS', label: 'Daily Vitals Log', icon: HeartPulse, badge: 'Live' },
     { key: 'TRACK', label: 'Live Tracking', icon: Activity, badge: `${allOrders.length} Active` },
     { key: 'REPORTS', label: 'Health Vault', icon: FolderHeart, badge: 'NABL' },
     { key: 'REFER_CORP', label: 'Refer & Corporate', icon: Gift, badge: '₹400' },
-    { key: 'PROFILE', label: 'Patient Profile', icon: User }
+    { key: 'PROFILE', label: 'Care Seeker Profile', icon: User }
   ];
 
   return (
@@ -231,7 +233,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
             {!sidebarCollapsed && (
               <div>
                 <span style={{ fontSize: '0.7rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '900', display: 'block', width: 'fit-content' }}>
-                  PATIENT PORTAL
+                  CARE SEEKER PORTAL
                 </span>
                 <span style={{ fontSize: '0.82rem', color: '#E0F2F1', fontWeight: '700' }}>Healthcare Console</span>
               </div>
@@ -246,7 +248,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
           </button>
         </div>
 
-        <nav style={{ flex: 1, padding: '1.25rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <nav style={{ flex: 1, padding: '1.25rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.45rem', overflowY: 'auto' }}>
           {navMenuItems.map((item) => {
             const IconComp = item.icon;
             const isActive = activeTab === item.key;
@@ -258,24 +260,24 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '0.85rem',
-                  padding: '0.85rem 1rem',
+                  padding: '0.8rem 1rem',
                   borderRadius: '12px',
                   border: 'none',
                   backgroundColor: isActive ? '#006B70' : 'transparent',
                   color: isActive ? '#FFFFFF' : '#B2DFDB',
                   fontWeight: isActive ? '800' : '600',
-                  fontSize: '0.9rem',
+                  fontSize: '0.88rem',
                   cursor: 'pointer',
                   textAlign: 'left',
                   transition: 'all 0.15s ease'
                 }}
               >
-                <IconComp size={20} color={isActive ? '#FBBF24' : '#80CBC4'} />
+                <IconComp size={19} color={isActive ? '#FBBF24' : '#80CBC4'} />
                 {!sidebarCollapsed && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
                     <span>{item.label}</span>
                     {item.badge && (
-                      <span style={{ fontSize: '0.7rem', padding: '0.1rem 0.45rem', borderRadius: '6px', backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', color: isActive ? '#FFF' : '#80CBC4', fontWeight: '800' }}>
+                      <span style={{ fontSize: '0.68rem', padding: '0.1rem 0.45rem', borderRadius: '6px', backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', color: isActive ? '#FFF' : '#80CBC4', fontWeight: '800' }}>
                         {item.badge}
                       </span>
                     )}
@@ -291,10 +293,10 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 {user?.picture || user?.avatar ? (
-                  <img src={user?.picture || user?.avatar} alt={user?.name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                  <img src={user?.picture || user?.avatar} alt={user?.name} style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #80CBC4' }} />
                 ) : (
-                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#006B70', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.85rem' }}>
-                    {user?.name ? user.name[0].toUpperCase() : 'R'}
+                  <div style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: '#006B70', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.9rem' }}>
+                    {user?.name ? user.name[0].toUpperCase() : 'C'}
                   </div>
                 )}
                 <div>
@@ -360,10 +362,11 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
             <h1 style={{ fontSize: '1.85rem', fontWeight: '900', color: '#0F172A', marginTop: '0.35rem' }}>
               {activeTab === 'HOME' && 'MedMarg Healthcare & Wellness Hub'}
               {activeTab === 'TESTS' && 'Pathology Lab Tests Matrix & Packages'}
-              {activeTab === 'TRACK' && 'Live Sample Tracker & Telemetry'}
-              {activeTab === 'REPORTS' && 'Digital Health Locker & Reports'}
+              {activeTab === 'VITALS' && 'Care Seeker Daily Vitals & Health Biometrics'}
+              {activeTab === 'TRACK' && 'Live Phlebotomist Dispatch & Telemetry Radar'}
+              {activeTab === 'REPORTS' && 'Digital Health Vault & Lab Reports'}
               {activeTab === 'REFER_CORP' && 'Referrals & Corporate Staff Wellness'}
-              {activeTab === 'PROFILE' && 'Patient Profile & Account Settings'}
+              {activeTab === 'PROFILE' && 'Care Seeker Profile & Account Settings'}
             </h1>
           </div>
 
@@ -393,7 +396,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
 
         {/* MODULAR FEATURE SUBCOMPONENTS */}
         {activeTab === 'HOME' && (
-          <PatientHomeTab 
+          <CareSeekerHomeTab 
             user={user} 
             setActiveTab={setActiveTab} 
             setCatalogSubTab={setCatalogSubTab} 
@@ -402,6 +405,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
             handleOrderCall={handleOrderCall} 
             onOpenPrescriptionModal={() => setShowPrescriptionModal(true)}
             onOpenAddressModal={() => setShowAddressModal(true)}
+            addToCart={addToCart}
             catalog={catalog} 
             liveOrdersCount={allOrders.length}
           />
@@ -425,8 +429,14 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
           />
         )}
 
+        {activeTab === 'VITALS' && (
+          <CareSeekerVitalsModule 
+            user={user} 
+          />
+        )}
+
         {activeTab === 'TRACK' && (
-          <PatientTrackingTab 
+          <CareSeekerTrackingTab 
             activeOrder={activeOrder} 
             allOrders={allOrders}
             onSelectOrder={(ord) => setActiveOrder(ord)}
@@ -474,16 +484,18 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
       />
 
       {/* 2. Multi-step Checkout & Booking Modal */}
-      <PatientCheckoutModal
+      <CareSeekerCheckoutModal
         isOpen={showCheckoutModal}
         onClose={() => setShowCheckoutModal(false)}
         cart={cart}
         user={user}
+        savedAddresses={savedAddresses}
+        onOpenAddressModal={() => setShowAddressModal(true)}
         onOrderSuccess={handleOrderSuccess}
       />
 
       {/* 3. Universal Test/Package Detail Sheet */}
-      <PatientUniversalItemSheet
+      <CareSeekerUniversalItemSheet
         item={selectedDetailItem}
         onClose={() => setSelectedDetailItem(null)}
         onAddToCart={addToCart}
@@ -491,14 +503,14 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
       />
 
       {/* 4. Prescription Upload Modal */}
-      <PatientPrescriptionModal
+      <CareSeekerPrescriptionModal
         isOpen={showPrescriptionModal}
         onClose={() => setShowPrescriptionModal(false)}
         user={user}
       />
 
-      {/* 5. Address Manager Modal */}
-      <PatientAddressModal
+      {/* 5. Address Manager Modal with Draggable Pinpoint Map */}
+      <CareSeekerAddressModal
         isOpen={showAddressModal}
         onClose={() => setShowAddressModal(false)}
         onSaveAddress={handleSaveAddress}
