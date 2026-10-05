@@ -21,7 +21,12 @@ import {
   Trash2,
   Bell, 
   FileText,
-  Sparkles
+  Sparkles,
+  Send,
+  Star,
+  Ticket,
+  Tent,
+  Tag
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState, saveCatalogState } from '../data/catalogStore';
@@ -47,7 +52,11 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   const [activeTab, setActiveTab] = useState('TESTS_MGMT'); 
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [inventorySubTab, setInventorySubTab] = useState('STOCK_KITS');
-  const [inventoryExpanded, setInventoryExpanded] = useState(true);
+  const [inventoryExpanded, setInventoryExpanded] = useState(false);
+  const [freelancerSubTab, setFreelancerSubTab] = useState('KYC_VERIFICATION');
+  const [freelancersExpanded, setFreelancersExpanded] = useState(false);
+  const [offersSubTab, setOffersSubTab] = useState('CAROUSEL_BANNERS');
+  const [offersExpanded, setOffersExpanded] = useState(false);
 
   // Master Catalog State
   const [catalog, setCatalog] = useState(getCatalogState() || initialCatalog);
@@ -200,10 +209,9 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
 
   // Navigation Items (Single Word Labels)
   const navMenuItems = [
-    { key: 'TESTS_MGMT', label: 'Catalog', icon: FlaskConical, badge: `${(catalog.tests?.length || 913) + (catalog.profiles?.length || 87)}` },
+    { key: 'TESTS_MGMT', label: 'Tests', icon: FlaskConical, badge: `${(catalog.tests?.length || 913) + (catalog.profiles?.length || 87)}` },
     { key: 'LIVE_ORDERS', label: 'Orders', icon: Package, badge: `${orders.length}` },
     { key: 'CUSTOMERS', label: 'Customers', icon: Users, badge: 'Care Seekers' },
-    { key: 'OFFERS_MGMT', label: 'Offers Carousel', icon: Sparkles, badge: 'Live Promo' },
     { key: 'GPS_RADAR', label: 'Tracking', icon: Navigation, badge: 'Live GPS' },
     { key: 'TERRITORY_MGMT', label: 'Territories', icon: Compass, badge: `${territories.length} Zones` },
     { key: 'FREELANCERS', label: 'Freelancers', icon: UserCheck, badge: `${freelancers.filter(f => f.status === 'PENDING_VERIFICATION').length} Pending` },
@@ -212,6 +220,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { key: 'LABS', label: 'Labs', icon: Building2, badge: `${labPartners.length}` },
     { key: 'PARTNERS_QUEUE', label: 'Partners', icon: Stethoscope, badge: `${partnerQueue.length}` },
     { key: 'FINANCIALS', label: 'Financials', icon: DollarSign, badge: 'Razorpay' },
+    { key: 'OFFERS_MGMT', label: 'Offers Zone', icon: Sparkles, badge: 'Live Promo' },
     { key: 'OVERVIEW', label: 'Overview', icon: BarChart3 }
   ];
 
@@ -225,6 +234,21 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { key: 'SCRAP_EXPIRY', label: '6. Scrap & Expiry', icon: Trash2 },
     { key: 'MOQ_ALERTS', label: '7. MOQ Alerts', icon: Bell },
     { key: 'VENDORS', label: '8. Suppliers Master', icon: FileText }
+  ];
+
+  // Freelancer Sub-menu Items (Rendered inside Sidebar Drawer)
+  const freelancerSubMenuItems = [
+    { key: 'KYC_VERIFICATION', label: '1. KYC & Verify', icon: ShieldCheck, badge: `${freelancers.filter(f => f.status === 'PENDING_VERIFICATION').length || null}`, badgeColor: '#F59E0B' },
+    { key: 'BROADCAST_ORDERS', label: '2. Broadcast Tasks', icon: Send },
+    { key: 'WALLET_PAYOUTS', label: '3. Wallet & Payouts', icon: DollarSign },
+    { key: 'PERFORMANCE_SLA', label: '4. Ratings & Quality', icon: Star }
+  ];
+
+  // Offers Zone Sub-menu Items (Rendered inside Sidebar Drawer)
+  const offersSubMenuItems = [
+    { key: 'CAROUSEL_BANNERS', label: '1. Carousel Banners', icon: Sparkles },
+    { key: 'COUPONS_PROMOS', label: '2. Promo Codes & Discounts', icon: Ticket },
+    { key: 'CAMPAIGNS', label: '3. Health Camp Drives', icon: Tent }
   ];
 
   return (
@@ -273,7 +297,13 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
           {navMenuItems.map((item) => {
             const IconComp = item.icon;
             const isInventory = item.key === 'INVENTORY';
+            const isFreelancers = item.key === 'FREELANCERS';
+            const isOffers = item.key === 'OFFERS_MGMT';
+            const hasSubmenu = isInventory || isFreelancers || isOffers;
             const isActive = activeTab === item.key;
+            
+            const isExpanded = isInventory ? inventoryExpanded : isFreelancers ? freelancersExpanded : isOffers ? offersExpanded : false;
+
             return (
               <div key={item.key} style={{ display: 'flex', flexDirection: 'column' }}>
                 <button
@@ -284,6 +314,20 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                         setInventoryExpanded(true);
                       } else {
                         setInventoryExpanded(!inventoryExpanded);
+                      }
+                    } else if (isFreelancers) {
+                      if (activeTab !== 'FREELANCERS') {
+                        setActiveTab('FREELANCERS');
+                        setFreelancersExpanded(true);
+                      } else {
+                        setFreelancersExpanded(!freelancersExpanded);
+                      }
+                    } else if (isOffers) {
+                      if (activeTab !== 'OFFERS_MGMT') {
+                        setActiveTab('OFFERS_MGMT');
+                        setOffersExpanded(true);
+                      } else {
+                        setOffersExpanded(!offersExpanded);
                       }
                     } else {
                       setActiveTab(item.key);
@@ -314,14 +358,14 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                       {item.badge}
                     </span>
                   )}
-                  {!sidebarCollapsed && isInventory && (
+                  {!sidebarCollapsed && hasSubmenu && (
                     <span style={{ marginLeft: '0.2rem', color: isActive ? '#FFFFFF' : '#94A3B8' }}>
-                      {inventoryExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                      {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                     </span>
                   )}
                 </button>
 
-                {/* Sub Tabs Inside Sidebar for Inventory (Accordion matching Mobile SidebarView) */}
+                {/* Sub Tabs Inside Sidebar for Inventory */}
                 {isInventory && inventoryExpanded && !sidebarCollapsed && (
                   <div style={{
                     marginLeft: '1.25rem',
@@ -372,6 +416,106 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                     })}
                   </div>
                 )}
+
+                {/* Sub Tabs Inside Sidebar for Freelancers */}
+                {isFreelancers && freelancersExpanded && !sidebarCollapsed && (
+                  <div style={{
+                    marginLeft: '1.25rem',
+                    paddingLeft: '0.6rem',
+                    borderLeft: '2px solid #E2E8F0',
+                    marginTop: '0.25rem',
+                    marginBottom: '0.35rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.2rem'
+                  }}>
+                    {freelancerSubMenuItems.map(sub => {
+                      const SubIcon = sub.icon;
+                      const isSubActive = activeTab === 'FREELANCERS' && freelancerSubTab === sub.key;
+                      return (
+                        <button
+                          key={sub.key}
+                          onClick={() => {
+                            setActiveTab('FREELANCERS');
+                            setFreelancerSubTab(sub.key);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.6rem',
+                            padding: '0.45rem 0.75rem',
+                            borderRadius: '8px',
+                            border: 'none',
+                            backgroundColor: isSubActive ? '#E0F2FE' : 'transparent',
+                            color: isSubActive ? '#006B70' : '#64748B',
+                            fontWeight: isSubActive ? '800' : '600',
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'all 0.12s ease',
+                            width: '100%'
+                          }}
+                        >
+                          <SubIcon size={14} color={isSubActive ? '#006B70' : '#94A3B8'} />
+                          <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.label}</span>
+                          {sub.badge && (
+                            <span style={{ fontSize: '0.65rem', backgroundColor: sub.badgeColor || '#006B70', color: '#FFF', padding: '0.1rem 0.35rem', borderRadius: '6px', fontWeight: '800' }}>
+                              {sub.badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Sub Tabs Inside Sidebar for Offers Zone */}
+                {isOffers && offersExpanded && !sidebarCollapsed && (
+                  <div style={{
+                    marginLeft: '1.25rem',
+                    paddingLeft: '0.6rem',
+                    borderLeft: '2px solid #E2E8F0',
+                    marginTop: '0.25rem',
+                    marginBottom: '0.35rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.2rem'
+                  }}>
+                    {offersSubMenuItems.map(sub => {
+                      const SubIcon = sub.icon;
+                      const isSubActive = activeTab === 'OFFERS_MGMT' && offersSubTab === sub.key;
+                      return (
+                        <button
+                          key={sub.key}
+                          onClick={() => {
+                            setActiveTab('OFFERS_MGMT');
+                            setOffersSubTab(sub.key);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.6rem',
+                            padding: '0.45rem 0.75rem',
+                            borderRadius: '8px',
+                            border: 'none',
+                            backgroundColor: isSubActive ? '#E0F2FE' : 'transparent',
+                            color: isSubActive ? '#006B70' : '#64748B',
+                            fontWeight: isSubActive ? '800' : '600',
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'all 0.12s ease',
+                            width: '100%'
+                          }}
+                        >
+                          <SubIcon size={14} color={isSubActive ? '#006B70' : '#94A3B8'} />
+                          <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
               </div>
             );
           })}
@@ -477,6 +621,9 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             <FreelancerDeskTab 
               freelancers={freelancers} 
               setFreelancers={setFreelancers} 
+              initialSubTab={freelancerSubTab}
+              API_BASE={API_BASE}
+              safeFetch={safeFetch}
             />
           )}
 
@@ -539,6 +686,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
           {activeTab === 'OFFERS_MGMT' && (
             <AdminOffersManagerTab 
               catalog={catalog} 
+              initialSubTab={offersSubTab}
             />
           )}
 
