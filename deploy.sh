@@ -31,17 +31,17 @@ npm install --legacy-peer-deps
 npm run build
 
 echo ""
-echo "=== 4. STARTING / RESTARTING WEB SERVER (PORT 5085) ==="
-pm2 delete medmarg-web 2>/dev/null || true
-pm2 serve /var/www/medmarg/web/dist 5085 --spa --name "medmarg-web"
-
-echo ""
-echo "=== 5. SETTING UP NODE.JS BACKEND (PORT 5080) ==="
+echo "=== 4. STARTING / RESTARTING UNIFIED BACKEND & WEB API (PORT 5080) ==="
 cd /var/www/medmarg/backend
 npm install --legacy-peer-deps
 
 pm2 delete medmarg-api 2>/dev/null || true
 PORT=5080 pm2 start server.js --name "medmarg-api"
+
+# Optional standalone static web server on port 5085 if required by Nginx config
+pm2 delete medmarg-web 2>/dev/null || true
+pm2 serve /var/www/medmarg/web/dist 5085 --spa --name "medmarg-web"
+
 pm2 save
 
 echo ""
