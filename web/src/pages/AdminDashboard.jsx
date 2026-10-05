@@ -19,8 +19,9 @@ import {
   PackageCheck,
   ShieldCheck,
   Trash2,
-  Bell,
-  FileText
+  Bell, 
+  FileText,
+  Sparkles
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState, saveCatalogState } from '../data/catalogStore';
@@ -39,6 +40,7 @@ import PartnerQueueTab from '../components/admin/PartnerQueueTab';
 import FinancialsTab from '../components/admin/FinancialsTab';
 import OverviewKpiTab from '../components/admin/OverviewKpiTab';
 import CustomersDeskTab from '../components/admin/CustomersDeskTab';
+import AdminOffersManagerTab from '../components/admin/AdminOffersManagerTab';
 
 export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   // Navigation State
@@ -200,7 +202,8 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   const navMenuItems = [
     { key: 'TESTS_MGMT', label: 'Catalog', icon: FlaskConical, badge: `${(catalog.tests?.length || 913) + (catalog.profiles?.length || 87)}` },
     { key: 'LIVE_ORDERS', label: 'Orders', icon: Package, badge: `${orders.length}` },
-    { key: 'CUSTOMERS', label: 'Customers', icon: Users, badge: 'Patients' },
+    { key: 'CUSTOMERS', label: 'Customers', icon: Users, badge: 'Care Seekers' },
+    { key: 'OFFERS_MGMT', label: 'Offers Carousel', icon: Sparkles, badge: 'Live Promo' },
     { key: 'GPS_RADAR', label: 'Tracking', icon: Navigation, badge: 'Live GPS' },
     { key: 'TERRITORY_MGMT', label: 'Territories', icon: Compass, badge: `${territories.length} Zones` },
     { key: 'FREELANCERS', label: 'Freelancers', icon: UserCheck, badge: `${freelancers.filter(f => f.status === 'PENDING_VERIFICATION').length} Pending` },
@@ -529,6 +532,13 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             <OverviewKpiTab 
               catalog={catalog} 
               partnerQueue={partnerQueue} 
+            />
+          )}
+
+          {/* TAB 12: HORIZONTAL OFFERS CAROUSEL & PROMOTIONS MANAGER */}
+          {activeTab === 'OFFERS_MGMT' && (
+            <AdminOffersManagerTab 
+              catalog={catalog} 
             />
           )}
 

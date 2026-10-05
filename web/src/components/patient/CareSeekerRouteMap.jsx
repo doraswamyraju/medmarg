@@ -19,7 +19,7 @@ export default function CareSeekerRouteMap({
       mapInstanceRef.current.remove();
     }
 
-    // Clean, high-contrast OpenStreetMap street tiles (No dark satellite / No admin polygons)
+    // Clean, modern street tiles without hospital red crosses or POI clutter (CartoDB Voyager)
     const map = L.map(mapContainerRef.current, {
       center: [(phleboCoords.lat + homeCoords.lat) / 2, (phleboCoords.lng + homeCoords.lng) / 2],
       zoom: 15,
@@ -27,8 +27,9 @@ export default function CareSeekerRouteMap({
       attributionControl: false
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd',
+      maxZoom: 20
     }).addTo(map);
 
     // 1. Phlebotomist Live Rider Marker

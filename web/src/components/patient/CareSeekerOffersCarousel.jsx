@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sparkles, Tag, ArrowRight, Clock, ShieldCheck, Heart, Award } from 'lucide-react';
+import { API_BASE, safeFetch } from '../../data/apiConfig';
 
 export default function CareSeekerOffersCarousel({
   onSelectOffer = () => {},
   catalog = {}
 }) {
-  const offers = [
+  const [offers, setOffers] = useState([
     {
       id: 'off_1',
       title: '⚡ 60-Minute Express Home Phlebotomy',
@@ -58,7 +59,18 @@ export default function CareSeekerOffersCarousel({
       tagText: '#047857',
       packageId: 'pkg_mm_master'
     }
-  ];
+  ]);
+
+  useEffect(() => {
+    safeFetch(`${API_BASE}/api/v1/offers?active=true`, {}, 2500)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.offers && data.offers.length > 0) {
+          setOffers(data.offers);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
