@@ -195,22 +195,22 @@ export default function TerritoryManagementTab({
       {/* Top Title & Actions */}
       <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Territory Polygon Marking & Phlebotomist Allotment Studio</h2>
-          <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Mark city zones directly on real maps, bind pincode clusters, allot phlebotomist agents, and set 3-Tier auto-dispatch cascades.</p>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A' }}>Territory Polygon Marking & Phlebotomist Allotment Studio</h2>
+          <p style={{ color: '#64748B', fontSize: '0.85rem' }}>Mark city zones directly on real maps, bind pincode clusters, allot phlebotomist agents, and set 3-Tier auto-dispatch cascades.</p>
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           {/* View Mode Toggle: Cards Grid vs List Table */}
-          <div style={{ display: 'flex', backgroundColor: '#0F172A', padding: '0.2rem', borderRadius: '8px', border: '1px solid #334155' }}>
+          <div style={{ display: 'flex', backgroundColor: '#F8FAFC', padding: '0.2rem', borderRadius: '8px', border: '1px solid #CBD5E1' }}>
             <button
               onClick={() => setViewMode('CARD_GRID')}
-              style={{ padding: '0.4rem 0.75rem', borderRadius: '6px', border: 'none', backgroundColor: viewMode === 'CARD_GRID' ? '#006B70' : 'transparent', color: viewMode === 'CARD_GRID' ? '#FFF' : '#94A3B8', cursor: 'pointer', fontWeight: '800', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+              style={{ padding: '0.4rem 0.75rem', borderRadius: '6px', border: 'none', backgroundColor: viewMode === 'CARD_GRID' ? '#006B70' : 'transparent', color: viewMode === 'CARD_GRID' ? '#FFF' : '#475569', cursor: 'pointer', fontWeight: '800', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
             >
               <LayoutGrid size={14} /> Cards
             </button>
             <button
               onClick={() => setViewMode('LIST_TABLE')}
-              style={{ padding: '0.4rem 0.75rem', borderRadius: '6px', border: 'none', backgroundColor: viewMode === 'LIST_TABLE' ? '#006B70' : 'transparent', color: viewMode === 'LIST_TABLE' ? '#FFF' : '#94A3B8', cursor: 'pointer', fontWeight: '800', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+              style={{ padding: '0.4rem 0.75rem', borderRadius: '6px', border: 'none', backgroundColor: viewMode === 'LIST_TABLE' ? '#006B70' : 'transparent', color: viewMode === 'LIST_TABLE' ? '#FFF' : '#475569', cursor: 'pointer', fontWeight: '800', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
             >
               <List size={14} /> List View
             </button>
@@ -218,7 +218,7 @@ export default function TerritoryManagementTab({
 
           <button
             onClick={handleOpenCreateTerritory}
-            style={{ padding: '0.65rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem' }}
+            style={{ padding: '0.65rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem', boxShadow: '0 4px 14px rgba(0,107,112,0.2)' }}
           >
             <PlusCircle size={16} color="#FBBF24" /> Create & Mark New Territory Zone
           </button>
@@ -227,11 +227,12 @@ export default function TerritoryManagementTab({
 
       {/* Real Geographic Map Visualizer (With Full-Screen Toggle) */}
       <div style={{ 
-        backgroundColor: '#1E293B', 
+        backgroundColor: '#FFFFFF', 
         borderRadius: isFullScreenMap ? '0' : '22px', 
-        border: isFullScreenMap ? 'none' : '1.5px solid #334155', 
+        border: isFullScreenMap ? 'none' : '1px solid #E2E8F0', 
         padding: isFullScreenMap ? '1rem' : '1.5rem', 
         marginBottom: '1.75rem',
+        boxShadow: isFullScreenMap ? 'none' : '0 4px 20px rgba(0,0,0,0.04)',
         position: isFullScreenMap ? 'fixed' : 'relative',
         inset: isFullScreenMap ? '0' : 'auto',
         zIndex: isFullScreenMap ? 99999 : 1,
@@ -242,21 +243,21 @@ export default function TerritoryManagementTab({
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
           <div>
-            <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#67E8F9', letterSpacing: '0.05em' }}>
+            <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#006B70', letterSpacing: '0.05em' }}>
               INTERACTIVE CITY MAP CANVAS — {territories.length} ACTIVE ZONES CONFIGURED
             </span>
-            <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>Select a zone chip or click a map polygon to inspect and re-allot phlebotomists</div>
+            <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Select a zone chip or click a map polygon to inspect and re-allot phlebotomists</div>
           </div>
           
           <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '800', backgroundColor: 'rgba(245,158,11,0.15)', padding: '0.25rem 0.65rem', borderRadius: '20px' }}>
+            <span style={{ fontSize: '0.78rem', color: '#B45309', fontWeight: '800', backgroundColor: '#FEF3C7', padding: '0.25rem 0.65rem', borderRadius: '20px' }}>
               ⚡ 3-Tier Dispatch Connected
             </span>
 
             {/* Full-Screen Map Mode Toggle Button */}
             <button
               onClick={() => setIsFullScreenMap(!isFullScreenMap)}
-              style={{ padding: '0.45rem 0.85rem', backgroundColor: '#0F172A', color: '#67E8F9', border: '1px solid #334155', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+              style={{ padding: '0.45rem 0.85rem', backgroundColor: '#F8FAFC', color: '#006B70', border: '1px solid #CBD5E1', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
             >
               {isFullScreenMap ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
               {isFullScreenMap ? 'Exit Full Screen' : 'Full Screen Map'}
@@ -265,7 +266,7 @@ export default function TerritoryManagementTab({
         </div>
 
         {/* Real Geographic Map Component */}
-        <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #334155', flex: 1, minHeight: isFullScreenMap ? 'calc(100vh - 80px)' : '400px' }}>
+        <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #CBD5E1', flex: 1, minHeight: isFullScreenMap ? 'calc(100vh - 80px)' : '400px' }}>
           <RealMapView 
             territories={territories} 
             orders={orders} 
@@ -288,54 +289,55 @@ export default function TerritoryManagementTab({
               <div 
                 key={t.id} 
                 style={{ 
-                  backgroundColor: '#1E293B', 
+                  backgroundColor: '#FFFFFF', 
                   borderRadius: '20px', 
-                  border: isSel ? `2px solid ${t.color || '#38BDF8'}` : '1.5px solid #334155', 
+                  border: isSel ? `2px solid ${t.color || '#006B70'}` : '1px solid #E2E8F0', 
                   padding: '1.5rem',
-                  position: 'relative'
+                  position: 'relative',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.04)'
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                  <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '900', backgroundColor: `${t.color || '#38BDF8'}22`, color: t.color || '#38BDF8', border: `1px solid ${t.color || '#38BDF8'}` }}>
+                  <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '900', backgroundColor: 'rgba(0,107,112,0.1)', color: '#006B70', border: '1px solid rgba(0,107,112,0.2)' }}>
                     {t.id}
                   </span>
                   <div style={{ display: 'flex', gap: '0.4rem' }}>
                     <button 
                       onClick={() => handleOpenEditTerritory(t)}
-                      style={{ padding: '0.25rem 0.55rem', backgroundColor: '#0F172A', color: '#67E8F9', border: '1px solid #334155', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                      style={{ padding: '0.25rem 0.55rem', backgroundColor: '#F1F5F9', color: '#0284C7', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
                     >
                       ✏️ Mark / Edit Map
                     </button>
                     <button 
                       onClick={() => handleDeleteTerritory(t.id)}
-                      style={{ padding: '0.25rem 0.55rem', backgroundColor: '#451A1A', color: '#FCA5A5', border: '1px solid #7F1D1D', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer' }}
+                      style={{ padding: '0.25rem 0.55rem', backgroundColor: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer' }}
                     >
                       🗑️ Delete
                     </button>
                   </div>
                 </div>
 
-                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#FFF' }}>{t.name}</h3>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A' }}>{t.name}</h3>
 
                 {/* Covered Pincodes */}
                 <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: '700' }}>📌 Covered Pincodes:</span>
+                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '700' }}>📌 Covered Pincodes:</span>
                   {(Array.isArray(t.pincodes) ? t.pincodes : [t.pincodes]).map(pin => (
-                    <span key={pin} style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', backgroundColor: '#0F172A', color: '#FBBF24', borderRadius: '4px', fontWeight: '800', border: '1px solid #334155' }}>
+                    <span key={pin} style={{ fontSize: '0.72rem', padding: '0.15rem 0.5rem', backgroundColor: '#FEF3C7', color: '#B45309', borderRadius: '4px', fontWeight: '800', border: '1px solid #FDE68A' }}>
                       {pin}
                     </span>
                   ))}
                 </div>
 
                 {/* Allotment Control */}
-                <div style={{ marginTop: '1rem', backgroundColor: '#0F172A', padding: '1rem', borderRadius: '14px', border: '1px solid #334155' }}>
-                  <label style={{ fontSize: '0.75rem', color: '#67E8F9', fontWeight: '800', display: 'block', marginBottom: '0.35rem' }}>
+                <div style={{ marginTop: '1rem', backgroundColor: '#F8FAFC', padding: '1rem', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
+                  <label style={{ fontSize: '0.75rem', color: '#006B70', fontWeight: '800', display: 'block', marginBottom: '0.35rem' }}>
                     👤 PRIMARY ALLOTTED PHLEBOTOMIST:
                   </label>
                   <select
                     value={t.primaryAgentId}
                     onChange={(e) => handleQuickAllotAgent(t.id, e.target.value)}
-                    style={{ width: '100%', padding: '0.55rem', backgroundColor: '#1E293B', color: '#FFF', border: '1.5px solid #006B70', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}
+                    style={{ width: '100%', padding: '0.55rem', backgroundColor: '#FFFFFF', color: '#0F172A', border: '1.5px solid #006B70', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}
                   >
                     <optgroup label="Salaried Phlebotomist Fleet (Quota 15/day)">
                       {salariedAgents.map(ag => (
@@ -354,19 +356,19 @@ export default function TerritoryManagementTab({
 
                 {/* Quota Bar */}
                 <div style={{ marginTop: '1rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#94A3B8', marginBottom: '0.25rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#64748B', marginBottom: '0.25rem' }}>
                     <span>Zone Capacity Meter:</span>
-                    <span style={{ color: pct >= 90 ? '#EF4444' : pct >= 60 ? '#FBBF24' : '#34D399', fontWeight: '800' }}>
+                    <span style={{ color: pct >= 90 ? '#DC2626' : pct >= 60 ? '#D97706' : '#059669', fontWeight: '800' }}>
                       {activeCount} / {maxQuota} Orders ({pct}%)
                     </span>
                   </div>
-                  <div style={{ height: '8px', width: '100%', backgroundColor: '#0F172A', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, backgroundColor: t.color || '#38BDF8', borderRadius: '4px', transition: 'width 0.3s ease' }} />
+                  <div style={{ height: '8px', width: '100%', backgroundColor: '#E2E8F0', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', width: `${pct}%`, backgroundColor: t.color || '#006B70', borderRadius: '4px', transition: 'width 0.3s ease' }} />
                   </div>
                 </div>
 
                 <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Tier 1 Allotted: {t.primaryAgentName}</span>
+                  <span style={{ fontSize: '0.72rem', color: '#64748B' }}>Tier 1 Allotted: {t.primaryAgentName}</span>
                   <button
                     onClick={async () => {
                       try {
@@ -395,10 +397,10 @@ export default function TerritoryManagementTab({
 
       {/* View Mode 2: List View Table for Zones Created */}
       {viewMode === 'LIST_TABLE' && (
-        <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
+        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
             <thead>
-              <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8', fontSize: '0.78rem', textTransform: 'uppercase' }}>
+              <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569', fontSize: '0.78rem', textTransform: 'uppercase' }}>
                 <th style={{ padding: '1rem 1.25rem' }}>Zone ID</th>
                 <th style={{ padding: '1rem' }}>Territory Sector Name</th>
                 <th style={{ padding: '1rem' }}>Covered Pincodes</th>
@@ -409,36 +411,36 @@ export default function TerritoryManagementTab({
             </thead>
             <tbody>
               {territories.map(t => (
-                <tr key={t.id} style={{ borderBottom: '1px solid #334155' }}>
-                  <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: t.color || '#38BDF8', fontWeight: '800' }}>
+                <tr key={t.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                  <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: t.color || '#006B70', fontWeight: '800' }}>
                     {t.id}
                   </td>
-                  <td style={{ padding: '1rem', fontWeight: '800', color: '#FFF' }}>
+                  <td style={{ padding: '1rem', fontWeight: '800', color: '#0F172A' }}>
                     {t.name}
                   </td>
                   <td style={{ padding: '1rem' }}>
                     {(Array.isArray(t.pincodes) ? t.pincodes : [t.pincodes]).map(p => (
-                      <span key={p} style={{ fontSize: '0.72rem', padding: '0.15rem 0.45rem', backgroundColor: '#0F172A', color: '#FBBF24', borderRadius: '4px', fontWeight: '800', marginRight: '0.3rem' }}>
+                      <span key={p} style={{ fontSize: '0.72rem', padding: '0.15rem 0.45rem', backgroundColor: '#FEF3C7', color: '#B45309', borderRadius: '4px', fontWeight: '800', marginRight: '0.3rem' }}>
                         {p}
                       </span>
                     ))}
                   </td>
-                  <td style={{ padding: '1rem', color: '#67E8F9', fontWeight: '700' }}>
+                  <td style={{ padding: '1rem', color: '#006B70', fontWeight: '700' }}>
                     👤 {t.primaryAgentName}
                   </td>
-                  <td style={{ padding: '1rem', color: '#34D399', fontWeight: '800' }}>
+                  <td style={{ padding: '1rem', color: '#059669', fontWeight: '800' }}>
                     {t.activeOrders || 0} / {t.maxDailyQuota || 15} Orders
                   </td>
                   <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
                     <button
                       onClick={() => handleOpenEditTerritory(t)}
-                      style={{ padding: '0.35rem 0.65rem', backgroundColor: '#0F172A', color: '#67E8F9', border: '1px solid #334155', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', marginRight: '0.4rem' }}
+                      style={{ padding: '0.35rem 0.65rem', backgroundColor: '#F1F5F9', color: '#0284C7', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', marginRight: '0.4rem' }}
                     >
                       ✏️ Edit Map
                     </button>
                     <button
                       onClick={() => handleDeleteTerritory(t.id)}
-                      style={{ padding: '0.35rem 0.65rem', backgroundColor: '#451A1A', color: '#FCA5A5', border: '1px solid #7F1D1D', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
+                      style={{ padding: '0.35rem 0.65rem', backgroundColor: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
                     >
                       🗑️ Delete
                     </button>

@@ -197,41 +197,41 @@ export default function CatalogManagementTab({
     <div>
       {/* KPI Stats Overview Header Bar */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '1.75rem' }}>
-        <div style={{ backgroundColor: 'rgba(30, 41, 59, 0.7)', backdropFilter: 'blur(10px)', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem', boxShadow: '0 8px 25px rgba(0,0,0,0.3)' }}>
-          <div style={{ fontSize: '0.78rem', color: '#67E8F9', fontWeight: '800', letterSpacing: '0.05em' }}>SINGLE BIOMARKER TESTS</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#FFF', marginTop: '0.2rem' }}>
-            {catalog.tests?.length || 913} <span style={{ fontSize: '0.85rem', color: '#34D399', fontWeight: '700' }}>Live</span>
+        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.25rem', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
+          <div style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800', letterSpacing: '0.05em' }}>SINGLE BIOMARKER TESTS</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem' }}>
+            {catalog.tests?.length || 913} <span style={{ fontSize: '0.85rem', color: '#059669', fontWeight: '700' }}>Live</span>
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.2rem' }}>Fully Ingested & Searchable</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.2rem' }}>Fully Ingested & Searchable</div>
         </div>
 
-        <div style={{ backgroundColor: 'rgba(30, 41, 59, 0.7)', backdropFilter: 'blur(10px)', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem', boxShadow: '0 8px 25px rgba(0,0,0,0.3)' }}>
-          <div style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '800', letterSpacing: '0.05em' }}>DIAGNOSTIC PROFILES</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#FFF', marginTop: '0.2rem' }}>
-            {catalog.profiles?.length || 87} <span style={{ fontSize: '0.85rem', color: '#FBBF24', fontWeight: '700' }}>Active</span>
+        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.25rem', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
+          <div style={{ fontSize: '0.78rem', color: '#D97706', fontWeight: '800', letterSpacing: '0.05em' }}>DIAGNOSTIC PROFILES</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem' }}>
+            {catalog.profiles?.length || 87} <span style={{ fontSize: '0.85rem', color: '#D97706', fontWeight: '700' }}>Active</span>
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.2rem' }}>Multi-parameter Panels</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.2rem' }}>Multi-parameter Panels</div>
         </div>
 
-        <div style={{ backgroundColor: 'rgba(30, 41, 59, 0.7)', backdropFilter: 'blur(10px)', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem', boxShadow: '0 8px 25px rgba(0,0,0,0.3)' }}>
-          <div style={{ fontSize: '0.78rem', color: '#C084FC', fontWeight: '800', letterSpacing: '0.05em' }}>HEALTH PACKAGES</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#FFF', marginTop: '0.2rem' }}>
-            {catalog.packages?.length || 4} <span style={{ fontSize: '0.85rem', color: '#C084FC', fontWeight: '700' }}>Promoted</span>
+        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.25rem', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
+          <div style={{ fontSize: '0.78rem', color: '#7E22CE', fontWeight: '800', letterSpacing: '0.05em' }}>HEALTH PACKAGES</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem' }}>
+            {catalog.packages?.length || 4} <span style={{ fontSize: '0.85rem', color: '#7E22CE', fontWeight: '700' }}>Promoted</span>
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.2rem' }}>Aggregated Biomarker Scans</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.2rem' }}>Aggregated Biomarker Scans</div>
         </div>
 
-        <div style={{ backgroundColor: 'rgba(30, 41, 59, 0.7)', backdropFilter: 'blur(10px)', borderRadius: '18px', border: '1px solid rgba(255,255,255,0.08)', padding: '1.25rem', boxShadow: '0 8px 25px rgba(0,0,0,0.3)' }}>
-          <div style={{ fontSize: '0.78rem', color: '#38BDF8', fontWeight: '800', letterSpacing: '0.05em' }}>TWO-WAY SHEETS SYNC</div>
-          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#34D399', marginTop: '0.2rem' }}>
+        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.25rem', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
+          <div style={{ fontSize: '0.78rem', color: '#0284C7', fontWeight: '800', letterSpacing: '0.05em' }}>TWO-WAY SHEETS SYNC</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#059669', marginTop: '0.2rem' }}>
             CONNECTED
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#94A3B8', marginTop: '0.2rem' }}>Auto-syncs price & fasting metadata</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.2rem' }}>Auto-syncs price & fasting metadata</div>
         </div>
       </div>
 
       {/* Subtabs Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #334155', paddingBottom: '0.85rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.85rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {[
             { key: 'TESTS', label: 'Single Tests', icon: FlaskConical, count: catalog.tests?.length || 913 },
@@ -248,9 +248,9 @@ export default function CatalogManagementTab({
                 style={{
                   padding: '0.6rem 1.1rem',
                   borderRadius: '10px',
-                  border: 'none',
-                  backgroundColor: isSel ? '#006B70' : '#1E293B',
-                  color: isSel ? '#FFF' : '#94A3B8',
+                  border: isSel ? 'none' : '1px solid #CBD5E1',
+                  backgroundColor: isSel ? '#006B70' : '#FFFFFF',
+                  color: isSel ? '#FFF' : '#475569',
                   fontWeight: '800',
                   fontSize: '0.88rem',
                   cursor: 'pointer',
@@ -259,7 +259,7 @@ export default function CatalogManagementTab({
                   gap: '0.5rem'
                 }}
               >
-                <IconC size={16} color={isSel ? '#FBBF24' : '#94A3B8'} />
+                <IconC size={16} color={isSel ? '#FBBF24' : '#64748B'} />
                 {st.label} {st.count !== undefined ? `(${st.count})` : ''}
               </button>
             );
@@ -270,7 +270,7 @@ export default function CatalogManagementTab({
           {testsSubTab === 'TESTS' && (
             <button 
               onClick={() => { setEditingItem(null); setTestForm({ code: '', name: '', sampleType: 'SERUM', fasting: 'NO', mrp: 499, price: 299, tatHours: 24, description: '' }); setShowCreateTestModal(true); }}
-              style={{ padding: '0.6rem 1.2rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              style={{ padding: '0.6rem 1.2rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 12px rgba(0,107,112,0.2)' }}
             >
               <PlusCircle size={16} /> Add Test to Master
             </button>
@@ -278,7 +278,7 @@ export default function CatalogManagementTab({
           {testsSubTab === 'PROFILES' && (
             <button 
               onClick={() => { setEditingItem(null); setProfileForm({ code: '', name: '', sampleType: 'SERUM', fasting: 'NO', mrp: 1499, price: 899, tatHours: 24, description: '' }); setShowCreateProfileModal(true); }}
-              style={{ padding: '0.6rem 1.2rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              style={{ padding: '0.6rem 1.2rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 12px rgba(0,107,112,0.2)' }}
             >
               <PlusCircle size={16} /> Add Profile to Master
             </button>
@@ -286,7 +286,7 @@ export default function CatalogManagementTab({
           {testsSubTab === 'PACKAGES' && (
             <button 
               onClick={() => setShowPackageBuilderModal(true)}
-              style={{ padding: '0.6rem 1.2rem', backgroundColor: '#F59E0B', color: '#0F172A', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+              style={{ padding: '0.6rem 1.2rem', backgroundColor: '#D97706', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 12px rgba(217,119,6,0.2)' }}
             >
               <Plus size={16} /> Visual Package Builder
             </button>
@@ -299,21 +299,21 @@ export default function CatalogManagementTab({
         <div>
           <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
             <div style={{ position: 'relative', flex: 1, minWidth: '280px' }}>
-              <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '12px', top: '12px' }} />
+              <Search size={18} color="#64748B" style={{ position: 'absolute', left: '12px', top: '12px' }} />
               <input
                 type="text"
                 placeholder="Search 913 tests by name, test code, or sample type..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ width: '100%', padding: '0.7rem 1rem 0.7rem 2.4rem', backgroundColor: '#1E293B', border: '1px solid #334155', borderRadius: '10px', color: '#FFF', fontSize: '0.88rem', outline: 'none' }}
+                style={{ width: '100%', padding: '0.7rem 1rem 0.7rem 2.4rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '10px', color: '#0F172A', fontSize: '0.88rem', outline: 'none' }}
               />
             </div>
           </div>
 
-          <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
               <thead>
-                <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8' }}>
+                <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
                   <th style={{ padding: '1rem 1.25rem' }}>SERIAL / CODE</th>
                   <th style={{ padding: '1rem' }}>TEST NAME</th>
                   <th style={{ padding: '1rem' }}>SAMPLE TYPE</th>
@@ -325,29 +325,29 @@ export default function CatalogManagementTab({
               </thead>
               <tbody>
                 {filteredTests.slice(0, 50).map(test => (
-                  <tr key={test.id || test.code} style={{ borderBottom: '1px solid #334155' }}>
-                    <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#67E8F9', fontWeight: '700' }}>
+                  <tr key={test.id || test.code} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                    <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#006B70', fontWeight: '700' }}>
                       #{test.serialNo || '-'} • {test.code}
                     </td>
-                    <td style={{ padding: '1rem', fontWeight: '700', color: '#FFF' }}>
+                    <td style={{ padding: '1rem', fontWeight: '700', color: '#0F172A' }}>
                       {test.name}
                     </td>
-                    <td style={{ padding: '1rem', color: '#CBD5E1' }}>
-                      <span style={{ backgroundColor: 'rgba(255,255,255,0.08)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                    <td style={{ padding: '1rem', color: '#334155' }}>
+                      <span style={{ backgroundColor: '#F1F5F9', padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid #CBD5E1' }}>
                         {test.sampleType || 'SERUM'}
                       </span>
                     </td>
                     <td style={{ padding: '1rem' }}>
-                      <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '800', backgroundColor: test.fasting === 'YES' ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)', color: test.fasting === 'YES' ? '#FBBF24' : '#34D399' }}>
+                      <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '800', backgroundColor: test.fasting === 'YES' ? '#FEF3C7' : '#DCFCE7', color: test.fasting === 'YES' ? '#B45309' : '#15803D' }}>
                         {test.fasting}
                       </span>
                     </td>
-                    <td style={{ padding: '1rem', color: '#FBBF24', fontWeight: '900' }}>₹{test.price}</td>
-                    <td style={{ padding: '1rem', color: '#94A3B8' }}>{test.tatHours || 24}h</td>
+                    <td style={{ padding: '1rem', color: '#006B70', fontWeight: '900' }}>₹{test.price}</td>
+                    <td style={{ padding: '1rem', color: '#64748B' }}>{test.tatHours || 24}h</td>
                     <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
                       <button 
                         onClick={() => { setEditingItem(test); setTestForm(test); setShowCreateTestModal(true); }}
-                        style={{ background: 'none', border: 'none', color: '#38BDF8', cursor: 'pointer', marginRight: '0.6rem' }}
+                        style={{ background: 'none', border: 'none', color: '#0284C7', cursor: 'pointer', marginRight: '0.6rem' }}
                       >
                         <Edit3 size={16} />
                       </button>
@@ -363,10 +363,10 @@ export default function CatalogManagementTab({
       {/* PROFILES LIST */}
       {testsSubTab === 'PROFILES' && (
         <div>
-          <div style={{ backgroundColor: '#1E293B', borderRadius: '18px', border: '1px solid #334155', overflow: 'hidden' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
               <thead>
-                <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8' }}>
+                <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
                   <th style={{ padding: '1rem 1.25rem' }}>PROFILE CODE</th>
                   <th style={{ padding: '1rem' }}>PROFILE NAME</th>
                   <th style={{ padding: '1rem' }}>SAMPLE TYPE</th>
@@ -377,28 +377,28 @@ export default function CatalogManagementTab({
               </thead>
               <tbody>
                 {filteredProfiles.map(profile => (
-                  <tr key={profile.id || profile.code} style={{ borderBottom: '1px solid #334155' }}>
-                    <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#FBBF24', fontWeight: '800' }}>
+                  <tr key={profile.id || profile.code} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                    <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#B45309', fontWeight: '800' }}>
                       {profile.code}
                     </td>
-                    <td style={{ padding: '1rem', fontWeight: '700', color: '#FFF' }}>
+                    <td style={{ padding: '1rem', fontWeight: '700', color: '#0F172A' }}>
                       {profile.name}
                     </td>
-                    <td style={{ padding: '1rem', color: '#CBD5E1' }}>
-                      <span style={{ backgroundColor: 'rgba(255,255,255,0.08)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                    <td style={{ padding: '1rem', color: '#334155' }}>
+                      <span style={{ backgroundColor: '#F1F5F9', padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid #CBD5E1' }}>
                         {profile.sampleType || 'SERUM'}
                       </span>
                     </td>
                     <td style={{ padding: '1rem' }}>
-                      <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '800', backgroundColor: profile.fasting === 'YES' ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)', color: profile.fasting === 'YES' ? '#FBBF24' : '#34D399' }}>
+                      <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '800', backgroundColor: profile.fasting === 'YES' ? '#FEF3C7' : '#DCFCE7', color: profile.fasting === 'YES' ? '#B45309' : '#15803D' }}>
                         {profile.fasting}
                       </span>
                     </td>
-                    <td style={{ padding: '1rem', color: '#67E8F9', fontWeight: '900' }}>₹{profile.price}</td>
+                    <td style={{ padding: '1rem', color: '#006B70', fontWeight: '900' }}>₹{profile.price}</td>
                     <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
                       <button 
                         onClick={() => { setEditingItem(profile); setProfileForm(profile); setShowCreateProfileModal(true); }}
-                        style={{ background: 'none', border: 'none', color: '#38BDF8', cursor: 'pointer' }}
+                        style={{ background: 'none', border: 'none', color: '#0284C7', cursor: 'pointer' }}
                       >
                         <Edit3 size={16} />
                       </button>
@@ -415,29 +415,29 @@ export default function CatalogManagementTab({
       {testsSubTab === 'PACKAGES' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
           {(catalog.packages || []).map(pkg => (
-            <div key={pkg.id} style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1.5px solid #334155', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div key={pkg.id} style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                   <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.55rem', borderRadius: '4px', fontWeight: '800' }}>
                     {pkg.discountPercent}% OFF • {pkg.category}
                   </span>
-                  <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontFamily: 'monospace' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'monospace' }}>
                     {pkg.code}
                   </span>
                 </div>
 
-                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#FFF', marginTop: '0.5rem' }}>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#0F172A', marginTop: '0.5rem' }}>
                   {pkg.name}
                 </h3>
-                <p style={{ fontSize: '0.84rem', color: '#94A3B8', marginTop: '0.3rem', lineHeight: 1.4 }}>
+                <p style={{ fontSize: '0.84rem', color: '#64748B', marginTop: '0.3rem', lineHeight: 1.4 }}>
                   {pkg.tagline || pkg.description}
                 </p>
               </div>
 
-              <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FBBF24' }}>₹{pkg.price}</span>
-                  <span style={{ fontSize: '0.8rem', color: '#64748B', textDecoration: 'line-through', marginLeft: '0.4rem' }}>₹{pkg.mrp}</span>
+                  <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#006B70' }}>₹{pkg.price}</span>
+                  <span style={{ fontSize: '0.8rem', color: '#94A3B8', textDecoration: 'line-through', marginLeft: '0.4rem' }}>₹{pkg.mrp}</span>
                 </div>
               </div>
             </div>
