@@ -62,6 +62,7 @@ export const DEFAULT_TERRITORY_GEO = [
 
 // Helper: Point-in-polygon Ray Casting algorithm for Lat/Lng matching
 export function isPointInPolygon(point, vs) {
+  if (!vs || vs.length < 3) return false;
   const x = point[0], y = point[1];
   let inside = false;
   for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
@@ -78,12 +79,16 @@ export default function RealMapView({
   orders = [], 
   salariedAgents = [], 
   onLocationSelect, 
-  selectedLocation, 
+  selectedLocation,
+  isDrawingMode = false,
+  drawingPolygonPoints = [],
+  onPointAdd,
   height = '360px' 
 }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersGroupRef = useRef(null);
+  const drawingLayerGroupRef = useRef(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [activePin, setActivePin] = useState(selectedLocation || null);
 
@@ -120,38 +125,9 @@ export default function RealMapView({
     }
 
     markersGroupRef.current = L.layerGroup().addTo(map);
+    drawingLayerGroupRef.current = L.layerGroup().addTo(map);
     mapInstanceRef.current = map;
     setMapLoaded(true);
-
-    // Click handler for location assignment pin drop
-    map.on('click', (e) => {
-      const { lat, lng } = e.latlng;
-      const clickedPt = [lat, lng];
-
-      // Find matching territory zone
-      let matchedZone = null;
-      for (const t of (territories.length ? territories : DEFAULT_TERRITORY_GEO)) {
-        const polyCoords = t.polygon || DEFAULT_TERRITORY_GEO.find(d => d.id === t.id)?.polygon;
-        if (polyCoords && isPointInPolygon(clickedPt, polyCoords)) {
-          matchedZone = t;
-          break;
-        }
-      }
-
-      const pinData = {
-        lat: lat.toFixed(5),
-        lng: lng.toFixed(5),
-        zoneId: matchedZone ? matchedZone.id : 'ZONE-01 (Default Central)',
-        zoneName: matchedZone ? matchedZone.name : 'Central Tirupati Area',
-        assignedAgent: matchedZone ? (matchedZone.primaryAgentName || 'Ramesh Kumar') : 'Ramesh Kumar (AG-01)',
-        color: matchedZone ? matchedZone.color : '#38BDF8'
-      };
-
-      setActivePin(pinData);
-      if (onLocationSelect) {
-        onLocationSelect(pinData);
-      }
-    });
 
     return () => {
       if (mapInstanceRef.current) {
@@ -161,7 +137,93 @@ export default function RealMapView({
     };
   }, []);
 
-  // Update Polygons & Markers when data changes
+  // Click handler listener dynamically attached based on mode
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const handleMapClick = (e) => {
+      const { lat, lng } = e.latlng;
+      const clickedPt = [Number(lat.toFixed(5)), Number(lng.toFixed(5))];
+
+      if (isDrawingMode && onPointAdd) {
+        // Drawing mode: add point to polygon
+        onPointAdd(clickedPt);
+      } else {
+        // Normal mode: select location pin & match zone
+        let matchedZone = null;
+        for (const t of (territories.length ? territories : DEFAULT_TERRITORY_GEO)) {
+          const polyCoords = t.polygon || DEFAULT_TERRITORY_GEO.find(d => d.id === t.id)?.polygon;
+          if (polyCoords && isPointInPolygon(clickedPt, polyCoords)) {
+            matchedZone = t;
+            break;
+          }
+        }
+
+        const pinData = {
+          lat: clickedPt[0],
+          lng: clickedPt[1],
+          zoneId: matchedZone ? matchedZone.id : 'ZONE-01 (Default Central)',
+          zoneName: matchedZone ? matchedZone.name : 'Central Tirupati Area',
+          assignedAgent: matchedZone ? (matchedZone.primaryAgentName || 'Ramesh Kumar') : 'Ramesh Kumar (AG-01)',
+          color: matchedZone ? matchedZone.color : '#38BDF8'
+        };
+
+        setActivePin(pinData);
+        if (onLocationSelect) {
+          onLocationSelect(pinData);
+        }
+      }
+    };
+
+    map.on('click', handleMapClick);
+    return () => {
+      map.off('click', handleMapClick);
+    };
+  }, [isDrawingMode, onPointAdd, territories, onLocationSelect]);
+
+  // Render Live Drawing Layer (Active Drawing Points & Polygon)
+  useEffect(() => {
+    const L = window.L;
+    const map = mapInstanceRef.current;
+    if (!L || !map || !drawingLayerGroupRef.current) return;
+
+    drawingLayerGroupRef.current.clearLayers();
+
+    if (drawingPolygonPoints && drawingPolygonPoints.length > 0) {
+      // Draw vertex markers for each boundary point
+      drawingPolygonPoints.forEach((pt, idx) => {
+        const marker = L.circleMarker(pt, {
+          radius: 6,
+          fillColor: '#F59E0B',
+          color: '#FFFFFF',
+          weight: 2,
+          fillOpacity: 1
+        }).addTo(drawingLayerGroupRef.current);
+
+        marker.bindTooltip(`Point #${idx + 1} (${pt[0]}, ${pt[1]})`, { permanent: false, direction: 'top' });
+      });
+
+      // Draw polyline if < 3 points, or polygon if >= 3 points
+      if (drawingPolygonPoints.length >= 3) {
+        L.polygon(drawingPolygonPoints, {
+          color: '#F59E0B',
+          weight: 3,
+          dashArray: '6, 6',
+          fillColor: '#F59E0B',
+          fillOpacity: 0.35
+        }).addTo(drawingLayerGroupRef.current);
+      } else if (drawingPolygonPoints.length === 2) {
+        L.polyline(drawingPolygonPoints, {
+          color: '#F59E0B',
+          weight: 3,
+          dashArray: '6, 6'
+        }).addTo(drawingLayerGroupRef.current);
+      }
+    }
+  }, [drawingPolygonPoints]);
+
+  // Update Base Territory Polygons & Markers
   useEffect(() => {
     const L = window.L;
     const map = mapInstanceRef.current;
@@ -249,7 +311,7 @@ export default function RealMapView({
     });
 
     // 4. Draw Selected Custom Pin if active
-    if (activePin && activePin.lat && activePin.lng) {
+    if (activePin && activePin.lat && activePin.lng && !isDrawingMode) {
       const pinMarker = L.marker([activePin.lat, activePin.lng]).addTo(markersGroupRef.current);
       pinMarker.bindPopup(`
         <div style="color:#0F172A; font-family:sans-serif; font-size:12px;">
@@ -261,14 +323,42 @@ export default function RealMapView({
       `).openPopup();
     }
 
-  }, [territories, orders, salariedAgents, activePin]);
+  }, [territories, orders, salariedAgents, activePin, isDrawingMode]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height, borderRadius: '16px', overflow: 'hidden', border: '1px solid #334155' }}>
+    <div style={{ position: 'relative', width: '100%', height, borderRadius: '16px', overflow: 'hidden', border: '1px solid #334155', zIndex: 1 }}>
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%', backgroundColor: '#0F172A' }} />
       
-      {/* Banner overlay showing clicked location & assigned agent */}
-      {activePin && (
+      {/* Banner overlay for Drawing Mode */}
+      {isDrawingMode && (
+        <div style={{
+          position: 'absolute',
+          top: '10px',
+          left: '10px',
+          right: '10px',
+          backgroundColor: 'rgba(15,23,42,0.92)',
+          backdropFilter: 'blur(8px)',
+          border: '1.5px solid #F59E0B',
+          borderRadius: '10px',
+          padding: '0.55rem 0.85rem',
+          display: 'flex',
+          justify: 'space-between',
+          alignItems: 'center',
+          zIndex: 500,
+          color: '#FFF',
+          boxShadow: '0 6px 16px rgba(0,0,0,0.4)'
+        }}>
+          <div style={{ fontSize: '0.78rem', fontWeight: '800', color: '#FBBF24' }}>
+            ✏️ MAP POLYGON MARKING MODE ACTIVE — CLICK ON MAP TO PLACE CORNER VERTICES
+          </div>
+          <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
+            {drawingPolygonPoints.length} Points Placed
+          </span>
+        </div>
+      )}
+
+      {/* Banner overlay for Location Pin */}
+      {!isDrawingMode && activePin && (
         <div style={{
           position: 'absolute',
           bottom: '12px',
@@ -282,7 +372,7 @@ export default function RealMapView({
           display: 'flex',
           justify: 'space-between',
           alignItems: 'center',
-          zIndex: 1000,
+          zIndex: 500,
           color: '#FFF',
           boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
         }}>
