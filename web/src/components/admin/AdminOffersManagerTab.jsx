@@ -18,6 +18,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { API_BASE, safeFetch } from '../../data/apiConfig';
+import { getStoredOffers, saveStoredOffers, INITIAL_OFFERS } from '../../data/offersStore';
 
 const GRADIENT_PRESETS = [
   { label: 'Deep Emerald Teal', value: 'linear-gradient(135deg, #004D40 0%, #006B70 100%)', tagBg: '#FEF3C7', tagText: '#B45309' },
@@ -29,8 +30,8 @@ const GRADIENT_PRESETS = [
 ];
 
 export default function AdminOffersManagerTab({ catalog = {} }) {
-  const [offers, setOffers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [offers, setOffers] = useState(getStoredOffers());
+  const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingOfferId, setEditingOfferId] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -50,24 +51,20 @@ export default function AdminOffersManagerTab({ catalog = {} }) {
   const [formActive, setFormActive] = useState(true);
 
   const fetchOffers = async () => {
-    setLoading(true);
     try {
       const res = await safeFetch(`${API_BASE}/api/v1/offers`, {}, 3500);
       if (res && res.ok) {
         const text = await res.text();
         try {
           const data = JSON.parse(text);
-          if (data.success && Array.isArray(data.offers)) {
+          if (data.success && Array.isArray(data.offers) && data.offers.length > 0) {
             setOffers(data.offers);
+            saveStoredOffers(data.offers);
           }
-        } catch (e) {
-          console.warn('Non-JSON response from offers endpoint');
-        }
+        } catch (e) {}
       }
     } catch (err) {
-      console.error('Failed to fetch offers:', err);
-    } finally {
-      setLoading(false);
+      setOffers(getStoredOffers());
     }
   };
 
@@ -120,7 +117,7 @@ export default function AdminOffersManagerTab({ catalog = {} }) {
     }
 
     setSaving(true);
-    const payload = {
+    const offerData = {
       title: formTitle,
       subtitle: formSubtitle,
       code: formCode.toUpperCase(),
@@ -134,138 +131,69 @@ export default function AdminOffersManagerTab({ catalog = {} }) {
       active: formActive
     };
 
-    try {
-      if (editingOfferId) {
-        // Update existing
-        const res = await safeFetch(`${API_BASE}/api/v1/offers/${editingOfferId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }, 4000);
-        const data = await res.json();
-        if (data.success) {
-          setOffers(offers.map(o => o.id === editingOfferId ? data.offer : o));
-          showToast('Offer banner updated successfully.');
-          setShowModal(false);
-        }
-      } else {
-        // Create new
-        const res = await safeFetch(`${API_BASE}/api/v1/offers`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }, 4000);
-        const data = await res.json();
-        if (data.success) {
-          setOffers([data.offer, ...offers]);
-          showToast('New promotion banner published to Care Seeker carousel.');
-          setShowModal(false);
-        }
-      }
-    } catch (err) {
-      alert('Failed to save offer: ' + err.message);
-    } finally {
-      setSaving(false);
+    let updatedList;
+    if (editingOfferId) {
+      const updatedOffer = { id: editingOfferId, ...offerData };
+      updatedList = offers.map(o => o.id === editingOfferId ? updatedOffer : o);
+      setOffers(updatedList);
+      saveStoredOffers(updatedList);
+      showToast('Offer banner updated successfully.');
+      setShowModal(false);
+      safeFetch(`${API_BASE}/api/v1/offers/${editingOfferId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(offerData)
+      }, 3000).catch(() => {});
+    } else {
+      const newOffer = { id: `off_${Date.now()}`, ...offerData, createdAt: new Date().toISOString() };
+      updatedList = [newOffer, ...offers];
+      setOffers(updatedList);
+      saveStoredOffers(updatedList);
+      showToast('New promotion banner published to Care Seeker carousel.');
+      setShowModal(false);
+      safeFetch(`${API_BASE}/api/v1/offers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(offerData)
+      }, 3000).catch(() => {});
     }
+    setSaving(false);
   };
 
   const handleToggleActive = async (offer) => {
-    try {
-      const updated = !offer.active;
-      const res = await safeFetch(`${API_BASE}/api/v1/offers/${offer.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active: updated })
-      }, 3000);
-      const data = await res.json();
-      if (data.success) {
-        setOffers(offers.map(o => o.id === offer.id ? { ...o, active: updated } : o));
-        showToast(updated ? 'Offer activated and visible to Care Seekers.' : 'Offer paused.');
-      }
-    } catch (err) {
-      alert('Failed to update status');
-    }
+    const updated = !offer.active;
+    const updatedList = offers.map(o => o.id === offer.id ? { ...o, active: updated } : o);
+    setOffers(updatedList);
+    saveStoredOffers(updatedList);
+    showToast(updated ? 'Offer activated and visible to Care Seekers.' : 'Offer paused.');
+    safeFetch(`${API_BASE}/api/v1/offers/${offer.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: updated })
+    }, 3000).catch(() => {});
   };
 
   const handleDeleteOffer = async (id) => {
     if (!confirm('Are you sure you want to delete this offer banner?')) return;
-    try {
-      const res = await safeFetch(`${API_BASE}/api/v1/offers/${id}`, { method: 'DELETE' }, 3000);
-      const data = await res.json();
-      if (data.success) {
-        setOffers(offers.filter(o => o.id !== id));
-        showToast('Offer removed.');
-      }
-    } catch (err) {
-      alert('Failed to delete offer');
-    }
+    const updatedList = offers.filter(o => o.id !== id);
+    setOffers(updatedList);
+    saveStoredOffers(updatedList);
+    showToast('Offer removed.');
+    safeFetch(`${API_BASE}/api/v1/offers/${id}`, { method: 'DELETE' }, 3000).catch(() => {});
   };
 
   const handleSeedDefaultOffers = async () => {
-    const starterOffers = [
-      {
-        title: '⚡ 60-Minute Express Home Phlebotomy',
-        subtitle: 'Flat 60% OFF on Aarogyam Full Body Checkup',
-        code: 'EXPRESS60',
-        price: '₹1,499',
-        mrp: '₹3,500',
-        gradient: 'linear-gradient(135deg, #004D40 0%, #006B70 100%)',
-        badge: 'TOP CHOICE',
-        tagColor: '#FEF3C7',
-        tagText: '#B45309',
-        packageId: 'pkg_aarogyam_13',
-        active: true
-      },
-      {
-        title: '👵 Senior Citizen Diabetic & Cardiac Panel',
-        subtitle: 'HbA1c + Fasting Blood Sugar + Lipid Profile',
-        code: 'SENIORCARE',
-        price: '₹599',
-        mrp: '₹1,400',
-        gradient: 'linear-gradient(135deg, #1E3A8A 0%, #0284C7 100%)',
-        badge: 'POPULAR',
-        tagColor: '#E0F2FE',
-        tagText: '#0369A1',
-        packageId: 'pkg_mm_cardio_diab',
-        active: true
-      },
-      {
-        title: '🌸 Complete Women\'s Vitality & Hormone',
-        subtitle: 'Thyroid (T3/T4/TSH), Iron, Calcium & Vitamins D3/B12',
-        code: 'WOMENHEALTH',
-        price: '₹999',
-        mrp: '₹2,200',
-        gradient: 'linear-gradient(135deg, #581C87 0%, #9333EA 100%)',
-        badge: 'SPECIAL',
-        tagColor: '#F3E8FF',
-        tagText: '#6B21A8',
-        packageId: 'pkg_mm_women_well',
-        active: true
-      },
-      {
-        title: '👨‍👩‍👧 Family & Corporate Wellness Days',
-        subtitle: 'Book for 2+ Members & Get ₹500 MedMarg Wallet Cashback',
-        code: 'FAMILY500',
-        price: '₹500 Cashback',
-        mrp: 'Free Home Visit',
-        gradient: 'linear-gradient(135deg, #065F46 0%, #059669 100%)',
-        badge: 'CASHBACK',
-        tagColor: '#D1FAE5',
-        tagText: '#047857',
-        packageId: 'pkg_mm_master',
-        active: true
-      }
-    ];
+    setOffers(INITIAL_OFFERS);
+    saveStoredOffers(INITIAL_OFFERS);
+    showToast('Default starter offers generated successfully.');
 
-    for (const off of starterOffers) {
-      await safeFetch(`${API_BASE}/api/v1/offers`, {
+    for (const off of INITIAL_OFFERS) {
+      safeFetch(`${API_BASE}/api/v1/offers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(off)
-      }, 3000);
+      }, 3000).catch(() => {});
     }
-    fetchOffers();
-    showToast('Default starter offers generated successfully.');
   };
 
   return (

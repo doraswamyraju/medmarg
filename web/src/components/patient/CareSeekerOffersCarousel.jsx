@@ -1,32 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Tag, ArrowRight, Clock, ShieldCheck, Heart, Award } from 'lucide-react';
 import { API_BASE, safeFetch } from '../../data/apiConfig';
+import { getStoredOffers, saveStoredOffers } from '../../data/offersStore';
 
 export default function CareSeekerOffersCarousel({
   onSelectOffer = () => {},
   catalog = {}
 }) {
-  const [offers, setOffers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [offers, setOffers] = useState(() => getStoredOffers().filter(o => o.active !== false));
 
   useEffect(() => {
-    safeFetch(`${API_BASE}/api/v1/offers?active=true`, {}, 3500)
+    safeFetch(`${API_BASE}/api/v1/offers?active=true`, {}, 3000)
       .then(async (res) => {
         if (res && res.ok) {
           const text = await res.text();
           try {
             const data = JSON.parse(text);
-            if (data.success && Array.isArray(data.offers)) {
+            if (data.success && Array.isArray(data.offers) && data.offers.length > 0) {
               setOffers(data.offers);
+              saveStoredOffers(data.offers);
             }
           } catch (e) {}
         }
       })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => {});
   }, []);
 
-  if (!loading && offers.length === 0) return null;
+  if (offers.length === 0) return null;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
