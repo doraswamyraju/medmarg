@@ -399,6 +399,10 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
               setInventoryStock={setInventoryStock}
               indents={indents} 
               setIndents={setIndents} 
+              salariedAgents={salariedAgents}
+              freelancers={freelancers}
+              API_BASE={API_BASE}
+              safeFetch={safeFetch}
             />
           )}
 
