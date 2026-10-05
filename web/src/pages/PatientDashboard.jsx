@@ -8,7 +8,11 @@ import {
   ShoppingBag, 
   Gift, 
   HeartPulse,
-  CheckCircle2
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  LogOut,
+  Sparkles
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState, filterCatalogItems } from '../data/catalogStore';
@@ -27,6 +31,7 @@ import PatientCartDrawer from '../components/patient/PatientCartDrawer';
 import CareSeekerCheckoutModal from '../components/patient/CareSeekerCheckoutModal';
 import CareSeekerUniversalItemSheet from '../components/patient/CareSeekerUniversalItemSheet';
 import CareSeekerPrescriptionModal from '../components/patient/CareSeekerPrescriptionModal';
+import CareSeekerFloatingActionBar from '../components/patient/CareSeekerFloatingActionBar';
 
 export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   // 7 CORE NAVIGATION TABS: HOME, TESTS, VITALS, TRACK, REPORTS, REFER_CORP, PROFILE
@@ -212,43 +217,46 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', color: '#0F172A', fontFamily: 'Inter, system-ui, sans-serif' }}>
       
-      {/* 1. SIDEBAR */}
+      {/* 1. REDESIGNED ULTRA-PREMIUM DEEP EMERALD SIDEBAR */}
       <aside style={{ 
-        width: sidebarCollapsed ? '80px' : '270px', 
-        backgroundColor: '#004D40', 
-        borderRight: '1px solid #00332C', 
+        width: sidebarCollapsed ? '78px' : '260px', 
+        backgroundColor: '#071F1A', 
+        borderRight: '1px solid #0F332C', 
         display: 'flex', 
         flexDirection: 'column', 
-        transition: 'width 0.2s ease',
+        transition: 'all 0.25s ease',
         position: 'sticky',
         top: 0,
         height: '100vh',
-        zIndex: 100
+        zIndex: 100,
+        boxShadow: '4px 0 24px rgba(0,0,0,0.15)'
       }}>
-        <div style={{ padding: '1.25rem', borderBottom: '1px solid #003830', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between' }}>
+        {/* Sidebar Header Brand */}
+        <div style={{ padding: '1.25rem 1.15rem', borderBottom: '1px solid #0F332C', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ backgroundColor: '#FFFFFF', padding: '4px 8px', borderRadius: '10px', display: 'flex', alignItems: 'center' }}>
-              <img src="/logo.png" alt="MedMarg" style={{ height: '28px', objectFit: 'contain' }} />
+            <div style={{ backgroundColor: '#FFFFFF', padding: '4px 8px', borderRadius: '10px', display: 'flex', alignItems: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+              <img src="/logo.png" alt="MedMarg" style={{ height: '26px', objectFit: 'contain' }} />
             </div>
             {!sidebarCollapsed && (
               <div>
-                <span style={{ fontSize: '0.7rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '900', display: 'block', width: 'fit-content' }}>
-                  CARE SEEKER PORTAL
-                </span>
-                <span style={{ fontSize: '0.82rem', color: '#E0F2F1', fontWeight: '700' }}>Healthcare Console</span>
+                <div style={{ fontSize: '0.68rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: '900', display: 'block', width: 'fit-content', letterSpacing: '0.5px' }}>
+                  CARE SEEKER
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#E0F2F1', fontWeight: '700', marginTop: '2px' }}>Healthcare Portal</div>
               </div>
             )}
           </div>
           
           <button 
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            style={{ background: 'none', border: 'none', color: '#80CBC4', cursor: 'pointer', fontSize: '1rem', padding: '0.2rem' }}
+            style={{ background: '#0F332C', border: 'none', color: '#80CBC4', cursor: 'pointer', borderRadius: '8px', padding: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            {sidebarCollapsed ? '→' : '←'}
+            {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
         </div>
 
-        <nav style={{ flex: 1, padding: '1.25rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.45rem', overflowY: 'auto' }}>
+        {/* Navigation Items */}
+        <nav style={{ flex: 1, padding: '1rem 0.65rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto' }}>
           {navMenuItems.map((item) => {
             const IconComp = item.icon;
             const isActive = activeTab === item.key;
@@ -259,25 +267,27 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.85rem',
-                  padding: '0.8rem 1rem',
+                  gap: '0.75rem',
+                  padding: sidebarCollapsed ? '0.85rem' : '0.75rem 1rem',
+                  justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
                   borderRadius: '12px',
                   border: 'none',
                   backgroundColor: isActive ? '#006B70' : 'transparent',
-                  color: isActive ? '#FFFFFF' : '#B2DFDB',
+                  color: isActive ? '#FFFFFF' : '#80CBC4',
                   fontWeight: isActive ? '800' : '600',
-                  fontSize: '0.88rem',
+                  fontSize: '0.86rem',
                   cursor: 'pointer',
                   textAlign: 'left',
-                  transition: 'all 0.15s ease'
+                  transition: 'all 0.15s ease',
+                  boxShadow: isActive ? '0 4px 14px rgba(0,107,112,0.4)' : 'none'
                 }}
               >
-                <IconComp size={19} color={isActive ? '#FBBF24' : '#80CBC4'} />
+                <IconComp size={18} color={isActive ? '#FBBF24' : '#80CBC4'} />
                 {!sidebarCollapsed && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flex: 1 }}>
                     <span>{item.label}</span>
                     {item.badge && (
-                      <span style={{ fontSize: '0.68rem', padding: '0.1rem 0.45rem', borderRadius: '6px', backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)', color: isActive ? '#FFF' : '#80CBC4', fontWeight: '800' }}>
+                      <span style={{ fontSize: '0.68rem', padding: '0.1rem 0.45rem', borderRadius: '6px', backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.25)', color: isActive ? '#FFF' : '#80CBC4', fontWeight: '800' }}>
                         {item.badge}
                       </span>
                     )}
@@ -288,37 +298,45 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
           })}
         </nav>
 
-        <div style={{ padding: '1rem', borderTop: '1px solid #003830' }}>
+        {/* Profile Card Footer */}
+        <div style={{ padding: '0.85rem', borderTop: '1px solid #0F332C', backgroundColor: 'rgba(0,0,0,0.2)' }}>
           {!sidebarCollapsed ? (
-            <div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                 {user?.picture || user?.avatar ? (
-                  <img src={user?.picture || user?.avatar} alt={user?.name} style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #80CBC4' }} />
+                  <img src={user?.picture || user?.avatar} alt={user?.name} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #006B70' }} />
                 ) : (
-                  <div style={{ width: '34px', height: '34px', borderRadius: '50%', backgroundColor: '#006B70', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.9rem' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#006B70', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '0.9rem' }}>
                     {user?.name ? user.name[0].toUpperCase() : 'C'}
                   </div>
                 )}
-                <div>
-                  <div style={{ fontSize: '0.84rem', fontWeight: '800', color: '#FFF' }}>{user?.name || 'Rahul Sharma'}</div>
-                  <div style={{ fontSize: '0.72rem', color: '#80CBC4' }}>{user?.phone || user?.identifier || '+91 98765 43210'}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '0.84rem', fontWeight: '800', color: '#FFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {user?.name || 'Rahul Sharma'}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#80CBC4', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {user?.phone || user?.identifier || '+91 98765 43210'}
+                  </div>
                 </div>
               </div>
+
               <button
                 onClick={onLogout}
-                style={{ marginTop: '0.75rem', width: '100%', padding: '0.45rem', backgroundColor: 'rgba(255,255,255,0.1)', color: '#FFF', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '700', cursor: 'pointer' }}
+                style={{ width: '100%', padding: '0.45rem', backgroundColor: 'rgba(239,68,68,0.15)', color: '#F87171', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
               >
-                Sign Out
+                <LogOut size={13} /> Sign Out
               </button>
             </div>
           ) : (
-            <button onClick={onLogout} style={{ width: '100%', background: 'none', border: 'none', color: '#FFF', cursor: 'pointer' }}>⏻</button>
+            <button onClick={onLogout} style={{ width: '100%', background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}>
+              <LogOut size={18} />
+            </button>
           )}
         </div>
       </aside>
 
       {/* 2. MAIN CONTENT AREA */}
-      <main style={{ flex: 1, overflowY: 'auto', padding: '1.75rem 2.5rem', maxHeight: '100vh' }}>
+      <main style={{ flex: 1, overflowY: 'auto', padding: '1.75rem 2.25rem', maxHeight: '100vh', position: 'relative' }}>
         
         {/* Success Alert Banner */}
         {orderSuccessBanner && (
@@ -349,7 +367,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         )}
 
         {/* Top Header Bar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ fontSize: '0.75rem', color: '#006B70', backgroundColor: '#E0F2F1', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '800' }}>
@@ -469,6 +487,16 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         )}
 
       </main>
+
+      {/* 3. FLOATING ACTION DOCK (WHATSAPP, CALL, INSTANT SEARCH) */}
+      <CareSeekerFloatingActionBar
+        onOpenSearch={() => {
+          setActiveTab('HOME');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        handleOrderWhatsApp={handleOrderWhatsApp}
+        handleOrderCall={handleOrderCall}
+      />
 
       {/* MODULAR OVERLAYS */}
       
