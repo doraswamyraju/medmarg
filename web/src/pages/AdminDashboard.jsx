@@ -184,49 +184,50 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     }
   };
 
-  // Navigation Items
+  // Navigation Items (Single Word Labels)
   const navMenuItems = [
-    { key: 'TESTS_MGMT', label: 'Diagnostic Catalog & Sheets Sync', icon: FlaskConical, badge: `${(catalog.tests?.length || 913) + (catalog.profiles?.length || 87)}` },
-    { key: 'LIVE_ORDERS', label: 'Live Orders & Dispatch Override', icon: Package, badge: `${orders.length}` },
-    { key: 'GPS_RADAR', label: 'Real-Time Fleet Map & Cold-Chain', icon: Navigation, badge: 'Live GPS' },
-    { key: 'TERRITORY_MGMT', label: 'Territory Marking & Fleet Allotment', icon: Compass, badge: `${territories.length} Zones` },
-    { key: 'FREELANCERS', label: 'Freelancer Verification Desk', icon: UserCheck, badge: `${freelancers.filter(f => f.status === 'PENDING_VERIFICATION').length} Pending` },
-    { key: 'SALARIED_FLEET', label: 'Salaried Fleet & Quotas (15/day)', icon: Truck, badge: `${salariedAgents.length}` },
-    { key: 'INVENTORY', label: 'Stock Tubes & Indent Approvals', icon: Boxes, badge: `${indents.filter(i => i.status === 'PENDING_APPROVAL').length}` },
-    { key: 'LABS', label: 'Designated Processing Labs', icon: Building2, badge: `${labPartners.length}` },
-    { key: 'PARTNERS_QUEUE', label: 'Partner Pre-Registration Queue', icon: Stethoscope, badge: `${partnerQueue.length}` },
-    { key: 'FINANCIALS', label: 'Transactions & Payout Approvals', icon: DollarSign, badge: 'Razorpay' },
-    { key: 'OVERVIEW', label: 'Omnipresent KPI Command Center', icon: BarChart3 }
+    { key: 'TESTS_MGMT', label: 'Catalog', icon: FlaskConical, badge: `${(catalog.tests?.length || 913) + (catalog.profiles?.length || 87)}` },
+    { key: 'LIVE_ORDERS', label: 'Orders', icon: Package, badge: `${orders.length}` },
+    { key: 'GPS_RADAR', label: 'Tracking', icon: Navigation, badge: 'Live GPS' },
+    { key: 'TERRITORY_MGMT', label: 'Territories', icon: Compass, badge: `${territories.length} Zones` },
+    { key: 'FREELANCERS', label: 'Freelancers', icon: UserCheck, badge: `${freelancers.filter(f => f.status === 'PENDING_VERIFICATION').length} Pending` },
+    { key: 'SALARIED_FLEET', label: 'Fleet', icon: Truck, badge: `${salariedAgents.length}` },
+    { key: 'INVENTORY', label: 'Inventory', icon: Boxes, badge: `${indents.filter(i => i.status === 'PENDING_APPROVAL').length}` },
+    { key: 'LABS', label: 'Labs', icon: Building2, badge: `${labPartners.length}` },
+    { key: 'PARTNERS_QUEUE', label: 'Partners', icon: Stethoscope, badge: `${partnerQueue.length}` },
+    { key: 'FINANCIALS', label: 'Financials', icon: DollarSign, badge: 'Razorpay' },
+    { key: 'OVERVIEW', label: 'Overview', icon: BarChart3 }
   ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#0B132B', color: '#F1F5F9', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', color: '#0F172A', fontFamily: 'Inter, system-ui, sans-serif' }}>
       
       {/* 1. SUPER ADMIN SIDEBAR */}
       <aside style={{ 
-        width: sidebarCollapsed ? '80px' : '290px', 
-        backgroundColor: '#0F172A', 
-        borderRight: '1px solid #1E293B', 
+        width: sidebarCollapsed ? '80px' : '260px', 
+        backgroundColor: '#FFFFFF', 
+        borderRight: '1px solid #E2E8F0', 
         display: 'flex', 
         flexDirection: 'column', 
         transition: 'width 0.2s ease',
         position: 'sticky',
         top: 0,
         height: '100vh',
-        zIndex: 100
+        zIndex: 100,
+        boxShadow: '4px 0 20px rgba(0,0,0,0.03)'
       }}>
         {/* Brand Header */}
-        <div style={{ padding: '1.25rem', borderBottom: '1px solid #1E293B', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between' }}>
+        <div style={{ padding: '1.25rem', borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between', backgroundColor: '#FFFFFF' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ backgroundColor: '#FFFFFF', padding: '4px 8px', borderRadius: '10px', display: 'flex', alignItems: 'center' }}>
+            <div style={{ backgroundColor: '#F8FAFC', padding: '4px 8px', borderRadius: '10px', display: 'flex', alignItems: 'center', border: '1px solid #E2E8F0' }}>
               <img src="/logo.png" alt="MedMarg" style={{ height: '28px', objectFit: 'contain' }} />
             </div>
             {!sidebarCollapsed && (
               <div>
                 <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '900', display: 'block', width: 'fit-content' }}>
-                  SUPER ADMIN CONSOLE
+                  SUPER ADMIN
                 </span>
-                <span style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: '700' }}>Omnipresent Master Hub</span>
+                <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700' }}>Master Hub</span>
               </div>
             )}
           </div>
@@ -256,19 +257,19 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                   borderRadius: '12px',
                   border: 'none',
                   backgroundColor: isActive ? '#006B70' : 'transparent',
-                  color: isActive ? '#FFFFFF' : '#94A3B8',
+                  color: isActive ? '#FFFFFF' : '#475569',
                   fontWeight: isActive ? '800' : '600',
-                  fontSize: '0.85rem',
+                  fontSize: '0.88rem',
                   cursor: 'pointer',
                   textAlign: 'left',
                   transition: 'all 0.15s ease',
-                  justifyContent: sidebarCollapsed ? 'center' : 'flex-start'
+                  justify: sidebarCollapsed ? 'center' : 'flex-start'
                 }}
               >
                 <IconComp size={18} color={isActive ? '#FBBF24' : '#64748B'} />
                 {!sidebarCollapsed && <span style={{ flex: 1 }}>{item.label}</span>}
                 {!sidebarCollapsed && item.badge !== undefined && (
-                  <span style={{ fontSize: '0.72rem', backgroundColor: isActive ? 'rgba(0,0,0,0.25)' : '#1E293B', color: isActive ? '#FDE047' : '#94A3B8', padding: '0.15rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
+                  <span style={{ fontSize: '0.72rem', backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : '#F1F5F9', color: isActive ? '#FFFFFF' : '#475569', padding: '0.15rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
                     {item.badge}
                   </span>
                 )}
@@ -278,15 +279,15 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
         </nav>
 
         {/* Footer Actions */}
-        <div style={{ padding: '1rem', borderTop: '1px solid #1E293B', backgroundColor: '#0B132B' }}>
+        <div style={{ padding: '1rem', borderTop: '1px solid #E2E8F0', backgroundColor: '#F8FAFC' }}>
           {!sidebarCollapsed && (
             <div style={{ marginBottom: '0.75rem' }}>
-              <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#FFF' }}>{user?.name || 'MedMarg Super Admin'}</div>
-              <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>admin@medmarg.com • Omnipresent</div>
+              <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#0F172A' }}>{user?.name || 'MedMarg Super Admin'}</div>
+              <div style={{ fontSize: '0.72rem', color: '#64748B' }}>admin@medmarg.com</div>
             </div>
           )}
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button onClick={onSwitchRole} style={{ flex: 1, padding: '0.5rem', backgroundColor: '#1E293B', color: '#FBBF24', border: '1px solid #334155', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}>
+            <button onClick={onSwitchRole} style={{ flex: 1, padding: '0.5rem', backgroundColor: '#FFFFFF', color: '#006B70', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}>
               {sidebarCollapsed ? '⇄' : 'Switch Portal'}
             </button>
             <button onClick={onLogout} style={{ padding: '0.5rem 0.75rem', backgroundColor: '#EF4444', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}>
@@ -300,12 +301,12 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
         
         {/* Top Header Bar */}
-        <header style={{ height: '70px', backgroundColor: '#0F172A', borderBottom: '1px solid #1E293B', padding: '0 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <header style={{ height: '70px', backgroundColor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', padding: '0 2rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 10px rgba(0,0,0,0.02)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#FFFFFF' }}>
+            <h1 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0F172A' }}>
               {navMenuItems.find(m => m.key === activeTab)?.label}
             </h1>
-            <span style={{ fontSize: '0.75rem', backgroundColor: 'rgba(0,107,112,0.3)', color: '#67E8F9', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: '800' }}>
+            <span style={{ fontSize: '0.75rem', backgroundColor: 'rgba(0,107,112,0.1)', color: '#006B70', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: '800', border: '1px solid rgba(0,107,112,0.2)' }}>
               Omnipresent Master System
             </span>
           </div>
@@ -314,7 +315,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             <button
               onClick={triggerGoogleSheetsSync}
               disabled={isSyncingSheets}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: isSyncingSheets ? '#334155' : '#006B70', color: '#FFF', padding: '0.55rem 1.1rem', borderRadius: '10px', border: 'none', fontWeight: '800', fontSize: '0.84rem', cursor: isSyncingSheets ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(0,107,112,0.3)' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: isSyncingSheets ? '#94A3B8' : '#006B70', color: '#FFF', padding: '0.55rem 1.1rem', borderRadius: '10px', border: 'none', fontWeight: '800', fontSize: '0.84rem', cursor: isSyncingSheets ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(0,107,112,0.2)' }}
             >
               <RefreshCw size={15} className={isSyncingSheets ? 'animate-spin' : ''} />
               {isSyncingSheets ? 'Syncing with Sheets...' : 'Sync with Google Sheets'}

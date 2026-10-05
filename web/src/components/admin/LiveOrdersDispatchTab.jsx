@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlusCircle, Edit3, UserCheck, ShieldCheck, MapPin, Phone, Building2, KeyRound, Clock, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { PlusCircle, Edit3, UserCheck, MapPin, Phone, Building2, CheckCircle, X } from 'lucide-react';
 
 export default function LiveOrdersDispatchTab({
   orders = [],
@@ -106,7 +106,6 @@ export default function LiveOrdersDispatchTab({
     };
     setOrders(prev => [newOrd, ...prev]);
     setShowCreateModal(false);
-    // Reset create form for next time
     setCreateForm({
       id: `MM-${Math.floor(1000 + Math.random() * 9000)}`,
       patientName: '',
@@ -125,19 +124,19 @@ export default function LiveOrdersDispatchTab({
   const getStatusBadgeStyle = (status) => {
     switch (status) {
       case 'EN_ROUTE':
-        return { bg: 'rgba(56, 189, 248, 0.2)', color: '#38BDF8', label: 'EN ROUTE' };
+        return { bg: '#E0F2FE', color: '#0284C7', label: 'EN ROUTE' };
       case 'SAMPLE_COLLECTED':
-        return { bg: 'rgba(16, 185, 129, 0.2)', color: '#34D399', label: 'SAMPLE COLLECTED' };
+        return { bg: '#D1FAE5', color: '#059669', label: 'SAMPLE COLLECTED' };
       case 'TRANSIT_TO_LAB':
-        return { bg: 'rgba(168, 85, 247, 0.2)', color: '#C084FC', label: 'TRANSIT TO LAB' };
+        return { bg: '#F3E8FF', color: '#7E22CE', label: 'TRANSIT TO LAB' };
       case 'LAB_PROCESSING':
-        return { bg: 'rgba(236, 72, 153, 0.2)', color: '#F472B6', label: 'LAB PROCESSING' };
+        return { bg: '#FCE7F3', color: '#DB2777', label: 'LAB PROCESSING' };
       case 'COMPLETED':
-        return { bg: 'rgba(34, 197, 94, 0.2)', color: '#4ADE80', label: 'COMPLETED' };
+        return { bg: '#DCFCE7', color: '#16A34A', label: 'COMPLETED' };
       case 'CANCELLED':
-        return { bg: 'rgba(239, 68, 68, 0.2)', color: '#F87171', label: 'CANCELLED' };
+        return { bg: '#FEE2E2', color: '#DC2626', label: 'CANCELLED' };
       default:
-        return { bg: 'rgba(245, 158, 11, 0.2)', color: '#FBBF24', label: 'PENDING DISPATCH' };
+        return { bg: '#FEF3C7', color: '#D97706', label: 'PENDING DISPATCH' };
     }
   };
 
@@ -146,22 +145,22 @@ export default function LiveOrdersDispatchTab({
       {/* Top Header & Actions */}
       <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF' }}>Live Orders & Auto-Dispatch Command Center</h2>
-          <p style={{ color: '#94A3B8', fontSize: '0.85rem' }}>Monitor real-time patient requests, reassign phlebotomists, doorstep OTPs, lab routing & manual overrides.</p>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A' }}>Live Orders & Auto-Dispatch Command Center</h2>
+          <p style={{ color: '#64748B', fontSize: '0.85rem' }}>Monitor patient requests, reassign phlebotomists, doorstep OTPs, lab routing & manual overrides.</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          style={{ padding: '0.65rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem', boxShadow: '0 4px 14px rgba(0,107,112,0.3)' }}
+          style={{ padding: '0.65rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem', boxShadow: '0 4px 14px rgba(0,107,112,0.2)' }}
         >
           <PlusCircle size={16} color="#FBBF24" /> Create Test Order
         </button>
       </div>
 
       {/* Orders Table Container */}
-      <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1px solid #334155', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
+      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
           <thead>
-            <tr style={{ backgroundColor: '#0F172A', borderBottom: '1px solid #334155', color: '#94A3B8', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               <th style={{ padding: '1rem 1.25rem' }}>Order ID</th>
               <th style={{ padding: '1rem' }}>Patient & Address</th>
               <th style={{ padding: '1rem' }}>Tests / Package</th>
@@ -175,7 +174,7 @@ export default function LiveOrdersDispatchTab({
           <tbody>
             {orders.length === 0 ? (
               <tr>
-                <td colSpan={8} style={{ padding: '3rem', textAlign: 'center', color: '#94A3B8' }}>
+                <td colSpan={8} style={{ padding: '3rem', textAlign: 'center', color: '#64748B' }}>
                   No active live orders found. Click "Create Test Order" to add one.
                 </td>
               </tr>
@@ -183,36 +182,36 @@ export default function LiveOrdersDispatchTab({
               orders.map(ord => {
                 const statusBadge = getStatusBadgeStyle(ord.status);
                 return (
-                  <tr key={ord.id} style={{ borderBottom: '1px solid #334155', transition: 'background-color 0.15s' }}>
-                    <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#67E8F9', fontWeight: '800' }}>
+                  <tr key={ord.id} style={{ borderBottom: '1px solid #F1F5F9', transition: 'background-color 0.15s' }}>
+                    <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#006B70', fontWeight: '800' }}>
                       {ord.id}
-                      <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 'normal', fontFamily: 'sans-serif' }}>{ord.createdAt || 'Today'}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#94A3B8', fontWeight: 'normal', fontFamily: 'sans-serif' }}>{ord.createdAt || 'Today'}</div>
                     </td>
                     <td style={{ padding: '1rem' }}>
-                      <div style={{ fontWeight: '800', color: '#FFF' }}>{ord.patientName}</div>
-                      <div style={{ fontSize: '0.78rem', color: '#94A3B8', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
-                        <Phone size={12} color="#94A3B8" /> {ord.phone}
+                      <div style={{ fontWeight: '800', color: '#0F172A' }}>{ord.patientName}</div>
+                      <div style={{ fontSize: '0.78rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
+                        <Phone size={12} color="#64748B" /> {ord.phone}
                       </div>
-                      <div style={{ fontSize: '0.78rem', color: '#CBD5E1', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
-                        <MapPin size={12} color="#FBBF24" /> {ord.address}
+                      <div style={{ fontSize: '0.78rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.15rem' }}>
+                        <MapPin size={12} color="#D97706" /> {ord.address}
                       </div>
                     </td>
-                    <td style={{ padding: '1rem', color: '#CBD5E1' }}>
-                      <div style={{ fontWeight: '700', color: '#F1F5F9' }}>{ord.items}</div>
-                      <div style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '800', marginTop: '0.15rem' }}>₹{ord.amount}</div>
+                    <td style={{ padding: '1rem', color: '#334155' }}>
+                      <div style={{ fontWeight: '700', color: '#0F172A' }}>{ord.items}</div>
+                      <div style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800', marginTop: '0.15rem' }}>₹{ord.amount}</div>
                     </td>
                     <td style={{ padding: '1rem' }}>
-                      <div style={{ color: ord.assignedAgent === 'Unassigned' ? '#F87171' : '#FBBF24', fontWeight: '700', fontSize: '0.85rem' }}>
+                      <div style={{ color: ord.assignedAgent === 'Unassigned' ? '#DC2626' : '#B45309', fontWeight: '700', fontSize: '0.85rem' }}>
                         {ord.assignedAgent}
                       </div>
                     </td>
-                    <td style={{ padding: '1rem', color: '#94A3B8', fontSize: '0.82rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#38BDF8', fontWeight: '600' }}>
+                    <td style={{ padding: '1rem', color: '#64748B', fontSize: '0.82rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#0284C7', fontWeight: '600' }}>
                         <Building2 size={13} /> {ord.lab || 'MedMarg Central Lab'}
                       </div>
                     </td>
-                    <td style={{ padding: '1rem', fontFamily: 'monospace', color: '#34D399', fontWeight: '900' }}>
-                      <span style={{ backgroundColor: 'rgba(52, 211, 153, 0.15)', padding: '0.2rem 0.55rem', borderRadius: '6px', border: '1px solid rgba(52, 211, 153, 0.3)' }}>
+                    <td style={{ padding: '1rem', fontFamily: 'monospace', color: '#059669', fontWeight: '900' }}>
+                      <span style={{ backgroundColor: '#ECFDF5', padding: '0.2rem 0.55rem', borderRadius: '6px', border: '1px solid #A7F3D0' }}>
                         🔑 {ord.otp}
                       </span>
                     </td>
@@ -231,7 +230,7 @@ export default function LiveOrdersDispatchTab({
                         </button>
                         <button 
                           onClick={() => handleOpenEdit(ord)}
-                          style={{ padding: '0.4rem 0.65rem', backgroundColor: '#334155', color: '#38BDF8', border: '1px solid #475569', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                          style={{ padding: '0.4rem 0.65rem', backgroundColor: '#F1F5F9', color: '#0284C7', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
                         >
                           <Edit3 size={14} /> Edit
                         </button>
@@ -247,23 +246,22 @@ export default function LiveOrdersDispatchTab({
 
       {/* MODAL 1: REASSIGN AGENT MODAL */}
       {reassigningOrder && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
-          <div style={{ backgroundColor: '#1E293B', width: '100%', maxWidth: '520px', borderRadius: '20px', border: '1px solid #334155', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)' }}>
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0F172A' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '520px', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
               <div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#FFF' }}>Reassign Phlebotomist Agent</h3>
-                <div style={{ fontSize: '0.8rem', color: '#67E8F9', fontWeight: '700' }}>Order ID: {reassigningOrder.id} ({reassigningOrder.patientName})</div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A' }}>Reassign Phlebotomist Agent</h3>
+                <div style={{ fontSize: '0.8rem', color: '#006B70', fontWeight: '700' }}>Order ID: {reassigningOrder.id} ({reassigningOrder.patientName})</div>
               </div>
-              <button onClick={() => setReassigningOrder(null)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}><X size={20} /></button>
+              <button onClick={() => setReassigningOrder(null)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>
             </div>
 
             <div style={{ padding: '1.5rem' }}>
-              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', color: '#CBD5E1', marginBottom: '0.6rem' }}>
+              <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: '700', color: '#334155', marginBottom: '0.6rem' }}>
                 Select Salaried Phlebotomist or FCM Broadcast Channel:
               </label>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                {/* 1. Salaried Agents */}
                 {salariedAgents.map(ag => {
                   const agentLabel = `${ag.name} (${ag.id}) - Zone: ${ag.area}`;
                   const isSelected = selectedAgentOption === agentLabel;
@@ -271,31 +269,30 @@ export default function LiveOrdersDispatchTab({
                     <div 
                       key={ag.id}
                       onClick={() => setSelectedAgentOption(agentLabel)}
-                      style={{ padding: '0.9rem 1.1rem', backgroundColor: isSelected ? 'rgba(0,107,112,0.25)' : '#0F172A', border: isSelected ? '2px solid #006B70' : '1px solid #334155', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                      style={{ padding: '0.9rem 1.1rem', backgroundColor: isSelected ? 'rgba(0,107,112,0.08)' : '#F8FAFC', border: isSelected ? '2px solid #006B70' : '1px solid #E2E8F0', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
                       <div>
-                        <div style={{ fontWeight: '800', color: isSelected ? '#38BDF8' : '#FFF', fontSize: '0.9rem' }}>👨‍⚕️ {ag.name} ({ag.id})</div>
-                        <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>📍 Area: {ag.area} • Quota: {ag.samplesToday || 0}/{ag.maxDailyQuota || 15}</div>
+                        <div style={{ fontWeight: '800', color: isSelected ? '#006B70' : '#0F172A', fontSize: '0.9rem' }}>👨‍⚕️ {ag.name} ({ag.id})</div>
+                        <div style={{ fontSize: '0.78rem', color: '#64748B' }}>📍 Area: {ag.area} • Quota: {ag.samplesToday || 0}/{ag.maxDailyQuota || 15}</div>
                       </div>
-                      {isSelected && <CheckCircle size={18} color="#34D399" />}
+                      {isSelected && <CheckCircle size={18} color="#059669" />}
                     </div>
                   );
                 })}
 
-                {/* 2. FCM Freelancer Broadcast */}
                 {(() => {
                   const broadcastLabel = '🚀 FCM Freelancer Broadcast Network (Open Market Gig Phlebotomists)';
                   const isSelected = selectedAgentOption === broadcastLabel;
                   return (
                     <div 
                       onClick={() => setSelectedAgentOption(broadcastLabel)}
-                      style={{ padding: '0.9rem 1.1rem', backgroundColor: isSelected ? 'rgba(245,158,11,0.2)' : '#0F172A', border: isSelected ? '2px solid #F59E0B' : '1px solid #334155', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                      style={{ padding: '0.9rem 1.1rem', backgroundColor: isSelected ? '#FEF3C7' : '#F8FAFC', border: isSelected ? '2px solid #D97706' : '1px solid #E2E8F0', borderRadius: '12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                     >
                       <div>
-                        <div style={{ fontWeight: '800', color: isSelected ? '#FBBF24' : '#FDE047', fontSize: '0.9rem' }}>📢 FCM Freelancer Broadcast</div>
-                        <div style={{ fontSize: '0.78rem', color: '#94A3B8' }}>Broadcast collection push notification to all verified freelance agents in radius</div>
+                        <div style={{ fontWeight: '800', color: isSelected ? '#B45309' : '#D97706', fontSize: '0.9rem' }}>📢 FCM Freelancer Broadcast</div>
+                        <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Broadcast collection push notification to all verified freelance agents in radius</div>
                       </div>
-                      {isSelected && <CheckCircle size={18} color="#FBBF24" />}
+                      {isSelected && <CheckCircle size={18} color="#D97706" />}
                     </div>
                   );
                 })()}
@@ -304,13 +301,13 @@ export default function LiveOrdersDispatchTab({
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                 <button 
                   onClick={() => setReassigningOrder(null)} 
-                  style={{ padding: '0.65rem 1.25rem', backgroundColor: '#334155', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
+                  style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleConfirmReassign} 
-                  style={{ padding: '0.65rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem', boxShadow: '0 4px 12px rgba(0,107,112,0.4)' }}
+                  style={{ padding: '0.65rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}
                 >
                   Confirm Reassignment
                 </button>
@@ -322,23 +319,23 @@ export default function LiveOrdersDispatchTab({
 
       {/* MODAL 2: EDIT / UPDATE ORDER MODAL */}
       {editingOrder && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
-          <div style={{ backgroundColor: '#1E293B', width: '100%', maxWidth: '600px', borderRadius: '20px', border: '1px solid #334155', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0F172A', sticky: 'top', top: 0, zIndex: 10 }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '600px', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC', position: 'sticky', top: 0, zIndex: 10 }}>
               <div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#FFF' }}>Edit / Update Order Details</h3>
-                <div style={{ fontSize: '0.8rem', color: '#67E8F9', fontWeight: '700' }}>Order ID: {editingOrder.id}</div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A' }}>Edit / Update Order Details</h3>
+                <div style={{ fontSize: '0.8rem', color: '#006B70', fontWeight: '700' }}>Order ID: {editingOrder.id}</div>
               </div>
-              <button onClick={() => setEditingOrder(null)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}><X size={20} /></button>
+              <button onClick={() => setEditingOrder(null)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>
             </div>
 
             <form onSubmit={handleSaveEdit} style={{ padding: '1.5rem', display: 'grid', gap: '1rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '0.35rem' }}>Order Execution Status</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Order Execution Status</label>
                 <select
                   value={editForm.status}
                   onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                  style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.88rem', fontWeight: '700' }}
+                  style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem', fontWeight: '700' }}
                 >
                   <option value="PENDING_DISPATCH">PENDING_DISPATCH</option>
                   <option value="EN_ROUTE">EN_ROUTE</option>
@@ -352,68 +349,68 @@ export default function LiveOrdersDispatchTab({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '0.35rem' }}>Patient Name</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Patient Name</label>
                   <input
                     type="text"
                     required
                     value={editForm.patientName}
                     onChange={(e) => setEditForm({ ...editForm, patientName: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.88rem' }}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '0.35rem' }}>Phone Number</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Phone Number</label>
                   <input
                     type="text"
                     required
                     value={editForm.phone}
                     onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.88rem' }}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '0.35rem' }}>Doorstep Collection Address</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Doorstep Collection Address</label>
                 <input
                   type="text"
                   required
                   value={editForm.address}
                   onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                  style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.88rem' }}
+                  style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
                 />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '0.35rem' }}>Tests / Package Included</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Tests / Package Included</label>
                   <input
                     type="text"
                     required
                     value={editForm.items}
                     onChange={(e) => setEditForm({ ...editForm, items: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.88rem' }}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '0.35rem' }}>Total Amount (₹)</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Total Amount (₹)</label>
                   <input
                     type="number"
                     required
                     value={editForm.amount}
                     onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.88rem' }}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
                   />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '0.35rem' }}>Designated Processing Lab</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Designated Processing Lab</label>
                   <select
                     value={editForm.lab}
                     onChange={(e) => setEditForm({ ...editForm, lab: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.88rem' }}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
                   >
                     {labPartners.map(l => (
                       <option key={l.id} value={l.name}>{l.name}</option>
@@ -422,13 +419,13 @@ export default function LiveOrdersDispatchTab({
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '0.35rem' }}>Doorstep OTP Code</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Doorstep OTP Code</label>
                   <input
                     type="text"
                     required
                     value={editForm.otp}
                     onChange={(e) => setEditForm({ ...editForm, otp: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#34D399', fontSize: '0.88rem', fontFamily: 'monospace', fontWeight: '900' }}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '8px', color: '#059669', fontSize: '0.88rem', fontFamily: 'monospace', fontWeight: '900' }}
                   />
                 </div>
               </div>
@@ -437,7 +434,7 @@ export default function LiveOrdersDispatchTab({
                 <button 
                   type="button" 
                   onClick={() => setEditingOrder(null)} 
-                  style={{ padding: '0.65rem 1.25rem', backgroundColor: '#334155', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
+                  style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
                 >
                   Cancel
                 </button>
@@ -455,84 +452,84 @@ export default function LiveOrdersDispatchTab({
 
       {/* MODAL 3: CREATE TEST ORDER MODAL */}
       {showCreateModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
-          <div style={{ backgroundColor: '#1E293B', width: '100%', maxWidth: '580px', borderRadius: '20px', border: '1px solid #334155', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)' }}>
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0F172A' }}>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '580px', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
               <div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#FFF' }}>Create Manual Test Order</h3>
-                <div style={{ fontSize: '0.8rem', color: '#67E8F9', fontWeight: '700' }}>Order ID: {createForm.id}</div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A' }}>Create Manual Test Order</h3>
+                <div style={{ fontSize: '0.8rem', color: '#006B70', fontWeight: '700' }}>Order ID: {createForm.id}</div>
               </div>
-              <button onClick={() => setShowCreateModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}><X size={20} /></button>
+              <button onClick={() => setShowCreateModal(false)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>
             </div>
 
             <form onSubmit={handleCreateOrder} style={{ padding: '1.5rem', display: 'grid', gap: '1rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '0.35rem' }}>Patient Name</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Patient Name</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Ramesh Reddy"
                     value={createForm.patientName}
                     onChange={(e) => setCreateForm({ ...createForm, patientName: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.88rem' }}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '0.35rem' }}>Phone Number</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Phone Number</label>
                   <input
                     type="text"
                     required
                     placeholder="+91 98765 43210"
                     value={createForm.phone}
                     onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.88rem' }}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '0.35rem' }}>Doorstep Address & Landmark</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Doorstep Address & Landmark</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Flat 302, Royal Towers, Air Bypass Rd, Tirupati"
                   value={createForm.address}
                   onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
-                  style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.88rem' }}
+                  style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
                 />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '0.35rem' }}>Test Package / Individual Tests</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Test Package / Individual Tests</label>
                   <input
                     type="text"
                     required
                     value={createForm.items}
                     onChange={(e) => setCreateForm({ ...createForm, items: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.88rem' }}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '0.35rem' }}>Amount (₹)</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Amount (₹)</label>
                   <input
                     type="number"
                     required
                     value={createForm.amount}
                     onChange={(e) => setCreateForm({ ...createForm, amount: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.88rem' }}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
                   />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '0.35rem' }}>Assign Agent</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Assign Agent</label>
                   <select
                     value={createForm.assignedAgent}
                     onChange={(e) => setCreateForm({ ...createForm, assignedAgent: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.88rem' }}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
                   >
                     <option value="Unassigned">Unassigned (Auto-Dispatch)</option>
                     {salariedAgents.map(ag => (
@@ -542,11 +539,11 @@ export default function LiveOrdersDispatchTab({
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#94A3B8', marginBottom: '0.35rem' }}>Processing Lab</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Processing Lab</label>
                   <select
                     value={createForm.lab}
                     onChange={(e) => setCreateForm({ ...createForm, lab: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.88rem' }}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
                   >
                     {labPartners.map(l => (
                       <option key={l.id} value={l.name}>{l.name}</option>
@@ -560,7 +557,7 @@ export default function LiveOrdersDispatchTab({
                 <button 
                   type="button" 
                   onClick={() => setShowCreateModal(false)} 
-                  style={{ padding: '0.65rem 1.25rem', backgroundColor: '#334155', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
+                  style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
                 >
                   Cancel
                 </button>
