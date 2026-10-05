@@ -18,7 +18,7 @@ export default function CareSeekerPinpointMap({
       mapInstanceRef.current.remove();
     }
 
-    // Clean, modern street tiles without hospital red crosses or POI clutter (CartoDB Voyager)
+    // High-resolution clean GIS street tiles without hospital icons or API key limits (Esri World Street Map)
     const map = L.map(mapContainerRef.current, {
       center: [center.lat, center.lng],
       zoom: 15,
@@ -26,9 +26,8 @@ export default function CareSeekerPinpointMap({
       attributionControl: false
     });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      subdomains: 'abcd',
-      maxZoom: 20
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19
     }).addTo(map);
 
     // Custom Clean Doorstep Pin Marker
