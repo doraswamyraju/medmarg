@@ -6,9 +6,8 @@ import {
   FolderHeart, 
   User, 
   ShoppingBag, 
-  Bell, 
-  PhoneCall,
-  Sparkles,
+  Gift, 
+  Building2,
   CheckCircle2
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
@@ -17,17 +16,19 @@ import { API_BASE } from '../data/apiConfig';
 
 // Role-Specific Modular Subcomponents (src/components/patient/)
 import PatientHomeTab from '../components/patient/PatientHomeTab';
-import PatientCatalogTab from '../components/patient/PatientCatalogTab';
+import PatientCatalogMatrixTab from '../components/patient/PatientCatalogMatrixTab';
 import PatientTrackingTab from '../components/patient/PatientTrackingTab';
 import PatientReportsTab from '../components/patient/PatientReportsTab';
 import PatientProfileTab from '../components/patient/PatientProfileTab';
+import PatientReferralAndCorporate from '../components/patient/PatientReferralAndCorporate';
+import PatientAddressModal from '../components/patient/PatientAddressModal';
 import PatientCartDrawer from '../components/patient/PatientCartDrawer';
 import PatientCheckoutModal from '../components/patient/PatientCheckoutModal';
 import PatientUniversalItemSheet from '../components/patient/PatientUniversalItemSheet';
 import PatientPrescriptionModal from '../components/patient/PatientPrescriptionModal';
 
 export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
-  // 5 CORE NAVIGATION TABS: HOME, TESTS, TRACK, REPORTS, PROFILE
+  // 6 CORE NAVIGATION TABS: HOME, TESTS, TRACK, REPORTS, REFER_CORP, PROFILE
   const [activeTab, setActiveTab] = useState('HOME');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,14 +44,21 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   const [showCartDrawer, setShowCartDrawer] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  const [showAddressModal, setShowAddressModal] = useState(false);
   const [orderSuccessBanner, setOrderSuccessBanner] = useState(null);
+
+  // Saved Addresses State
+  const [savedAddresses, setSavedAddresses] = useState([
+    { id: 'addr_1', label: 'Home', address: 'Plot 42, Air Bypass Road, Tirupati, AP - 517501', isDefault: true, city: 'Tirupati, AP', pincode: '517501' },
+    { id: 'addr_2', label: 'Parents', address: 'Door 12-4/A, Gandhi Road, Tirupati, AP - 517502', isDefault: false, city: 'Tirupati, AP', pincode: '517502' }
+  ]);
 
   // Cart State
   const [cart, setCart] = useState([
     {
       id: 'pkg_mm_master',
       name: 'MedMarg Master Health Checkup (Comprehensive)',
-      lab: 'MedMarg Central Diagnostics',
+      lab: 'MedMarg Central Processing Hub',
       price: 1499,
       mrp: 3999,
       params: 92,
@@ -147,7 +155,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
       setCart([...cart, {
         id: itemId,
         name: item.name || item.title,
-        lab: item.lab || 'MedMarg Central Diagnostics',
+        lab: item.lab || 'MedMarg Central Processing Hub',
         price: item.price || 499,
         mrp: item.mrp || (item.price ? Math.round(item.price * 1.6) : 999),
         params: item.testCount || item.params || 1,
@@ -186,11 +194,16 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
     }, 6000);
   };
 
+  const handleSaveAddress = (newAddr) => {
+    setSavedAddresses([newAddr, ...savedAddresses]);
+  };
+
   const navMenuItems = [
     { key: 'HOME', label: 'Home', icon: HomeIcon },
-    { key: 'TESTS', label: 'Labs & Tests', icon: FlaskConical, badge: `${catalog.tests?.length || 913}+` },
+    { key: 'TESTS', label: 'Labs & Tests Matrix', icon: FlaskConical, badge: `${catalog.tests?.length || 913}+` },
     { key: 'TRACK', label: 'Live Tracking', icon: Activity, badge: `${allOrders.length} Active` },
     { key: 'REPORTS', label: 'Health Vault', icon: FolderHeart, badge: 'NABL' },
+    { key: 'REFER_CORP', label: 'Refer & Corporate', icon: Gift, badge: '₹400' },
     { key: 'PROFILE', label: 'Patient Profile', icon: User }
   ];
 
@@ -276,8 +289,19 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         <div style={{ padding: '1rem', borderTop: '1px solid #003830' }}>
           {!sidebarCollapsed ? (
             <div>
-              <div style={{ fontSize: '0.84rem', fontWeight: '800', color: '#FFF' }}>{user?.name || 'Rahul Sharma'}</div>
-              <div style={{ fontSize: '0.74rem', color: '#80CBC4' }}>{user?.phone || user?.identifier || '+91 98765 43210'}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                {user?.picture || user?.avatar ? (
+                  <img src={user?.picture || user?.avatar} alt={user?.name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#006B70', color: '#FFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.85rem' }}>
+                    {user?.name ? user.name[0].toUpperCase() : 'R'}
+                  </div>
+                )}
+                <div>
+                  <div style={{ fontSize: '0.84rem', fontWeight: '800', color: '#FFF' }}>{user?.name || 'Rahul Sharma'}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#80CBC4' }}>{user?.phone || user?.identifier || '+91 98765 43210'}</div>
+                </div>
+              </div>
               <button
                 onClick={onLogout}
                 style={{ marginTop: '0.75rem', width: '100%', padding: '0.45rem', backgroundColor: 'rgba(255,255,255,0.1)', color: '#FFF', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '700', cursor: 'pointer' }}
@@ -335,9 +359,10 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
             </div>
             <h1 style={{ fontSize: '1.85rem', fontWeight: '900', color: '#0F172A', marginTop: '0.35rem' }}>
               {activeTab === 'HOME' && 'MedMarg Healthcare & Wellness Hub'}
-              {activeTab === 'TESTS' && 'Pathology Lab Tests & Health Packages'}
+              {activeTab === 'TESTS' && 'Pathology Lab Tests Matrix & Packages'}
               {activeTab === 'TRACK' && 'Live Sample Tracker & Telemetry'}
               {activeTab === 'REPORTS' && 'Digital Health Locker & Reports'}
+              {activeTab === 'REFER_CORP' && 'Referrals & Corporate Staff Wellness'}
               {activeTab === 'PROFILE' && 'Patient Profile & Account Settings'}
             </h1>
           </div>
@@ -376,13 +401,14 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
             handleOrderWhatsApp={handleOrderWhatsApp} 
             handleOrderCall={handleOrderCall} 
             onOpenPrescriptionModal={() => setShowPrescriptionModal(true)}
+            onOpenAddressModal={() => setShowAddressModal(true)}
             catalog={catalog} 
             liveOrdersCount={allOrders.length}
           />
         )}
 
         {activeTab === 'TESTS' && (
-          <PatientCatalogTab 
+          <PatientCatalogMatrixTab 
             catalog={catalog} 
             catalogSubTab={catalogSubTab} 
             setCatalogSubTab={setCatalogSubTab} 
@@ -414,10 +440,21 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
           />
         )}
 
+        {activeTab === 'REFER_CORP' && (
+          <PatientReferralAndCorporate
+            user={user}
+            cart={cart}
+            addToCart={addToCart}
+            setSelectedDetailItem={setSelectedDetailItem}
+          />
+        )}
+
         {activeTab === 'PROFILE' && (
           <PatientProfileTab 
             user={user} 
             onLogout={onLogout} 
+            onOpenAddressModal={() => setShowAddressModal(true)}
+            savedAddresses={savedAddresses}
           />
         )}
 
@@ -425,13 +462,15 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
 
       {/* MODULAR OVERLAYS */}
       
-      {/* 1. Slide-over Cart Drawer */}
+      {/* 1. Slide-over Cart Drawer with In-Cart Test Browser */}
       <PatientCartDrawer
         isOpen={showCartDrawer}
         onClose={() => setShowCartDrawer(false)}
         cart={cart}
         removeFromCart={removeFromCart}
+        addToCart={addToCart}
         onProceedToCheckout={() => setShowCheckoutModal(true)}
+        catalog={catalog}
       />
 
       {/* 2. Multi-step Checkout & Booking Modal */}
@@ -456,6 +495,13 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         isOpen={showPrescriptionModal}
         onClose={() => setShowPrescriptionModal(false)}
         user={user}
+      />
+
+      {/* 5. Address Manager Modal */}
+      <PatientAddressModal
+        isOpen={showAddressModal}
+        onClose={() => setShowAddressModal(false)}
+        onSaveAddress={handleSaveAddress}
       />
 
     </div>

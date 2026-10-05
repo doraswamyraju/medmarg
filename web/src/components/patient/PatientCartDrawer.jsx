@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   X, 
   Trash2, 
@@ -7,7 +7,11 @@ import {
   ShieldCheck, 
   Clock, 
   FlaskConical, 
-  AlertCircle 
+  AlertCircle,
+  Plus,
+  Check,
+  Search,
+  Sparkles
 } from 'lucide-react';
 
 export default function PatientCartDrawer({
@@ -15,14 +19,31 @@ export default function PatientCartDrawer({
   onClose,
   cart,
   removeFromCart,
-  onProceedToCheckout
+  addToCart,
+  onProceedToCheckout,
+  catalog = {}
 }) {
   if (!isOpen) return null;
+
+  const [inCartSearch, setInCartSearch] = useState('');
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.price || 0), 0);
   const totalMrp = cart.reduce((sum, item) => sum + (item.mrp || Math.round((item.price || 0) * 1.6)), 0);
   const totalSavings = totalMrp - cartTotal;
   const hasFastingTest = cart.some(item => item.fasting === 'YES');
+
+  // Quick Add-on Tests
+  const quickAddOns = [
+    { id: 'T001', name: 'Vitamin D3 (25-OH)', price: 499, mrp: 1200, fasting: 'NO', sampleType: 'SERUM' },
+    { id: 'T002', name: 'Vitamin B12 (Active)', price: 449, mrp: 1100, fasting: 'NO', sampleType: 'SERUM' },
+    { id: 'T003', name: 'Thyroid Profile Total (T3/T4/TSH)', price: 299, mrp: 650, fasting: 'YES', sampleType: 'SERUM' },
+    { id: 'T004', name: 'HbA1c Glycated Hemoglobin', price: 299, mrp: 600, fasting: 'NO', sampleType: 'EDTA' },
+    { id: 'T005', name: 'Complete Blood Count CBC (24 Params)', price: 249, mrp: 500, fasting: 'NO', sampleType: 'EDTA' }
+  ];
+
+  const searchResults = inCartSearch.trim()
+    ? (catalog.tests || []).filter(t => t.name.toLowerCase().includes(inCartSearch.toLowerCase())).slice(0, 5)
+    : [];
 
   return (
     <div style={{
@@ -40,7 +61,7 @@ export default function PatientCartDrawer({
     }}>
       <div style={{
         width: '100%',
-        maxWidth: '460px',
+        maxWidth: '480px',
         backgroundColor: '#FFFFFF',
         height: '100%',
         display: 'flex',
@@ -78,34 +99,37 @@ export default function PatientCartDrawer({
           </button>
         </div>
 
-        {/* Cart Items List */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {/* Cart Items & Quick Add Section */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          
+          {/* Fasting Notice */}
+          {hasFastingTest && (
+            <div style={{
+              backgroundColor: '#FEF3C7',
+              border: '1px solid #FDE68A',
+              borderRadius: '12px',
+              padding: '0.75rem 1rem',
+              display: 'flex',
+              gap: '0.6rem',
+              alignItems: 'flex-start'
+            }}>
+              <AlertCircle size={18} color="#B45309" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ fontSize: '0.78rem', color: '#92400E', lineHeight: 1.4 }}>
+                <strong>Fasting Required (10-12 Hours):</strong> One or more tests in your cart require overnight fasting. Avoid food/drinks (except water) before collection.
+              </div>
+            </div>
+          )}
+
+          {/* Cart Items List */}
           {cart.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '4rem 1rem', color: '#64748B' }}>
-              <FlaskConical size={48} color="#CBD5E1" style={{ margin: '0 auto 1rem' }} />
-              <h4 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#1E293B' }}>Your Cart is Empty</h4>
-              <p style={{ fontSize: '0.85rem', marginTop: '0.35rem' }}>Browse 913+ lab tests and health packages to add tests.</p>
+            <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#64748B' }}>
+              <FlaskConical size={44} color="#CBD5E1" style={{ margin: '0 auto 0.75rem' }} />
+              <h4 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#1E293B' }}>Your Cart is Empty</h4>
+              <p style={{ fontSize: '0.82rem', marginTop: '0.25rem' }}>Select from popular add-on tests below to start your booking.</p>
             </div>
           ) : (
-            <>
-              {/* Fasting Requirement Notice */}
-              {hasFastingTest && (
-                <div style={{
-                  backgroundColor: '#FEF3C7',
-                  border: '1px solid #FDE68A',
-                  borderRadius: '12px',
-                  padding: '0.75rem 1rem',
-                  display: 'flex',
-                  gap: '0.6rem',
-                  alignItems: 'flex-start'
-                }}>
-                  <AlertCircle size={18} color="#B45309" style={{ flexShrink: 0, marginTop: '2px' }} />
-                  <div style={{ fontSize: '0.78rem', color: '#92400E', lineHeight: 1.4 }}>
-                    <strong>Fasting Required (10-12 Hours):</strong> One or more tests in your cart require overnight fasting. Avoid food/beverages (except water) before sample collection.
-                  </div>
-                </div>
-              )}
-
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#475569' }}>Selected Diagnostic Items ({cart.length})</div>
               {cart.map((item, idx) => (
                 <div
                   key={(item.id || item.name) + '_' + idx}
@@ -116,7 +140,7 @@ export default function PatientCartDrawer({
                     padding: '1rem',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '0.6rem',
+                    gap: '0.5rem',
                     boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
                   }}
                 >
@@ -160,8 +184,99 @@ export default function PatientCartDrawer({
                   </div>
                 </div>
               ))}
-            </>
+            </div>
           )}
+
+          {/* Quick In-Cart Search / Add More Tests */}
+          <div style={{ backgroundColor: '#F8FAFC', borderRadius: '16px', padding: '1rem', border: '1px solid #E2E8F0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.84rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.6rem' }}>
+              <Sparkles size={15} color="#006B70" />
+              <span>Add More Diagnostic Tests / Profiles</span>
+            </div>
+
+            <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
+              <Search size={16} color="#64748B" style={{ position: 'absolute', left: '10px', top: '10px' }} />
+              <input
+                type="text"
+                placeholder="Search test name to add directly..."
+                value={inCartSearch}
+                onChange={(e) => setInCartSearch(e.target.value)}
+                style={{ width: '100%', padding: '0.55rem 0.75rem 0.55rem 2.2rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.82rem', outline: 'none' }}
+              />
+            </div>
+
+            {/* In-Cart Search Dropdown Results */}
+            {searchResults.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                {searchResults.map(res => (
+                  <div key={res.id || res.code} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '0.8rem' }}>
+                    <div style={{ fontWeight: '700', color: '#0F172A' }}>{res.name} (₹{res.price || 499})</div>
+                    <button
+                      onClick={() => {
+                        addToCart(res);
+                        setInCartSearch('');
+                      }}
+                      style={{ padding: '0.3rem 0.65rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
+                    >
+                      + Add
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Frequently Added Together Tiles */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+              {quickAddOns.map(addon => {
+                const isAlreadyIn = cart.some(c => c.id === addon.id || c.name === addon.name);
+                return (
+                  <div
+                    key={addon.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '0.55rem 0.75rem',
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '10px',
+                      border: '1px solid #E2E8F0'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#0F172A' }}>{addon.name}</div>
+                      <div style={{ fontSize: '0.74rem', color: '#006B70', fontWeight: '700' }}>
+                        ₹{addon.price} <span style={{ textDecoration: 'line-through', color: '#94A3B8', fontSize: '0.7rem' }}>₹{addon.mrp}</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        if (!isAlreadyIn) addToCart(addon);
+                      }}
+                      disabled={isAlreadyIn}
+                      style={{
+                        padding: '0.35rem 0.75rem',
+                        backgroundColor: isAlreadyIn ? '#E2E8F0' : '#E0F2F1',
+                        color: isAlreadyIn ? '#64748B' : '#006B70',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '0.76rem',
+                        fontWeight: '800',
+                        cursor: isAlreadyIn ? 'default' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem'
+                      }}
+                    >
+                      {isAlreadyIn ? <Check size={13} /> : <Plus size={13} />}
+                      <span>{isAlreadyIn ? 'Added' : 'Add'}</span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
         </div>
 
         {/* Cart Drawer Footer */}
@@ -178,7 +293,7 @@ export default function PatientCartDrawer({
                 <span style={{ textDecoration: 'line-through' }}>₹{totalMrp}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#059669', fontWeight: '700' }}>
-                <span>MedMarg Discount</span>
+                <span>MedMarg Multi-Lab Discount</span>
                 <span>- ₹{totalSavings}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', color: '#059669', fontWeight: '700' }}>
