@@ -7,10 +7,9 @@ import {
   User, 
   ShoppingBag, 
   Bell, 
-  Trash2, 
-  X,
   PhoneCall,
-  Check
+  Sparkles,
+  CheckCircle2
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState, filterCatalogItems } from '../data/catalogStore';
@@ -22,6 +21,10 @@ import PatientCatalogTab from '../components/patient/PatientCatalogTab';
 import PatientTrackingTab from '../components/patient/PatientTrackingTab';
 import PatientReportsTab from '../components/patient/PatientReportsTab';
 import PatientProfileTab from '../components/patient/PatientProfileTab';
+import PatientCartDrawer from '../components/patient/PatientCartDrawer';
+import PatientCheckoutModal from '../components/patient/PatientCheckoutModal';
+import PatientUniversalItemSheet from '../components/patient/PatientUniversalItemSheet';
+import PatientPrescriptionModal from '../components/patient/PatientPrescriptionModal';
 
 export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   // 5 CORE NAVIGATION TABS: HOME, TESTS, TRACK, REPORTS, PROFILE
@@ -32,19 +35,15 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   const [fastingFilter, setFastingFilter] = useState('ALL');
   const [sampleFilter, setSampleFilter] = useState('ALL');
   
-  // Master Catalog
+  // Master Catalog State
   const [catalog, setCatalog] = useState(getCatalogState() || initialCatalog);
 
-  // Selected Detail Item Modal
+  // Modular Modals & Sheets State
   const [selectedDetailItem, setSelectedDetailItem] = useState(null);
-
-  // Notifications State
-  const [showNotificationCenter, setShowNotificationCenter] = useState(false);
-  const [notifications, setNotifications] = useState([
-    { id: 'n1', title: 'Home Sample Collector Assigned', message: 'Phlebotomist Ramesh Kumar is enroute to Plot 42, Air Bypass Road, Tirupati.', time: '12 mins ago', category: 'ORDERS', unread: true },
-    { id: 'n2', title: 'Thyrocare NABL Sync Completed', message: '104 test parameters & B2B rates updated across Tirupati processing hub.', time: '45 mins ago', category: 'SYNC', unread: true },
-    { id: 'n3', title: 'Master Health Report Ready', message: 'Your comprehensive lab report PDF (REP-8821) is uploaded to Google Drive.', time: '2 hours ago', category: 'REPORTS', unread: false }
-  ]);
+  const [showCartDrawer, setShowCartDrawer] = useState(false);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
+  const [orderSuccessBanner, setOrderSuccessBanner] = useState(null);
 
   // Cart State
   const [cart, setCart] = useState([
@@ -59,23 +58,30 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
       sampleType: 'SERUM, EDTA, URINE'
     }
   ]);
-  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
-  const [showBookingSuccess, setShowBookingSuccess] = useState(false);
 
-  // Active Order Tracking State
-  const [activeOrder, setActiveOrder] = useState({
-    id: 'MM-LAB-9842',
-    date: '31 Aug 2026',
-    slot: '07:30 AM - 08:30 AM',
-    address: 'Plot 42, Air Bypass Road, Tirupati, AP',
-    phleboName: 'Ramesh Kumar (Certified Phlebotomist)',
-    phleboPhone: '+91 98765 11223',
-    status: 'ENROUTE',
-    eta: '25 Mins',
-    tempTelemetry: '4.2°C (Optimal Cold-Chain)',
-    items: ['MedMarg Master Health Checkup', 'Thyroid Profile Total (T3/T4/TSH)'],
-    totalAmount: 1798
-  });
+  // Live Orders State
+  const [allOrders, setAllOrders] = useState([
+    {
+      id: 'MM-LAB-9842',
+      date: '31 Aug 2026',
+      slot: '07:30 AM - 08:30 AM',
+      address: 'Plot 42, Air Bypass Road, Tirupati, AP - 517501',
+      phleboName: 'Ramesh Kumar (Certified Phlebotomist)',
+      phleboPhone: '+91 98765 11223',
+      status: 'ENROUTE',
+      eta: '25 Mins',
+      tempTelemetry: '4.2°C (Optimal Cold-Chain)',
+      handoverOtp: '4821',
+      items: [
+        { name: 'MedMarg Master Health Checkup', price: 1499 },
+        { name: 'Thyroid Profile Total (T3/T4/TSH)', price: 299 }
+      ],
+      totalAmount: 1798,
+      paymentStatus: 'PAID'
+    }
+  ]);
+
+  const [activeOrder, setActiveOrder] = useState(allOrders[0]);
 
   // Sync catalog from backend
   useEffect(() => {
@@ -96,6 +102,19 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
               });
             }
           }).catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Fetch live patient orders from backend
+  useEffect(() => {
+    fetch(`${API_BASE}/api/v1/patient/orders`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.orders && data.orders.length > 0) {
+          setAllOrders(data.orders);
+          setActiveOrder(data.orders[0]);
         }
       })
       .catch(() => {});
@@ -136,6 +155,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         sampleType: item.sampleType || item.sampleTypes?.join(', ') || 'SERUM'
       }]);
     }
+    setShowCartDrawer(true);
   };
 
   const removeFromCart = (id) => {
@@ -155,12 +175,23 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
     window.open('tel:+919876543210', '_self');
   };
 
+  const handleOrderSuccess = (newOrder) => {
+    setAllOrders([newOrder, ...allOrders]);
+    setActiveOrder(newOrder);
+    setCart([]);
+    setOrderSuccessBanner(`Order #${newOrder.id} confirmed! Phlebotomist assigned.`);
+    setActiveTab('TRACK');
+    setTimeout(() => {
+      setOrderSuccessBanner(null);
+    }, 6000);
+  };
+
   const navMenuItems = [
     { key: 'HOME', label: 'Home', icon: HomeIcon },
     { key: 'TESTS', label: 'Labs & Tests', icon: FlaskConical, badge: `${catalog.tests?.length || 913}+` },
-    { key: 'TRACK', label: 'Track', icon: Activity, badge: 'LIVE' },
-    { key: 'REPORTS', label: 'Reports', icon: FolderHeart, badge: 'Vault' },
-    { key: 'PROFILE', label: 'Profile', icon: User }
+    { key: 'TRACK', label: 'Live Tracking', icon: Activity, badge: `${allOrders.length} Active` },
+    { key: 'REPORTS', label: 'Health Vault', icon: FolderHeart, badge: 'NABL' },
+    { key: 'PROFILE', label: 'Patient Profile', icon: User }
   ];
 
   return (
@@ -263,6 +294,34 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
       {/* 2. MAIN CONTENT AREA */}
       <main style={{ flex: 1, overflowY: 'auto', padding: '1.75rem 2.5rem', maxHeight: '100vh' }}>
         
+        {/* Success Alert Banner */}
+        {orderSuccessBanner && (
+          <div style={{
+            backgroundColor: '#D1FAE5',
+            border: '1.5px solid #34D399',
+            color: '#065F46',
+            borderRadius: '16px',
+            padding: '1rem 1.5rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxShadow: '0 4px 12px rgba(16,185,129,0.15)',
+            animation: 'fadeIn 0.2s ease-out'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '800', fontSize: '0.95rem' }}>
+              <CheckCircle2 size={22} color="#059669" />
+              <span>{orderSuccessBanner}</span>
+            </div>
+            <button
+              onClick={() => setOrderSuccessBanner(null)}
+              style={{ background: 'none', border: 'none', color: '#065F46', fontWeight: '900', cursor: 'pointer', fontSize: '1rem' }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Top Header Bar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
@@ -285,8 +344,21 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
 
           <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
             <button
-              onClick={() => setShowCheckoutModal(true)}
-              style={{ padding: '0.65rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.6rem', boxShadow: '0 4px 12px rgba(0,107,112,0.25)' }}
+              onClick={() => setShowCartDrawer(true)}
+              style={{
+                padding: '0.65rem 1.25rem',
+                backgroundColor: '#006B70',
+                color: '#FFF',
+                border: 'none',
+                borderRadius: '12px',
+                fontWeight: '800',
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.6rem',
+                boxShadow: '0 4px 12px rgba(0,107,112,0.25)'
+              }}
             >
               <ShoppingBag size={18} color="#FBBF24" />
               <span>Cart ({cart.length}) • ₹{cartTotal}</span>
@@ -303,7 +375,9 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
             setSelectedDetailItem={setSelectedDetailItem} 
             handleOrderWhatsApp={handleOrderWhatsApp} 
             handleOrderCall={handleOrderCall} 
+            onOpenPrescriptionModal={() => setShowPrescriptionModal(true)}
             catalog={catalog} 
+            liveOrdersCount={allOrders.length}
           />
         )}
 
@@ -328,6 +402,8 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         {activeTab === 'TRACK' && (
           <PatientTrackingTab 
             activeOrder={activeOrder} 
+            allOrders={allOrders}
+            onSelectOrder={(ord) => setActiveOrder(ord)}
             handleOrderCall={handleOrderCall} 
           />
         )}
@@ -346,6 +422,42 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         )}
 
       </main>
+
+      {/* MODULAR OVERLAYS */}
+      
+      {/* 1. Slide-over Cart Drawer */}
+      <PatientCartDrawer
+        isOpen={showCartDrawer}
+        onClose={() => setShowCartDrawer(false)}
+        cart={cart}
+        removeFromCart={removeFromCart}
+        onProceedToCheckout={() => setShowCheckoutModal(true)}
+      />
+
+      {/* 2. Multi-step Checkout & Booking Modal */}
+      <PatientCheckoutModal
+        isOpen={showCheckoutModal}
+        onClose={() => setShowCheckoutModal(false)}
+        cart={cart}
+        user={user}
+        onOrderSuccess={handleOrderSuccess}
+      />
+
+      {/* 3. Universal Test/Package Detail Sheet */}
+      <PatientUniversalItemSheet
+        item={selectedDetailItem}
+        onClose={() => setSelectedDetailItem(null)}
+        onAddToCart={addToCart}
+        isInCart={selectedDetailItem ? cart.some(c => c.id === (selectedDetailItem.id || selectedDetailItem.code || selectedDetailItem.name)) : false}
+      />
+
+      {/* 4. Prescription Upload Modal */}
+      <PatientPrescriptionModal
+        isOpen={showPrescriptionModal}
+        onClose={() => setShowPrescriptionModal(false)}
+        user={user}
+      />
+
     </div>
   );
 }
