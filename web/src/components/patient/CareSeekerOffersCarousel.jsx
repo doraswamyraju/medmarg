@@ -10,11 +10,16 @@ export default function CareSeekerOffersCarousel({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    safeFetch(`${API_BASE}/api/v1/offers?active=true`, {}, 2500)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && Array.isArray(data.offers)) {
-          setOffers(data.offers);
+    safeFetch(`${API_BASE}/api/v1/offers?active=true`, {}, 3500)
+      .then(async (res) => {
+        if (res && res.ok) {
+          const text = await res.text();
+          try {
+            const data = JSON.parse(text);
+            if (data.success && Array.isArray(data.offers)) {
+              setOffers(data.offers);
+            }
+          } catch (e) {}
         }
       })
       .catch(() => {})

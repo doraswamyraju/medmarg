@@ -52,10 +52,17 @@ export default function AdminOffersManagerTab({ catalog = {} }) {
   const fetchOffers = async () => {
     setLoading(true);
     try {
-      const res = await safeFetch(`${API_BASE}/api/v1/offers`, {}, 3000);
-      const data = await res.json();
-      if (data.success && data.offers) {
-        setOffers(data.offers);
+      const res = await safeFetch(`${API_BASE}/api/v1/offers`, {}, 3500);
+      if (res && res.ok) {
+        const text = await res.text();
+        try {
+          const data = JSON.parse(text);
+          if (data.success && Array.isArray(data.offers)) {
+            setOffers(data.offers);
+          }
+        } catch (e) {
+          console.warn('Non-JSON response from offers endpoint');
+        }
       }
     } catch (err) {
       console.error('Failed to fetch offers:', err);
