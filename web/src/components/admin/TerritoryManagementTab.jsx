@@ -1,20 +1,134 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PlusCircle, Zap, CheckCircle } from 'lucide-react';
 import RealMapView from '../RealMapView';
+import { API_BASE, safeFetch } from '../../data/apiConfig';
 
 export default function TerritoryManagementTab({
-  territories,
-  selectedZoneId,
-  setSelectedZoneId,
-  salariedAgents,
-  orders,
-  handleOpenCreateTerritory,
-  handleOpenEditTerritory,
-  handleDeleteTerritory,
-  handleQuickAllotAgent,
-  API_BASE,
-  safeFetch
+  territories = [],
+  setTerritories = () => {},
+  salariedAgents = [],
+  orders = []
 }) {
+  const [selectedZoneId, setSelectedZoneId] = useState('ZONE-01');
+  const [showTerritoryModal, setShowTerritoryModal] = useState(false);
+  const [editingTerritory, setEditingTerritory] = useState(null);
+  const [territoryForm, setTerritoryForm] = useState({
+    id: '',
+    name: '',
+    pincodes: '',
+    primaryAgentId: 'AG-01',
+    primaryAgentName: 'Ramesh Kumar',
+    color: '#38BDF8',
+    maxDailyQuota: 15,
+    polygonCoords: '20,20 220,15 200,110 30,100'
+  });
+
+  const handleOpenCreateTerritory = () => {
+    setEditingTerritory(null);
+    setTerritoryForm({
+      id: `ZONE-${String(territories.length + 1).padStart(2, '0')}`,
+      name: `Zone ${territories.length + 1}: Tirupati Expansion Sector`,
+      pincodes: '517505, 517508',
+      primaryAgentId: 'AG-01',
+      primaryAgentName: 'Ramesh Kumar',
+      color: '#EC4899',
+      maxDailyQuota: 15,
+      polygonCoords: '210,125 480,125 460,195 190,195'
+    });
+    setShowTerritoryModal(true);
+  };
+
+  const handleOpenEditTerritory = (t) => {
+    setEditingTerritory(t);
+    setTerritoryForm({
+      id: t.id,
+      name: t.name,
+      pincodes: Array.isArray(t.pincodes) ? t.pincodes.join(', ') : t.pincodes,
+      primaryAgentId: t.primaryAgentId,
+      primaryAgentName: t.primaryAgentName,
+      color: t.color || '#38BDF8',
+      maxDailyQuota: t.maxDailyQuota || 15,
+      polygonCoords: t.polygonCoords || '20,20 220,15 200,110 30,100'
+    });
+    setShowTerritoryModal(true);
+  };
+
+  const handleSaveTerritory = async (e) => {
+    e.preventDefault();
+    const pincodeArr = territoryForm.pincodes.split(',').map(p => p.trim()).filter(Boolean);
+    const selectedAgentObj = salariedAgents.find(a => a.id === territoryForm.primaryAgentId) || { 
+      name: territoryForm.primaryAgentId === 'FREELANCE_BROADCAST' ? 'Gig Freelancer Broadcast Zone' : territoryForm.primaryAgentId 
+    };
+    
+    const payload = {
+      ...territoryForm,
+      pincodes: pincodeArr,
+      primaryAgentName: selectedAgentObj.name,
+      maxDailyQuota: Number(territoryForm.maxDailyQuota)
+    };
+
+    try {
+      const res = await safeFetch(`${API_BASE}/api/v1/admin/territories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.success && data.territory) {
+        setTerritories(prev => {
+          const idx = prev.findIndex(t => t.id === data.territory.id);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = data.territory;
+            return next;
+          }
+          return [...prev, data.territory];
+        });
+      } else {
+        setTerritories(prev => {
+          const idx = prev.findIndex(t => t.id === payload.id);
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = payload;
+            return next;
+          }
+          return [...prev, payload];
+        });
+      }
+    } catch (err) {
+      setTerritories(prev => {
+        const idx = prev.findIndex(t => t.id === payload.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = payload;
+          return next;
+        }
+        return [...prev, payload];
+      });
+    }
+    setShowTerritoryModal(false);
+  };
+
+  const handleQuickAllotAgent = async (zoneId, agentId) => {
+    const ag = salariedAgents.find(a => a.id === agentId) || { name: agentId === 'FREELANCE_BROADCAST' ? 'Gig Freelancer Broadcast Zone' : agentId };
+    setTerritories(prev => prev.map(t => t.id === zoneId ? { ...t, primaryAgentId: agentId, primaryAgentName: ag.name } : t));
+    try {
+      await safeFetch(`${API_BASE}/api/v1/admin/territories`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: zoneId, primaryAgentId: agentId, primaryAgentName: ag.name })
+      });
+    } catch (e) {}
+  };
+
+  const handleDeleteTerritory = async (zoneId) => {
+    if (!window.confirm(`Are you sure you want to delete Territory Zone ${zoneId}?`)) return;
+    setTerritories(prev => prev.filter(t => t.id !== zoneId));
+    try {
+      await safeFetch(`${API_BASE}/api/v1/admin/territories/${zoneId}`, { method: 'DELETE' });
+    } catch (e) {}
+  };
+
   return (
     <div>
       {/* Top Title & Actions */}
@@ -174,6 +288,143 @@ export default function TerritoryManagementTab({
           );
         })}
       </div>
+
+      {/* CREATE / EDIT TERRITORY ZONE MODAL */}
+      {showTerritoryModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(6px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
+          <div style={{ backgroundColor: '#1E293B', borderRadius: '24px', maxWidth: '600px', width: '100%', padding: '2rem', border: '2px solid #006B70' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div>
+                <span style={{ fontSize: '0.72rem', backgroundColor: 'rgba(0,107,112,0.3)', color: '#67E8F9', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
+                  TERRITORY MANAGEMENT
+                </span>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#FFF', marginTop: '0.3rem' }}>
+                  {editingTerritory ? `Edit Territory: ${editingTerritory.id}` : 'Create New Territory Zone'}
+                </h2>
+              </div>
+              <button onClick={() => setShowTerritoryModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.25rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleSaveTerritory} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone ID</label>
+                  <input
+                    type="text"
+                    value={territoryForm.id}
+                    onChange={(e) => setTerritoryForm({ ...territoryForm, id: e.target.value })}
+                    placeholder="ZONE-05"
+                    required
+                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#67E8F9', fontWeight: '800', marginTop: '0.2rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone Name & Description</label>
+                  <input
+                    type="text"
+                    value={territoryForm.name}
+                    onChange={(e) => setTerritoryForm({ ...territoryForm, name: e.target.value })}
+                    placeholder="e.g. Zone 5: Tiruchanoor & Outer South"
+                    required
+                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', marginTop: '0.2rem' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '800' }}>📌 Covered Pincodes (Comma Separated)</label>
+                <input
+                  type="text"
+                  value={territoryForm.pincodes}
+                  onChange={(e) => setTerritoryForm({ ...territoryForm, pincodes: e.target.value })}
+                  placeholder="517501, 517507, 517505"
+                  required
+                  style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1.5px solid #F59E0B', borderRadius: '8px', color: '#FFF', fontWeight: '800', marginTop: '0.2rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#67E8F9', fontWeight: '800' }}>👤 Primary Allotted Phlebotomist</label>
+                  <select
+                    value={territoryForm.primaryAgentId}
+                    onChange={(e) => {
+                      const selId = e.target.value;
+                      const ag = salariedAgents.find(a => a.id === selId) || { name: selId === 'FREELANCE_BROADCAST' ? 'Gig Freelancer Broadcast Zone' : selId };
+                      setTerritoryForm({ ...territoryForm, primaryAgentId: selId, primaryAgentName: ag.name });
+                    }}
+                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1.5px solid #006B70', borderRadius: '8px', color: '#FFF', fontWeight: '800', marginTop: '0.2rem' }}
+                  >
+                    <optgroup label="Salaried Phlebotomist Fleet">
+                      {salariedAgents.map(ag => (
+                        <option key={ag.id} value={ag.id}>{ag.name} ({ag.id})</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Gig / Freelance Broadcast">
+                      <option value="FREELANCE_BROADCAST">📡 Gig Freelancer Broadcast Zone</option>
+                    </optgroup>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Max Daily Quota</label>
+                  <input
+                    type="number"
+                    value={territoryForm.maxDailyQuota}
+                    onChange={(e) => setTerritoryForm({ ...territoryForm, maxDailyQuota: e.target.value })}
+                    required
+                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FBBF24', fontWeight: '800', marginTop: '0.2rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid #334155', marginBottom: '0.5rem' }}>
+                <div style={{ backgroundColor: '#0F172A', padding: '0.4rem 0.75rem', fontSize: '0.75rem', color: '#67E8F9', fontWeight: '800', borderBottom: '1px solid #334155' }}>
+                  🗺️ REAL MAP BOUNDARY & PIN LOCATOR — CLICK ANYWHERE ON MAP TO PICK ZONE CENTER
+                </div>
+                <RealMapView 
+                  territories={territories} 
+                  salariedAgents={salariedAgents} 
+                  height="220px" 
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Zone Color Accent</label>
+                  <input
+                    type="color"
+                    value={territoryForm.color}
+                    onChange={(e) => setTerritoryForm({ ...territoryForm, color: e.target.value })}
+                    style={{ width: '100%', height: '42px', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', cursor: 'pointer', marginTop: '0.2rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Geographic Sector Preset</label>
+                  <select
+                    value={territoryForm.polygonCoords}
+                    onChange={(e) => setTerritoryForm({ ...territoryForm, polygonCoords: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontSize: '0.82rem', marginTop: '0.2rem' }}
+                  >
+                    <option value="20,20 220,15 200,110 30,100">Zone 1: Tirupati Central Sector</option>
+                    <option value="230,15 480,30 450,120 210,110">Zone 2: North / SVU / Alipiri Sector</option>
+                    <option value="30,115 200,115 180,195 20,185">Zone 3: East / Renigunta / Tiruchanoor Sector</option>
+                    <option value="210,125 480,125 460,195 190,195">Zone 4: West / Chandragiri Suburbs Sector</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                style={{ marginTop: '0.5rem', padding: '0.85rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+              >
+                <CheckCircle size={18} color="#34D399" /> Save Territory Zone & Activate 3-Tier Allotment
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
