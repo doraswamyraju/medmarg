@@ -22,8 +22,28 @@ export default function CatalogManagementTab({
   isSyncingSheets,
   syncLogs
 }) {
+  const [testsSubTab, setTestsSubTab] = useState('TESTS'); // 'TESTS' | 'PROFILES' | 'PACKAGES' | 'SYNC_HUB'
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterFasting, setFilterFasting] = useState('ALL');
+  const [filterSample, setFilterSample] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50); // 50 | 100 | 250 | 500 | 'ALL'
+
+  // Filtered lists (defined before pagination calculation)
+  const filteredTests = (catalog?.tests || []).filter(t => {
+    const q = (searchTerm || '').toLowerCase();
+    const matchQuery = !q || (t.name && t.name.toLowerCase().includes(q)) || (t.code && t.code.toLowerCase().includes(q));
+    const matchFasting = filterFasting === 'ALL' || t.fasting === filterFasting;
+    const matchSample = filterSample === 'ALL' || (t.sampleType && t.sampleType.includes(filterSample));
+    return matchQuery && matchFasting && matchSample;
+  });
+
+  const filteredProfiles = (catalog?.profiles || []).filter(p => {
+    const q = (searchTerm || '').toLowerCase();
+    const matchQuery = !q || (p.name && p.name.toLowerCase().includes(q)) || (p.code && p.code.toLowerCase().includes(q));
+    const matchFasting = filterFasting === 'ALL' || p.fasting === filterFasting;
+    return matchQuery && matchFasting;
+  });
 
   // Calculate paginated slice of tests
   const totalDisplayTests = filteredTests.length;
@@ -183,20 +203,7 @@ export default function CatalogManagementTab({
     setShowPackageBuilderModal(false);
   };
 
-  const filteredTests = (catalog.tests || []).filter(t => {
-    const q = searchTerm.toLowerCase();
-    const matchQuery = !q || (t.name && t.name.toLowerCase().includes(q)) || (t.code && t.code.toLowerCase().includes(q));
-    const matchFasting = filterFasting === 'ALL' || t.fasting === filterFasting;
-    const matchSample = filterSample === 'ALL' || (t.sampleType && t.sampleType.includes(filterSample));
-    return matchQuery && matchFasting && matchSample;
-  });
 
-  const filteredProfiles = (catalog.profiles || []).filter(p => {
-    const q = searchTerm.toLowerCase();
-    const matchQuery = !q || (p.name && p.name.toLowerCase().includes(q)) || (p.code && p.code.toLowerCase().includes(q));
-    const matchFasting = filterFasting === 'ALL' || p.fasting === filterFasting;
-    return matchQuery && matchFasting;
-  });
 
   return (
     <div>
