@@ -27,7 +27,11 @@ import {
   Ticket,
   Tent,
   Tag,
-  UserCog
+  UserCog,
+  TrendingUp,
+  Activity,
+  Clock,
+  HeartHandshake
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState, saveCatalogState } from '../data/catalogStore';
