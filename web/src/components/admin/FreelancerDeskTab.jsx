@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   FileText, 
@@ -27,10 +27,18 @@ export default function FreelancerDeskTab({
   freelancers = [],
   setFreelancers = () => {},
   initialSubTab = 'KYC_VERIFICATION',
+  onSubTabChange,
   API_BASE,
   safeFetch
 }) {
   const [activeSubTab, setActiveSubTab] = useState(initialSubTab);
+
+  useEffect(() => {
+    if (initialSubTab) {
+      setActiveSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
+
   const [selectedDocFreelancer, setSelectedDocFreelancer] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedPayout, setSelectedPayout] = useState(null);

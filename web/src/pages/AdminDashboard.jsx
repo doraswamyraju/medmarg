@@ -26,7 +26,8 @@ import {
   Star,
   Ticket,
   Tent,
-  Tag
+  Tag,
+  UserCog
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState, saveCatalogState } from '../data/catalogStore';
@@ -40,6 +41,7 @@ import TerritoryManagementTab from '../components/admin/TerritoryManagementTab';
 import FreelancerDeskTab from '../components/admin/FreelancerDeskTab';
 import SalariedFleetTab from '../components/admin/SalariedFleetTab';
 import StockInventoryTab from '../components/admin/StockInventoryTab';
+import StaffManagementTab from '../components/admin/StaffManagementTab';
 import LabsManagementTab from '../components/admin/LabsManagementTab';
 import PartnerQueueTab from '../components/admin/PartnerQueueTab';
 import FinancialsTab from '../components/admin/FinancialsTab';
@@ -55,6 +57,10 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   const [inventoryExpanded, setInventoryExpanded] = useState(false);
   const [freelancerSubTab, setFreelancerSubTab] = useState('KYC_VERIFICATION');
   const [freelancersExpanded, setFreelancersExpanded] = useState(false);
+  const [staffSubTab, setStaffSubTab] = useState('STAFF_ROSTER');
+  const [staffExpanded, setStaffExpanded] = useState(false);
+  const [partnerSubTab, setPartnerSubTab] = useState('ALL_PARTNERS');
+  const [partnersExpanded, setPartnersExpanded] = useState(false);
   const [offersSubTab, setOffersSubTab] = useState('CAROUSEL_BANNERS');
   const [offersExpanded, setOffersExpanded] = useState(false);
 
@@ -217,6 +223,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { key: 'FREELANCERS', label: 'Freelancers', icon: UserCheck, badge: `${freelancers.filter(f => f.status === 'PENDING_VERIFICATION').length} Pending` },
     { key: 'SALARIED_FLEET', label: 'Fleet', icon: Truck, badge: `${salariedAgents.length}` },
     { key: 'INVENTORY', label: 'Inventory', icon: Boxes, badge: `${indents.filter(i => i.status === 'PENDING_APPROVAL').length || 1}` },
+    { key: 'STAFF', label: 'Staff', icon: UserCog, badge: '5 Active' },
     { key: 'LABS', label: 'Labs', icon: Building2, badge: `${labPartners.length}` },
     { key: 'PARTNERS_QUEUE', label: 'Partners', icon: Stethoscope, badge: `${partnerQueue.length}` },
     { key: 'FINANCIALS', label: 'Financials', icon: DollarSign, badge: 'Razorpay' },
@@ -242,6 +249,24 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { key: 'BROADCAST_ORDERS', label: '2. Broadcast Tasks', icon: Send },
     { key: 'WALLET_PAYOUTS', label: '3. Wallet & Payouts', icon: DollarSign },
     { key: 'PERFORMANCE_SLA', label: '4. Ratings & Quality', icon: Star }
+  ];
+
+  // Staff Sub-menu Items (Rendered inside Sidebar Drawer)
+  const staffSubMenuItems = [
+    { key: 'STAFF_ROSTER', label: '1. Staff Directory & Profiles', icon: Users },
+    { key: 'ROLES_PERMISSIONS', label: '2. Role Access & Controls', icon: ShieldCheck },
+    { key: 'PERFORMANCE_KPIS', label: '3. Individual Performance KPIs', icon: TrendingUp },
+    { key: 'SHIFTS_ATTENDANCE', label: '4. Shift Rostering & Attendance', icon: Clock }
+  ];
+
+  // Partners Sub-menu Items (Rendered inside Sidebar Drawer)
+  const partnerSubMenuItems = [
+    { key: 'ALL_PARTNERS', label: '1. All Applications', icon: Stethoscope },
+    { key: 'DOCTORS_OPD', label: '2. Doctors & OPD Clinics', icon: Stethoscope },
+    { key: 'DIAGNOSTIC_LABS', label: '3. Pathology & Diagnostic Labs', icon: Building2 },
+    { key: 'RADIOLOGY_MRI', label: '4. Radiology & MRI Centers', icon: Activity },
+    { key: 'HEALTH_COACHES', label: '5. Health & Diet Coaches', icon: ShieldCheck },
+    { key: 'HOSPITAL_CORPORATE', label: '6. Corporate & Hospitals', icon: Building2 }
   ];
 
   // Offers Zone Sub-menu Items (Rendered inside Sidebar Drawer)
@@ -298,11 +323,17 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             const IconComp = item.icon;
             const isInventory = item.key === 'INVENTORY';
             const isFreelancers = item.key === 'FREELANCERS';
+            const isStaff = item.key === 'STAFF';
+            const isPartners = item.key === 'PARTNERS_QUEUE';
             const isOffers = item.key === 'OFFERS_MGMT';
-            const hasSubmenu = isInventory || isFreelancers || isOffers;
+            const hasSubmenu = isInventory || isFreelancers || isStaff || isPartners || isOffers;
             const isActive = activeTab === item.key;
             
-            const isExpanded = isInventory ? inventoryExpanded : isFreelancers ? freelancersExpanded : isOffers ? offersExpanded : false;
+            const isExpanded = isInventory ? inventoryExpanded 
+                             : isFreelancers ? freelancersExpanded 
+                             : isStaff ? staffExpanded 
+                             : isPartners ? partnersExpanded 
+                             : isOffers ? offersExpanded : false;
 
             return (
               <div key={item.key} style={{ display: 'flex', flexDirection: 'column' }}>
@@ -321,6 +352,20 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                         setFreelancersExpanded(true);
                       } else {
                         setFreelancersExpanded(!freelancersExpanded);
+                      }
+                    } else if (isStaff) {
+                      if (activeTab !== 'STAFF') {
+                        setActiveTab('STAFF');
+                        setStaffExpanded(true);
+                      } else {
+                        setStaffExpanded(!staffExpanded);
+                      }
+                    } else if (isPartners) {
+                      if (activeTab !== 'PARTNERS_QUEUE') {
+                        setActiveTab('PARTNERS_QUEUE');
+                        setPartnersExpanded(true);
+                      } else {
+                        setPartnersExpanded(!partnersExpanded);
                       }
                     } else if (isOffers) {
                       if (activeTab !== 'OFFERS_MGMT') {
@@ -463,6 +508,100 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                               {sub.badge}
                             </span>
                           )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Sub Tabs Inside Sidebar for Staff */}
+                {isStaff && staffExpanded && !sidebarCollapsed && (
+                  <div style={{
+                    marginLeft: '1.25rem',
+                    paddingLeft: '0.6rem',
+                    borderLeft: '2px solid #E2E8F0',
+                    marginTop: '0.25rem',
+                    marginBottom: '0.35rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.2rem'
+                  }}>
+                    {staffSubMenuItems.map(sub => {
+                      const SubIcon = sub.icon;
+                      const isSubActive = activeTab === 'STAFF' && staffSubTab === sub.key;
+                      return (
+                        <button
+                          key={sub.key}
+                          onClick={() => {
+                            setActiveTab('STAFF');
+                            setStaffSubTab(sub.key);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.6rem',
+                            padding: '0.45rem 0.75rem',
+                            borderRadius: '8px',
+                            border: 'none',
+                            backgroundColor: isSubActive ? '#E0F2FE' : 'transparent',
+                            color: isSubActive ? '#006B70' : '#64748B',
+                            fontWeight: isSubActive ? '800' : '600',
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'all 0.12s ease',
+                            width: '100%'
+                          }}
+                        >
+                          <SubIcon size={14} color={isSubActive ? '#006B70' : '#94A3B8'} />
+                          <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Sub Tabs Inside Sidebar for Partners */}
+                {isPartners && partnersExpanded && !sidebarCollapsed && (
+                  <div style={{
+                    marginLeft: '1.25rem',
+                    paddingLeft: '0.6rem',
+                    borderLeft: '2px solid #E2E8F0',
+                    marginTop: '0.25rem',
+                    marginBottom: '0.35rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.2rem'
+                  }}>
+                    {partnerSubMenuItems.map(sub => {
+                      const SubIcon = sub.icon;
+                      const isSubActive = activeTab === 'PARTNERS_QUEUE' && partnerSubTab === sub.key;
+                      return (
+                        <button
+                          key={sub.key}
+                          onClick={() => {
+                            setActiveTab('PARTNERS_QUEUE');
+                            setPartnerSubTab(sub.key);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.6rem',
+                            padding: '0.45rem 0.75rem',
+                            borderRadius: '8px',
+                            border: 'none',
+                            backgroundColor: isSubActive ? '#E0F2FE' : 'transparent',
+                            color: isSubActive ? '#006B70' : '#64748B',
+                            fontWeight: isSubActive ? '800' : '600',
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            transition: 'all 0.12s ease',
+                            width: '100%'
+                          }}
+                        >
+                          <SubIcon size={14} color={isSubActive ? '#006B70' : '#94A3B8'} />
+                          <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sub.label}</span>
                         </button>
                       );
                     })}
@@ -651,6 +790,15 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             />
           )}
 
+          {/* TAB 7.5: STAFF & INTERNAL ACCESS CONTROL */}
+          {activeTab === 'STAFF' && (
+            <StaffManagementTab 
+              initialSubTab={staffSubTab}
+              API_BASE={API_BASE}
+              safeFetch={safeFetch}
+            />
+          )}
+
           {/* TAB 8: DESIGNATED PROCESSING LABS */}
           {activeTab === 'LABS' && (
             <LabsManagementTab 
@@ -660,10 +808,14 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             />
           )}
 
-          {/* TAB 9: PARTNER PRE-REGISTRATION QUEUE */}
+          {/* TAB 9: PARTNER PRE-REGISTRATION QUEUE (CATEGORY DESKS) */}
           {activeTab === 'PARTNERS_QUEUE' && (
             <PartnerQueueTab 
               partnerQueue={partnerQueue} 
+              setPartnerQueue={setPartnerQueue}
+              initialCategoryTab={partnerSubTab}
+              API_BASE={API_BASE}
+              safeFetch={safeFetch}
             />
           )}
 
