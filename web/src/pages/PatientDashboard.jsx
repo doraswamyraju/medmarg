@@ -15,8 +15,9 @@ import {
   Sparkles
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
-import { getCatalogState, filterCatalogItems } from '../data/catalogStore';
+import { getCatalogState, filterCatalogItems, getItemLabPricing } from '../data/catalogStore';
 import { API_BASE } from '../data/apiConfig';
+
 
 // Role-Specific Modular Subcomponents (src/components/patient/)
 import CareSeekerHomeTab from '../components/patient/CareSeekerHomeTab';
@@ -155,22 +156,33 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
 
   const displayCatalogItems = getFilteredItems();
 
-  const addToCart = (item) => {
-    const itemId = item.id || item.code || item.name;
-    if (!cart.some(cartItem => cartItem.id === itemId)) {
+  const addToCart = (item, labOption = null) => {
+    const rawId = item.id || item.code || item.name;
+    const labPricing = getItemLabPricing(item);
+    const chosenLab = labOption || labPricing.find(l => l.isRecommended) || labPricing[0];
+    const cartItemId = `${rawId}_${chosenLab.labId}`;
+
+    if (!cart.some(cartItem => cartItem.id === cartItemId)) {
       setCart([...cart, {
-        id: itemId,
+        id: cartItemId,
+        baseId: rawId,
+        code: item.code || item.id,
         name: item.name || item.title,
-        lab: item.lab || 'MedMarg Central Processing Hub',
-        price: item.price || 499,
-        mrp: item.mrp || (item.price ? Math.round(item.price * 1.6) : 999),
+        lab: chosenLab.labName,
+        suggestedLabName: chosenLab.suggestedLabName,
+        isMedmargSuggested: chosenLab.isMedmargSuggested,
+        price: chosenLab.price || item.price || 499,
+        mrp: chosenLab.mrp || item.mrp || 999,
         params: item.testCount || item.params || 1,
         fasting: item.fasting || 'NO',
-        sampleType: item.sampleType || item.sampleTypes?.join(', ') || 'SERUM'
+        sampleType: item.sampleType || item.sampleTypes?.join(', ') || 'SERUM',
+        tatHours: chosenLab.tatHours || item.tatHours || 24,
+        selectedLab: chosenLab
       }]);
     }
     setShowCartDrawer(true);
   };
+
 
   const removeFromCart = (id) => {
     setCart(cart.filter(item => item.id !== id));
