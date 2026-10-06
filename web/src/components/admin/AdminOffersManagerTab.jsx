@@ -34,8 +34,15 @@ const GRADIENT_PRESETS = [
   { label: 'Midnight Obsidian Gold', value: 'linear-gradient(135deg, #0F172A 0%, #334155 100%)', tagBg: '#FEF08A', tagText: '#854D0E' }
 ];
 
-export default function AdminOffersManagerTab({ catalog = {} }) {
-  const [activeSubTab, setActiveSubTab] = useState('CAROUSEL_BANNERS');
+export default function AdminOffersManagerTab({ catalog = {}, initialSubTab = 'CAROUSEL_BANNERS' }) {
+  const [activeSubTab, setActiveSubTab] = useState(initialSubTab);
+
+  useEffect(() => {
+    if (initialSubTab) {
+      setActiveSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
+
   const [offers, setOffers] = useState(getStoredOffers());
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);

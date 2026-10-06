@@ -16,7 +16,7 @@ import {
   ShieldCheck,
   Truck
 } from 'lucide-react';
-import RealMapView from '../RealMapView';
+import LiveFleetTrackerMapView from './LiveFleetTrackerMapView';
 
 export default function RealTimeFleetGpsTab({
   territories = [],
@@ -196,13 +196,13 @@ export default function RealTimeFleetGpsTab({
           </span>
         </div>
 
-        {/* Real Geographic Map Component (Clean Esri Tiles) */}
+        {/* Live GPS Fleet Tracker Radar Map (Live animated phlebotomist markers & routes) */}
         <div style={{ borderRadius: '16px', overflow: 'hidden', border: '1px solid #CBD5E1' }}>
-          <RealMapView 
-            territories={territories} 
-            orders={orders} 
-            salariedAgents={filteredAgents} 
-            height="440px" 
+          <LiveFleetTrackerMapView 
+            selectedAgentId={selectedAgent}
+            onSelectAgent={(agId) => setSelectedAgent(agId)}
+            fleetFilter={fleetFilter}
+            height="460px" 
           />
         </div>
       </div>
