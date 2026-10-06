@@ -12,8 +12,11 @@ import {
   Filter,
   ArrowRight,
   TrendingUp,
-  Tag
+  Tag,
+  Building2
 } from 'lucide-react';
+import { getItemLabPricing } from '../../data/catalogStore';
+
 
 export default function PatientCatalogMatrixTab({
   catalog,
@@ -159,32 +162,37 @@ export default function PatientCatalogMatrixTab({
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.86rem' }}>
             <thead>
               <tr style={{ backgroundColor: '#F1F5F9', color: '#475569', fontWeight: '800', borderBottom: '1.5px solid #E2E8F0', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                <th style={{ padding: '0.85rem 1.25rem' }}>Diagnostic Test / Profile</th>
-                <th style={{ padding: '0.85rem 1rem' }}>Processing Lab Hub</th>
-                <th style={{ padding: '0.85rem 1rem' }}>Specimen & Fasting</th>
-                <th style={{ padding: '0.85rem 1rem' }}>Biomarkers & TAT</th>
-                <th style={{ padding: '0.85rem 1.25rem' }}>Package Upgrade Offer</th>
-                <th style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>Price (₹)</th>
-                <th style={{ padding: '0.85rem 1.25rem', textAlign: 'center' }}>Action</th>
+                <th style={{ padding: '0.85rem 1.25rem', width: '28%' }}>Diagnostic Test / Profile</th>
+                <th style={{ padding: '0.85rem 1rem', width: '16%' }}>Specimen & Fasting</th>
+                <th style={{ padding: '0.85rem 1rem', width: '20%', backgroundColor: 'rgba(0,107,112,0.06)', borderLeft: '2px solid #006B70' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: '900', color: '#006B70' }}>1. MEDMARG</span>
+                    <span style={{ fontSize: '0.68rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: '900' }}>SUGGESTED</span>
+                  </div>
+                </th>
+                <th style={{ padding: '0.85rem 1rem', width: '18%', borderLeft: '1px solid #E2E8F0' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: '900', color: '#B91C1C' }}>2. THYROCARE</span>
+                </th>
+                <th style={{ padding: '0.85rem 1rem', width: '18%', borderLeft: '1px solid #E2E8F0' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: '900', color: '#D97706' }}>3. DR. LAL PATHLABS</span>
+                </th>
               </tr>
             </thead>
             <tbody>
               {filteredByLab.slice(0, 60).map((item, idx) => {
                 const itemId = item.id || item.code || item.name;
-                const isInCart = cart.some(c => c.id === itemId);
                 const isPackage = item.itemType === 'PACKAGE' || item.profiles || item.discountPercent;
                 const isProfile = item.itemType === 'PROFILE' || (item.code && item.code.length <= 6 && !item.serialNo);
+                
+                // 3 Lab Options
+                const pricing = getItemLabPricing(item);
+                const medmargOpt = pricing.find(l => l.isMedmargSuggested) || pricing[0];
+                const thyrocareOpt = pricing.find(l => l.labId === 'thyrocare') || pricing[1];
+                const lalpathOpt = pricing.find(l => l.labId === 'lalpath') || pricing[2];
 
-                // Dynamic package inclusion check
-                const includedInPackage = isPackage 
-                  ? null 
-                  : (item.name.toLowerCase().includes('lipid') || item.name.toLowerCase().includes('cholesterol'))
-                    ? 'Cardiac Care Package (Save ₹650)'
-                    : (item.name.toLowerCase().includes('thyroid') || item.name.toLowerCase().includes('tsh'))
-                    ? 'Aarogyam 1.3 Full Body (Save ₹1,400)'
-                    : (item.name.toLowerCase().includes('sugar') || item.name.toLowerCase().includes('glucose') || item.name.toLowerCase().includes('hba1c'))
-                    ? 'Diabetic Comprehensive Panel (Save ₹800)'
-                    : 'Master Health Checkup (Save 60%)';
+                const isMedmargInCart = cart.some(c => c.id === `${itemId}_${medmargOpt.labId}` || c.id === itemId);
+                const isThyrocareInCart = cart.some(c => c.id === `${itemId}_${thyrocareOpt.labId}`);
+                const isLalpathInCart = cart.some(c => c.id === `${itemId}_${lalpathOpt.labId}`);
 
                 return (
                   <tr
@@ -218,21 +226,11 @@ export default function PatientCatalogMatrixTab({
                       )}
                     </td>
 
-                    {/* 2. Processing Lab */}
-                    <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
-                      <div style={{ fontSize: '0.84rem', fontWeight: '700', color: '#334155' }}>
-                        {item.lab || 'MedMarg Central Lab'}
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: '#059669', fontWeight: '800' }}>
-                        ✓ NABL Certified
-                      </div>
-                    </td>
-
-                    {/* 3. Specimen & Fasting */}
+                    {/* 2. Specimen & Fasting */}
                     <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                         <span style={{ fontSize: '0.75rem', color: '#475569', fontWeight: '700', backgroundColor: '#F1F5F9', padding: '0.15rem 0.45rem', borderRadius: '4px', width: 'fit-content' }}>
-                          🩸 {item.sampleType || item.sampleTypes?.join(', ') || 'SERUM (Gold)'}
+                          🩸 {item.sampleType || item.sampleTypes?.join(', ') || 'SERUM'}
                         </span>
                         <span style={{ fontSize: '0.74rem', color: item.fasting === 'YES' ? '#B45309' : '#047857', backgroundColor: item.fasting === 'YES' ? '#FEF3C7' : '#D1FAE5', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800', width: 'fit-content' }}>
                           ⏱ Fasting: {item.fasting || 'NO'}
@@ -240,70 +238,92 @@ export default function PatientCatalogMatrixTab({
                       </div>
                     </td>
 
-                    {/* 4. Biomarkers & TAT */}
-                    <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
-                      <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.84rem' }}>
-                        {item.testCount || item.params || 1} Biomarker(s)
+                    {/* 3. MedMarg Suggested Lab */}
+                    <td style={{ padding: '0.85rem 1rem', verticalAlign: 'middle', backgroundColor: 'rgba(0,107,112,0.03)', borderLeft: '2px solid #006B70' }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
+                        <span style={{ fontSize: '1.15rem', fontWeight: '900', color: '#006B70' }}>
+                          MedMarg
+                        </span>
+                        <span style={{ fontSize: '0.68rem', color: '#059669', fontWeight: '800' }}>★ Top Pick</span>
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.15rem' }}>
-                        TAT: <strong>{item.tatHours || 24}h</strong>
+                      <div style={{ fontSize: '0.72rem', color: '#475569', fontWeight: '700', marginTop: '0.1rem' }}>
+                        via <span style={{ color: '#004D40', fontWeight: '800' }}>{medmargOpt.suggestedLabName || 'Suggested Partner Hub'}</span>
                       </div>
-                    </td>
-
-                    {/* 5. Package Upgrade Offer Pill */}
-                    <td style={{ padding: '1rem 1.25rem', verticalAlign: 'middle' }}>
-                      {isPackage ? (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '900' }}>
-                          <Sparkles size={13} /> {item.discountPercent || 60}% Standalone Savings
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.4rem' }}>
+                        <div>
+                          <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#0F172A' }}>₹{medmargOpt.price}</div>
+                          <div style={{ fontSize: '0.7rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{medmargOpt.mrp}</div>
                         </div>
-                      ) : (
-                        <div
-                          onClick={() => {
-                            const foundPkg = (catalog.packages || []).find(p => p.name.toLowerCase().includes('aarogyam') || p.name.toLowerCase().includes('master')) || catalog.packages?.[0];
-                            if (foundPkg) setSelectedDetailItem(foundPkg);
+                        <button
+                          onClick={() => addToCart(item, medmargOpt)}
+                          style={{
+                            padding: '0.35rem 0.75rem',
+                            backgroundColor: isMedmargInCart ? '#059669' : '#006B70',
+                            color: '#FFF',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontWeight: '800',
+                            fontSize: '0.78rem',
+                            cursor: 'pointer'
                           }}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', backgroundColor: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0', padding: '0.25rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
                         >
-                          <Tag size={13} />
-                          <span>{includedInPackage}</span>
-                          <ArrowRight size={12} />
+                          {isMedmargInCart ? '✓ Added' : '+ Add'}
+                        </button>
+                      </div>
+                    </td>
+
+                    {/* 4. Thyrocare */}
+                    <td style={{ padding: '0.85rem 1rem', verticalAlign: 'middle', borderLeft: '1px solid #E2E8F0' }}>
+                      <div style={{ fontSize: '0.9rem', fontWeight: '900', color: '#B91C1C' }}>Thyrocare</div>
+                      <div style={{ fontSize: '0.7rem', color: '#64748B', marginTop: '0.1rem' }}>Direct Automated Lab</div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.4rem' }}>
+                        <div>
+                          <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#0F172A' }}>₹{thyrocareOpt.price}</div>
+                          <div style={{ fontSize: '0.7rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{thyrocareOpt.mrp}</div>
                         </div>
-                      )}
+                        <button
+                          onClick={() => addToCart(item, thyrocareOpt)}
+                          style={{
+                            padding: '0.35rem 0.75rem',
+                            backgroundColor: isThyrocareInCart ? '#059669' : '#B91C1C',
+                            color: '#FFF',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontWeight: '800',
+                            fontSize: '0.78rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {isThyrocareInCart ? '✓ Added' : '+ Add'}
+                        </button>
+                      </div>
                     </td>
 
-                    {/* 6. Pricing */}
-                    <td style={{ padding: '1rem', verticalAlign: 'middle', textAlign: 'right' }}>
-                      <div style={{ fontSize: '1.15rem', fontWeight: '900', color: '#006B70' }}>
-                        ₹{item.price || 499}
+                    {/* 5. Dr. Lal PathLabs */}
+                    <td style={{ padding: '0.85rem 1rem', verticalAlign: 'middle', borderLeft: '1px solid #E2E8F0' }}>
+                      <div style={{ fontSize: '0.9rem', fontWeight: '900', color: '#D97706' }}>Dr. Lal PathLabs</div>
+                      <div style={{ fontSize: '0.7rem', color: '#64748B', marginTop: '0.1rem' }}>National Reference Lab</div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.4rem' }}>
+                        <div>
+                          <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#0F172A' }}>₹{lalpathOpt.price}</div>
+                          <div style={{ fontSize: '0.7rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{lalpathOpt.mrp}</div>
+                        </div>
+                        <button
+                          onClick={() => addToCart(item, lalpathOpt)}
+                          style={{
+                            padding: '0.35rem 0.75rem',
+                            backgroundColor: isLalpathInCart ? '#059669' : '#D97706',
+                            color: '#FFF',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontWeight: '800',
+                            fontSize: '0.78rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {isLalpathInCart ? '✓ Added' : '+ Add'}
+                        </button>
                       </div>
-                      <div style={{ fontSize: '0.75rem', color: '#94A3B8', textDecoration: 'line-through' }}>
-                        ₹{item.mrp || (item.price ? Math.round(item.price * 1.6) : 999)}
-                      </div>
-                    </td>
-
-                    {/* 7. Action Button */}
-                    <td style={{ padding: '1rem 1.25rem', verticalAlign: 'middle', textAlign: 'center' }}>
-                      <button
-                        onClick={() => addToCart(item)}
-                        style={{
-                          padding: '0.5rem 0.95rem',
-                          backgroundColor: isInCart ? '#059669' : '#006B70',
-                          color: '#FFF',
-                          border: 'none',
-                          borderRadius: '10px',
-                          fontWeight: '800',
-                          fontSize: '0.82rem',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.35rem',
-                          boxShadow: '0 2px 6px rgba(0,107,112,0.2)',
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        {isInCart ? <Check size={14} /> : <Plus size={14} />}
-                        <span>{isInCart ? 'In Cart' : 'Add Test'}</span>
-                      </button>
                     </td>
                   </tr>
                 );

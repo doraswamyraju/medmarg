@@ -146,10 +146,24 @@ export default function PatientCartDrawer({
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div style={{ flex: 1, paddingRight: '0.5rem' }}>
-                      <div style={{ fontSize: '0.72rem', color: '#006B70', fontWeight: '800' }}>
-                        {item.lab || 'MedMarg Central Diagnostics'}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
+                        <span style={{ 
+                          fontSize: '0.7rem', 
+                          backgroundColor: item.isMedmargSuggested ? '#DCFCE7' : item.lab === 'Thyrocare' ? '#FEE2E2' : '#FEF3C7',
+                          color: item.isMedmargSuggested ? '#15803D' : item.lab === 'Thyrocare' ? '#991B1B' : '#92400E',
+                          padding: '0.15rem 0.45rem', 
+                          borderRadius: '4px', 
+                          fontWeight: '900' 
+                        }}>
+                          🔬 {item.lab || 'MedMarg'}
+                        </span>
+                        {item.suggestedLabName && (
+                          <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '700' }}>
+                            via {item.suggestedLabName}
+                          </span>
+                        )}
                       </div>
-                      <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: '#0F172A', marginTop: '0.15rem', lineHeight: 1.3 }}>
+                      <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: '#0F172A', margin: 0, lineHeight: 1.3 }}>
                         {item.name}
                       </h4>
                     </div>
@@ -161,6 +175,7 @@ export default function PatientCartDrawer({
                       <Trash2 size={16} />
                     </button>
                   </div>
+
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.76rem', color: '#64748B' }}>
                     <div style={{ display: 'flex', gap: '0.4rem' }}>
