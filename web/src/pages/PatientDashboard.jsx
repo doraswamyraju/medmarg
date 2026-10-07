@@ -41,6 +41,7 @@ import CareSeekerCheckoutModal from '../components/patient/CareSeekerCheckoutMod
 import CareSeekerUniversalItemSheet from '../components/patient/CareSeekerUniversalItemSheet';
 import CareSeekerPrescriptionModal from '../components/patient/CareSeekerPrescriptionModal';
 import CareSeekerFloatingActionBar from '../components/patient/CareSeekerFloatingActionBar';
+import FloatingCartButton from '../components/patient/FloatingCartButton';
 
 export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   // 7 CORE NAVIGATION TABS: HOME, TESTS, VITALS, TRACK, REPORTS, REFER_CORP, PROFILE
@@ -186,7 +187,6 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         labPricing: item.labPricing || null
       }]);
     }
-    setShowCartDrawer(true);
   };
 
   const removeFromCart = (id) => {
@@ -517,6 +517,16 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         handleOrderWhatsApp={handleOrderWhatsApp}
         handleOrderCall={handleOrderCall}
       />
+
+      {/* 4. FLOATING VIEW CART BAR (DYNAMIC MODULE ON CART > 0) */}
+      {!showCartDrawer && cart.length > 0 && (
+        <FloatingCartButton
+          cart={cart}
+          cartTotal={cartTotal}
+          onOpenCart={() => setShowCartDrawer(true)}
+          selectedLabProvider={selectedLabProvider}
+        />
+      )}
 
       {/* MODULAR OVERLAYS */}
       
