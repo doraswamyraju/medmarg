@@ -11,18 +11,21 @@ import {
   User, 
   Plus, 
   Sparkles,
-  AlertCircle
+  AlertCircle,
+  Building2
 } from 'lucide-react';
 import { API_BASE } from '../../data/apiConfig';
+import { getItemPriceForLab } from '../../data/catalogStore';
 
 export default function CareSeekerCheckoutModal({
   isOpen,
   onClose,
-  cart,
+  cart = [],
   user,
   savedAddresses = [],
   onOpenAddressModal = () => {},
-  onOrderSuccess
+  onOrderSuccess,
+  selectedLabProvider = 'medmarg_suggested'
 }) {
   if (!isOpen) return null;
 
@@ -46,8 +49,23 @@ export default function CareSeekerCheckoutModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const cartTotal = cart.reduce((sum, item) => sum + (item.price || 0), 0);
+  // Calculate order items and total based on selected lab provider
+  const orderItems = cart.map(c => {
+    const pricing = getItemPriceForLab(c, selectedLabProvider);
+    return {
+      id: c.id || c.code || c.name,
+      name: c.name || c.title,
+      price: pricing.price,
+      mrp: pricing.mrp,
+      lab: pricing.labName,
+      suggestedLabName: pricing.suggestedLabName,
+      isMedmargSuggested: pricing.isMedmargSuggested
+    };
+  });
+
+  const cartTotal = orderItems.reduce((sum, item) => sum + (item.price || 0), 0);
   const hasFasting = cart.some(item => item.fasting === 'YES');
+  const activeLabName = orderItems[0]?.lab || 'MedMarg';
 
   const currentAddress = savedAddresses[selectedAddressIndex]?.address || 'Plot 42, Air Bypass Road, Tirupati, AP - 517501';
 
@@ -64,18 +82,16 @@ export default function CareSeekerCheckoutModal({
       patientGender: careSeekerGender,
       address: currentAddress,
       slot: `${selectedDate}, ${selectedSlot}`,
-      items: cart.map(c => ({
-        id: c.id,
-        name: c.name,
-        price: c.price,
-        lab: c.lab || 'MedMarg Central Processing Hub'
-      })),
+      items: orderItems,
       totalAmount: cartTotal,
+      selectedLabProvider: selectedLabProvider,
+      labName: activeLabName,
       paymentMode: paymentMode,
       paymentStatus: paymentMode === 'PREPAID_UPI' ? 'PAID' : 'PENDING_DOORSTEP',
       handoverOtp: Math.floor(1000 + Math.random() * 9000).toString(),
       isExpress: isExpress
     };
+
 
     try {
       const response = await fetch(`${API_BASE}/api/v1/patient/orders/book`, {
@@ -464,7 +480,9 @@ export default function CareSeekerCheckoutModal({
           <div style={{ backgroundColor: '#F8FAFC', borderRadius: '12px', padding: '0.85rem 1rem', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: '0.78rem', color: '#64748B' }}>Total Tests: {cart.length} Item(s)</div>
-              <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0F172A' }}>Home Collection: FREE</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0F172A' }}>
+                Lab: <span style={{ color: '#006B70' }}>{activeLabName}</span> • Home Collection: <span style={{ color: '#059669' }}>FREE</span>
+              </div>
             </div>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontSize: '0.75rem', color: '#64748B' }}>Grand Total</div>
