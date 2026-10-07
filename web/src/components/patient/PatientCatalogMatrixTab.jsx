@@ -162,11 +162,10 @@ export default function PatientCatalogMatrixTab({
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.86rem' }}>
             <thead>
               <tr style={{ backgroundColor: '#F8FAFC', color: '#475569', fontWeight: '800', borderBottom: '1.5px solid #E2E8F0', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                <th style={{ padding: '1rem 1.25rem', width: '36%' }}>Diagnostic Test / Profile</th>
-                <th style={{ padding: '1rem 1rem', width: '20%' }}>Specimen & Fasting</th>
-                <th style={{ padding: '1rem 1rem', width: '20%' }}>Certified NABL Labs</th>
-                <th style={{ padding: '1rem 1rem', width: '14%' }}>Price & Savings</th>
-                <th style={{ padding: '1rem 1.25rem', width: '10%', textAlign: 'right' }}>Action</th>
+                <th style={{ padding: '1rem 1.25rem', width: '45%' }}>Diagnostic Test / Profile</th>
+                <th style={{ padding: '1rem 1rem', width: '25%' }}>Specimen & Fasting</th>
+                <th style={{ padding: '1rem 1rem', width: '18%' }}>Price & Savings</th>
+                <th style={{ padding: '1rem 1.25rem', width: '12%', textAlign: 'right' }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -250,31 +249,14 @@ export default function PatientCatalogMatrixTab({
                       </div>
                     </td>
 
-                    {/* 3. Certified NABL Labs Options Indicator */}
-                    <td style={{ padding: '1.1rem 1rem', verticalAlign: 'middle' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                          <span style={{ fontSize: '0.78rem', fontWeight: '800', backgroundColor: '#F0FDF4', color: '#166534', border: '1px solid #BBF7D0', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>
-                            ✓ 3 NABL Labs Available
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '600' }}>
-                          MedMarg • Thyrocare • Lalpath
-                        </div>
-                        <div style={{ fontSize: '0.68rem', color: '#006B70', fontWeight: '700' }}>
-                          (Select lab in Cart at checkout)
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* 4. Starting Price & MRP */}
+                    {/* 3. Starting Price & MRP */}
                     <td style={{ padding: '1.1rem 1rem', verticalAlign: 'middle' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
                         <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: '700', textTransform: 'uppercase' }}>
                           Starts From
                         </div>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                          <span style={{ fontSize: '1.2rem', fontWeight: '900', color: '#006B70' }}>
+                          <span style={{ fontSize: '1.25rem', fontWeight: '900', color: '#006B70' }}>
                             ₹{startPricing.price}
                           </span>
                           <span style={{ fontSize: '0.75rem', color: '#94A3B8', textDecoration: 'line-through' }}>
@@ -289,12 +271,12 @@ export default function PatientCatalogMatrixTab({
                       </div>
                     </td>
 
-                    {/* 5. Action Button */}
+                    {/* 4. Action Button */}
                     <td style={{ padding: '1.1rem 1.25rem', verticalAlign: 'middle', textAlign: 'right' }}>
                       <button
                         onClick={() => addToCart(item)}
                         style={{
-                          padding: '0.55rem 1.1rem',
+                          padding: '0.55rem 1.15rem',
                           backgroundColor: isInCart ? '#059669' : '#006B70',
                           color: '#FFFFFF',
                           border: 'none',

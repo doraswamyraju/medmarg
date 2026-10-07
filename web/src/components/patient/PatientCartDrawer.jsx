@@ -156,7 +156,141 @@ export default function PatientCartDrawer({
             </div>
           )}
 
-          {/* Cart Items List */}
+          {/* 1. MULTI-LAB PROCESSING SELECTOR DESK (TOP PRIORITY) */}
+          {cart.length > 0 && (
+            <div style={{
+              backgroundColor: '#F8FAFC',
+              borderRadius: '18px',
+              padding: '1.25rem',
+              border: '2px solid #006B70',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.85rem',
+              boxShadow: '0 4px 16px rgba(0, 107, 112, 0.08)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <Building2 size={20} color="#006B70" />
+                    <h4 style={{ fontSize: '1rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+                      Select Processing Diagnostic Lab
+                    </h4>
+                  </div>
+                  <p style={{ fontSize: '0.78rem', color: '#64748B', margin: '0.25rem 0 0 0' }}>
+                    Total cart price automatically updates for all {cart.length} item(s) below.
+                  </p>
+                </div>
+                <span style={{ fontSize: '0.74rem', backgroundColor: '#E0F2F1', color: '#006B70', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '900' }}>
+                  1-Click Switch
+                </span>
+              </div>
+
+              {/* 3 Lab Comparison Cards */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {labOptions.map((lab) => {
+                  const isSelected = selectedLabProvider === lab.id;
+
+                  return (
+                    <div
+                      key={lab.id}
+                      onClick={() => handleSelectLab(lab.id)}
+                      style={{
+                        padding: '0.9rem 1.1rem',
+                        borderRadius: '14px',
+                        border: isSelected ? `2.5px solid ${lab.accentColor}` : '1.5px solid #CBD5E1',
+                        backgroundColor: isSelected ? (lab.isMedmargSuggested ? '#F0FDF4' : '#FFFDF5') : '#FFFFFF',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        boxShadow: isSelected ? '0 6px 16px rgba(0,0,0,0.08)' : 'none',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '50%',
+                          border: isSelected ? `6px solid ${lab.accentColor}` : '2px solid #94A3B8',
+                          backgroundColor: '#FFF',
+                          flexShrink: 0
+                        }} />
+
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                            <span style={{ fontSize: '1.08rem', fontWeight: '900', color: isSelected ? lab.accentColor : '#0F172A' }}>
+                              {lab.name}
+                            </span>
+                            <span style={{ 
+                              fontSize: '0.68rem', 
+                              backgroundColor: lab.bgLight, 
+                              color: lab.accentColor, 
+                              padding: '0.12rem 0.45rem', 
+                              borderRadius: '4px', 
+                              fontWeight: '800' 
+                            }}>
+                              {lab.badge}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: '0.15rem' }}>
+                            {lab.subtitle} • <strong>{lab.tatText}</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: '900', color: isSelected ? lab.accentColor : '#0F172A' }}>
+                          ₹{lab.totalPrice}
+                        </div>
+                        {lab.totalMrp > lab.totalPrice && (
+                          <div style={{ fontSize: '0.72rem', color: '#94A3B8', textDecoration: 'line-through' }}>
+                            ₹{lab.totalMrp}
+                          </div>
+                        )}
+                        {lab.totalSavings > 0 && (
+                          <div style={{ fontSize: '0.7rem', color: '#059669', fontWeight: '800', marginTop: '0.1rem' }}>
+                            Save ₹{lab.totalSavings}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Remember Preference Checkbox */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.75rem 1rem',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '12px',
+                border: rememberPreference ? '1.5px solid #059669' : '1px solid #CBD5E1',
+                marginTop: '0.2rem'
+              }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', fontSize: '0.84rem', color: '#0F172A', fontWeight: '800' }}>
+                  <input
+                    type="checkbox"
+                    checked={rememberPreference}
+                    onChange={handleToggleRemember}
+                    style={{ width: '18px', height: '18px', accentColor: '#006B70', cursor: 'pointer' }}
+                  />
+                  <span>Remember this laboratory selection for future orders</span>
+                </label>
+                {rememberPreference && (
+                  <span style={{ fontSize: '0.74rem', color: '#059669', backgroundColor: '#DCFCE7', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <CheckCircle2 size={13} />
+                    Saved Default
+                  </span>
+                )}
+              </div>
+
+            </div>
+          )}
+
+          {/* 2. Cart Items List */}
           {cart.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: '#64748B' }}>
               <FlaskConical size={48} color="#CBD5E1" style={{ margin: '0 auto 0.75rem' }} />
@@ -166,11 +300,11 @@ export default function PatientCartDrawer({
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: '800', color: '#475569' }}>
+                <span style={{ fontSize: '0.84rem', fontWeight: '800', color: '#475569' }}>
                   Selected Items ({cart.length})
                 </span>
-                <span style={{ fontSize: '0.74rem', color: '#006B70', fontWeight: '700' }}>
-                  Pricing via {activeLabOption.name}
+                <span style={{ fontSize: '0.76rem', color: activeLabOption.accentColor, fontWeight: '800', backgroundColor: activeLabOption.bgLight, padding: '0.15rem 0.5rem', borderRadius: '6px' }}>
+                  Processed via {activeLabOption.name}
                 </span>
               </div>
 
@@ -234,7 +368,7 @@ export default function PatientCartDrawer({
                         )}
                       </div>
                       <div style={{ textAlign: 'right' }}>
-                        <span style={{ fontSize: '1.05rem', fontWeight: '900', color: '#006B70' }}>₹{itemPricing.price}</span>
+                        <span style={{ fontSize: '1.05rem', fontWeight: '900', color: activeLabOption.accentColor }}>₹{itemPricing.price}</span>
                         {itemPricing.mrp && itemPricing.mrp > itemPricing.price && (
                           <span style={{ fontSize: '0.76rem', color: '#94A3B8', textDecoration: 'line-through', marginLeft: '0.35rem' }}>
                             ₹{itemPricing.mrp}
@@ -245,133 +379,6 @@ export default function PatientCartDrawer({
                   </div>
                 );
               })}
-            </div>
-          )}
-
-          {/* MULTI-LAB PROCESSING SELECTOR DESK */}
-          {cart.length > 0 && (
-            <div style={{
-              backgroundColor: '#F8FAFC',
-              borderRadius: '16px',
-              padding: '1.15rem',
-              border: '1.5px solid #E2E8F0',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.85rem'
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                  <Building2 size={18} color="#006B70" />
-                  <h4 style={{ fontSize: '0.94rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
-                    Choose Processing Diagnostic Lab
-                  </h4>
-                </div>
-                <p style={{ fontSize: '0.76rem', color: '#64748B', margin: '0.2rem 0 0 0' }}>
-                  Select the NABL accredited laboratory for all items in this booking.
-                </p>
-              </div>
-
-              {/* 3 Lab Comparison Cards */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                {labOptions.map((lab) => {
-                  const isSelected = selectedLabProvider === lab.id;
-
-                  return (
-                    <div
-                      key={lab.id}
-                      onClick={() => handleSelectLab(lab.id)}
-                      style={{
-                        padding: '0.85rem 1rem',
-                        borderRadius: '12px',
-                        border: isSelected ? `2.5px solid ${lab.accentColor}` : '1.5px solid #CBD5E1',
-                        backgroundColor: isSelected ? (lab.isMedmargSuggested ? '#F0FDF4' : '#FFFFFF') : '#FFFFFF',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        boxShadow: isSelected ? '0 4px 12px rgba(0,0,0,0.06)' : 'none',
-                        transition: 'all 0.15s ease'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{
-                          width: '18px',
-                          height: '18px',
-                          borderRadius: '50%',
-                          border: isSelected ? `5px solid ${lab.accentColor}` : '2px solid #CBD5E1',
-                          backgroundColor: '#FFF'
-                        }} />
-
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <span style={{ fontSize: '1.05rem', fontWeight: '900', color: isSelected ? lab.accentColor : '#0F172A' }}>
-                              {lab.name}
-                            </span>
-                            <span style={{ 
-                              fontSize: '0.68rem', 
-                              backgroundColor: lab.bgLight, 
-                              color: lab.accentColor, 
-                              padding: '0.1rem 0.4rem', 
-                              borderRadius: '4px', 
-                              fontWeight: '800' 
-                            }}>
-                              {lab.badge}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '0.15rem' }}>
-                            {lab.subtitle} • {lab.tatText}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '1.15rem', fontWeight: '900', color: isSelected ? lab.accentColor : '#0F172A' }}>
-                          ₹{lab.totalPrice}
-                        </div>
-                        {lab.totalMrp > lab.totalPrice && (
-                          <div style={{ fontSize: '0.7rem', color: '#94A3B8', textDecoration: 'line-through' }}>
-                            ₹{lab.totalMrp}
-                          </div>
-                        )}
-                        {lab.totalSavings > 0 && (
-                          <div style={{ fontSize: '0.68rem', color: '#059669', fontWeight: '800' }}>
-                            Save ₹{lab.totalSavings}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Remember Preference Checkbox */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0.55rem 0.75rem',
-                backgroundColor: '#FFFFFF',
-                borderRadius: '10px',
-                border: '1px solid #E2E8F0',
-                marginTop: '0.2rem'
-              }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.78rem', color: '#334155', fontWeight: '700' }}>
-                  <input
-                    type="checkbox"
-                    checked={rememberPreference}
-                    onChange={handleToggleRemember}
-                    style={{ width: '16px', height: '16px', accentColor: '#006B70', cursor: 'pointer' }}
-                  />
-                  <span>Remember my laboratory choice for further orders</span>
-                </label>
-                {rememberPreference && (
-                  <span style={{ fontSize: '0.7rem', color: '#059669', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                    <CheckCircle2 size={12} />
-                    Saved
-                  </span>
-                )}
-              </div>
-
             </div>
           )}
 

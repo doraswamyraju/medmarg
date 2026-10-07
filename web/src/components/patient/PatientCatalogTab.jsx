@@ -184,17 +184,6 @@ export default function PatientCatalogTab({
                     {item.tagline || item.description}
                   </p>
                 ) : null}
-
-                {/* Available NABL Labs Indicator */}
-                <div style={{ marginTop: '0.85rem', padding: '0.55rem 0.75rem', backgroundColor: '#F8FAFC', borderRadius: '10px', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ fontSize: '0.74rem', color: '#475569', fontWeight: '700' }}>
-                    🔬 <strong>3 Labs Available:</strong> MedMarg, Thyrocare, Lalpath
-                  </div>
-                  <span style={{ fontSize: '0.68rem', color: '#006B70', fontWeight: '800' }}>
-                    Select at checkout
-                  </span>
-                </div>
-
               </div>
 
               {/* Price & Add to Cart Footer */}
