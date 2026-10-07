@@ -15,7 +15,15 @@ import {
   Sparkles
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
-import { getCatalogState, filterCatalogItems, getItemLabPricing } from '../data/catalogStore';
+import { 
+  getCatalogState, 
+  filterCatalogItems, 
+  getItemLabPricing,
+  getPreferredLab,
+  savePreferredLab,
+  getItemPriceForLab,
+  getStartingPrice
+} from '../data/catalogStore';
 import { API_BASE } from '../data/apiConfig';
 
 
@@ -60,17 +68,22 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
     { id: 'addr_2', label: 'Parents', address: 'Door 12-4/A, Gandhi Road, Tirupati, AP - 517502', isDefault: false, city: 'Tirupati, AP', pincode: '517502' }
   ]);
 
-  // Cart State
+  // Selected Processing Laboratory (MedMarg, Thyrocare, Lalpath) with persistence
+  const [selectedLabProvider, setSelectedLabProvider] = useState(getPreferredLab);
+
+  // Cart State (Array of Base Items)
   const [cart, setCart] = useState([
     {
-      id: 'pkg_mm_master',
+      id: 'MM_MASTER',
+      baseId: 'MM_MASTER',
+      code: 'MM_MASTER',
       name: 'MedMarg Master Health Checkup (Comprehensive)',
-      lab: 'MedMarg Central Processing Hub',
+      itemType: 'PACKAGE',
+      fasting: 'YES',
+      sampleType: 'SERUM, EDTA, URINE',
       price: 1499,
       mrp: 3999,
-      params: 92,
-      fasting: 'YES',
-      sampleType: 'SERUM, EDTA, URINE'
+      tatHours: 24
     }
   ]);
 
@@ -156,39 +169,34 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
 
   const displayCatalogItems = getFilteredItems();
 
-  const addToCart = (item, labOption = null) => {
+  const addToCart = (item) => {
     const rawId = item.id || item.code || item.name;
-    const labPricing = getItemLabPricing(item);
-    const chosenLab = labOption || labPricing.find(l => l.isRecommended) || labPricing[0];
-    const cartItemId = `${rawId}_${chosenLab.labId}`;
-
-    if (!cart.some(cartItem => cartItem.id === cartItemId)) {
+    if (!cart.some(cartItem => (cartItem.baseId || cartItem.id) === rawId || cartItem.code === item.code)) {
       setCart([...cart, {
-        id: cartItemId,
+        id: rawId,
         baseId: rawId,
         code: item.code || item.id,
         name: item.name || item.title,
-        lab: chosenLab.labName,
-        suggestedLabName: chosenLab.suggestedLabName,
-        isMedmargSuggested: chosenLab.isMedmargSuggested,
-        price: chosenLab.price || item.price || 499,
-        mrp: chosenLab.mrp || item.mrp || 999,
-        params: item.testCount || item.params || 1,
+        itemType: item.itemType || 'TEST',
         fasting: item.fasting || 'NO',
         sampleType: item.sampleType || item.sampleTypes?.join(', ') || 'SERUM',
-        tatHours: chosenLab.tatHours || item.tatHours || 24,
-        selectedLab: chosenLab
+        price: item.price || 499,
+        mrp: item.mrp || 999,
+        tatHours: item.tatHours || 24,
+        labPricing: item.labPricing || null
       }]);
     }
     setShowCartDrawer(true);
   };
 
-
   const removeFromCart = (id) => {
-    setCart(cart.filter(item => item.id !== id));
+    setCart(cart.filter(item => (item.id !== id && item.code !== id && item.baseId !== id)));
   };
 
-  const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
+  const cartTotal = cart.reduce((sum, item) => {
+    const p = getItemPriceForLab(item, selectedLabProvider);
+    return sum + (p.price || item.price || 0);
+  }, 0);
 
   const handleOrderWhatsApp = (customText = '') => {
     const defaultMsg = encodeURIComponent(
@@ -521,6 +529,8 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         addToCart={addToCart}
         onProceedToCheckout={() => setShowCheckoutModal(true)}
         catalog={catalog}
+        selectedLabProvider={selectedLabProvider}
+        setSelectedLabProvider={setSelectedLabProvider}
       />
 
       {/* 2. Multi-step Checkout & Booking Modal */}
@@ -532,6 +542,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         savedAddresses={savedAddresses}
         onOpenAddressModal={() => setShowAddressModal(true)}
         onOrderSuccess={handleOrderSuccess}
+        selectedLabProvider={selectedLabProvider}
       />
 
       {/* 3. Universal Test/Package Detail Sheet */}
@@ -539,7 +550,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         item={selectedDetailItem}
         onClose={() => setSelectedDetailItem(null)}
         onAddToCart={addToCart}
-        isInCart={selectedDetailItem ? cart.some(c => c.id === (selectedDetailItem.id || selectedDetailItem.code || selectedDetailItem.name)) : false}
+        isInCart={selectedDetailItem ? cart.some(c => (c.baseId || c.id) === (selectedDetailItem.id || selectedDetailItem.code || selectedDetailItem.name) || c.code === selectedDetailItem.code) : false}
       />
 
       {/* 4. Prescription Upload Modal */}

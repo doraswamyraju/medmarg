@@ -9,8 +9,10 @@ import {
   Plus, 
   Check, 
   Sparkles,
-  Award
+  Award,
+  Building2
 } from 'lucide-react';
+import { getStartingPrice } from '../../data/catalogStore';
 
 export default function CareSeekerUniversalItemSheet({
   item,
@@ -22,6 +24,7 @@ export default function CareSeekerUniversalItemSheet({
 
   const isPackage = item.itemType === 'PACKAGE' || item.profiles || item.discountPercent;
   const isProfile = item.itemType === 'PROFILE' || (item.code && item.code.length <= 6 && !item.serialNo);
+  const startPricing = getStartingPrice(item);
 
   return (
     <div style={{
@@ -73,7 +76,7 @@ export default function CareSeekerUniversalItemSheet({
               {item.name || item.title}
             </h2>
             <div style={{ fontSize: '0.82rem', color: '#80CBC4', marginTop: '0.35rem' }}>
-              Processing Lab: {item.lab || 'MedMarg Central Hub (NABL Certified)'}
+              100% NABL Accredited Pathology Processing • Free Home Phlebotomy
             </div>
           </div>
 
@@ -107,7 +110,7 @@ export default function CareSeekerUniversalItemSheet({
             <div style={{ padding: '0.85rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
               <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '800' }}>REPORT TURNAROUND</div>
               <div style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0F172A', marginTop: '0.2rem' }}>
-                ⚡ {item.tatHours || 24} Hours TAT
+                ⚡ 24 Hours TAT
               </div>
             </div>
 
@@ -117,6 +120,17 @@ export default function CareSeekerUniversalItemSheet({
                 🔬 {item.testCount || item.params || 1} Parameters
               </div>
             </div>
+          </div>
+
+          {/* Multi-Lab Notice */}
+          <div style={{ padding: '1.25rem', backgroundColor: '#F0FDF4', borderRadius: '16px', border: '1.5px solid #BBF7D0', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', fontWeight: '900', color: '#166534' }}>
+              <Building2 size={18} color="#006B70" />
+              <span>Multi-Lab Choice Available at Checkout</span>
+            </div>
+            <p style={{ fontSize: '0.82rem', color: '#14532D', margin: 0, lineHeight: 1.45 }}>
+              Choose your preferred laboratory (<strong>MedMarg Suggested</strong>, <strong>Thyrocare</strong>, or <strong>Dr. Lal PathLabs</strong>) for all items in your cart before checkout with 1-click comparison.
+            </p>
           </div>
 
           {/* Description & Clinical Significance */}
@@ -173,11 +187,21 @@ export default function CareSeekerUniversalItemSheet({
           alignItems: 'center'
         }}>
           <div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '900', color: '#006B70' }}>
-              ₹{item.price || 499}
+            <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '700', textTransform: 'uppercase' }}>
+              Starts From
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#94A3B8', textDecoration: 'line-through' }}>
-              ₹{item.mrp || (item.price ? Math.round(item.price * 1.6) : 999)}
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
+              <div style={{ fontSize: '1.5rem', fontWeight: '900', color: '#006B70' }}>
+                ₹{startPricing.price}
+              </div>
+              <div style={{ fontSize: '0.8rem', color: '#94A3B8', textDecoration: 'line-through' }}>
+                ₹{startPricing.mrp}
+              </div>
+              {startPricing.discountPercent > 0 && (
+                <span style={{ fontSize: '0.72rem', color: '#059669', backgroundColor: '#DCFCE7', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800' }}>
+                  {startPricing.discountPercent}% OFF
+                </span>
+              )}
             </div>
           </div>
 
@@ -209,3 +233,4 @@ export default function CareSeekerUniversalItemSheet({
     </div>
   );
 }
+

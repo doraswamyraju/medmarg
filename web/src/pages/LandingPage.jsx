@@ -538,8 +538,11 @@ export default function LandingPage({ onNavigateLogin }) {
 
                     <div style={{ paddingTop: '1rem', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A' }}>₹{pkg.price}</div>
-                        <div style={{ fontSize: '0.8rem', color: '#94A3B8', textDecoration: 'line-through' }}>MRP ₹{pkg.mrp}</div>
+                        <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: '700', textTransform: 'uppercase' }}>Starts From</div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
+                          <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#005F60' }}>₹{pkg.price}</span>
+                          <span style={{ fontSize: '0.8rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{pkg.mrp}</span>
+                        </div>
                       </div>
                       <button onClick={onNavigateLogin} style={{ padding: '0.65rem 1.25rem', backgroundColor: '#005F60', color: '#FFF', border: 'none', borderRadius: '10px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer' }}>
                         Book Pickup →
@@ -578,8 +581,11 @@ export default function LandingPage({ onNavigateLogin }) {
 
                     <div style={{ paddingTop: '0.85rem', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#005F60' }}>₹{prof.price || 499}</div>
-                        <div style={{ fontSize: '0.78rem', color: '#94A3B8', textDecoration: 'line-through' }}>MRP ₹{prof.mrp || 1200}</div>
+                        <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: '700', textTransform: 'uppercase' }}>Starts From</div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
+                          <span style={{ fontSize: '1.3rem', fontWeight: '900', color: '#005F60' }}>₹{prof.price || 499}</span>
+                          <span style={{ fontSize: '0.78rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{prof.mrp || 1200}</span>
+                        </div>
                       </div>
                       <button onClick={onNavigateLogin} style={{ padding: '0.55rem 1.1rem', backgroundColor: '#005F60', color: '#FFF', border: 'none', borderRadius: '10px', fontSize: '0.82rem', fontWeight: '800', cursor: 'pointer' }}>
                         Book Profile →
@@ -616,8 +622,11 @@ export default function LandingPage({ onNavigateLogin }) {
 
                     <div style={{ marginTop: '1rem', paddingTop: '0.75rem', borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#0F172A' }}>₹{tst.price || 199}</div>
-                        <div style={{ fontSize: '0.75rem', color: '#94A3B8', textDecoration: 'line-through' }}>MRP ₹{tst.mrp || 450}</div>
+                        <div style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: '700', textTransform: 'uppercase' }}>Starts From</div>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
+                          <span style={{ fontSize: '1.2rem', fontWeight: '900', color: '#0F172A' }}>₹{tst.price || 199}</span>
+                          <span style={{ fontSize: '0.75rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{tst.mrp || 450}</span>
+                        </div>
                       </div>
                       <button onClick={onNavigateLogin} style={{ padding: '0.5rem 0.95rem', backgroundColor: '#005F60', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800', cursor: 'pointer' }}>
                         + Add Test

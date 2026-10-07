@@ -176,6 +176,30 @@ export function getDefaultLabPricing(basePrice = 299, baseMrp = null, tatHours =
     ];
 }
 
+export const PREFERRED_LAB_STORAGE_KEY = 'medmarg_preferred_lab_choice';
+
+export function getPreferredLab() {
+    try {
+        const stored = localStorage.getItem(PREFERRED_LAB_STORAGE_KEY);
+        if (stored && (stored === 'medmarg_suggested' || stored === 'thyrocare' || stored === 'lalpath')) {
+            return stored;
+        }
+    } catch (e) {
+        // Fallback
+    }
+    return 'medmarg_suggested';
+}
+
+export function savePreferredLab(labId) {
+    try {
+        if (labId) {
+            localStorage.setItem(PREFERRED_LAB_STORAGE_KEY, labId);
+        }
+    } catch (e) {
+        console.warn('Could not save preferred lab:', e);
+    }
+}
+
 /**
  * Returns array of lab pricing for an item. If item does not have custom labPricing,
  * computes standard MedMarg, Thyrocare, Lalpath Labs pricing dynamically.
@@ -185,6 +209,114 @@ export function getItemLabPricing(item) {
         return item.labPricing;
     }
     return getDefaultLabPricing(item?.price, item?.mrp, item?.tatHours, item?.suggestedLab || item?.suggestedLabName);
+}
+
+/**
+ * Gets the starting (minimum) price and MRP across all lab options for an item
+ */
+export function getStartingPrice(item) {
+    const list = getItemLabPricing(item);
+    const minPrice = Math.min(...list.map(l => Number(l.price) || 299));
+    const maxMrp = Math.max(...list.map(l => Number(l.mrp) || Math.round(minPrice * 1.6)));
+    const discountPercent = maxMrp > minPrice ? Math.round(((maxMrp - minPrice) / maxMrp) * 100) : 40;
+    
+    return {
+        price: minPrice,
+        mrp: maxMrp,
+        discountPercent: Math.max(10, discountPercent),
+        labCount: list.length,
+        defaultLab: list.find(l => l.isRecommended) || list[0]
+    };
+}
+
+/**
+ * Gets price for a specific lab ID on a given item
+ */
+export function getItemPriceForLab(item, labId = 'medmarg_suggested') {
+    const list = getItemLabPricing(item);
+    const opt = list.find(l => l.labId === labId) || list.find(l => l.isRecommended) || list[0];
+    return {
+        price: opt.price || 499,
+        mrp: opt.mrp || Math.round((opt.price || 499) * 1.6),
+        discountPercent: opt.discountPercent || 40,
+        tatHours: opt.tatHours || 24,
+        labName: opt.labName || 'MedMarg',
+        suggestedLabName: opt.suggestedLabName,
+        isMedmargSuggested: !!opt.isMedmargSuggested,
+        tag: opt.tag || ''
+    };
+}
+
+/**
+ * Computes comparative totals for all items in the cart across each of the 3 lab providers
+ */
+export function getCartTotalsByLab(cartItems = []) {
+    const labs = [
+        {
+            id: 'medmarg_suggested',
+            name: 'MedMarg',
+            subtitle: 'via Central Processing Partner Hub',
+            isMedmargSuggested: true,
+            badge: '⭐ Recommended & Best Value',
+            accentColor: '#006B70',
+            bgLight: '#E0F2F1',
+            tatText: '24 Hours TAT',
+            perks: ['Free Home Phlebotomy', '100% NABL Quality Assurance', 'Best Price Guarantee']
+        },
+        {
+            id: 'thyrocare',
+            name: 'Thyrocare',
+            subtitle: 'Direct Automated Laboratory',
+            isMedmargSuggested: false,
+            badge: '⚡ Direct Automated Lab',
+            accentColor: '#B91C1C',
+            bgLight: '#FEE2E2',
+            tatText: '24-36 Hours TAT',
+            perks: ['Automated Track Processing', 'NABL Accredited', 'Direct Lab Dispatch']
+        },
+        {
+            id: 'lalpath',
+            name: 'Dr. Lal PathLabs',
+            subtitle: 'National Reference Laboratory',
+            isMedmargSuggested: false,
+            badge: '🏆 Gold Standard Reference',
+            accentColor: '#D97706',
+            bgLight: '#FEF3C7',
+            tatText: '24-48 Hours TAT',
+            perks: ['NABL & CAP Certified', 'National Reference Standard', 'Senior Pathologist Review']
+        }
+    ];
+
+    return labs.map(lab => {
+        let totalPrice = 0;
+        let totalMrp = 0;
+        const itemBreakdown = [];
+
+        cartItems.forEach(item => {
+            const pricing = getItemPriceForLab(item, lab.id);
+            totalPrice += pricing.price;
+            totalMrp += pricing.mrp;
+            itemBreakdown.push({
+                id: item.id || item.code || item.name,
+                name: item.name || item.title,
+                price: pricing.price,
+                mrp: pricing.mrp,
+                tatHours: pricing.tatHours
+            });
+        });
+
+        const totalSavings = Math.max(0, totalMrp - totalPrice);
+        const discountPercent = totalMrp > 0 ? Math.round((totalSavings / totalMrp) * 100) : 0;
+
+        return {
+            ...lab,
+            totalPrice,
+            totalMrp,
+            totalSavings,
+            discountPercent,
+            itemBreakdown
+        };
+    });
 }
 
 /**
