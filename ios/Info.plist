@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSHealthShareUsageDescription</key>
+	<string>MedMarg accesses Apple HealthKit to display real-time vital biomarkers (Heart Rate, Blood Oxygen, Blood Pressure, Fasting Glucose, Step Count) and deliver correlated diagnostic test suggestions.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>MedMarg allows you to log diagnostic vital readings directly into Apple Health.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>MedMarg uses Face ID / Touch ID for fast and secure client login.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>MedMarg uses your location to dispatch the nearest certified phlebotomist for home sample collection.</string>
+	<key>UILaunchScreen</key>
+	<dict/>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+</dict>
+</plist>

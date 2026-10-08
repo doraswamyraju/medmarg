@@ -162,6 +162,15 @@ struct BottomSheetMenuView: View {
                 description: "Verified Mobile Number, Home Addresses & Family Members",
                 subTabs: [(0, "User Account"), (1, "Linked Family"), (2, "Saved Addresses")]
             )
+
+            // Tab 5: Apple Health Vitals Hub
+            bottomSheetModuleCard(
+                tabIndex: 5,
+                icon: "heart.text.square.fill",
+                title: "Live Vitals & Apple Health",
+                description: "Real-Time Telemetry, Heart Rate, SpO2, Blood Pressure & AI Test Suggestions",
+                subTabs: [(0, "Live Telemetry"), (1, "Vital Alerts"), (2, "Doctor Summary")]
+            )
         }
     }
 
