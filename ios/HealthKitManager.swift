@@ -36,7 +36,10 @@ struct RecommendedDiagnosticTest: Identifiable, Equatable {
 class HealthKitManager: ObservableObject {
     static let shared = HealthKitManager()
 
-    private let healthStore = HKHealthStore()
+    private lazy var healthStore: HKHealthStore? = {
+        guard HKHealthStore.isHealthDataAvailable() else { return nil }
+        return HKHealthStore()
+    }()
 
     @Published var isHealthDataAvailable: Bool = false
     @Published var isAuthorized: Bool = false
@@ -114,7 +117,13 @@ class HealthKitManager: ObservableObject {
         if let spo2 = HKQuantityType.quantityType(forIdentifier: .oxygenSaturation) { typesToWrite.insert(spo2) }
         if let temp = HKQuantityType.quantityType(forIdentifier: .bodyTemperature) { typesToWrite.insert(temp) }
 
-        healthStore.requestAuthorization(toShare: typesToWrite, read: typesToRead) { success, error in
+        guard let store = healthStore else {
+            self.authorizationError = "Health data unavailable."
+            completion(false)
+            return
+        }
+
+        store.requestAuthorization(toShare: typesToWrite, read: typesToRead) { success, error in
             DispatchQueue.main.async {
                 self.isAuthorized = success
                 if success {
@@ -261,7 +270,11 @@ class HealthKitManager: ObservableObject {
             }
         }
 
-        healthStore.execute(query)
+        guard let store = healthStore else {
+            completion(nil)
+            return
+        }
+        store.execute(query)
     }
 
     // ==========================================
@@ -297,7 +310,11 @@ class HealthKitManager: ObservableObject {
             }
         }
 
-        healthStore.execute(query)
+        guard let store = healthStore else {
+            completion(nil)
+            return
+        }
+        store.execute(query)
     }
 
     // ==========================================
@@ -323,7 +340,12 @@ class HealthKitManager: ObservableObject {
             end: date
         )
 
-        healthStore.save(sample) { [weak self] success, _ in
+        guard let store = healthStore else {
+            completion(false)
+            return
+        }
+
+        store.save(sample) { [weak self] success, _ in
             DispatchQueue.main.async {
                 if success {
                     self?.fetchAllVitalsFromAppleHealth()

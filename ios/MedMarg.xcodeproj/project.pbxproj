@@ -224,6 +224,9 @@
 				DEVELOPMENT_TEAM = UDYR7AUVZ7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "MedMarg accesses Apple HealthKit to display real-time vital biomarkers and deliver correlated diagnostic test suggestions.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "MedMarg allows you to log diagnostic vital readings directly into Apple Health.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "MedMarg uses Face ID / Touch ID for fast and secure client login.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -267,6 +270,9 @@
 				DEVELOPMENT_TEAM = UDYR7AUVZ7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "MedMarg accesses Apple HealthKit to display real-time vital biomarkers and deliver correlated diagnostic test suggestions.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "MedMarg allows you to log diagnostic vital readings directly into Apple Health.";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "MedMarg uses Face ID / Touch ID for fast and secure client login.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
