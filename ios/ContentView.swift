@@ -234,11 +234,13 @@ struct ContentView: View {
                     )
                 }
             } else {
-                // Clean Branded Login View
-                loginView
-                    .sheet(isPresented: $showGooglePhoneSheet) {
-                        googlePhonePromptSheet
-                    }
+                // Dedicated Care Seeker Client Login View (Mobile OTP, Password, Face ID, Google & 1-Click Demo)
+                CareSeekerLoginView(
+                    users: users,
+                    loggedInUser: $loggedInUser,
+                    currentCity: $currentCity,
+                    showCityPicker: $showCityPicker
+                )
             }
         }
         .preferredColorScheme(.light)
@@ -632,8 +634,8 @@ struct ContentView: View {
     }
 
     // ==========================================
-    // 📱 PATIENT BODY VIEW (5 DISTINCT TABS)
-    // 0: Home, 1: Labs & Tests, 2: Track, 3: Reports, 4: Profile
+    // 📱 PATIENT BODY VIEW (6 DISTINCT TABS)
+    // 0: Home, 1: Labs & Tests, 2: Track, 3: Reports, 4: Profile, 5: Apple Health Vitals
     // ==========================================
     private var patientBodyView: some View {
         Group {
@@ -648,6 +650,21 @@ struct ContentView: View {
                 patientReportsTab
             case 4:
                 patientProfileTab
+            case 5:
+                CareSeekerVitalsView(
+                    selectedTab: $selectedTab,
+                    onAddToCart: { item in
+                        cartItems.append(CartItem(
+                            id: item.id,
+                            title: item.name,
+                            subtitle: "\(item.sampleType ?? "SERUM") • \(item.tatHours ?? 24)h TAT",
+                            provider: "MedMarg Processing Hub",
+                            price: item.price,
+                            mrp: item.mrp ?? item.price,
+                            type: "Diagnostic Test"
+                        ))
+                    }
+                )
             default:
                 patientHomeTab
             }
@@ -661,7 +678,52 @@ struct ContentView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 20) {
                 
-                // 1. Direct Order Action Bar (WhatsApp, Call, Upload Rx)
+                // 1. Apple Health Live Vitals Quick Bar (Continuous Sensor Telemetry)
+                Button(action: { selectedTab = 5 }) {
+                    HStack(spacing: 14) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.red.opacity(0.12))
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "heart.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(.red)
+                        }
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 6) {
+                                Text("Apple Health Vitals")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(MedMargTheme.slate900)
+                                Text("LIVE")
+                                    .font(.system(size: 9, weight: .black))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 2)
+                                    .background(Color.green)
+                                    .cornerRadius(4)
+                            }
+                            Text("74 BPM • SpO2 98.4% • BP 122/81 mmHg • 6,842 Steps")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(MedMargTheme.slate500)
+                                .lineLimit(1)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                    }
+                    .padding(14)
+                    .background(Color.white)
+                    .cornerRadius(16)
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(MedMargTheme.primaryTeal.opacity(0.3), lineWidth: 1.5))
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                }
+
+                // 2. Direct Order Action Bar (WhatsApp, Call, Upload Rx)
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         Text("INSTANT CHANNELS")

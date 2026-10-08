@@ -26,6 +26,9 @@
 		B2000017 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000017 /* SidebarView.swift */; };
 		B2000018 /* TopbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000018 /* TopbarView.swift */; };
 		B2000019 /* CatalogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000019 /* CatalogStore.swift */; };
+		B2000020 /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000020 /* HealthKitManager.swift */; };
+		B2000021 /* CareSeekerVitalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000021 /* CareSeekerVitalsView.swift */; };
+		B2000022 /* CareSeekerLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000022 /* CareSeekerLoginView.swift */; };
 		B1000004 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1000004 /* Assets.xcassets */; };
 		B1000005 /* catalogData.json in Resources */ = {isa = PBXBuildFile; fileRef = F1000005 /* catalogData.json */; };
 /* End PBXBuildFile section */
@@ -51,6 +54,9 @@
 		F2000017 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/SidebarView.swift"; sourceTree = "<group>"; };
 		F2000018 /* TopbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Shared/Components/TopbarView.swift"; sourceTree = "<group>"; };
 		F2000019 /* CatalogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CatalogStore.swift"; sourceTree = "<group>"; };
+		F2000020 /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthKitManager.swift"; sourceTree = "<group>"; };
+		F2000021 /* CareSeekerVitalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerVitalsView.swift"; sourceTree = "<group>"; };
+		F2000022 /* CareSeekerLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerLoginView.swift"; sourceTree = "<group>"; };
 		F1000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F1000005 /* catalogData.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "catalogData.json"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -88,6 +94,9 @@
 				F2000017 /* SidebarView.swift */,
 				F2000018 /* TopbarView.swift */,
 				F2000019 /* CatalogStore.swift */,
+				F2000020 /* HealthKitManager.swift */,
+				F2000021 /* CareSeekerVitalsView.swift */,
+				F2000022 /* CareSeekerLoginView.swift */,
 				F1000004 /* Assets.xcassets */,
 				F1000005 /* catalogData.json */,
 				P1000000 /* MedMarg.app */,
@@ -184,6 +193,9 @@
 				B2000017 /* SidebarView.swift in Sources */,
 				B2000018 /* TopbarView.swift in Sources */,
 				B2000019 /* CatalogStore.swift in Sources */,
+				B2000020 /* HealthKitManager.swift in Sources */,
+				B2000021 /* CareSeekerVitalsView.swift in Sources */,
+				B2000022 /* CareSeekerLoginView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

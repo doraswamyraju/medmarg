@@ -260,6 +260,11 @@ struct SidebarView: View {
                 (1, "Linked Family"),
                 (2, "Addresses")
             ])
+            accordionTab(index: 5, icon: "heart.text.square.fill", title: "Apple Health Vitals", subTabs: [
+                (0, "Live Telemetry"),
+                (1, "Biomarker Trends"),
+                (2, "Doctor Summary")
+            ])
         }
     }
 
