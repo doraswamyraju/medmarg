@@ -38,7 +38,7 @@
       ],
       "familyMembers": [
         { "id": "FAM-1", "name": "Ananya Sharma", "relation": "Spouse", "age": 33, "gender": "Female", "bloodGroup": "B+" },
-        { "id": "FAM-2", "name": "Aarav Sharma", "relation": "Son", "age: 7, gender: "Male", "bloodGroup": "O+" }
+        { "id": "FAM-2", "name": "Aarav Sharma", "relation": "Son", "age": 7, "gender": "Male", "bloodGroup": "O+" }
       ],
       "orderHistory": [
         { "id": "MM-8921", "date": "Today 07:30 AM", "items": "HbA1c + Complete Blood Count", "amount": 899, "status": "EN_ROUTE", "lab": "MedMarg Central Lab" }
