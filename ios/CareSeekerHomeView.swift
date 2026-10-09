@@ -246,33 +246,75 @@ struct CareSeekerHomeView: View {
     }
 
     // ==========================================
-    // 🔍 3. SEARCH BAR
+    // 🔍 3. ULTRA-PREMIUM SEARCH BAR
     // ==========================================
     private var searchBarSection: some View {
         Button(action: { selectedTab = 1 }) {
-            HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(MedMargTheme.primaryTeal)
-                    .font(.system(size: 16, weight: .bold))
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [MedMargTheme.primaryTeal.opacity(0.18), MedMargTheme.accentEmerald.opacity(0.12)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 38, height: 38)
 
-                Text("Search 913+ Tests (e.g. Vitamin D, Thyroid, HbA1c)...")
-                    .font(.system(size: 13))
-                    .foregroundColor(MedMargTheme.slate500)
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(MedMargTheme.primaryTeal)
+                        .font(.system(size: 16, weight: .bold))
+                }
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Search 913+ Tests & Health Packages")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(MedMargTheme.slate900)
+
+                    Text("e.g. Vitamin D, Thyroid TSH, CBC, HbA1c, Lipid...")
+                        .font(.system(size: 11))
+                        .foregroundColor(MedMargTheme.slate500)
+                }
 
                 Spacer()
 
-                Text("Matrix")
-                    .font(.system(size: 11, weight: .bold))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(MedMargTheme.lightTeal)
-                    .foregroundColor(MedMargTheme.primaryTeal)
-                    .cornerRadius(6)
+                HStack(spacing: 4) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 10, weight: .bold))
+                    Text("Browse Matrix")
+                        .font(.system(size: 11, weight: .bold))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(
+                    LinearGradient(
+                        colors: [MedMargTheme.primaryTeal, MedMargTheme.accentEmerald],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .foregroundColor(.white)
+                .cornerRadius(10)
+                .shadow(color: MedMargTheme.accentEmerald.opacity(0.3), radius: 4, x: 0, y: 2)
             }
-            .padding(14)
-            .background(Color.white)
-            .cornerRadius(16)
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(MedMargTheme.slate200, lineWidth: 1))
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(Color.white)
+                    .shadow(color: MedMargTheme.primaryTeal.opacity(0.08), radius: 12, x: 0, y: 4)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(
+                        LinearGradient(
+                            colors: [MedMargTheme.primaryTeal.opacity(0.5), MedMargTheme.accentEmerald.opacity(0.35), MedMargTheme.primaryTeal.opacity(0.15)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.5
+                    )
+            )
         }
     }
 

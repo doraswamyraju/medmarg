@@ -1,9 +1,10 @@
 import SwiftUI
 import MapKit
+import CoreLocation
 
 // =========================================================================
 // 📍 CARE SEEKER LIVE DISPATCH & PHLEBOTOMIST TELEMETRY RADAR
-// 100% Feature Parity with Web CareSeekerTrackingTab.jsx & CareSeekerRouteMap
+// 100% Native MapKit Integration with Route Directions & 3D Telemetry Camera
 // =========================================================================
 
 struct LiveOrderItem: Identifiable, Equatable {
@@ -26,6 +27,17 @@ struct LiveOrderModel: Identifiable, Equatable {
     let items: [LiveOrderItem]
     let totalAmount: Int
     let paymentStatus: String
+    var phleboCoord: CLLocationCoordinate2D = CLLocationCoordinate2D(latitude: 13.6320, longitude: 79.4180)
+    var doorstepCoord: CLLocationCoordinate2D = CLLocationCoordinate2D(latitude: 13.6288, longitude: 79.4192)
+
+    static func == (lhs: LiveOrderModel, rhs: LiveOrderModel) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.status == rhs.status &&
+               lhs.eta == rhs.eta &&
+               lhs.tempTelemetry == rhs.tempTelemetry &&
+               lhs.phleboCoord.latitude == rhs.phleboCoord.latitude &&
+               lhs.phleboCoord.longitude == rhs.phleboCoord.longitude
+    }
 }
 
 struct OrderStep {
@@ -56,7 +68,9 @@ struct CareSeekerTrackingView: View {
                 LiveOrderItem(id: "2", name: "Thyroid Profile Total (T3/T4/TSH)", price: 299)
             ],
             totalAmount: 1798,
-            paymentStatus: "PAID"
+            paymentStatus: "PAID",
+            phleboCoord: CLLocationCoordinate2D(latitude: 13.6330, longitude: 79.4160),
+            doorstepCoord: CLLocationCoordinate2D(latitude: 13.6288, longitude: 79.4192)
         ),
         LiveOrderModel(
             id: "MM-LAB-7193",
@@ -73,12 +87,17 @@ struct CareSeekerTrackingView: View {
                 LiveOrderItem(id: "3", name: "HbA1c & Fasting Blood Sugar", price: 399)
             ],
             totalAmount: 399,
-            paymentStatus: "PAID"
+            paymentStatus: "PAID",
+            phleboCoord: CLLocationCoordinate2D(latitude: 13.6290, longitude: 79.4200),
+            doorstepCoord: CLLocationCoordinate2D(latitude: 13.6290, longitude: 79.4200)
         )
     ]
 
     @State private var selectedOrderIndex: Int = 0
     @State private var isPulsingRadar: Bool = false
+    @State private var mapRecenterTrigger: UUID = UUID()
+    @State private var calculatedDistance: String = "1.8 km"
+    @State private var calculatedEta: String = "14 Mins"
 
     private var currentOrder: LiveOrderModel {
         guard !allOrders.isEmpty else {
@@ -117,7 +136,7 @@ struct CareSeekerTrackingView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 20) {
                 
-                // 1. Multi-Order Selector Pills (if multiple orders)
+                // 1. Multi-Order Selector Pills
                 if allOrders.count > 1 {
                     orderSelectorBar
                 }
@@ -125,8 +144,8 @@ struct CareSeekerTrackingView: View {
                 // 2. Dispatch Radar Hero Banner with 4-Digit Handover OTP
                 dispatchHeroBanner
 
-                // 3. Interactive Route Map Radar
-                interactiveMapRadarCard
+                // 3. Native MapKit Live GPS Radar with Driving Route
+                nativeMapKitRadarCard
 
                 // 4. 6-Stage Diagnostic Pipeline Telemetry Stepper
                 pipelineStepperCard
@@ -155,7 +174,10 @@ struct CareSeekerTrackingView: View {
                     let ord = allOrders[idx]
                     let isSelected = idx == selectedOrderIndex
 
-                    Button(action: { selectedOrderIndex = idx }) {
+                    Button(action: {
+                        selectedOrderIndex = idx
+                        mapRecenterTrigger = UUID()
+                    }) {
                         HStack(spacing: 8) {
                             Circle()
                                 .fill(isSelected ? Color.white : MedMargTheme.primaryTeal)
@@ -265,136 +287,77 @@ struct CareSeekerTrackingView: View {
     }
 
     // ==========================================
-    // 🗺 3. INTERACTIVE ROUTE MAP RADAR
+    // 🗺 3. NATIVE MAPKIT LIVE GPS RADAR
     // ==========================================
-    private var interactiveMapRadarCard: some View {
+    private var nativeMapKitRadarCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Live GPS Radar & Navigation")
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(MedMargTheme.slate900)
-                    Text("Real-time location, route mapping & cold-chain telemetry")
+                    Text("Turn-by-turn route, live vehicle telemetry & cold-chain container")
                         .font(.system(size: 11))
                         .foregroundColor(MedMargTheme.slate500)
                 }
 
                 Spacer()
 
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(Color.green)
-                        .frame(width: 8, height: 8)
-                        .scaleEffect(isPulsingRadar ? 1.2 : 0.8)
-                        .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: isPulsingRadar)
+                // Recenter Map Button
+                Button(action: { mapRecenterTrigger = UUID() }) {
+                    Image(systemName: "location.north.line.fill")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(MedMargTheme.primaryTeal)
+                        .padding(8)
+                        .background(MedMargTheme.lightTeal)
+                        .clipShape(Circle())
+                }
+            }
+
+            // Native MapKit Map View
+            ZStack(alignment: .bottom) {
+                LivePhlebotomistMKMapView(
+                    phleboCoordinate: currentOrder.phleboCoord,
+                    doorstepCoordinate: currentOrder.doorstepCoord,
+                    phleboName: currentOrder.phleboName,
+                    doorstepAddress: currentOrder.address,
+                    recenterTrigger: mapRecenterTrigger,
+                    onRouteCalculated: { dist, eta in
+                        self.calculatedDistance = dist
+                        self.calculatedEta = eta
+                    }
+                )
+                .frame(height: 260)
+                .cornerRadius(16)
+
+                // Bottom Overlay Telemetry Bar
+                HStack {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 8, height: 8)
+                            .scaleEffect(isPulsingRadar ? 1.2 : 0.8)
+                            .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: isPulsingRadar)
+                        Text("\(calculatedDistance) away • ETA: \(calculatedEta)")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(MedMargTheme.slate900)
+                    }
+
+                    Spacer()
+
                     Text("IoT: \(currentOrder.tempTelemetry)")
                         .font(.system(size: 10, weight: .bold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.green.opacity(0.12))
                         .foregroundColor(Color(red: 0.03, green: 0.5, blue: 0.3))
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.green.opacity(0.12))
-                .cornerRadius(20)
-            }
-
-            // Map View with Simulated Route
-            ZStack {
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(red: 0.93, green: 0.95, blue: 0.96))
-                    .frame(height: 220)
-
-                // Simulated Map Grid Lines
-                VStack(spacing: 24) {
-                    ForEach(0..<6) { _ in
-                        Divider().background(Color.black.opacity(0.04))
-                    }
-                }
-                .padding(.horizontal, 10)
-
-                // Route Path Simulation
-                Path { path in
-                    path.move(to: CGPoint(x: 50, y: 160))
-                    path.addQuadCurve(to: CGPoint(x: 180, y: 110), control: CGPoint(x: 100, y: 90))
-                    path.addLine(to: CGPoint(x: 290, y: 60))
-                }
-                .stroke(
-                    MedMargTheme.primaryTeal,
-                    style: StrokeStyle(lineWidth: 4, lineCap: .round, lineJoin: .round, dash: [6, 4])
-                )
-
-                // Phlebotomist Marker (Live Moving)
-                VStack(spacing: 2) {
-                    ZStack {
-                        Circle()
-                            .fill(MedMargTheme.primaryTeal.opacity(0.2))
-                            .frame(width: 44, height: 44)
-                            .scaleEffect(isPulsingRadar ? 1.3 : 0.9)
-                            .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: isPulsingRadar)
-
-                        Circle()
-                            .fill(MedMargTheme.primaryTeal)
-                            .frame(width: 32, height: 32)
-
-                        Image(systemName: "bicycle")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-
-                    Text("Ramesh • \(currentOrder.eta)")
-                        .font(.system(size: 9, weight: .black))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(MedMargTheme.slate900)
-                        .foregroundColor(.white)
                         .cornerRadius(6)
                 }
-                .position(x: 180, y: 100)
-
-                // Patient Home Marker
-                VStack(spacing: 2) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.red.opacity(0.15))
-                            .frame(width: 36, height: 36)
-                        Circle()
-                            .fill(Color.red)
-                            .frame(width: 26, height: 26)
-                        Image(systemName: "house.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(.white)
-                    }
-
-                    Text("Your Doorstep")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(MedMargTheme.slate700)
-                }
-                .position(x: 290, y: 55)
-
-                // Bottom Overlay Bar
-                VStack {
-                    Spacer()
-                    HStack {
-                        HStack(spacing: 6) {
-                            Image(systemName: "location.fill")
-                                .foregroundColor(MedMargTheme.primaryTeal)
-                            Text("1.8 km away • ETA \(currentOrder.eta)")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(MedMargTheme.slate900)
-                        }
-
-                        Spacer()
-
-                        Text("60-Min Phlebotomy Guaranteed")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(MedMargTheme.primaryTeal)
-                    }
-                    .padding(10)
-                    .background(Color.white.opacity(0.95))
-                    .cornerRadius(10)
-                    .padding(10)
-                }
+                .padding(10)
+                .background(Color.white.opacity(0.95))
+                .cornerRadius(10)
+                .padding(10)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 16))
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(MedMargTheme.slate200, lineWidth: 1))
         }
         .padding(16)
@@ -589,6 +552,160 @@ struct CareSeekerTrackingView: View {
             .background(Color.white)
             .cornerRadius(20)
             .overlay(RoundedRectangle(cornerRadius: 20).stroke(MedMargTheme.slate200, lineWidth: 1))
+        }
+    }
+}
+
+// =========================================================================
+// 🗺 MAPKIT NATIVE UIVIEWREPRESENTABLE FOR PHLEBOTOMIST ROUTE TRACKING
+// =========================================================================
+
+enum MedMargPinType {
+    case phlebotomist
+    case doorstep
+}
+
+class MedMargMapAnnotation: NSObject, MKAnnotation {
+    var coordinate: CLLocationCoordinate2D
+    var title: String?
+    var subtitle: String?
+    var pinType: MedMargPinType
+
+    init(coordinate: CLLocationCoordinate2D, title: String?, subtitle: String?, pinType: MedMargPinType) {
+        self.coordinate = coordinate
+        self.title = title
+        self.subtitle = subtitle
+        self.pinType = pinType
+    }
+}
+
+struct LivePhlebotomistMKMapView: UIViewRepresentable {
+    let phleboCoordinate: CLLocationCoordinate2D
+    let doorstepCoordinate: CLLocationCoordinate2D
+    let phleboName: String
+    let doorstepAddress: String
+    let recenterTrigger: UUID
+    var onRouteCalculated: ((String, String) -> Void)?
+
+    func makeUIView(context: Context) -> MKMapView {
+        let map = MKMapView()
+        map.delegate = context.coordinator
+        map.showsCompass = true
+        map.showsScale = true
+        map.isPitchEnabled = true
+        map.isRotateEnabled = true
+        return map
+    }
+
+    func updateUIView(_ uiView: MKMapView, context: Context) {
+        context.coordinator.updateMap(uiView, parent: self)
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, MKMapViewDelegate {
+        var parent: LivePhlebotomistMKMapView
+        private var lastRecenterTrigger: UUID?
+        private var activePolyline: MKPolyline?
+
+        init(_ parent: LivePhlebotomistMKMapView) {
+            self.parent = parent
+        }
+
+        func updateMap(_ mapView: MKMapView, parent: LivePhlebotomistMKMapView) {
+            self.parent = parent
+
+            if lastRecenterTrigger != parent.recenterTrigger {
+                lastRecenterTrigger = parent.recenterTrigger
+
+                mapView.removeAnnotations(mapView.annotations)
+                if let poly = activePolyline {
+                    mapView.removeOverlay(poly)
+                }
+
+                let phleboAnno = MedMargMapAnnotation(
+                    coordinate: parent.phleboCoordinate,
+                    title: parent.phleboName,
+                    subtitle: "Phlebotomist Enroute",
+                    pinType: .phlebotomist
+                )
+
+                let doorstepAnno = MedMargMapAnnotation(
+                    coordinate: parent.doorstepCoordinate,
+                    title: "Your Doorstep",
+                    subtitle: parent.doorstepAddress,
+                    pinType: .doorstep
+                )
+
+                mapView.addAnnotations([phleboAnno, doorstepAnno])
+
+                // Calculate Directions Route
+                let request = MKDirections.Request()
+                request.source = MKMapItem(placemark: MKPlacemark(coordinate: parent.phleboCoordinate))
+                request.destination = MKMapItem(placemark: MKPlacemark(coordinate: parent.doorstepCoordinate))
+                request.transportType = .automobile
+
+                let directions = MKDirections(request: request)
+                directions.calculate { [weak self] response, error in
+                    guard let self = self, let route = response?.routes.first else {
+                        // Fallback straight line polyline
+                        var coords = [parent.phleboCoordinate, parent.doorstepCoordinate]
+                        let fallbackPoly = MKPolyline(coordinates: &coords, count: 2)
+                        self?.activePolyline = fallbackPoly
+                        mapView.addOverlay(fallbackPoly)
+                        mapView.showAnnotations(mapView.annotations, animated: true)
+                        return
+                    }
+
+                    self.activePolyline = route.polyline
+                    mapView.addOverlay(route.polyline)
+
+                    let distanceKm = String(format: "%.1f km", route.distance / 1000.0)
+                    let etaMins = "\(max(1, Int(route.expectedTravelTime / 60.0))) Mins"
+                    parent.onRouteCalculated?(distanceKm, etaMins)
+
+                    // Zoom with edge padding
+                    let rect = route.polyline.boundingMapRect
+                    mapView.setVisibleMapRect(rect, edgePadding: UIEdgeInsets(top: 40, left: 40, bottom: 60, right: 40), animated: true)
+                }
+            }
+        }
+
+        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+            if let polyline = overlay as? MKPolyline {
+                let renderer = MKPolylineRenderer(polyline: polyline)
+                renderer.strokeColor = UIColor(red: 0.0, green: 0.42, blue: 0.44, alpha: 1.0)
+                renderer.lineWidth = 5
+                renderer.lineDashPattern = [6, 4]
+                return renderer
+            }
+            return MKOverlayRenderer(overlay: overlay)
+        }
+
+        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+            guard let customAnno = annotation as? MedMargMapAnnotation else { return nil }
+
+            let identifier = customAnno.pinType == .phlebotomist ? "PhleboPin" : "DoorstepPin"
+            var view = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
+
+            if view == nil {
+                view = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                view?.canShowCallout = true
+            } else {
+                view?.annotation = annotation
+            }
+
+            if customAnno.pinType == .phlebotomist {
+                view?.markerTintColor = UIColor(red: 0.0, green: 0.42, blue: 0.44, alpha: 1.0)
+                view?.glyphImage = UIImage(systemName: "bicycle")
+            } else {
+                view?.markerTintColor = UIColor.systemRed
+                view?.glyphImage = UIImage(systemName: "house.fill")
+            }
+
+            return view
         }
     }
 }

@@ -94,26 +94,48 @@ struct CareSeekerCatalogMatrixView: View {
     }
 
     // ==========================================
-    // 🔍 1. SEARCH & FILTERS SECTION
+    // 🔍 1. SEARCH & FILTERS SECTION (PREMIUM BORDER HIGHLIGHT)
     // ==========================================
     private var searchAndFiltersSection: some View {
         VStack(spacing: 10) {
-            HStack {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(MedMargTheme.primaryTeal)
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .fill(MedMargTheme.primaryTeal.opacity(0.12))
+                        .frame(width: 32, height: 32)
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(MedMargTheme.primaryTeal)
+                        .font(.system(size: 14, weight: .bold))
+                }
+
                 TextField("Search from 913+ tests (e.g. Thyroid, CBC, HbA1c, Vitamin D, Lipid, Liver)...", text: $searchQuery)
-                    .font(.system(size: 13))
+                    .font(.system(size: 13, weight: .medium))
+
                 if !searchQuery.isEmpty {
                     Button(action: { searchQuery = "" }) {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(MedMargTheme.slate500)
+                            .font(.system(size: 15))
                     }
                 }
             }
-            .padding(12)
-            .background(Color.white)
-            .cornerRadius(12)
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.slate200, lineWidth: 1))
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.white)
+                    .shadow(color: MedMargTheme.primaryTeal.opacity(0.06), radius: 8, x: 0, y: 3)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(
+                        LinearGradient(
+                            colors: [MedMargTheme.primaryTeal.opacity(0.6), MedMargTheme.accentEmerald.opacity(0.4), MedMargTheme.primaryTeal.opacity(0.2)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.5
+                    )
+            )
         }
         .padding(.horizontal, 16)
     }

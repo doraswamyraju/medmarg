@@ -63,8 +63,8 @@ struct BottomNavbarView: View {
                     bottomNavTab(index: 5, icon: "car.fill", title: "Agents")
                 } else {
                     // ==========================================
-                    // 📱 PATIENT / DEFAULT 5 CORE TABS
-                    // 0: Home, 1: Labs & Tests, 2: Vitals (Live), 3: Track, 4: Reports
+                    // 📱 PATIENT / CARE SEEKER 5 CORE TABS
+                    // 0: Home, 1: Tests, 3: Track (ALWAYS CENTER), 4: Reports, 6: Profile
                     // ==========================================
                     // Tab 0: Home
                     bottomNavTab(index: 0, icon: "house.fill", title: "Home")
@@ -72,17 +72,17 @@ struct BottomNavbarView: View {
                     // Tab 1: Tests Matrix
                     bottomNavTab(index: 1, icon: "flask.fill", title: "Tests")
 
-                    // Tab 2: Apple Health Live Vitals (CENTER HIGHLIGHTED ACTION BUTTON)
-                    Button(action: { selectedTab = 2 }) {
+                    // Tab 3: Track (ALWAYS CENTER HIGHLIGHTED ACTION BUTTON)
+                    Button(action: { selectedTab = 3 }) {
                         VStack(spacing: 2) {
                             ZStack {
                                 Circle()
                                     .fill(LinearGradient(colors: [MedMargTheme.primaryTeal, MedMargTheme.accentEmerald], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                    .frame(width: 40, height: 40)
+                                    .frame(width: 42, height: 42)
                                     .shadow(color: MedMargTheme.accentEmerald.opacity(0.4), radius: 6, x: 0, y: 2)
 
-                                Image(systemName: "heart.fill")
-                                    .font(.system(size: 18, weight: .bold))
+                                Image(systemName: "location.fill.viewfinder")
+                                    .font(.system(size: 19, weight: .bold))
                                     .foregroundColor(.white)
 
                                 // Glowing LIVE Indicator Badge
@@ -93,18 +93,18 @@ struct BottomNavbarView: View {
                                     .offset(x: 12, y: -12)
                             }
 
-                            Text("Vitals")
+                            Text("Track")
                                 .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(selectedTab == 2 ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
+                                .foregroundColor(selectedTab == 3 ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
                         }
                         .frame(maxWidth: .infinity)
                     }
 
-                    // Tab 3: Track Radar
-                    bottomNavTab(index: 3, icon: "location.fill.viewfinder", title: "Track")
-
-                    // Tab 4: Health Reports
+                    // Tab 4: Health Vault Reports
                     bottomNavTab(index: 4, icon: "doc.text.fill", title: "Reports")
+
+                    // Tab 6: Profile & Settings
+                    bottomNavTab(index: 6, icon: "person.crop.circle.fill", title: "Profile")
                 }
             }
             .padding(.bottom, 6)

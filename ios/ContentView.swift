@@ -174,7 +174,9 @@ struct ContentView: View {
                             showCartSheet: $showCartSheet,
                             showNotificationCenter: $showNotificationCenter,
                             cartItemCount: cartItems.count,
-                            onLogout: logout
+                            onLogout: logout,
+                            onLogoTap: { selectedTab = 0 },
+                            onProfileTap: { selectedTab = 6 }
                         )
                         
                         // 2. Role-Based Active View Body
