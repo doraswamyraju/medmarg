@@ -729,6 +729,9 @@ struct CareSeekerLoginView: View {
             createdAt: "Today"
         )
 
+        // Async sync with Backend Firestore API
+        syncGoogleAuthToBackend(email: account.email, name: account.name, googleId: account.id, phone: account.phone ?? "")
+
         // Check if phone number is present or in users DB
         if let existing = users.first(where: { $0.email.lowercased() == account.email.lowercased() && !cleanDigitsOnly($0.phone).isEmpty }) {
             self.loggedInUser = existing
@@ -749,11 +752,44 @@ struct CareSeekerLoginView: View {
         }
 
         if var user = pendingOAuthUser {
-            user.phone = "+91 \(clean)"
+            let fullPhone = "+91 \(clean)"
+            user.phone = fullPhone
+            
+            // Sync phone update to Backend Firestore database
+            syncPhoneUpdateToBackend(userId: user.id, phone: fullPhone)
+            
             loggedInUser = user
             showPhoneCollectionSheet = false
             phoneInputForOAuth = ""
             phoneCollectionError = ""
         }
+    }
+
+    private func syncGoogleAuthToBackend(email: String, name: String, googleId: String, phone: String) {
+        guard let url = URL(string: "http://127.0.0.1:5080/api/v1/auth/google") else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body: [String: Any] = [
+            "email": email,
+            "name": name,
+            "googleId": googleId,
+            "phone": phone
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        URLSession.shared.dataTask(with: request) { _, _, _ in }.resume()
+    }
+
+    private func syncPhoneUpdateToBackend(userId: String, phone: String) {
+        guard let url = URL(string: "http://127.0.0.1:5080/api/v1/auth/update-phone") else { return }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        let body: [String: Any] = [
+            "userId": userId,
+            "phone": phone
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+        URLSession.shared.dataTask(with: request) { _, _, _ in }.resume()
     }
 }
