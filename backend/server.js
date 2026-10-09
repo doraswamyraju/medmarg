@@ -209,16 +209,47 @@ app.post('/api/v1/auth/google', (req, res) => {
 
     const requiresPhone = !phone || phone.trim().length < 10;
 
+    // Automatically register/update customer in central dbStore
+    if (!dbStore.customers) dbStore.customers = [];
+    let existingCust = dbStore.customers.find(c => c.email && c.email.toLowerCase() === emailLower);
+    if (!existingCust && detectedRole === 'PATIENT') {
+        existingCust = {
+            id: `CUST-${Math.floor(1000 + Math.random() * 9000)}`,
+            name: name || email.split('@')[0],
+            phone: phone || '',
+            email: emailLower,
+            city: 'Tirupati',
+            abhaId: `ABHA-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`,
+            memberSince: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+            age: 30,
+            gender: 'Verified',
+            bloodGroup: 'O+',
+            chronicConditions: 'None',
+            allergies: 'None',
+            locations: [
+                { id: `LOC-${Date.now()}`, label: 'Primary Location', fullAddress: 'Air Bypass Road, Tirupati', pincode: '517501', isPrimary: true }
+            ],
+            familyMembers: [],
+            orderHistory: []
+        };
+        dbStore.customers.unshift(existingCust);
+        saveDbStore();
+    } else if (existingCust) {
+        if (phone && phone.trim().length >= 10) existingCust.phone = phone.trim();
+        if (name && (!existingCust.name || existingCust.name === 'Google User')) existingCust.name = name;
+        saveDbStore();
+    }
+
     return res.json({
         success: true,
         token: `jwt_google_medmarg_${Date.now()}`,
         requiresPhone,
         user: {
-            id: `usr_g_${googleId || Date.now()}`,
-            name: name || email.split('@')[0],
+            id: existingCust ? existingCust.id : `usr_g_${googleId || Date.now()}`,
+            name: name || (existingCust ? existingCust.name : email.split('@')[0]),
             email: emailLower,
             identifier: phone || emailLower,
-            phone: phone || '',
+            phone: phone || (existingCust ? existingCust.phone : ''),
             picture: picture || null,
             role: detectedRole,
             organization,
@@ -229,16 +260,48 @@ app.post('/api/v1/auth/google', (req, res) => {
 
 // UPDATE USER PHONE NUMBER ENDPOINT
 app.post('/api/v1/auth/update-phone', (req, res) => {
-    const { userId, phone } = req.body;
+    const { userId, phone, email, name } = req.body;
 
     if (!phone || phone.trim().length < 10) {
         return res.status(400).json({ error: 'A valid 10-digit mobile number is required.' });
     }
 
+    if (!dbStore.customers) dbStore.customers = [];
+    let cust = dbStore.customers.find(c => (userId && c.id === userId) || (email && c.email && c.email.toLowerCase() === email.toLowerCase()));
+    
+    if (cust) {
+        cust.phone = phone.trim();
+        if (name && (!cust.name || cust.name === 'Google User')) cust.name = name;
+        saveDbStore();
+    } else if (email) {
+        cust = {
+            id: userId || `CUST-${Math.floor(1000 + Math.random() * 9000)}`,
+            name: name || email.split('@')[0],
+            phone: phone.trim(),
+            email: email.trim().toLowerCase(),
+            city: 'Tirupati',
+            abhaId: `ABHA-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`,
+            memberSince: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+            age: 30,
+            gender: 'Verified',
+            bloodGroup: 'O+',
+            chronicConditions: 'None',
+            allergies: 'None',
+            locations: [
+                { id: `LOC-${Date.now()}`, label: 'Primary Location', fullAddress: 'Air Bypass Road, Tirupati', pincode: '517501', isPrimary: true }
+            ],
+            familyMembers: [],
+            orderHistory: []
+        };
+        dbStore.customers.unshift(cust);
+        saveDbStore();
+    }
+
     return res.json({
         success: true,
-        message: 'Phone number updated and profile verified.',
-        phone: phone.trim()
+        message: 'Phone number updated and customer profile saved to database.',
+        phone: phone.trim(),
+        customer: cust
     });
 });
 
@@ -827,6 +890,43 @@ app.post('/api/v1/admin/orders/assign', (req, res) => {
 
 app.get('/api/v1/admin/freelancers', (req, res) => {
     res.json({ success: true, freelancers: dbStore.freelancers });
+});
+
+// -------------------------------------------------------------
+// REGISTERED CUSTOMERS API ENDPOINTS
+// -------------------------------------------------------------
+app.get('/api/v1/customers', (req, res) => {
+    res.json({ success: true, customers: dbStore.customers || [] });
+});
+
+app.get('/api/v1/admin/customers', (req, res) => {
+    res.json({ success: true, customers: dbStore.customers || [] });
+});
+
+app.post('/api/v1/admin/customers', (req, res) => {
+    const newCustomer = {
+        id: `CUST-${Math.floor(1000 + Math.random() * 9000)}`,
+        memberSince: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        locations: req.body.locations || [
+            { id: `LOC-${Date.now()}`, label: 'Home Address', fullAddress: 'Air Bypass Road, Tirupati', pincode: '517501', isPrimary: true }
+        ],
+        familyMembers: req.body.familyMembers || [],
+        orderHistory: req.body.orderHistory || [],
+        ...req.body
+    };
+    if (!dbStore.customers) dbStore.customers = [];
+    dbStore.customers.unshift(newCustomer);
+    saveDbStore();
+    res.status(201).json({ success: true, customer: newCustomer });
+});
+
+app.delete('/api/v1/admin/customers/:id', (req, res) => {
+    const { id } = req.params;
+    if (dbStore.customers) {
+        dbStore.customers = dbStore.customers.filter(c => c.id !== id);
+        saveDbStore();
+    }
+    res.json({ success: true, message: 'Customer removed' });
 });
 
 app.post('/api/v1/admin/freelancers/verify', (req, res) => {

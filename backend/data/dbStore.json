@@ -1,4 +1,96 @@
 {
+  "customers": [
+    {
+      "id": "CUST-1004",
+      "name": "Doraswamy Raju Meesala",
+      "phone": "+91 83745 42478",
+      "email": "doraswamyraju.ca@gmail.com",
+      "city": "Tirupati",
+      "abhaId": "ABHA-8374-2026",
+      "memberSince": "Oct 2026",
+      "age": 30,
+      "gender": "Male",
+      "bloodGroup": "O+",
+      "chronicConditions": "None",
+      "allergies": "None",
+      "locations": [
+        { "id": "LOC-101", "label": "Home Address", "fullAddress": "Plot 42, Air Bypass Road, Tirupati, AP - 517501", "pincode": "517501", "isPrimary": true }
+      ],
+      "familyMembers": [],
+      "orderHistory": []
+    },
+    {
+      "id": "CUST-1001",
+      "name": "Rahul Sharma",
+      "phone": "+91 98765 43210",
+      "email": "rahul.sharma@gmail.com",
+      "city": "Tirupati",
+      "abhaId": "ABHA-3109-8812",
+      "memberSince": "Jan 2025",
+      "age": 36,
+      "gender": "Male",
+      "bloodGroup": "B+",
+      "chronicConditions": "Type-2 Pre-Diabetic",
+      "allergies": "Dust Mites",
+      "locations": [
+        { "id": "LOC-1", "label": "Home Address", "fullAddress": "Flat 402, Sri Sai Towers, Bairagipatteda, Tirupati", "pincode": "517501", "isPrimary": true },
+        { "id": "LOC-2", "label": "Office Address", "fullAddress": "Floor 2, Tech Park, Renigunta Rd, Tirupati", "pincode": "517506", "isPrimary": false }
+      ],
+      "familyMembers": [
+        { "id": "FAM-1", "name": "Ananya Sharma", "relation": "Spouse", "age": 33, "gender": "Female", "bloodGroup": "B+" },
+        { "id": "FAM-2", "name": "Aarav Sharma", "relation": "Son", "age: 7, gender: "Male", "bloodGroup": "O+" }
+      ],
+      "orderHistory": [
+        { "id": "MM-8921", "date": "Today 07:30 AM", "items": "HbA1c + Complete Blood Count", "amount": 899, "status": "EN_ROUTE", "lab": "MedMarg Central Lab" }
+      ]
+    },
+    {
+      "id": "CUST-1002",
+      "name": "Priya Verma",
+      "phone": "+91 98765 88990",
+      "email": "priya.v@gmail.com",
+      "city": "Tirupati",
+      "abhaId": "ABHA-4410-9920",
+      "memberSince": "Mar 2025",
+      "age": 29,
+      "gender": "Female",
+      "bloodGroup": "O+",
+      "chronicConditions": "Thyroid (Hypothyroidism)",
+      "allergies": "None",
+      "locations": [
+        { "id": "LOC-1", "label": "Home Address", "fullAddress": "House #12, Air Bypass Road, Tirupati", "pincode": "517507", "isPrimary": true }
+      ],
+      "familyMembers": [
+        { "id": "FAM-1", "name": "Vikram Verma", "relation": "Spouse", "age": 32, "gender": "Male", "bloodGroup": "O+" }
+      ],
+      "orderHistory": [
+        { "id": "MM-8922", "date": "Today 08:15 AM", "items": "Master Full Body Profile (87 Biomarkers)", "amount": 1499, "status": "SAMPLE_COLLECTED", "lab": "Apollo Diagnostics Hub" }
+      ]
+    },
+    {
+      "id": "CUST-1003",
+      "name": "Venkatesh R",
+      "phone": "+91 94400 55667",
+      "email": "venkatesh.r@yahoo.com",
+      "city": "Chittoor",
+      "abhaId": "ABHA-1102-4411",
+      "memberSince": "Jun 2025",
+      "age": 52,
+      "gender": "Male",
+      "bloodGroup": "A+",
+      "chronicConditions": "Hypertension & Elevated Triglycerides",
+      "allergies": "Sulfa Drugs",
+      "locations": [
+        { "id": "LOC-1", "label": "Residency Address", "fullAddress": "Door #5-81, Gandhi Road, Chittoor", "pincode": "517001", "isPrimary": true }
+      ],
+      "familyMembers": [
+        { "id": "FAM-1", "name": "Padma R", "relation": "Spouse", "age": 48, "gender": "Female", "bloodGroup": "A+" }
+      ],
+      "orderHistory": [
+        { "id": "MM-8923", "date": "Today 09:00 AM", "items": "Diabetic & Renal Health Check", "amount": 699, "status": "PENDING_DISPATCH", "lab": "Dr. Lal PathLabs" }
+      ]
+    }
+  ],
   "orders": [
     {
       "id": "MM-8921",
