@@ -20,10 +20,10 @@ struct GoogleAuthUser: Codable {
 final class GoogleSignInManager: NSObject, ObservableObject, ASWebAuthenticationPresentationContextProviding {
     static let shared = GoogleSignInManager()
 
-    // MedMarg Google OAuth Client ID & Custom URL Schemes
-    private let clientId = "836240579937-e35j4q9nn1t43dl3hjdva2lt7evo0jcf.apps.googleusercontent.com"
-    private let customScheme = "com.googleusercontent.apps.836240579937-e35j4q9nn1t43dl3hjdva2lt7evo0jcf"
-    private let redirectUri = "com.googleusercontent.apps.836240579937-e35j4q9nn1t43dl3hjdva2lt7evo0jcf:/oauth2redirect"
+    // MedMarg Google OAuth iOS Client ID & Custom URL Schemes
+    private let clientId = "836240579937-8tgsbq9sujeunh772eosbrl9l4ccj44o.apps.googleusercontent.com"
+    private let customScheme = "com.googleusercontent.apps.836240579937-8tgsbq9sujeunh772eosbrl9l4ccj44o"
+    private let redirectUri = "com.googleusercontent.apps.836240579937-8tgsbq9sujeunh772eosbrl9l4ccj44o:/oauth2redirect"
 
     private var authSession: ASWebAuthenticationSession?
 
