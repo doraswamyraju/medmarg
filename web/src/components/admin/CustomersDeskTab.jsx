@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Search, MapPin, Phone, UserCheck, ShieldCheck, Heart, FileText, Calendar, Plus, X, ChevronRight, Activity, RefreshCw } from 'lucide-react';
-import { API_BASE, safeFetch } from '../../data/apiConfig';
+import { API_BASE, safeFetch, safeJson } from '../../data/apiConfig';
 
 export default function CustomersDeskTab() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -125,11 +125,9 @@ export default function CustomersDeskTab() {
     setIsRefreshing(true);
     try {
       const res = await safeFetch(`${API_BASE}/api/v1/customers`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.customers && data.customers.length > 0) {
-          setCustomers(data.customers);
-        }
+      const data = await safeJson(res);
+      if (data && data.customers && data.customers.length > 0) {
+        setCustomers(data.customers);
       }
     } catch (err) {
       console.warn('Could not fetch real-time customers from backend, using active cache:', err);
