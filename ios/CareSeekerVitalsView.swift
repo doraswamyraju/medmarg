@@ -15,6 +15,7 @@ struct CareSeekerVitalsView: View {
     @State private var showShareSheet: Bool = false
     @State private var selectedVitalCategory: String = "ALL"
     @State private var isPulseAnimating: Bool = false
+    @State private var activeDetailProfile: VitalDetailProfile? = nil
 
     init(
         selectedTab: Binding<Int>,
@@ -39,7 +40,7 @@ struct CareSeekerVitalsView: View {
                 // 3. Recommended Diagnostic Tests Based on Live Vitals
                 recommendedTestsSection
 
-                // 4. Primary Vitals 2x2 Telemetry Grid
+                // 4. Primary Vitals 2x2 Telemetry Grid (Clickable to view past data)
                 primaryVitalsGrid
 
                 // 5. Activity & Sleep Metrics (Apple Watch / iPhone Sensors)
@@ -59,6 +60,14 @@ struct CareSeekerVitalsView: View {
         }
         .sheet(isPresented: $showShareSheet) {
             VitalsDoctorReportSheet(healthKit: healthKit)
+        }
+        .sheet(item: $activeDetailProfile) { profile in
+            VitalDetailHistorySheet(
+                vitalKey: profile.id,
+                profile: profile,
+                healthKit: healthKit,
+                onAddToCart: onAddToCart
+            )
         }
         .onAppear {
             isPulseAnimating = true
@@ -335,67 +344,129 @@ struct CareSeekerVitalsView: View {
     }
 
     // ==========================================
-    // 🫀 4. PRIMARY VITALS 2x2 TELEMETRY GRID
+    // 🫀 4. PRIMARY VITALS 2x2 TELEMETRY GRID (TAP TO VIEW PAST DATA)
     // ==========================================
     private var primaryVitalsGrid: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Core Vital Biomarkers")
-                .font(.system(size: 16, weight: .bold))
-                .foregroundColor(MedMargTheme.slate900)
+            HStack {
+                Text("Core Vital Biomarkers")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(MedMargTheme.slate900)
+                Spacer()
+                Text("Tap card for Past Trends & Logs ➔")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(MedMargTheme.primaryTeal)
+            }
 
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
                 
                 // Card 1: Heart Rate
-                VitalMetricCard(
-                    icon: "heart.fill",
-                    iconColor: .red,
-                    bgColor: Color.red.opacity(0.08),
-                    title: "Heart Rate",
-                    value: "\(Int(healthKit.heartRate))",
-                    unit: "BPM",
-                    subtitle: "Resting: \(Int(healthKit.restingHeartRate)) BPM",
-                    statusText: healthKit.heartRate < 60 ? "Bradycardia" : (healthKit.heartRate > 100 ? "Tachycardia" : "Optimal (60-100)"),
-                    statusColor: (healthKit.heartRate >= 60 && healthKit.heartRate <= 100) ? .green : .orange
-                )
+                Button(action: {
+                    activeDetailProfile = VitalDetailProfile(
+                        id: "HEART_RATE",
+                        title: "Heart Rate (BPM)",
+                        icon: "heart.fill",
+                        iconColor: .red,
+                        unit: "BPM",
+                        clinicalTarget: "60 - 100 BPM (Resting)",
+                        description: "Monitored via optical photoplethysmography sensor. Tracks pulse variability & tachycardia indicators.",
+                        relatedTest: "Thyroid Profile Total + ECG Risk",
+                        testPrice: 299
+                    )
+                }) {
+                    VitalMetricCard(
+                        icon: "heart.fill",
+                        iconColor: .red,
+                        bgColor: Color.red.opacity(0.08),
+                        title: "Heart Rate",
+                        value: "\(Int(healthKit.heartRate))",
+                        unit: "BPM",
+                        subtitle: "Resting: \(Int(healthKit.restingHeartRate)) BPM",
+                        statusText: healthKit.heartRate < 60 ? "Bradycardia" : (healthKit.heartRate > 100 ? "Tachycardia" : "Optimal (60-100)"),
+                        statusColor: (healthKit.heartRate >= 60 && healthKit.heartRate <= 100) ? .green : .orange
+                    )
+                }
 
                 // Card 2: Blood Oxygen SpO2
-                VitalMetricCard(
-                    icon: "lungs.fill",
-                    iconColor: .blue,
-                    bgColor: Color.blue.opacity(0.08),
-                    title: "Blood Oxygen (SpO2)",
-                    value: String(format: "%.1f", healthKit.bloodOxygen),
-                    unit: "%",
-                    subtitle: "Apple Sensor Telemetry",
-                    statusText: healthKit.bloodOxygen >= 95.0 ? "Normal (>95%)" : "Low Oxygen Alert",
-                    statusColor: healthKit.bloodOxygen >= 95.0 ? .green : .red
-                )
+                Button(action: {
+                    activeDetailProfile = VitalDetailProfile(
+                        id: "SPO2",
+                        title: "Blood Oxygen (SpO2)",
+                        icon: "lungs.fill",
+                        iconColor: .blue,
+                        unit: "%",
+                        clinicalTarget: "95.0% - 100.0%",
+                        description: "Measures percentage of hemoglobin carrying oxygen in peripheral bloodstream.",
+                        relatedTest: "Complete Blood Count (CBC) + ABG",
+                        testPrice: 299
+                    )
+                }) {
+                    VitalMetricCard(
+                        icon: "lungs.fill",
+                        iconColor: .blue,
+                        bgColor: Color.blue.opacity(0.08),
+                        title: "Blood Oxygen (SpO2)",
+                        value: String(format: "%.1f", healthKit.bloodOxygen),
+                        unit: "%",
+                        subtitle: "Apple Sensor Telemetry",
+                        statusText: healthKit.bloodOxygen >= 95.0 ? "Normal (>95%)" : "Low Oxygen Alert",
+                        statusColor: healthKit.bloodOxygen >= 95.0 ? .green : .red
+                    )
+                }
 
                 // Card 3: Blood Pressure
-                VitalMetricCard(
-                    icon: "waveform.path.ecg",
-                    iconColor: MedMargTheme.primaryTeal,
-                    bgColor: MedMargTheme.lightTeal,
-                    title: "Blood Pressure",
-                    value: "\(Int(healthKit.systolicBP))/\(Int(healthKit.diastolicBP))",
-                    unit: "mmHg",
-                    subtitle: "Target: <120/80",
-                    statusText: healthKit.systolicBP < 120 ? "Normal BP" : (healthKit.systolicBP < 130 ? "Elevated" : "Hypertension"),
-                    statusColor: healthKit.systolicBP < 120 ? .green : (healthKit.systolicBP < 130 ? .orange : .red)
-                )
+                Button(action: {
+                    activeDetailProfile = VitalDetailProfile(
+                        id: "BP",
+                        title: "Blood Pressure",
+                        icon: "waveform.path.ecg",
+                        iconColor: MedMargTheme.primaryTeal,
+                        unit: "mmHg",
+                        clinicalTarget: "< 120/80 mmHg",
+                        description: "Systolic & Diastolic arterial pressure. Key indicator for cardiovascular and renal health.",
+                        relatedTest: "Lipid Profile + Renal Function Panel",
+                        testPrice: 699
+                    )
+                }) {
+                    VitalMetricCard(
+                        icon: "waveform.path.ecg",
+                        iconColor: MedMargTheme.primaryTeal,
+                        bgColor: MedMargTheme.lightTeal,
+                        title: "Blood Pressure",
+                        value: "\(Int(healthKit.systolicBP))/\(Int(healthKit.diastolicBP))",
+                        unit: "mmHg",
+                        subtitle: "Target: <120/80",
+                        statusText: healthKit.systolicBP < 120 ? "Normal BP" : (healthKit.systolicBP < 130 ? "Elevated" : "Hypertension"),
+                        statusColor: healthKit.systolicBP < 120 ? .green : (healthKit.systolicBP < 130 ? .orange : .red)
+                    )
+                }
 
                 // Card 4: Blood Glucose
-                VitalMetricCard(
-                    icon: "drop.fill",
-                    iconColor: .purple,
-                    bgColor: Color.purple.opacity(0.08),
-                    title: "Blood Glucose",
-                    value: "\(Int(healthKit.bloodGlucose))",
-                    unit: "mg/dL",
-                    subtitle: "Fasting Benchmark",
-                    statusText: healthKit.bloodGlucose < 100 ? "Normal Fasting" : (healthKit.bloodGlucose < 126 ? "Pre-Diabetes" : "High Glucose"),
-                    statusColor: healthKit.bloodGlucose < 100 ? .green : (healthKit.bloodGlucose < 126 ? .orange : .red)
-                )
+                Button(action: {
+                    activeDetailProfile = VitalDetailProfile(
+                        id: "GLUCOSE",
+                        title: "Blood Glucose",
+                        icon: "drop.fill",
+                        iconColor: .purple,
+                        unit: "mg/dL",
+                        clinicalTarget: "< 100 mg/dL (Fasting)",
+                        description: "Plasma glucose level. Critical for diabetes management and metabolic health.",
+                        relatedTest: "HbA1c & Fasting Insulin Combo",
+                        testPrice: 399
+                    )
+                }) {
+                    VitalMetricCard(
+                        icon: "drop.fill",
+                        iconColor: .purple,
+                        bgColor: Color.purple.opacity(0.08),
+                        title: "Blood Glucose",
+                        value: "\(Int(healthKit.bloodGlucose))",
+                        unit: "mg/dL",
+                        subtitle: "Fasting Benchmark",
+                        statusText: healthKit.bloodGlucose < 100 ? "Normal Fasting" : (healthKit.bloodGlucose < 126 ? "Pre-Diabetes" : "High Glucose"),
+                        statusColor: healthKit.bloodGlucose < 100 ? .green : (healthKit.bloodGlucose < 126 ? .orange : .red)
+                    )
+                }
             }
         }
     }
@@ -411,70 +482,112 @@ struct CareSeekerVitalsView: View {
 
             HStack(spacing: 12) {
                 // Steps
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: "figure.walk")
-                            .foregroundColor(.orange)
-                        Text("Daily Steps")
-                            .font(.system(size: 12, weight: .semibold))
+                Button(action: {
+                    activeDetailProfile = VitalDetailProfile(
+                        id: "STEPS",
+                        title: "Daily Steps & Activity",
+                        icon: "figure.walk",
+                        iconColor: .orange,
+                        unit: "steps",
+                        clinicalTarget: "10,000 Steps / Day",
+                        description: "Daily pedometer step count & active calorie burn from iPhone accelerometer & Apple Watch.",
+                        relatedTest: "Cardiac Risk & Vitamin D3",
+                        testPrice: 499
+                    )
+                }) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "figure.walk")
+                                .foregroundColor(.orange)
+                            Text("Daily Steps")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(MedMargTheme.slate500)
+                        }
+                        Text("\(healthKit.stepCount)")
+                            .font(.system(size: 20, weight: .black))
+                            .foregroundColor(MedMargTheme.slate900)
+                        Text("Goal: 10k • \(Int(healthKit.activeCalories)) kcal")
+                            .font(.system(size: 10))
                             .foregroundColor(MedMargTheme.slate500)
                     }
-                    Text("\(healthKit.stepCount)")
-                        .font(.system(size: 20, weight: .black))
-                        .foregroundColor(MedMargTheme.slate900)
-                    Text("Goal: 10,000 • \(Int(healthKit.activeCalories)) kcal")
-                        .font(.system(size: 10))
-                        .foregroundColor(MedMargTheme.slate500)
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.white)
+                    .cornerRadius(14)
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(MedMargTheme.slate200, lineWidth: 1))
                 }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white)
-                .cornerRadius(14)
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(MedMargTheme.slate200, lineWidth: 1))
 
                 // Temperature
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: "thermometer.medium")
-                            .foregroundColor(.pink)
-                        Text("Body Temp")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(MedMargTheme.slate500)
+                Button(action: {
+                    activeDetailProfile = VitalDetailProfile(
+                        id: "TEMP",
+                        title: "Body Temperature",
+                        icon: "thermometer.medium",
+                        iconColor: .pink,
+                        unit: "°F",
+                        clinicalTarget: "97.0°F - 99.0°F",
+                        description: "Core basal body temperature readings from connected clinical thermometer or wrist sensor.",
+                        relatedTest: "Inflammatory Markers (hs-CRP + CBC)",
+                        testPrice: 349
+                    )
+                }) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "thermometer.medium")
+                                .foregroundColor(.pink)
+                            Text("Body Temp")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(MedMargTheme.slate500)
+                        }
+                        Text("\(String(format: "%.1f", healthKit.bodyTemperature))°F")
+                            .font(.system(size: 20, weight: .black))
+                            .foregroundColor(MedMargTheme.slate900)
+                        Text("Normal (97-99°F)")
+                            .font(.system(size: 10))
+                            .foregroundColor(.green)
                     }
-                    Text("\(String(format: "%.1f", healthKit.bodyTemperature))°F")
-                        .font(.system(size: 20, weight: .black))
-                        .foregroundColor(MedMargTheme.slate900)
-                    Text("Normal Range (97-99°F)")
-                        .font(.system(size: 10))
-                        .foregroundColor(.green)
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.white)
+                    .cornerRadius(14)
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(MedMargTheme.slate200, lineWidth: 1))
                 }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white)
-                .cornerRadius(14)
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(MedMargTheme.slate200, lineWidth: 1))
 
                 // Sleep
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack {
-                        Image(systemName: "bed.double.fill")
-                            .foregroundColor(.indigo)
-                        Text("Sleep")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(MedMargTheme.slate500)
+                Button(action: {
+                    activeDetailProfile = VitalDetailProfile(
+                        id: "SLEEP",
+                        title: "Sleep & Recovery",
+                        icon: "bed.double.fill",
+                        iconColor: .indigo,
+                        unit: "hrs",
+                        clinicalTarget: "7.0 - 9.0 Hours",
+                        description: "Sleep duration, deep REM cycles, and nighttime heart rate deceleration.",
+                        relatedTest: "Cortisol & Stress Hormone Panel",
+                        testPrice: 599
+                    )
+                }) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Image(systemName: "bed.double.fill")
+                                .foregroundColor(.indigo)
+                            Text("Sleep")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(MedMargTheme.slate500)
+                        }
+                        Text("\(String(format: "%.1f", healthKit.sleepHours))h")
+                            .font(.system(size: 20, weight: .black))
+                            .foregroundColor(MedMargTheme.slate900)
+                        Text("Restorative")
+                            .font(.system(size: 10))
+                            .foregroundColor(.green)
                     }
-                    Text("\(String(format: "%.1f", healthKit.sleepHours))h")
-                        .font(.system(size: 20, weight: .black))
-                        .foregroundColor(MedMargTheme.slate900)
-                    Text("Restorative Sleep")
-                        .font(.system(size: 10))
-                        .foregroundColor(.green)
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.white)
+                    .cornerRadius(14)
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(MedMargTheme.slate200, lineWidth: 1))
                 }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white)
-                .cornerRadius(14)
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(MedMargTheme.slate200, lineWidth: 1))
             }
         }
     }

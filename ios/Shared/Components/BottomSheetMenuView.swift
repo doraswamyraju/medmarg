@@ -123,53 +123,62 @@ struct BottomSheetMenuView: View {
                 tabIndex: 0,
                 icon: "house.fill",
                 title: "Home",
-                description: "Wellness Hub, His/Her/Family Wellness & Instant Booking",
-                subTabs: [(0, "His Wellness"), (1, "Her Wellness"), (2, "Family Wellness"), (3, "Disease Screening")]
+                description: "Healthcare & Wellness Hub, Instant Booking & Curated Plans",
+                subTabs: [(0, "Curated Plans"), (1, "Offers Zone"), (2, "Instant Services")]
             )
 
-            // Tab 1: Labs & Tests
+            // Tab 1: Labs & Tests Matrix
             bottomSheetModuleCard(
                 tabIndex: 1,
                 icon: "flask.fill",
-                title: "Labs & Tests",
-                description: "913+ Pathology Tests, Profiles, Health Packages & Smart Savings",
-                subTabs: [(0, "All Tests"), (1, "Health Packages"), (2, "Diagnostic Profiles")]
+                title: "Labs & Tests Matrix",
+                description: "913+ Pathology Tests, Profiles, Health Packages & Multi-Lab Pricing",
+                subTabs: [(0, "All Matrix"), (1, "Health Packages"), (2, "Diagnostic Profiles"), (3, "Individual Tests")]
             )
 
-            // Tab 2: Track
+            // Tab 2: Apple Health Vitals Hub
             bottomSheetModuleCard(
                 tabIndex: 2,
-                icon: "location.fill.viewfinder",
-                title: "Track",
-                description: "Live Phlebotomist GPS Tracking & IoT Cold-Chain Status",
-                subTabs: [(0, "Active Pickups"), (1, "Cold-Chain Temp"), (2, "Collector Contact")]
+                icon: "heart.fill",
+                title: "Apple Health Vitals & History",
+                description: "Real-Time Telemetry, Past 24h/7D/30D Historical Analytics & Alerts",
+                subTabs: [(0, "Live Telemetry"), (1, "Historical Data"), (2, "Vital Alerts")]
             )
 
-            // Tab 3: Reports
+            // Tab 3: Track Radar
             bottomSheetModuleCard(
                 tabIndex: 3,
-                icon: "doc.text.fill",
-                title: "Reports",
-                description: "Digital Health Locker & Google Drive Synced NABL PDF Reports",
-                subTabs: [(0, "Lab Reports PDF"), (1, "Biomarker Trends"), (2, "Doctor Prescriptions")]
+                icon: "location.fill.viewfinder",
+                title: "Live Tracking & Dispatch",
+                description: "Phlebotomist GPS Radar, 4-Digit Handover OTP & IoT Cold-Chain 3.8°C",
+                subTabs: [(0, "Active Radar"), (1, "Doorstep OTP"), (2, "Collector Contact")]
             )
 
-            // Tab 4: Profile
+            // Tab 4: Reports Vault
             bottomSheetModuleCard(
                 tabIndex: 4,
-                icon: "person.crop.circle.fill",
-                title: "Profile",
-                description: "Verified Mobile Number, Home Addresses & Family Members",
-                subTabs: [(0, "User Account"), (1, "Linked Family"), (2, "Saved Addresses")]
+                icon: "doc.text.fill",
+                title: "Digital Health Vault",
+                description: "NABL PDF Lab Reports & Multi-Month Longitudinal Biomarker Trends",
+                subTabs: [(0, "NABL Reports"), (1, "Biomarker Trends"), (2, "Google Drive Sync")]
             )
 
-            // Tab 5: Apple Health Vitals Hub
+            // Tab 5: Referrals & Corporate
             bottomSheetModuleCard(
                 tabIndex: 5,
-                icon: "heart.text.square.fill",
-                title: "Live Vitals & Apple Health",
-                description: "Real-Time Telemetry, Heart Rate, SpO2, Blood Pressure & AI Test Suggestions",
-                subTabs: [(0, "Live Telemetry"), (1, "Vital Alerts"), (2, "Doctor Summary")]
+                icon: "gift.fill",
+                title: "Refer & Corporate Wellness",
+                description: "Earn ₹200 Wallet Cash per Referral & Manage Corporate Staff Roster",
+                subTabs: [(0, "Refer & Earn"), (1, "Corporate Wellness"), (2, "Staff Health Roster")]
+            )
+
+            // Tab 6: Profile & Family
+            bottomSheetModuleCard(
+                tabIndex: 6,
+                icon: "person.crop.circle.fill",
+                title: "Care Seeker Profile & Family",
+                description: "ABHA ID, Linked Family Profiles, Saved Addresses & Preferences",
+                subTabs: [(0, "Care Seeker Profile"), (1, "ABHA Digital ID"), (2, "Linked Family")]
             )
         }
     }

@@ -105,17 +105,22 @@ struct ContentView: View {
     @State private var googlePhoneInput: String = ""
     @State private var googlePhoneError: String = ""
     
-    // 5 Core Patient Navigation Tabs (0: Home, 1: Labs & Tests, 2: Track, 3: Reports, 4: Profile)
+    // 7 Core Patient Navigation Tabs (0: Home, 1: Tests Matrix, 2: Vitals, 3: Track, 4: Reports, 5: Refer/Corp, 6: Profile)
     @State private var selectedTab: Int = 0
     @State private var selectedSubTab: Int = 0
     @State private var showSidebar: Bool = false
     @State private var showCityPicker: Bool = false
     @State private var showCartSheet: Bool = false
+    @State private var showCheckoutModal: Bool = false
+    @State private var showPrescriptionModal: Bool = false
+    @State private var showAddressModal: Bool = false
     @State private var showNotificationCenter: Bool = false
     @State private var showBottomSheetMenu: Bool = false
     @State private var showQuickCreateSheet: Bool = false
     @State private var selectedCategory: String = "All Tests & Packages"
     @State private var searchQuery: String = ""
+    @State private var selectedLabProvider: String = "medmarg_suggested"
+    @State private var orderSuccessBanner: String? = nil
     
     // Item Details Modal State
     @State private var selectedDetailItem: CatalogItem? = nil
@@ -127,7 +132,7 @@ struct ContentView: View {
     @State private var sampleFilter: String = "ALL" // "ALL" | "SERUM" | "EDTA" | "URINE" | "PLASMA"
     
     @State private var cartItems: [CartItem] = [
-        CartItem(id: "c1", title: "Aarogyam Complete 1.3 (Full Body Checkup)", subtitle: "104 Biomarkers • Thyrocare NABL", provider: "Thyrocare Direct", price: 1499, mrp: 3500, type: "Lab Package")
+        CartItem(id: "MM_MASTER", title: "MedMarg Master Health Checkup (Comprehensive)", subtitle: "SERUM, EDTA, URINE • 24h TAT", provider: "MedMarg Processing Hub", price: 1499, mrp: 3999, type: "PACKAGE")
     ]
 
     var totalCartPrice: Int {
@@ -136,6 +141,20 @@ struct ContentView: View {
 
     var totalCartSavings: Int {
         cartItems.reduce(0) { $0 + max(0, $1.mrp - $1.price) }
+    }
+
+    private func addToCartFromCatalog(_ item: CatalogItem) {
+        if !cartItems.contains(where: { $0.id == item.id || $0.id == item.code }) {
+            cartItems.append(CartItem(
+                id: item.id,
+                title: item.name,
+                subtitle: "\(item.sampleType ?? "SERUM") • \(item.tatHours ?? 24)h TAT",
+                provider: "MedMarg Processing Hub",
+                price: item.price,
+                mrp: item.mrp ?? item.price,
+                type: item.itemType ?? "Diagnostic Test"
+            ))
+        }
     }
 
     var body: some View {
@@ -188,10 +207,12 @@ struct ContentView: View {
                     }
 
                     // 4. Floating Cart Pill Bar (When items exist in cart & user is Patient)
-                    if user.role == .patient && !cartItems.isEmpty && selectedTab != 2 {
-                        floatingCartBar
-                            .padding(.bottom, 68)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    if user.role == .patient && !cartItems.isEmpty && selectedTab != 3 {
+                        CareSeekerFloatingCartBar(
+                            cartItems: cartItems,
+                            selectedLabProvider: selectedLabProvider,
+                            onOpenCart: { showCartSheet = true }
+                        )
                     }
 
                     // 5. Slide-Out Sidebar Navigation Drawer
@@ -209,10 +230,52 @@ struct ContentView: View {
                     cityPickerSheet
                 }
                 .sheet(isPresented: $showCartSheet) {
-                    cartViewSheet
+                    CareSeekerCartDrawer(
+                        isOpen: $showCartSheet,
+                        cartItems: $cartItems,
+                        selectedLabProvider: $selectedLabProvider,
+                        onProceedToCheckout: {
+                            showCheckoutModal = true
+                        },
+                        onAddToCart: { item in
+                            addToCartFromCatalog(item)
+                        }
+                    )
+                }
+                .sheet(isPresented: $showCheckoutModal) {
+                    CareSeekerCheckoutModal(
+                        isOpen: $showCheckoutModal,
+                        cartItems: cartItems,
+                        selectedLabProvider: selectedLabProvider,
+                        onOrderSuccess: { newOrder in
+                            cartItems.removeAll()
+                            selectedTab = 3
+                            orderSuccessBanner = "Order #\(newOrder.id) Confirmed! Phlebotomist Assigned."
+                        },
+                        onOpenAddressModal: { showAddressModal = true }
+                    )
+                }
+                .sheet(isPresented: $showPrescriptionModal) {
+                    CareSeekerPrescriptionModal(isOpen: $showPrescriptionModal)
+                }
+                .sheet(isPresented: $showAddressModal) {
+                    CareSeekerAddressModal(
+                        isOpen: $showAddressModal,
+                        onSaveAddress: { _ in }
+                    )
                 }
                 .sheet(item: $selectedDetailItem) { item in
-                    itemDetailSheet(item: item)
+                    CareSeekerUniversalItemSheet(
+                        item: item,
+                        isOpen: Binding(
+                            get: { selectedDetailItem != nil },
+                            set: { if !$0 { selectedDetailItem = nil } }
+                        ),
+                        onAddToCart: { itm in
+                            addToCartFromCatalog(itm)
+                        },
+                        isInCart: cartItems.contains { $0.id == item.id || $0.id == item.code }
+                    )
                 }
                 .sheet(isPresented: $showNotificationCenter) {
                     NotificationCenterSheet(isPresented: $showNotificationCenter)
@@ -634,39 +697,69 @@ struct ContentView: View {
     }
 
     // ==========================================
-    // 📱 PATIENT BODY VIEW (6 DISTINCT TABS)
-    // 0: Home, 1: Labs & Tests, 2: Track, 3: Reports, 4: Profile, 5: Apple Health Vitals
+    // 📱 PATIENT BODY VIEW (7 CORE WEB-PARITY TABS)
+    // 0: Home, 1: Tests Matrix, 2: Apple Health Vitals, 3: Live Track Radar, 4: Health Vault Reports, 5: Referrals & Corporate, 6: Profile & Family
     // ==========================================
     private var patientBodyView: some View {
         Group {
             switch selectedTab {
             case 0:
-                patientHomeTab
+                CareSeekerHomeView(
+                    selectedTab: $selectedTab,
+                    onAddToCart: { item in
+                        addToCartFromCatalog(item)
+                    },
+                    onOpenPrescriptionModal: { showPrescriptionModal = true },
+                    onOpenAddressModal: { showAddressModal = true },
+                    onOpenDetail: { item in selectedDetailItem = item }
+                )
             case 1:
-                patientLabsCatalogTab
+                CareSeekerCatalogMatrixView(
+                    catalogStore: catalogStore,
+                    selectedTab: $selectedTab,
+                    onAddToCart: { item in
+                        addToCartFromCatalog(item)
+                    },
+                    onOpenDetail: { item in
+                        selectedDetailItem = item
+                    },
+                    cartItemIds: Set(cartItems.map { $0.id })
+                )
             case 2:
-                patientLiveTrackTab
-            case 3:
-                patientReportsTab
-            case 4:
-                patientProfileTab
-            case 5:
                 CareSeekerVitalsView(
                     selectedTab: $selectedTab,
                     onAddToCart: { item in
-                        cartItems.append(CartItem(
-                            id: item.id,
-                            title: item.name,
-                            subtitle: "\(item.sampleType ?? "SERUM") • \(item.tatHours ?? 24)h TAT",
-                            provider: "MedMarg Processing Hub",
-                            price: item.price,
-                            mrp: item.mrp ?? item.price,
-                            type: "Diagnostic Test"
-                        ))
+                        addToCartFromCatalog(item)
                     }
                 )
+            case 3:
+                CareSeekerTrackingView(
+                    selectedTab: $selectedTab,
+                    onOrderCall: {
+                        if let url = URL(string: "tel://919876543210") {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                )
+            case 4:
+                CareSeekerReportsView()
+            case 5:
+                CareSeekerReferralCorporateView()
+            case 6:
+                CareSeekerProfileView(
+                    onLogout: logout,
+                    onOpenAddressModal: { showAddressModal = true }
+                )
             default:
-                patientHomeTab
+                CareSeekerHomeView(
+                    selectedTab: $selectedTab,
+                    onAddToCart: { item in
+                        addToCartFromCatalog(item)
+                    },
+                    onOpenPrescriptionModal: { showPrescriptionModal = true },
+                    onOpenAddressModal: { showAddressModal = true },
+                    onOpenDetail: { item in selectedDetailItem = item }
+                )
             }
         }
     }

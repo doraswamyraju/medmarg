@@ -29,6 +29,19 @@
 		B2000020 /* HealthKitManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000020 /* HealthKitManager.swift */; };
 		B2000021 /* CareSeekerVitalsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000021 /* CareSeekerVitalsView.swift */; };
 		B2000022 /* CareSeekerLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000022 /* CareSeekerLoginView.swift */; };
+		B2000023 /* CareSeekerCatalogMatrixView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000023 /* CareSeekerCatalogMatrixView.swift */; };
+		B2000024 /* VitalDetailHistorySheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000024 /* VitalDetailHistorySheet.swift */; };
+		B2000025 /* CareSeekerTrackingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000025 /* CareSeekerTrackingView.swift */; };
+		B2000026 /* CareSeekerReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000026 /* CareSeekerReportsView.swift */; };
+		B2000027 /* CareSeekerReferralCorporateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000027 /* CareSeekerReferralCorporateView.swift */; };
+		B2000028 /* CareSeekerProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000028 /* CareSeekerProfileView.swift */; };
+		B2000029 /* CareSeekerCartDrawer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000029 /* CareSeekerCartDrawer.swift */; };
+		B2000030 /* CareSeekerCheckoutModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000030 /* CareSeekerCheckoutModal.swift */; };
+		B2000031 /* CareSeekerPrescriptionModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000031 /* CareSeekerPrescriptionModal.swift */; };
+		B2000032 /* CareSeekerAddressModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000032 /* CareSeekerAddressModal.swift */; };
+		B2000033 /* CareSeekerUniversalItemSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000033 /* CareSeekerUniversalItemSheet.swift */; };
+		B2000034 /* CareSeekerFloatingCartBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000034 /* CareSeekerFloatingCartBar.swift */; };
+		B2000035 /* CareSeekerHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000035 /* CareSeekerHomeView.swift */; };
 		B1000004 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1000004 /* Assets.xcassets */; };
 		B1000005 /* catalogData.json in Resources */ = {isa = PBXBuildFile; fileRef = F1000005 /* catalogData.json */; };
 /* End PBXBuildFile section */
@@ -57,6 +70,19 @@
 		F2000020 /* HealthKitManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HealthKitManager.swift"; sourceTree = "<group>"; };
 		F2000021 /* CareSeekerVitalsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerVitalsView.swift"; sourceTree = "<group>"; };
 		F2000022 /* CareSeekerLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerLoginView.swift"; sourceTree = "<group>"; };
+		F2000023 /* CareSeekerCatalogMatrixView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerCatalogMatrixView.swift"; sourceTree = "<group>"; };
+		F2000024 /* VitalDetailHistorySheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "VitalDetailHistorySheet.swift"; sourceTree = "<group>"; };
+		F2000025 /* CareSeekerTrackingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerTrackingView.swift"; sourceTree = "<group>"; };
+		F2000026 /* CareSeekerReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerReportsView.swift"; sourceTree = "<group>"; };
+		F2000027 /* CareSeekerReferralCorporateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerReferralCorporateView.swift"; sourceTree = "<group>"; };
+		F2000028 /* CareSeekerProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerProfileView.swift"; sourceTree = "<group>"; };
+		F2000029 /* CareSeekerCartDrawer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerCartDrawer.swift"; sourceTree = "<group>"; };
+		F2000030 /* CareSeekerCheckoutModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerCheckoutModal.swift"; sourceTree = "<group>"; };
+		F2000031 /* CareSeekerPrescriptionModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerPrescriptionModal.swift"; sourceTree = "<group>"; };
+		F2000032 /* CareSeekerAddressModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerAddressModal.swift"; sourceTree = "<group>"; };
+		F2000033 /* CareSeekerUniversalItemSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerUniversalItemSheet.swift"; sourceTree = "<group>"; };
+		F2000034 /* CareSeekerFloatingCartBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerFloatingCartBar.swift"; sourceTree = "<group>"; };
+		F2000035 /* CareSeekerHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerHomeView.swift"; sourceTree = "<group>"; };
 		F1000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F1000005 /* catalogData.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "catalogData.json"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -97,6 +123,19 @@
 				F2000020 /* HealthKitManager.swift */,
 				F2000021 /* CareSeekerVitalsView.swift */,
 				F2000022 /* CareSeekerLoginView.swift */,
+				F2000023 /* CareSeekerCatalogMatrixView.swift */,
+				F2000024 /* VitalDetailHistorySheet.swift */,
+				F2000025 /* CareSeekerTrackingView.swift */,
+				F2000026 /* CareSeekerReportsView.swift */,
+				F2000027 /* CareSeekerReferralCorporateView.swift */,
+				F2000028 /* CareSeekerProfileView.swift */,
+				F2000029 /* CareSeekerCartDrawer.swift */,
+				F2000030 /* CareSeekerCheckoutModal.swift */,
+				F2000031 /* CareSeekerPrescriptionModal.swift */,
+				F2000032 /* CareSeekerAddressModal.swift */,
+				F2000033 /* CareSeekerUniversalItemSheet.swift */,
+				F2000034 /* CareSeekerFloatingCartBar.swift */,
+				F2000035 /* CareSeekerHomeView.swift */,
 				F1000004 /* Assets.xcassets */,
 				F1000005 /* catalogData.json */,
 				P1000000 /* MedMarg.app */,
@@ -196,6 +235,19 @@
 				B2000020 /* HealthKitManager.swift in Sources */,
 				B2000021 /* CareSeekerVitalsView.swift in Sources */,
 				B2000022 /* CareSeekerLoginView.swift in Sources */,
+				B2000023 /* CareSeekerCatalogMatrixView.swift in Sources */,
+				B2000024 /* VitalDetailHistorySheet.swift in Sources */,
+				B2000025 /* CareSeekerTrackingView.swift in Sources */,
+				B2000026 /* CareSeekerReportsView.swift in Sources */,
+				B2000027 /* CareSeekerReferralCorporateView.swift in Sources */,
+				B2000028 /* CareSeekerProfileView.swift in Sources */,
+				B2000029 /* CareSeekerCartDrawer.swift in Sources */,
+				B2000030 /* CareSeekerCheckoutModal.swift in Sources */,
+				B2000031 /* CareSeekerPrescriptionModal.swift in Sources */,
+				B2000032 /* CareSeekerAddressModal.swift in Sources */,
+				B2000033 /* CareSeekerUniversalItemSheet.swift in Sources */,
+				B2000034 /* CareSeekerFloatingCartBar.swift in Sources */,
+				B2000035 /* CareSeekerHomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
