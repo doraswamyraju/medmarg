@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
-import { Users, Search, MapPin, Phone, UserCheck, ShieldCheck, Heart, FileText, Calendar, Plus, X, ChevronRight, Activity } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Search, MapPin, Phone, UserCheck, ShieldCheck, Heart, FileText, Calendar, Plus, X, ChevronRight, Activity, RefreshCw } from 'lucide-react';
+import { API_BASE, safeFetch } from '../../data/apiConfig';
 
 export default function CustomersDeskTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('ALL'); // 'ALL' | 'ABDM_LINKED' | 'FAMILY_LINKED'
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [dossierTab, setDossierTab] = useState('PERSONAL'); // 'PERSONAL' | 'LOCATIONS' | 'FAMILY' | 'ORDERS'
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [customerForm, setCustomerForm] = useState({
@@ -22,8 +24,27 @@ export default function CustomersDeskTab() {
     allergies: 'Penicillin'
   });
 
-  // Mock Customers Data with Locations, Family Members, and Order History
+  // Customers Data with dynamic backend sync
   const [customers, setCustomers] = useState([
+    {
+      id: 'CUST-1004',
+      name: 'Doraswamy Raju Meesala',
+      phone: '+91 83745 42478',
+      email: 'doraswamyraju.ca@gmail.com',
+      city: 'Tirupati',
+      abhaId: 'ABHA-8374-2026',
+      memberSince: 'Oct 2026',
+      age: 30,
+      gender: 'Male',
+      bloodGroup: 'O+',
+      chronicConditions: 'None',
+      allergies: 'None',
+      locations: [
+        { id: 'LOC-101', label: 'Home Address', fullAddress: 'Plot 42, Air Bypass Road, Tirupati, AP - 517501', pincode: '517501', isPrimary: true }
+      ],
+      familyMembers: [],
+      orderHistory: []
+    },
     {
       id: 'CUST-1001',
       name: 'Rahul Sharma',
@@ -100,25 +121,57 @@ export default function CustomersDeskTab() {
     }
   ]);
 
+  const fetchCustomers = async () => {
+    setIsRefreshing(true);
+    try {
+      const res = await safeFetch(`${API_BASE}/api/v1/customers`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.customers && data.customers.length > 0) {
+          setCustomers(data.customers);
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch real-time customers from backend, using active cache:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+    const interval = setInterval(fetchCustomers, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   const filteredCustomers = customers.filter(c => {
     const q = searchTerm.toLowerCase();
-    const matchesQuery = !q || c.name.toLowerCase().includes(q) || c.phone.includes(q) || c.city.toLowerCase().includes(q) || c.abhaId.toLowerCase().includes(q);
+    const matchesQuery = !q || c.name.toLowerCase().includes(q) || (c.phone && c.phone.includes(q)) || (c.city && c.city.toLowerCase().includes(q)) || (c.abhaId && c.abhaId.toLowerCase().includes(q));
     if (filterType === 'ABDM_LINKED') return matchesQuery && Boolean(c.abhaId);
-    if (filterType === 'FAMILY_LINKED') return matchesQuery && c.familyMembers.length > 0;
+    if (filterType === 'FAMILY_LINKED') return matchesQuery && c.familyMembers && c.familyMembers.length > 0;
     return matchesQuery;
   });
 
-  const handleSaveNewCustomer = (e) => {
+  const handleSaveNewCustomer = async (e) => {
     e.preventDefault();
     const newCust = {
       ...customerForm,
       memberSince: 'Just Now',
       locations: [
-        { id: 'LOC-1', label: 'Primary Home Address', fullAddress: `Main Street, ${customerForm.city}`, pincode: '517501', isPrimary: true }
+        { id: `LOC-${Date.now()}`, label: 'Primary Home Address', fullAddress: `Main Street, ${customerForm.city}`, pincode: '517501', isPrimary: true }
       ],
       familyMembers: [],
       orderHistory: []
     };
+    try {
+      await fetch(`${API_BASE}/api/v1/admin/customers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newCust)
+      });
+    } catch (err) {
+      console.warn('Backend save error:', err);
+    }
     setCustomers(prev => [newCust, ...prev]);
     setShowAddCustomerModal(false);
   };
@@ -131,12 +184,21 @@ export default function CustomersDeskTab() {
           <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A' }}>Registered Patient Customers & Health Profiles Desk</h2>
           <p style={{ color: '#64748B', fontSize: '0.85rem' }}>Manage complete customer records, delivery locations, linked family members, ABHA digital IDs, and historical diagnostic tests.</p>
         </div>
-        <button
-          onClick={() => setShowAddCustomerModal(true)}
-          style={{ padding: '0.65rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem', boxShadow: '0 4px 14px rgba(0,107,112,0.2)' }}
-        >
-          <Plus size={16} color="#FBBF24" /> Register New Customer
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <button
+            onClick={fetchCustomers}
+            disabled={isRefreshing}
+            style={{ padding: '0.65rem 1rem', backgroundColor: '#F1F5F9', color: '#0F172A', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem' }}
+          >
+            <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} /> {isRefreshing ? 'Syncing...' : 'Sync Customers'}
+          </button>
+          <button
+            onClick={() => setShowAddCustomerModal(true)}
+            style={{ padding: '0.65rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem', boxShadow: '0 4px 14px rgba(0,107,112,0.2)' }}
+          >
+            <Plus size={16} color="#FBBF24" /> Register New Customer
+          </button>
+        </div>
       </div>
 
       {/* Filter Chips & Search Bar */}

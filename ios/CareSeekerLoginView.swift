@@ -578,31 +578,42 @@ struct CareSeekerLoginView: View {
         }
     }
 
+    private let apiBaseUrls = [
+        "https://medmarg.sriddha.com",
+        "http://127.0.0.1:5080"
+    ]
+
     private func syncGoogleAuthToBackend(email: String, name: String, googleId: String, phone: String) {
-        guard let url = URL(string: "http://127.0.0.1:5080/api/v1/auth/google") else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body: [String: Any] = [
-            "email": email,
-            "name": name,
-            "googleId": googleId,
-            "phone": phone
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        URLSession.shared.dataTask(with: request) { _, _, _ in }.resume()
+        for base in apiBaseUrls {
+            guard let url = URL(string: "\(base)/api/v1/auth/google") else { continue }
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            let body: [String: Any] = [
+                "email": email,
+                "name": name,
+                "googleId": googleId,
+                "phone": phone
+            ]
+            request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+            URLSession.shared.dataTask(with: request) { _, _, _ in }.resume()
+        }
     }
 
-    private func syncPhoneUpdateToBackend(userId: String, phone: String) {
-        guard let url = URL(string: "http://127.0.0.1:5080/api/v1/auth/update-phone") else { return }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        let body: [String: Any] = [
-            "userId": userId,
-            "phone": phone
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        URLSession.shared.dataTask(with: request) { _, _, _ in }.resume()
+    private func syncPhoneUpdateToBackend(userId: String, phone: String, email: String? = nil, name: String? = nil) {
+        for base in apiBaseUrls {
+            guard let url = URL(string: "\(base)/api/v1/auth/update-phone") else { continue }
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            var body: [String: Any] = [
+                "userId": userId,
+                "phone": phone
+            ]
+            if let email = email { body["email"] = email }
+            if let name = name { body["name"] = name }
+            request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+            URLSession.shared.dataTask(with: request) { _, _, _ in }.resume()
+        }
     }
 }
