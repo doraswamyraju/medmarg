@@ -64,15 +64,15 @@ struct BottomNavbarView: View {
                 } else {
                     // ==========================================
                     // 📱 PATIENT / DEFAULT 5 CORE TABS
-                    // 1. Home, 2. Labs & Tests, 3. Track, 4. Reports, 5. Profile
+                    // 0: Home, 1: Labs & Tests, 2: Vitals (Live), 3: Track, 4: Reports
                     // ==========================================
                     // Tab 0: Home
                     bottomNavTab(index: 0, icon: "house.fill", title: "Home")
 
-                    // Tab 1: Labs & Tests
-                    bottomNavTab(index: 1, icon: "flask.fill", title: "Labs & Tests")
+                    // Tab 1: Tests Matrix
+                    bottomNavTab(index: 1, icon: "flask.fill", title: "Tests")
 
-                    // Tab 2: Track (CENTER HIGHLIGHTED ACTION BUTTON)
+                    // Tab 2: Apple Health Live Vitals (CENTER HIGHLIGHTED ACTION BUTTON)
                     Button(action: { selectedTab = 2 }) {
                         VStack(spacing: 2) {
                             ZStack {
@@ -81,7 +81,7 @@ struct BottomNavbarView: View {
                                     .frame(width: 40, height: 40)
                                     .shadow(color: MedMargTheme.accentEmerald.opacity(0.4), radius: 6, x: 0, y: 2)
 
-                                Image(systemName: "location.fill.viewfinder")
+                                Image(systemName: "heart.fill")
                                     .font(.system(size: 18, weight: .bold))
                                     .foregroundColor(.white)
 
@@ -93,18 +93,18 @@ struct BottomNavbarView: View {
                                     .offset(x: 12, y: -12)
                             }
 
-                            Text("Track")
+                            Text("Vitals")
                                 .font(.system(size: 10, weight: .bold))
                                 .foregroundColor(selectedTab == 2 ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
                         }
                         .frame(maxWidth: .infinity)
                     }
 
-                    // Tab 3: Reports
-                    bottomNavTab(index: 3, icon: "doc.text.fill", title: "Reports")
+                    // Tab 3: Track Radar
+                    bottomNavTab(index: 3, icon: "location.fill.viewfinder", title: "Track")
 
-                    // Tab 4: Profile
-                    bottomNavTab(index: 4, icon: "person.crop.circle.fill", title: "Profile")
+                    // Tab 4: Health Reports
+                    bottomNavTab(index: 4, icon: "doc.text.fill", title: "Reports")
                 }
             }
             .padding(.bottom, 6)
