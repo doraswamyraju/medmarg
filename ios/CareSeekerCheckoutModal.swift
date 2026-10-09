@@ -335,9 +335,9 @@ struct CareSeekerCheckoutModal: View {
                     .foregroundColor(MedMargTheme.slate900)
 
                 VStack(spacing: 8) {
-                    paymentOption(key: "PREPAID_UPI", name: "Prepaid UPI / Google Pay / PhonePe", desc: "Instant confirmation & priority queue", discount: "5% OFF")
-                    paymentOption(key: "DOORSTEP_QR", name: "Doorstep QR Scan (UPI / Card)", desc: "Pay collector via dynamic QR on arrival", discount: "")
-                    paymentOption(key: "CASH", name: "Cash on Collection", desc: "Exact change appreciated", discount: "")
+                    paymentOption(key: "PREPAID_UPI", name: "Prepaid UPI / Google Pay / PhonePe", desc: "Instant confirmation & 5% instant discount", discount: "5% OFF")
+                    paymentOption(key: "DOORSTEP_QR", name: "Doorstep QR Scan (UPI / Cards)", desc: "Pay phlebotomist via dynamic QR on arrival", discount: "")
+                    paymentOption(key: "NET_BANKING_CARD", name: "Credit / Debit Cards & Net Banking", desc: "Secure 256-bit encrypted gateway", discount: "")
                 }
             }
             .padding(16)

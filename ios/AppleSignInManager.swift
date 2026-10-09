@@ -67,6 +67,21 @@ final class AppleSignInManager: NSObject, ObservableObject, ASAuthorizationContr
     }
     
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        let nsError = error as NSError
+        // Handle Simulator error 1000 or missing iCloud account gracefully
+        if nsError.domain == "com.apple.AuthenticationServices.AuthorizationError" && (nsError.code == 1000 || nsError.code == 1001) {
+            #if targetEnvironment(simulator)
+            let fallback = AppleSignInResult(
+                identityToken: "simulated_apple_jwt_token",
+                userIdentifier: "usr_apple_simulator_7891",
+                email: "rahul.apple@privaterelay.appleid.com",
+                fullName: AppleUserFullName(givenName: "Rahul", familyName: "Sharma")
+            )
+            completion?(.success(fallback))
+            completion = nil
+            return
+            #endif
+        }
         completion?(.failure(error))
         completion = nil
     }

@@ -98,6 +98,7 @@ struct CareSeekerTrackingView: View {
     @State private var mapRecenterTrigger: UUID = UUID()
     @State private var calculatedDistance: String = "1.8 km"
     @State private var calculatedEta: String = "14 Mins"
+    @State private var showFullScreenMap: Bool = false
 
     private var currentOrder: LiveOrderModel {
         guard !allOrders.isEmpty else {
@@ -161,6 +162,9 @@ struct CareSeekerTrackingView: View {
         .background(MedMargTheme.slate50)
         .onAppear {
             isPulsingRadar = true
+        }
+        .fullScreenCover(isPresented: $showFullScreenMap) {
+            fullScreenTrackingModal
         }
     }
 
@@ -306,6 +310,16 @@ struct CareSeekerTrackingView: View {
                 // Recenter Map Button
                 Button(action: { mapRecenterTrigger = UUID() }) {
                     Image(systemName: "location.north.line.fill")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(MedMargTheme.primaryTeal)
+                        .padding(8)
+                        .background(MedMargTheme.lightTeal)
+                        .clipShape(Circle())
+                }
+
+                // Full Screen Expand Button
+                Button(action: { showFullScreenMap = true }) {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(MedMargTheme.primaryTeal)
                         .padding(8)
@@ -552,6 +566,144 @@ struct CareSeekerTrackingView: View {
             .background(Color.white)
             .cornerRadius(20)
             .overlay(RoundedRectangle(cornerRadius: 20).stroke(MedMargTheme.slate200, lineWidth: 1))
+        }
+    }
+
+    // ==========================================
+    // 🌐 FULL SCREEN LIVE TRACKING RADAR MODAL
+    // ==========================================
+    private var fullScreenTrackingModal: some View {
+        ZStack(alignment: .top) {
+            // Full Screen MapKit View
+            LivePhlebotomistMKMapView(
+                phleboCoordinate: currentOrder.phleboCoord,
+                doorstepCoordinate: currentOrder.doorstepCoord,
+                phleboName: currentOrder.phleboName,
+                doorstepAddress: currentOrder.address,
+                recenterTrigger: mapRecenterTrigger,
+                onRouteCalculated: { dist, eta in
+                    self.calculatedDistance = dist
+                    self.calculatedEta = eta
+                }
+            )
+            .ignoresSafeArea()
+
+            // Floating Top Header Bar (Close, Title, Recenter)
+            VStack(spacing: 12) {
+                HStack(spacing: 10) {
+                    // Close / Minimize Button
+                    Button(action: { showFullScreenMap = false }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundColor(MedMargTheme.slate900)
+                            .background(Color.white.clipShape(Circle()))
+                            .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text("Order #\(currentOrder.id)")
+                                .font(.system(size: 14, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate900)
+
+                            Text("LIVE GPS")
+                                .font(.system(size: 9, weight: .black))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(Color.red)
+                                .cornerRadius(4)
+                        }
+
+                        Text("Enroute to \(currentOrder.address)")
+                            .font(.system(size: 11))
+                            .foregroundColor(MedMargTheme.slate700)
+                            .lineLimit(1)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.white.opacity(0.95))
+                    .cornerRadius(12)
+                    .shadow(color: Color.black.opacity(0.1), radius: 6, x: 0, y: 3)
+
+                    Spacer()
+
+                    // Recenter Button
+                    Button(action: { mapRecenterTrigger = UUID() }) {
+                        Image(systemName: "location.north.line.fill")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                            .padding(10)
+                            .background(Color.white)
+                            .clipShape(Circle())
+                            .shadow(color: Color.black.opacity(0.15), radius: 6, x: 0, y: 3)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 10)
+
+                Spacer()
+
+                // Floating Bottom Info HUD
+                VStack(spacing: 12) {
+                    HStack(spacing: 12) {
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(Color.green)
+                                .frame(width: 8, height: 8)
+                                .scaleEffect(isPulsingRadar ? 1.2 : 0.8)
+                                .animation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true), value: isPulsingRadar)
+                            Text("\(calculatedDistance) • ETA \(calculatedEta)")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate900)
+                        }
+
+                        Spacer()
+
+                        Text("IoT: \(currentOrder.tempTelemetry)")
+                            .font(.system(size: 11, weight: .bold))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.green.opacity(0.15))
+                            .foregroundColor(Color(red: 0.03, green: 0.5, blue: 0.3))
+                            .cornerRadius(6)
+                    }
+
+                    Divider()
+
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(currentOrder.phleboName)
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate900)
+                            Text("Handover OTP: \(currentOrder.handoverOtp)")
+                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                .foregroundColor(MedMargTheme.primaryTeal)
+                        }
+
+                        Spacer()
+
+                        Button(action: onOrderCall) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "phone.fill")
+                                Text("Call Agent")
+                            }
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(MedMargTheme.primaryTeal)
+                            .cornerRadius(10)
+                        }
+                    }
+                }
+                .padding(16)
+                .background(Color.white.opacity(0.96))
+                .cornerRadius(18)
+                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 4)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 24)
+            }
         }
     }
 }
