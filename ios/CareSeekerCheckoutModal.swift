@@ -34,7 +34,7 @@ struct CareSeekerCheckoutModal: View {
     @State private var isExpressPhlebotomy: Bool = false
 
     // Payment Mode
-    @State private var paymentMode: String = "PREPAID_UPI" // PREPAID_UPI, DOORSTEP_QR, CASH
+    @State private var paymentMode: String = "RAZORPAY_ONLINE" // RAZORPAY_ONLINE, RAZORPAY_DOORSTEP_QR
     @State private var isSubmitting: Bool = false
 
     private var cartTotal: Int {
@@ -328,17 +328,50 @@ struct CareSeekerCheckoutModal: View {
             .cornerRadius(16)
             .overlay(RoundedRectangle(cornerRadius: 16).stroke(MedMargTheme.slate200, lineWidth: 1))
 
-            // Payment Mode
+            // Razorpay Payment Integration
             VStack(alignment: .leading, spacing: 12) {
-                Text("Payment Method")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(MedMargTheme.slate900)
+                HStack {
+                    Text("Payment Method")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(MedMargTheme.slate900)
+
+                    Spacer()
+
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.shield.fill")
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                            .font(.system(size: 11))
+                        Text("Razorpay Verified")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                    }
+                }
 
                 VStack(spacing: 8) {
-                    paymentOption(key: "PREPAID_UPI", name: "Prepaid UPI / Google Pay / PhonePe", desc: "Instant confirmation & 5% instant discount", discount: "5% OFF")
-                    paymentOption(key: "DOORSTEP_QR", name: "Doorstep QR Scan (UPI / Cards)", desc: "Pay phlebotomist via dynamic QR on arrival", discount: "")
-                    paymentOption(key: "NET_BANKING_CARD", name: "Credit / Debit Cards & Net Banking", desc: "Secure 256-bit encrypted gateway", discount: "")
+                    paymentOption(
+                        key: "RAZORPAY_ONLINE",
+                        name: "Razorpay Instant Checkout (UPI / Cards / NetBanking)",
+                        desc: "Google Pay, PhonePe, Paytm, Visa, Mastercard, NetBanking",
+                        discount: "5% OFF"
+                    )
+                    paymentOption(
+                        key: "RAZORPAY_DOORSTEP_QR",
+                        name: "Razorpay Doorstep Dynamic QR",
+                        desc: "Phlebotomist generates live Razorpay QR code at your doorstep",
+                        discount: ""
+                    )
                 }
+
+                // Razorpay Security Guarantee Footer
+                HStack(spacing: 6) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(MedMargTheme.slate500)
+                    Text("100% Secure 256-bit Encrypted Payments powered by Razorpay")
+                        .font(.system(size: 10))
+                        .foregroundColor(MedMargTheme.slate500)
+                }
+                .padding(.top, 4)
             }
             .padding(16)
             .background(Color.white)
@@ -467,7 +500,7 @@ struct CareSeekerCheckoutModal: View {
                 handoverOtp: "\(Int.random(in: 1000...9999))",
                 items: cartItems.map { LiveOrderItem(id: $0.id, name: $0.title, price: $0.price) },
                 totalAmount: cartTotal,
-                paymentStatus: paymentMode == "PREPAID_UPI" ? "PAID" : "PENDING_DOORSTEP"
+                paymentStatus: paymentMode == "RAZORPAY_ONLINE" ? "PAID" : "PENDING_DOORSTEP"
             )
             onOrderSuccess(newOrder)
             isOpen = false

@@ -2248,7 +2248,10 @@ struct FleetDeskView: View {
 
     @State private var isOnDuty: Bool = true
     @State private var completedPickups: Set<String> = []
-    @State private var currentStep: [String: Int] = ["PK-01": 2, "PK-02": 1, "PK-03": 0]
+    @State private var paidPickups: Set<String> = []
+    @State private var activeCollectPickup: (id: String, name: String, time: String, address: String, phone: String, tests: String, tubes: [String], fasting: String)? = nil
+    @State private var isSimulatingPayment: Bool = false
+    @State private var paymentSuccessBanner: String? = nil
 
     let assignedPickups = [
         (id: "PK-01", name: "Rahul Sharma", time: "07:30 AM - 08:30 AM", address: "Plot 42, Air Bypass Rd, Tirupati", phone: "+91 98765 43210", tests: "Thyrocare Aarogyam 1.3 (SST Serum + EDTA)", tubes: ["Yellow SST (Serum)", "Lavender (EDTA)", "Grey (Sugar)"], fasting: "YES (10h Verified)"),
@@ -2358,6 +2361,7 @@ struct FleetDeskView: View {
 
                     ForEach(assignedPickups, id: \.id) { pickup in
                         let isDone = completedPickups.contains(pickup.id)
+                        let isPaid = paidPickups.contains(pickup.id) || pickup.id == "PK-02"
 
                         VStack(alignment: .leading, spacing: 12) {
                             HStack {
@@ -2375,9 +2379,30 @@ struct FleetDeskView: View {
 
                                 Spacer()
 
+                                if isPaid {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "checkmark.seal.fill")
+                                        Text("RAZORPAY PAID")
+                                    }
+                                    .font(.system(size: 9, weight: .black))
+                                    .foregroundColor(Color.green)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.green.opacity(0.12))
+                                    .cornerRadius(4)
+                                } else {
+                                    Text("PAYMENT PENDING")
+                                        .font(.system(size: 9, weight: .black))
+                                        .foregroundColor(Color.orange)
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(Color.orange.opacity(0.12))
+                                        .cornerRadius(4)
+                                }
+
                                 if isDone {
-                                    Text("✓ COMPLETED")
-                                        .font(.system(size: 10, weight: .black))
+                                    Text("✓ COLLECTED")
+                                        .font(.system(size: 9, weight: .black))
                                         .foregroundColor(MedMargTheme.accentEmerald)
                                         .padding(.horizontal, 6)
                                         .padding(.vertical, 2)
@@ -2422,16 +2447,12 @@ struct FleetDeskView: View {
                                         UIApplication.shared.open(url)
                                     }
                                 }) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "phone.fill")
-                                        Text("Call")
-                                    }
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(MedMargTheme.primaryTeal)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 7)
-                                    .background(MedMargTheme.lightTeal)
-                                    .cornerRadius(8)
+                                    Image(systemName: "phone.fill")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(MedMargTheme.primaryTeal)
+                                        .padding(8)
+                                        .background(MedMargTheme.lightTeal)
+                                        .cornerRadius(8)
                                 }
 
                                 Button(action: {
@@ -2440,16 +2461,36 @@ struct FleetDeskView: View {
                                         UIApplication.shared.open(url)
                                     }
                                 }) {
-                                    HStack(spacing: 4) {
-                                        Image(systemName: "map.fill")
-                                        Text("Navigate")
+                                    Image(systemName: "map.fill")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(MedMargTheme.primaryTeal)
+                                        .padding(8)
+                                        .background(MedMargTheme.lightTeal)
+                                        .cornerRadius(8)
+                                }
+
+                                // 💳 Razorpay POS Doorstep Collect Button
+                                if !isPaid {
+                                    Button(action: {
+                                        activeCollectPickup = pickup
+                                    }) {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "qrcode.viewfinder")
+                                            Text("Razorpay POS")
+                                        }
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 7)
+                                        .background(
+                                            LinearGradient(
+                                                colors: [Color(red: 0.05, green: 0.35, blue: 0.8), Color(red: 0.1, green: 0.5, blue: 0.9)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .cornerRadius(8)
                                     }
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 7)
-                                    .background(MedMargTheme.primaryTeal)
-                                    .cornerRadius(8)
                                 }
 
                                 Spacer()
@@ -2464,7 +2505,7 @@ struct FleetDeskView: View {
                                     Text(isDone ? "Reopen" : "Scan & Collect")
                                         .font(.system(size: 12, weight: .bold))
                                         .foregroundColor(.white)
-                                        .padding(.horizontal, 14)
+                                        .padding(.horizontal, 12)
                                         .padding(.vertical, 7)
                                         .background(isDone ? MedMargTheme.slate500 : MedMargTheme.accentEmerald)
                                         .cornerRadius(8)
@@ -2512,5 +2553,140 @@ struct FleetDeskView: View {
             }
         }
         .background(MedMargTheme.slate50)
+        .sheet(item: Binding(
+            get: { activeCollectPickup.map { IdentifiablePickup(p: $0) } },
+            set: { _ in activeCollectPickup = nil }
+        )) { item in
+            razorpayAgentCollectModal(pickup: item.p)
+        }
     }
+
+    private func razorpayAgentCollectModal(pickup: (id: String, name: String, time: String, address: String, phone: String, tests: String, tubes: [String], fasting: String)) -> some View {
+        NavigationStack {
+            VStack(spacing: 20) {
+                // Razorpay Header Badge
+                HStack(spacing: 8) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color(red: 0.05, green: 0.35, blue: 0.8))
+                            .frame(width: 28, height: 28)
+                        Image(systemName: "bolt.fill")
+                            .foregroundColor(.white)
+                            .font(.system(size: 14))
+                    }
+
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Razorpay POS Smart Terminal")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(MedMargTheme.slate900)
+                        Text("Doorstep Dynamic UPI QR & Payment Link Generator")
+                            .font(.system(size: 11))
+                            .foregroundColor(MedMargTheme.slate500)
+                    }
+                }
+                .padding(.top, 10)
+
+                // Amount Display Card
+                VStack(spacing: 4) {
+                    Text("TOTAL AMOUNT DUE")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(MedMargTheme.slate500)
+
+                    Text("₹1,499")
+                        .font(.system(size: 32, weight: .black))
+                        .foregroundColor(Color(red: 0.05, green: 0.35, blue: 0.8))
+
+                    Text("Order #\(pickup.id) • \(pickup.name)")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(MedMargTheme.slate700)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity)
+                .background(Color(red: 0.05, green: 0.35, blue: 0.8).opacity(0.06))
+                .cornerRadius(16)
+
+                // Dynamic Razorpay UPI QR Box
+                VStack(spacing: 10) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color.white)
+                            .frame(width: 200, height: 200)
+                            .shadow(color: Color.black.opacity(0.08), radius: 8, x: 0, y: 4)
+
+                        VStack(spacing: 8) {
+                            Image(systemName: "qrcode")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 140, height: 140)
+                                .foregroundColor(Color(red: 0.05, green: 0.35, blue: 0.8))
+
+                            Text("Scan via any UPI App")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate500)
+                        }
+                    }
+
+                    HStack(spacing: 6) {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                        Text("Waiting for Razorpay webhook confirmation...")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(MedMargTheme.slate700)
+                    }
+                }
+
+                // Action Buttons: WhatsApp Link & Mark Paid
+                VStack(spacing: 10) {
+                    Button(action: {
+                        if let url = URL(string: "https://wa.me/\(pickup.phone.filter { "0123456789".contains($0) })?text=Please%20pay%20your%20MedMarg%20order%20bill%20of%20INR%201499%20via%20Razorpay:%20https://rzp.io/i/mm\(pickup.id)") {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "message.fill")
+                            Text("Send Razorpay WhatsApp Payment Link")
+                        }
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color(red: 0.15, green: 0.68, blue: 0.38))
+                        .cornerRadius(12)
+                    }
+
+                    Button(action: {
+                        paidPickups.insert(pickup.id)
+                        activeCollectPickup = nil
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.seal.fill")
+                            Text("Simulate Payment Received (₹1,499)")
+                        }
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(MedMargTheme.primaryTeal)
+                        .cornerRadius(12)
+                    }
+                }
+                .padding(.horizontal, 16)
+
+                Spacer()
+            }
+            .padding(16)
+            .background(MedMargTheme.slate50)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { activeCollectPickup = nil }
+                }
+            }
+        }
+    }
+}
+
+struct IdentifiablePickup: Identifiable {
+    let id = UUID()
+    let p: (id: String, name: String, time: String, address: String, phone: String, tests: String, tubes: [String], fasting: String)
 }
