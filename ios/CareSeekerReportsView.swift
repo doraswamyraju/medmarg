@@ -39,6 +39,7 @@ struct BiomarkerTrendSeries {
 }
 
 struct CareSeekerReportsView: View {
+    var user: UserProfile? = nil
     @State private var reports: [DiagnosticReportModel] = [
         DiagnosticReportModel(
             id: "REP-8821",
@@ -142,7 +143,7 @@ struct CareSeekerReportsView: View {
         }
         .background(MedMargTheme.slate50)
         .sheet(item: $selectedReportForPreview) { rep in
-            NABLReportViewerSheet(report: rep)
+            NABLReportViewerSheet(report: rep, patientName: user?.name ?? "Care Seeker")
         }
     }
 
@@ -433,6 +434,7 @@ struct CareSeekerReportsView: View {
 
 struct NABLReportViewerSheet: View {
     let report: DiagnosticReportModel
+    var patientName: String = "Care Seeker"
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -460,7 +462,7 @@ struct NABLReportViewerSheet: View {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text("Report ID: \(report.id)")
                                     .font(.system(size: 11, weight: .bold))
-                                Text("Patient: Rahul Sharma • Age: 34 • Male")
+                                Text("Patient: \(patientName) • Age: 34 • Verified")
                                     .font(.system(size: 11))
                             }
                             Spacer()

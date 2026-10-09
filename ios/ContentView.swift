@@ -183,7 +183,7 @@ struct ContentView: View {
                         Group {
                             switch user.role {
                             case .patient:
-                                patientBodyView
+                                patientBodyView(user: user)
                             case .doctor:
                                 DoctorWorkdeskView(user: user, onLogout: logout)
                             case .admin:
@@ -702,7 +702,7 @@ struct ContentView: View {
     // 📱 PATIENT BODY VIEW (7 CORE WEB-PARITY TABS)
     // 0: Home, 1: Tests Matrix, 2: Apple Health Vitals, 3: Live Track Radar, 4: Health Vault Reports, 5: Referrals & Corporate, 6: Profile & Family
     // ==========================================
-    private var patientBodyView: some View {
+    private func patientBodyView(user: UserProfile) -> some View {
         Group {
             switch selectedTab {
             case 0:
@@ -744,11 +744,12 @@ struct ContentView: View {
                     }
                 )
             case 4:
-                CareSeekerReportsView()
+                CareSeekerReportsView(user: user)
             case 5:
                 CareSeekerReferralCorporateView()
             case 6:
                 CareSeekerProfileView(
+                    user: user,
                     onLogout: logout,
                     onOpenAddressModal: { showAddressModal = true }
                 )
