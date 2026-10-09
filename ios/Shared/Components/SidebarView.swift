@@ -77,7 +77,7 @@ struct SidebarView: View {
                     // Profile Options Button
                     Button(action: {
                         showSidebar = false
-                        selectedTab = 7 // Users / Profile tab
+                        selectedTab = (user.role == .admin) ? 7 : 6
                     }) {
                         HStack(spacing: 10) {
                             Image(systemName: "person.crop.circle.fill")
