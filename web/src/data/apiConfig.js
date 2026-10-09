@@ -26,3 +26,19 @@ export async function safeFetch(url, options = {}, timeoutMs = 3000) {
         throw err;
     }
 }
+
+/**
+ * Safe JSON parser helper to prevent Unexpected '<' token errors on HTML fallback
+ */
+export async function safeJson(response) {
+    if (!response || !response.ok) return null;
+    const ct = response.headers.get('content-type');
+    if (ct && !ct.includes('application/json')) {
+        return null;
+    }
+    try {
+        return await response.json();
+    } catch (e) {
+        return null;
+    }
+}

@@ -12,7 +12,7 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
-import { API_BASE } from '../data/apiConfig';
+import { API_BASE, safeJson } from '../data/apiConfig';
 
 export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
   const [identifier, setIdentifier] = useState('');
@@ -49,9 +49,9 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
           password: password
         })
       });
-      const data = await res.json();
+      const data = await safeJson(res);
 
-      if (data.user) {
+      if (data && data.user) {
         setTimeout(() => {
           setLoading(false);
           onLoginSuccess(data.user);
@@ -137,9 +137,9 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
         })
       });
 
-      const data = await res.json();
+      const data = await safeJson(res);
 
-      if (data.success && data.user) {
+      if (data && data.success && data.user) {
         onLoginSuccess(data.user);
       } else {
         const fallbackG = {
