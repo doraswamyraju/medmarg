@@ -26,15 +26,25 @@ struct SavedAddressItem: Identifiable, Equatable {
 }
 
 struct CareSeekerProfileView: View {
+    let user: UserProfile
     let onLogout: () -> Void
     let onOpenAddressModal: () -> Void
 
-    @State private var profileName: String = "Rahul Sharma"
-    @State private var phone: String = "+91 98765 43210"
-    @State private var email: String = "rahul.sharma@medmarg.in"
+    @State private var profileName: String
+    @State private var phone: String
+    @State private var email: String
     @State private var bloodGroup: String = "O+ (Positive)"
     @State private var preferredLanguage: String = "Telugu & English"
     @State private var needleSensitivity: String = "Normal (Butterfly Needle)"
+
+    init(user: UserProfile, onLogout: @escaping () -> Void, onOpenAddressModal: @escaping () -> Void) {
+        self.user = user
+        self.onLogout = onLogout
+        self.onOpenAddressModal = onOpenAddressModal
+        self._profileName = State(initialValue: user.name.isEmpty ? "Care Seeker" : user.name)
+        self._phone = State(initialValue: user.phone.isEmpty ? "+91 98765 43210" : user.phone)
+        self._email = State(initialValue: user.email.isEmpty ? "care@medmarg.com" : user.email)
+    }
 
     // ABHA
     private let abhaNumber: String = "91-4829-1029-4820"
