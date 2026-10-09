@@ -387,7 +387,7 @@ struct CareSeekerLoginView: View {
                 .padding(.horizontal, 10)
 
                 Button(action: savePhoneAndCompleteOAuth) {
-                    Text("Save & Continue")
+                    Text("Save & Continue to Patient Panel")
                         .font(.system(size: 15, weight: .bold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -472,45 +472,40 @@ struct CareSeekerLoginView: View {
         AppleSignInManager.shared.startAppleSignIn { result in
             switch result {
             case .success(let appleResult):
-                let email = appleResult.email ?? "patient.apple@icloud.com"
-                let name = "\(appleResult.fullName?.givenName ?? "Rahul") \(appleResult.fullName?.familyName ?? "Sharma")".trimmingCharacters(in: .whitespaces)
+                let email = (appleResult.email ?? "patient.apple@icloud.com").lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+                let name = "\(appleResult.fullName?.givenName ?? "") \(appleResult.fullName?.familyName ?? "")".trimmingCharacters(in: .whitespaces)
                 
-                let userObj = UserProfile(
-                    id: "usr_apple_\(appleResult.userIdentifier.prefix(8))",
-                    name: name.isEmpty ? "Rahul Sharma" : name,
-                    username: "apple_user",
-                    email: email,
-                    phone: "", // Check if saved in database or prompt
-                    password: "oauth_apple_verified",
-                    role: .patient,
-                    organization: "Care Seeker (Apple ID)",
-                    status: "Active",
-                    createdAt: "Today"
-                )
-
-                // Check if existing user with this email has a phone number
-                if let existing = users.first(where: { $0.email.lowercased() == email.lowercased() && !cleanDigitsOnly($0.phone).isEmpty }) {
+                // 1. Check if user already exists in registered accounts
+                if let existing = self.users.first(where: {
+                    $0.email.lowercased() == email ||
+                    (!email.isEmpty && $0.username.lowercased() == email.components(separatedBy: "@").first ?? "")
+                }) {
+                    // Log into their respective role dashboard directly
                     self.loggedInUser = existing
-                } else {
-                    self.pendingOAuthUser = userObj
-                    self.showPhoneCollectionSheet = true
+                    return
                 }
 
-            case .failure:
-                // Handle gracefully - provide Apple ID login
-                let fallback = UserProfile(
-                    id: "usr_apple_patient",
-                    name: "Rahul Sharma",
-                    username: "apple_user",
-                    email: "patient.apple@icloud.com",
-                    phone: "+91 98765 43210",
+                // 2. User does not exist -> Prompt for phone number and route to Patient panel
+                let newPatient = UserProfile(
+                    id: "usr_apple_\(appleResult.userIdentifier.prefix(8))",
+                    name: name.isEmpty ? "Apple User" : name,
+                    username: email.components(separatedBy: "@").first ?? "apple_user",
+                    email: email,
+                    phone: "",
                     password: "oauth_apple_verified",
                     role: .patient,
                     organization: "Care Seeker (Apple ID)",
                     status: "Active",
                     createdAt: "Today"
                 )
-                self.loggedInUser = fallback
+                self.pendingOAuthUser = newPatient
+                self.showPhoneCollectionSheet = true
+
+            case .failure(let err):
+                let nsError = err as NSError
+                if nsError.code != ASAuthorizationError.canceled.rawValue {
+                    self.errorMessage = "Apple Sign-In: \(err.localizedDescription)"
+                }
             }
         }
     }
@@ -520,29 +515,36 @@ struct CareSeekerLoginView: View {
         GoogleSignInManager.shared.startGoogleSignIn { result in
             switch result {
             case .success(let gUser):
-                let userObj = UserProfile(
-                    id: "usr_g_\(gUser.googleId.prefix(10))",
+                let emailLower = gUser.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+                
+                // 1. Check if user already exists in database / registered accounts
+                if let existing = self.users.first(where: {
+                    $0.email.lowercased() == emailLower ||
+                    (!emailLower.isEmpty && $0.username.lowercased() == emailLower.components(separatedBy: "@").first ?? "")
+                }) {
+                    // Sync with Backend Firestore API
+                    self.syncGoogleAuthToBackend(email: gUser.email, name: gUser.name, googleId: gUser.googleId, phone: existing.phone)
+                    // Log in immediately to the existing user's respective role dashboard (Admin, Doctor, Lab, Scan, Pharma, Agent, Patient)
+                    self.loggedInUser = existing
+                    return
+                }
+
+                // 2. User does NOT exist -> Ask for phone number, then route to Patient (Customer) Panel
+                let newPatient = UserProfile(
+                    id: "usr_g_\(gUser.googleId.prefix(8))",
                     name: gUser.name.isEmpty ? "Google User" : gUser.name,
-                    username: gUser.email.components(separatedBy: "@").first ?? "google_user",
-                    email: gUser.email,
+                    username: emailLower.components(separatedBy: "@").first ?? "google_user",
+                    email: emailLower,
                     phone: "",
                     password: "oauth_google_verified",
-                    role: .patient,
+                    role: .patient, // New user becomes a patient in customer panel
                     organization: "Care Seeker (Google ID)",
                     status: "Active",
                     createdAt: "Today"
                 )
 
-                // Sync with Backend Firestore API
-                self.syncGoogleAuthToBackend(email: gUser.email, name: gUser.name, googleId: gUser.googleId, phone: "")
-
-                // Check if existing user with this email has a phone number
-                if let existing = self.users.first(where: { $0.email.lowercased() == gUser.email.lowercased() && !self.cleanDigitsOnly($0.phone).isEmpty }) {
-                    self.loggedInUser = existing
-                } else {
-                    self.pendingOAuthUser = userObj
-                    self.showPhoneCollectionSheet = true
-                }
+                self.pendingOAuthUser = newPatient
+                self.showPhoneCollectionSheet = true
 
             case .failure(let err):
                 let nsError = err as NSError
@@ -563,9 +565,11 @@ struct CareSeekerLoginView: View {
         if var user = pendingOAuthUser {
             let fullPhone = "+91 \(clean)"
             user.phone = fullPhone
+            user.role = .patient // Ensure always patient (customer) panel for new signups
             
             // Sync phone update to Backend Firestore database
             syncPhoneUpdateToBackend(userId: user.id, phone: fullPhone)
+            syncGoogleAuthToBackend(email: user.email, name: user.name, googleId: user.id, phone: fullPhone)
             
             loggedInUser = user
             showPhoneCollectionSheet = false
