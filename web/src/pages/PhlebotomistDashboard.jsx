@@ -1,20 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Bike, 
-  Thermometer, 
-  Calendar, 
+  Zap, 
   Package, 
   Wallet, 
   Building2, 
-  Zap, 
-  Activity, 
-  ShieldCheck, 
+  Power, 
+  Thermometer, 
   RefreshCw, 
-  MapPin, 
-  Clock, 
-  Power,
+  ChevronLeft, 
+  ChevronRight,
+  MapPin,
+  Sparkles,
+  ShieldCheck,
   BatteryCharging,
-  Sparkles
+  Clock,
+  ArrowRight
 } from 'lucide-react';
 
 import PhlebotomistPickupsTab from '../components/phlebotomist/PhlebotomistPickupsTab';
@@ -28,6 +29,7 @@ import { API_BASE, safeFetch, safeJson } from '../data/apiConfig';
 
 export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', onSwitchRole, onLogout }) {
   const [activeTab, setActiveTab] = useState('ROSTER'); // 'ROSTER' | 'BROADCAST' | 'INVENTORY' | 'WALLET' | 'LAB_HANDOVER'
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isOnDuty, setIsOnDuty] = useState(true);
   const [completedPickups, setCompletedPickups] = useState(new Set());
   const [activePickupModal, setActivePickupModal] = useState(null);
@@ -149,28 +151,24 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
   const refreshAgentData = async () => {
     setIsRefreshing(true);
     try {
-      // 1. Fetch Roster
       const rRes = await safeFetch(`${API_BASE}/api/v1/agent/roster`);
       const rData = await safeJson(rRes);
       if (rData && rData.roster && rData.roster.length > 0) {
         setPickups(rData.roster);
       }
 
-      // 2. Fetch Broadcast Jobs
       const bRes = await safeFetch(`${API_BASE}/api/v1/agent/broadcast-jobs`);
       const bData = await safeJson(bRes);
       if (bData && bData.jobs && bData.jobs.length > 0) {
         setBroadcastJobs(bData.jobs);
       }
 
-      // 3. Fetch Inventory
       const iRes = await safeFetch(`${API_BASE}/api/v1/agent/inventory`);
       const iData = await safeJson(iRes);
       if (iData && iData.inventory) {
         setInventory(iData.inventory);
       }
 
-      // 4. Fetch Wallet
       const wRes = await safeFetch(`${API_BASE}/api/v1/agent/wallet`);
       const wData = await safeJson(wRes);
       if (wData && wData.wallet) {
@@ -210,7 +208,6 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
     setCompletedPickups(prev => new Set([...prev, orderId]));
     setPickups(prev => prev.map(p => p.id === orderId ? { ...p, status: 'SAMPLE_COLLECTED', paymentStatus: 'PAID_DOORSTEP_QR' } : p));
     
-    // Update wallet stats
     setWallet(prev => ({
       ...prev,
       todayEarnings: prev.todayEarnings + 350,
@@ -307,247 +304,292 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
     setPickups(prev => prev.map(p => ({ ...p, status: 'TRANSFERRED_TO_LAB' })));
   };
 
+  const navigationItems = [
+    { key: 'ROSTER', label: 'Assigned Pickups', icon: Bike, badge: pickups.length },
+    { key: 'BROADCAST', label: 'Broadcast Overflow', icon: Zap, badge: `${broadcastJobs.length} Live` },
+    { key: 'INVENTORY', label: 'In-Hand Supplies', icon: Package, badge: `${inventory.length}` },
+    { key: 'WALLET', label: 'Earnings & Wallet', icon: Wallet, badge: `₹${wallet.availableCashoutBalance?.toLocaleString('en-IN')}` },
+    { key: 'LAB_HANDOVER', label: 'NABL Lab Handover', icon: Building2, badge: '2 Labs' }
+  ];
+
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', color: '#0F172A', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', color: '#0F172A', fontFamily: 'Inter, system-ui, sans-serif' }}>
       
-      {/* Top Navigation Header */}
-      <header style={{ backgroundColor: '#004D40', color: '#FFF', padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ backgroundColor: '#FFFFFF', padding: '4px 8px', borderRadius: '10px', display: 'flex', alignItems: 'center' }}>
-            <img src="/logo.png" alt="MedMarg" style={{ height: '28px', objectFit: 'contain' }} />
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
-                {agentType === 'FREELANCE' ? '⚡ FREELANCE GIG AGENT' : '🛵 IN-HOUSE PHLEBOTOMIST FLEET'}
-              </span>
-              <span style={{ fontSize: '0.75rem', color: '#80CBC4', fontWeight: '700' }}>Hero Electric EV (AP 04 EZ 9182)</span>
+      {/* STANDARD MEDMARG LEFT SIDEBAR */}
+      <aside
+        style={{
+          width: sidebarCollapsed ? '80px' : '260px',
+          backgroundColor: '#FFFFFF',
+          borderRight: '1px solid #E2E8F0',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          transition: 'width 0.2s ease',
+          position: 'sticky',
+          top: 0,
+          height: '100vh',
+          zIndex: 40,
+          flexShrink: 0
+        }}
+      >
+        <div>
+          {/* Top Logo & Role Badge */}
+          <div style={{ padding: '1.25rem', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ backgroundColor: '#FFFFFF', padding: '2px 4px', borderRadius: '8px', display: 'flex', alignItems: 'center' }}>
+                <img src="/logo.png" alt="MedMarg" style={{ height: '28px', objectFit: 'contain' }} />
+              </div>
+              {!sidebarCollapsed && (
+                <div>
+                  <div style={{ fontSize: '0.7rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '900', display: 'inline-block' }}>
+                    {agentType === 'FREELANCE' ? 'FREELANCE AGENT' : 'COLLECTION AGENT'}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: '800', color: '#64748B', marginTop: '2px' }}>
+                    Fleet Console
+                  </div>
+                </div>
+              )}
             </div>
-            <h2 style={{ fontSize: '1.15rem', fontWeight: '900', marginTop: '0.1rem' }}>
-              {user?.name || 'Ramesh Kumar'} <span style={{ fontSize: '0.85rem', color: '#80CBC4', fontWeight: '700' }}>({user?.id || 'AG-01'})</span>
-            </h2>
+
+            <button
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#94A3B8',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '4px'
+              }}
+            >
+              {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            </button>
+          </div>
+
+          {/* Navigation Menu */}
+          <nav style={{ padding: '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            {navigationItems.map(item => {
+              const IconComp = item.icon;
+              const isActive = activeTab === item.key;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => setActiveTab(item.key)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.85rem',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '12px',
+                    border: 'none',
+                    backgroundColor: isActive ? '#006B70' : 'transparent',
+                    color: isActive ? '#FFFFFF' : '#475569',
+                    fontWeight: isActive ? '800' : '600',
+                    fontSize: '0.88rem',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'all 0.15s ease',
+                    justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                    width: '100%'
+                  }}
+                >
+                  <IconComp size={18} color={isActive ? '#FBBF24' : '#64748B'} />
+                  {!sidebarCollapsed && <span style={{ flex: 1 }}>{item.label}</span>}
+                  {!sidebarCollapsed && item.badge !== undefined && (
+                    <span style={{ fontSize: '0.72rem', backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : '#F1F5F9', color: isActive ? '#FFFFFF' : '#475569', padding: '0.15rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* User Card & Logout Bottom of Sidebar */}
+        <div style={{ padding: '1rem', borderTop: '1px solid #F1F5F9', backgroundColor: '#FFFFFF' }}>
+          {!sidebarCollapsed && (
+            <div style={{ marginBottom: '0.75rem' }}>
+              <div style={{ fontSize: '0.88rem', fontWeight: '900', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user?.name || 'Ramesh Kumar'}
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {user?.id || 'AG-01'} • Hero Electric EV
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={onSwitchRole}
+              style={{
+                flex: 1,
+                padding: '0.45rem',
+                backgroundColor: '#F1F5F9',
+                color: '#475569',
+                border: '1px solid #E2E8F0',
+                borderRadius: '8px',
+                fontSize: '0.75rem',
+                fontWeight: '800',
+                cursor: 'pointer'
+              }}
+            >
+              {sidebarCollapsed ? '⇄' : 'Switch Portal'}
+            </button>
+            <button
+              onClick={onLogout}
+              style={{
+                padding: '0.45rem 0.75rem',
+                backgroundColor: '#EF4444',
+                color: '#FFF',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '0.75rem',
+                fontWeight: '800',
+                cursor: 'pointer'
+              }}
+            >
+              {sidebarCollapsed ? '✕' : 'Logout'}
+            </button>
           </div>
         </div>
+      </aside>
 
-        {/* Telemetry & Quick Action Badges */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-          {/* Duty Status Switch */}
-          <button
-            onClick={() => setIsOnDuty(!isOnDuty)}
-            style={{
-              padding: '0.45rem 0.85rem',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: isOnDuty ? '#059669' : '#475569',
-              color: '#FFF',
-              fontWeight: '900',
-              fontSize: '0.8rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem'
-            }}
-          >
-            <Power size={14} /> {isOnDuty ? '● ON DUTY (ACTIVE)' : '○ OFF DUTY'}
-          </button>
-
-          {/* Cold-Bag IoT Telemetry */}
-          <span style={{ fontSize: '0.8rem', backgroundColor: 'rgba(255,255,255,0.15)', color: '#80CBC4', padding: '0.45rem 0.85rem', borderRadius: '8px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-            <Thermometer size={15} /> Cold-Bag: 4.2°C (Optimal)
-          </span>
-
-          <button onClick={onSwitchRole} style={{ padding: '0.45rem 0.85rem', backgroundColor: 'rgba(255,255,255,0.15)', color: '#FFF', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer' }}>
-            Switch Portal
-          </button>
-          
-          <button onClick={onLogout} style={{ padding: '0.45rem 0.85rem', backgroundColor: '#EF4444', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer' }}>
-            Logout
-          </button>
-        </div>
-      </header>
-
-      {/* Real-Time Duty & Fleet HUD Banner */}
-      <div style={{ backgroundColor: '#00382E', color: '#FFF', padding: '0.75rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap', fontSize: '0.82rem', fontWeight: '700' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#A7F3D0' }}>
-            <MapPin size={15} /> Zone: <strong>Tirupati Urban & Bypass (Zone 1)</strong>
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#FEF08A' }}>
-            <Sparkles size={15} /> Daily Target: <strong>{wallet.completedTripsToday || 6} / 12 Pickups Completed</strong>
-          </span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: '#80CBC4' }}>
-            <BatteryCharging size={15} /> IoT Carrier Bag Battery: <strong>94% (Charging)</strong>
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <button
-            onClick={refreshAgentData}
-            disabled={isRefreshing}
-            style={{
-              padding: '0.35rem 0.75rem',
-              backgroundColor: 'rgba(255,255,255,0.15)',
-              color: '#FFF',
-              border: 'none',
-              borderRadius: '6px',
-              fontSize: '0.75rem',
-              fontWeight: '800',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem'
-            }}
-          >
-            <RefreshCw size={13} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} /> Sync Fleet
-          </button>
-        </div>
-      </div>
-
-      {/* Navigation Tabs Bar */}
-      <div style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', padding: '0 2rem', display: 'flex', gap: '1rem', overflowX: 'auto' }}>
-        <button
-          onClick={() => setActiveTab('ROSTER')}
-          style={{
-            padding: '1rem 0.5rem',
-            border: 'none',
-            background: 'none',
-            borderBottom: activeTab === 'ROSTER' ? '3px solid #006B70' : '3px solid transparent',
-            color: activeTab === 'ROSTER' ? '#006B70' : '#64748B',
-            fontWeight: '900',
-            fontSize: '0.92rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          <Bike size={18} /> Assigned Pickups ({pickups.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('BROADCAST')}
-          style={{
-            padding: '1rem 0.5rem',
-            border: 'none',
-            background: 'none',
-            borderBottom: activeTab === 'BROADCAST' ? '3px solid #006B70' : '3px solid transparent',
-            color: activeTab === 'BROADCAST' ? '#006B70' : '#64748B',
-            fontWeight: '900',
-            fontSize: '0.92rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          <Zap size={18} color="#F59E0B" /> Broadcast Overflow Jobs ({broadcastJobs.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('INVENTORY')}
-          style={{
-            padding: '1rem 0.5rem',
-            border: 'none',
-            background: 'none',
-            borderBottom: activeTab === 'INVENTORY' ? '3px solid #006B70' : '3px solid transparent',
-            color: activeTab === 'INVENTORY' ? '#006B70' : '#64748B',
-            fontWeight: '900',
-            fontSize: '0.92rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          <Package size={18} /> In-Hand Supplies & Indents
-        </button>
-
-        <button
-          onClick={() => setActiveTab('WALLET')}
-          style={{
-            padding: '1rem 0.5rem',
-            border: 'none',
-            background: 'none',
-            borderBottom: activeTab === 'WALLET' ? '3px solid #006B70' : '3px solid transparent',
-            color: activeTab === 'WALLET' ? '#006B70' : '#64748B',
-            fontWeight: '900',
-            fontSize: '0.92rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          <Wallet size={18} /> Earnings & Payout Wallet (₹{wallet.availableCashoutBalance?.toLocaleString('en-IN')})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('LAB_HANDOVER')}
-          style={{
-            padding: '1rem 0.5rem',
-            border: 'none',
-            background: 'none',
-            borderBottom: activeTab === 'LAB_HANDOVER' ? '3px solid #006B70' : '3px solid transparent',
-            color: activeTab === 'LAB_HANDOVER' ? '#006B70' : '#64748B',
-            fontWeight: '900',
-            fontSize: '0.92rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            whiteSpace: 'nowrap'
-          }}
-        >
-          <Building2 size={18} /> NABL Lab Handover
-        </button>
-      </div>
-
-      {/* Main Container */}
-      <main style={{ padding: '2rem', maxWidth: '1280px', margin: '0 auto' }}>
+      {/* RIGHT MAIN WORKSPACE AREA */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflowY: 'auto' }}>
         
-        {activeTab === 'ROSTER' && (
-          <PhlebotomistPickupsTab 
-            pickups={pickups} 
-            completedPickups={completedPickups} 
-            onStartTrip={handleStartTrip}
-            onArriveDoorstep={handleArriveDoorstep}
-            onOpenScanModal={(pk) => setActivePickupModal(pk)} 
-          />
-        )}
+        {/* Top Header Bar */}
+        <header
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderBottom: '1px solid #E2E8F0',
+            padding: '1.25rem 2rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            position: 'sticky',
+            top: 0,
+            zIndex: 30,
+            flexWrap: 'wrap',
+            gap: '1rem'
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h1 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+                {activeTab === 'ROSTER' && 'Assigned Doorstep Pickups'}
+                {activeTab === 'BROADCAST' && 'Broadcast Overflow Marketplace'}
+                {activeTab === 'INVENTORY' && 'In-Hand Supplies & Indents'}
+                {activeTab === 'WALLET' && 'Earnings & Payout Wallet'}
+                {activeTab === 'LAB_HANDOVER' && 'Designated Diagnostic Labs Handover'}
+              </h1>
+              <span style={{ fontSize: '0.75rem', backgroundColor: '#ECFDF5', color: '#065F46', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '900' }}>
+                Omnipresent Fleet Desk
+              </span>
+            </div>
+            <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '0.2rem' }}>
+              Zone: <strong>Tirupati Urban & Bypass (Zone 1)</strong> • Progress: <strong>{wallet.completedTripsToday || 6} / 12 Pickups Done</strong>
+            </div>
+          </div>
 
-        {activeTab === 'BROADCAST' && (
-          <PhlebotomistBroadcastJobsTab
-            jobs={broadcastJobs}
-            onClaimJob={handleClaimJob}
-          />
-        )}
+          {/* Right Header Badges & Actions */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            
+            {/* Duty Status Switch */}
+            <button
+              onClick={() => setIsOnDuty(!isOnDuty)}
+              style={{
+                padding: '0.45rem 0.85rem',
+                borderRadius: '8px',
+                border: 'none',
+                backgroundColor: isOnDuty ? '#059669' : '#475569',
+                color: '#FFF',
+                fontWeight: '900',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
+            >
+              <Power size={14} /> {isOnDuty ? '● ON DUTY (ACTIVE)' : '○ OFF DUTY'}
+            </button>
 
-        {activeTab === 'INVENTORY' && (
-          <PhlebotomistInventoryTab
-            inventory={inventory}
-            indents={indents}
-            onRaiseIndent={handleRaiseIndent}
-          />
-        )}
+            {/* IoT Cold-Bag Telemetry */}
+            <span style={{ fontSize: '0.8rem', backgroundColor: '#F0FDF4', color: '#166534', border: '1px solid #BBF7D0', padding: '0.45rem 0.85rem', borderRadius: '8px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <Thermometer size={15} color="#16a34a" /> Cold-Bag: 4.2°C (Optimal)
+            </span>
 
-        {activeTab === 'WALLET' && (
-          <PhlebotomistWalletTab
-            wallet={wallet}
-            onRequestPayout={handleRequestPayout}
-          />
-        )}
+            {/* Sync Fleet Action */}
+            <button
+              onClick={refreshAgentData}
+              disabled={isRefreshing}
+              style={{
+                padding: '0.5rem 1rem',
+                backgroundColor: '#006B70',
+                color: '#FFF',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '0.82rem',
+                fontWeight: '800',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                boxShadow: '0 2px 6px rgba(0,107,112,0.15)'
+              }}
+            >
+              <RefreshCw size={14} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} /> Sync Fleet
+            </button>
+          </div>
+        </header>
 
-        {activeTab === 'LAB_HANDOVER' && (
-          <PhlebotomistLabHandoverTab
-            onConfirmHandover={handleConfirmLabHandover}
-          />
-        )}
+        {/* Content Body */}
+        <main style={{ padding: '2rem', maxWidth: '1400px', width: '100%', boxSizing: 'border-box' }}>
+          
+          {activeTab === 'ROSTER' && (
+            <PhlebotomistPickupsTab 
+              pickups={pickups} 
+              completedPickups={completedPickups} 
+              onStartTrip={handleStartTrip}
+              onArriveDoorstep={handleArriveDoorstep}
+              onOpenScanModal={(pk) => setActivePickupModal(pk)} 
+            />
+          )}
 
-      </main>
+          {activeTab === 'BROADCAST' && (
+            <PhlebotomistBroadcastJobsTab
+              jobs={broadcastJobs}
+              onClaimJob={handleClaimJob}
+            />
+          )}
+
+          {activeTab === 'INVENTORY' && (
+            <PhlebotomistInventoryTab
+              inventory={inventory}
+              indents={indents}
+              onRaiseIndent={handleRaiseIndent}
+            />
+          )}
+
+          {activeTab === 'WALLET' && (
+            <PhlebotomistWalletTab
+              wallet={wallet}
+              onRequestPayout={handleRequestPayout}
+            />
+          )}
+
+          {activeTab === 'LAB_HANDOVER' && (
+            <PhlebotomistLabHandoverTab
+              onConfirmHandover={handleConfirmLabHandover}
+            />
+          )}
+
+        </main>
+
+      </div>
 
       {/* Multi-Step Tube Scanner & OTP Modal */}
       <PhlebotomistTubeScannerModal 
