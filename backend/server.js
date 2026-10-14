@@ -238,6 +238,8 @@ app.post('/api/v1/auth/google', (req, res) => {
             phone: phone || '',
             email: emailLower,
             city: 'Tirupati',
+            picture: picture || '',
+            avatarUrl: picture || '',
             abhaId: `ABHA-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`,
             memberSince: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
             age: 30,
@@ -256,6 +258,10 @@ app.post('/api/v1/auth/google', (req, res) => {
     } else if (existingCust) {
         if (phone && phone.trim().length >= 10) existingCust.phone = phone.trim();
         if (name && (!existingCust.name || existingCust.name === 'Google User')) existingCust.name = name;
+        if (picture) {
+            existingCust.picture = picture;
+            existingCust.avatarUrl = picture;
+        }
         saveDbStore();
     }
 
@@ -269,7 +275,8 @@ app.post('/api/v1/auth/google', (req, res) => {
             email: emailLower,
             identifier: phone || emailLower,
             phone: phone || (existingCust ? existingCust.phone : ''),
-            picture: picture || null,
+            picture: picture || (existingCust ? (existingCust.picture || existingCust.avatarUrl) : null) || null,
+            avatar: picture || (existingCust ? (existingCust.picture || existingCust.avatarUrl) : null) || null,
             role: detectedRole,
             organization,
             authProvider: 'google'

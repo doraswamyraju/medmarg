@@ -122,7 +122,7 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
   };
 
   // Process authenticated Google profile
-  const processGoogleUser = async (email, name, googleId) => {
+  const processGoogleUser = async (email, name, googleId, picture) => {
     setLoading(true);
     setError('');
 
@@ -133,20 +133,28 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
         body: JSON.stringify({
           email,
           name,
-          googleId: googleId || `gid_${Date.now()}`
+          googleId: googleId || `gid_${Date.now()}`,
+          picture: picture || ''
         })
       });
 
       const data = await safeJson(res);
 
       if (data && data.success && data.user) {
-        onLoginSuccess(data.user);
+        const enrichedUser = {
+          ...data.user,
+          picture: picture || data.user.picture || data.user.avatar || '',
+          avatar: picture || data.user.avatar || data.user.picture || ''
+        };
+        onLoginSuccess(enrichedUser);
       } else {
         const fallbackG = {
           id: `usr_g_${Date.now()}`,
           name: name || 'Google User',
           email: email,
           identifier: email,
+          picture: picture || '',
+          avatar: picture || '',
           role: email.includes('admin') ? 'ADMIN' : 'PATIENT',
           organization: 'MedMarg Healthcare Ecosystem'
         };
@@ -159,6 +167,8 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
         name: name || 'Google User',
         email: email,
         identifier: email,
+        picture: picture || '',
+        avatar: picture || '',
         role: email.includes('admin') ? 'ADMIN' : 'PATIENT',
         organization: 'MedMarg Healthcare Ecosystem'
       };
@@ -168,7 +178,7 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
     }
   };
 
-  // Auto-load Google Identity Services script if not already present
+  // Auto-load Google Identity Services script & listen for OAuth redirect hash
   useEffect(() => {
     if (!window.google?.accounts) {
       const script = document.createElement('script');
@@ -176,6 +186,35 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
       script.async = true;
       script.defer = true;
       document.body.appendChild(script);
+    }
+
+    // Check if redirected with #access_token
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const token = hashParams.get('access_token');
+      if (token) {
+        setLoading(true);
+        fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+          .then(r => r.json())
+          .then(async (googleProfile) => {
+            if (googleProfile && googleProfile.email) {
+              window.history.replaceState({}, '', '/login');
+              await processGoogleUser(
+                googleProfile.email,
+                googleProfile.name || googleProfile.email.split('@')[0],
+                googleProfile.sub || googleProfile.id,
+                googleProfile.picture
+              );
+            }
+          })
+          .catch(err => {
+            console.error('Hash token fetch error:', err);
+            setError('Google sign in error.');
+          })
+          .finally(() => setLoading(false));
+      }
     }
   }, []);
 
@@ -214,7 +253,8 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
                   await processGoogleUser(
                     googleProfile.email,
                     googleProfile.name || googleProfile.email.split('@')[0],
-                    googleProfile.sub || googleProfile.id
+                    googleProfile.sub || googleProfile.id,
+                    googleProfile.picture
                   );
                 }
               } catch (err) {
