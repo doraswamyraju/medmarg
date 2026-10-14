@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { QrCode, CheckCircle2, Thermometer, ShieldCheck, AlertCircle, Phone, Lock, Sparkles, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { QrCode, CheckCircle2, Thermometer, ShieldCheck, AlertCircle, Phone, Lock, Sparkles, Check, Loader2 } from 'lucide-react';
+import { API_BASE } from '../../data/apiConfig';
 
 export default function PhlebotomistTubeScannerModal({ 
   activePickupModal, 
@@ -17,6 +18,32 @@ export default function PhlebotomistTubeScannerModal({
   const [manualBarcode, setManualBarcode] = useState('');
   const [selectedTubeType, setSelectedTubeType] = useState('Grey (Fluoride Sugar)');
   const [coldTemp, setColdTemp] = useState('4.2°C');
+  const [liveQrData, setLiveQrData] = useState(null);
+  const [qrLoading, setQrLoading] = useState(false);
+
+  useEffect(() => {
+    if (step === 2 && activePickupModal) {
+      setQrLoading(true);
+      fetch(`${API_BASE}/api/v1/payments/generate-doorstep-qr`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId: activePickupModal.id,
+          amount: activePickupModal.amount || 899,
+          patientName: activePickupModal.patient || activePickupModal.patientName,
+          patientPhone: activePickupModal.phone
+        })
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data && data.success && data.data) {
+            setLiveQrData(data.data);
+          }
+        })
+        .catch(err => console.warn('Doorstep QR fetch note:', err))
+        .finally(() => setQrLoading(false));
+    }
+  }, [step, activePickupModal]);
 
   if (!activePickupModal) return null;
 
@@ -139,8 +166,21 @@ export default function PhlebotomistTubeScannerModal({
               <div style={{ fontSize: '0.8rem', color: '#64748B' }}>Order Ref: {activePickupModal.id} • MedMarg PayPOS</div>
 
               {/* Dynamic QR Display */}
-              <div style={{ margin: '1rem auto', width: '180px', height: '180px', backgroundColor: '#FFF', padding: '10px', borderRadius: '12px', border: '2px dashed #006B70', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <QrCode size={140} color="#004D40" />
+              <div style={{ margin: '1rem auto', width: '200px', height: '200px', backgroundColor: '#FFF', padding: '10px', borderRadius: '12px', border: '2px dashed #006B70', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                {qrLoading ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                    <Loader2 size={32} color="#006B70" className="animate-spin" />
+                    <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '700' }}>Generating QR...</span>
+                  </div>
+                ) : liveQrData?.qrImageUrl ? (
+                  <img
+                    src={liveQrData.qrImageUrl}
+                    alt="Doorstep Razorpay QR"
+                    style={{ width: '160px', height: '160px', objectFit: 'contain' }}
+                  />
+                ) : (
+                  <QrCode size={140} color="#004D40" />
+                )}
                 <div style={{ fontSize: '0.65rem', fontWeight: '800', color: '#004D40', marginTop: '4px' }}>SCAN WITH ANY UPI APP</div>
               </div>
 

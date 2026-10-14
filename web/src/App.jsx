@@ -11,7 +11,14 @@ import StaffDashboard from './pages/StaffDashboard';
 import PhlebotomistDashboard from './pages/PhlebotomistDashboard';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('medmarg_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
+  });
   const [currentView, setCurrentView] = useState(() => {
     return window.location.pathname.includes('/login') ? 'LOGIN' : 'LANDING';
   });
@@ -19,8 +26,7 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       if (window.location.pathname.includes('/login')) {
-        setCurrentUser(null);
-        setCurrentView('LOGIN');
+        if (!currentUser) setCurrentView('LOGIN');
       } else if (!currentUser) {
         setCurrentView('LANDING');
       }
@@ -29,28 +35,36 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [currentUser]);
 
-  // Navigate to login screen (never auto-login)
   const navigateToLogin = () => {
     window.history.pushState({}, '', '/login');
-    setCurrentUser(null);
     setCurrentView('LOGIN');
   };
 
   const navigateToHome = () => {
     window.history.pushState({}, '', '/');
-    setCurrentUser(null);
     setCurrentView('LANDING');
   };
 
   const handleLoginSuccess = (userProfile) => {
     setCurrentUser(userProfile);
+    try {
+      localStorage.setItem('medmarg_user', JSON.stringify(userProfile));
+    } catch (e) {}
   };
 
   const handleLogout = () => {
-    navigateToHome();
+    try {
+      localStorage.removeItem('medmarg_user');
+    } catch (e) {}
+    setCurrentUser(null);
+    navigateToLogin();
   };
 
   const handleSwitchRole = () => {
+    try {
+      localStorage.removeItem('medmarg_user');
+    } catch (e) {}
+    setCurrentUser(null);
     navigateToLogin();
   };
 

@@ -42,6 +42,7 @@ import CareSeekerUniversalItemSheet from '../components/patient/CareSeekerUniver
 import CareSeekerPrescriptionModal from '../components/patient/CareSeekerPrescriptionModal';
 import CareSeekerFloatingActionBar from '../components/patient/CareSeekerFloatingActionBar';
 import FloatingCartButton from '../components/patient/FloatingCartButton';
+import CareSeekerPhoneModal from '../components/patient/CareSeekerPhoneModal';
 
 export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   // 7 CORE NAVIGATION TABS: HOME, TESTS, VITALS, TRACK, REPORTS, REFER_CORP, PROFILE
@@ -62,6 +63,20 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [orderSuccessBanner, setOrderSuccessBanner] = useState(null);
+  const [currentUserProfile, setCurrentUserProfile] = useState(user);
+  const [showPhoneModal, setShowPhoneModal] = useState(() => {
+    const rawPhone = (user?.phone || user?.identifier || '').replace(/[^0-9]/g, '');
+    return !!(user && user.email && (!rawPhone || rawPhone.length < 10));
+  });
+
+  const handlePhoneSaved = (newPhone) => {
+    const updated = { ...currentUserProfile, phone: newPhone, identifier: newPhone };
+    setCurrentUserProfile(updated);
+    try {
+      localStorage.setItem('medmarg_user', JSON.stringify(updated));
+    } catch (e) {}
+    setShowPhoneModal(false);
+  };
 
   // Saved Addresses State
   const [savedAddresses, setSavedAddresses] = useState([
@@ -73,20 +88,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   const [selectedLabProvider, setSelectedLabProvider] = useState(getPreferredLab);
 
   // Cart State (Array of Base Items)
-  const [cart, setCart] = useState([
-    {
-      id: 'MM_MASTER',
-      baseId: 'MM_MASTER',
-      code: 'MM_MASTER',
-      name: 'MedMarg Master Health Checkup (Comprehensive)',
-      itemType: 'PACKAGE',
-      fasting: 'YES',
-      sampleType: 'SERUM, EDTA, URINE',
-      price: 1499,
-      mrp: 3999,
-      tatHours: 24
-    }
-  ]);
+  const [cart, setCart] = useState([]);
 
   // Live Orders State
   const [allOrders, setAllOrders] = useState([
@@ -332,10 +334,10 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '0.84rem', fontWeight: '800', color: '#FFF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {user?.name || 'Rahul Sharma'}
+                    {currentUserProfile?.name || 'Rahul Sharma'}
                   </div>
                   <div style={{ fontSize: '0.72rem', color: '#80CBC4', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {user?.phone || user?.identifier || '+91 98765 43210'}
+                    {currentUserProfile?.phone || currentUserProfile?.identifier || '+91 98765 43210'}
                   </div>
                 </div>
               </div>
@@ -575,6 +577,13 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         isOpen={showAddressModal}
         onClose={() => setShowAddressModal(false)}
         onSaveAddress={handleSaveAddress}
+      />
+
+      {/* 6. Contact Number Verification for Care Seekers */}
+      <CareSeekerPhoneModal
+        isOpen={showPhoneModal}
+        user={currentUserProfile}
+        onPhoneSaved={handlePhoneSaved}
       />
 
     </div>

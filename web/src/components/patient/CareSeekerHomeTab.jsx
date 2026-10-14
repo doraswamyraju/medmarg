@@ -125,7 +125,7 @@ export default function CareSeekerHomeTab({
 
           <div style={{ fontSize: '0.74rem', color: '#006B70', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
             <Sparkles size={14} color="#006B70" />
-            <span>AI Universal Search</span>
+            <span>Smart Universal Search</span>
           </div>
         </div>
 
