@@ -20,8 +20,8 @@ const {
 const app = express();
 
 // SAFE PORT CHECK FOR HOSTINGER VPS
-// Dedicated port 5086 for MedMarg API
-const PORT = process.env.PORT || 5086;
+// Dedicated port 5080 for MedMarg API
+const PORT = process.env.PORT || 5080;
 
 app.use(cors());
 app.use(express.json());
