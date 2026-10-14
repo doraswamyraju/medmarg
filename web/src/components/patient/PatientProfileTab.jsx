@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User, 
   Phone, 
@@ -33,6 +33,17 @@ export default function PatientProfileTab({
   const [preferredLanguage, setPreferredLanguage] = useState('Telugu & English');
   const [needleSensitivity, setNeedleSensitivity] = useState('Normal (Standard Butterfly Needle)');
   const [avatarUrl, setAvatarUrl] = useState(user?.picture || user?.avatar || user?.photoURL || '');
+
+  useEffect(() => {
+    if (user) {
+      if (user.name) setProfileName(user.name);
+      if (user.phone || user.identifier) setPhone(user.phone || user.identifier);
+      if (user.email) setEmail(user.email);
+      if (user.picture || user.avatar || user.photoURL) {
+        setAvatarUrl(user.picture || user.avatar || user.photoURL);
+      }
+    }
+  }, [user]);
 
   // ABHA Digital ID
   const abhaNumber = '91-4829-1029-4820';
