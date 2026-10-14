@@ -73,7 +73,7 @@ export default function CareSeekerCheckoutModal({
     setIsSubmitting(true);
     setErrorMsg('');
 
-    const payload = {
+    const basePayload = {
       patientName: selectedCareSeekerName,
       careSeekerName: selectedCareSeekerName,
       patientPhone: careSeekerPhone,
@@ -87,23 +87,97 @@ export default function CareSeekerCheckoutModal({
       selectedLabProvider: selectedLabProvider,
       labName: activeLabName,
       paymentMode: paymentMode,
-      paymentStatus: paymentMode === 'PREPAID_UPI' ? 'PAID' : 'PENDING_DOORSTEP',
+      paymentStatus: paymentMode === 'PREPAID_UPI' ? 'PAID_SUCCESS' : 'PENDING_DOORSTEP',
       handoverOtp: Math.floor(1000 + Math.random() * 9000).toString(),
       isExpress: isExpress
     };
 
+    // If PREPAID_UPI, trigger Razorpay Gateway
+    if (paymentMode === 'PREPAID_UPI') {
+      try {
+        const orderRes = await fetch(`${API_BASE}/api/v1/payments/create-order`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: cartTotal,
+            patientName: selectedCareSeekerName,
+            patientPhone: careSeekerPhone,
+            notes: {
+              itemsCount: orderItems.length,
+              slot: `${selectedDate}, ${selectedSlot}`
+            }
+          })
+        });
+
+        const orderJson = await orderRes.json();
+
+        if (orderJson && orderJson.success && orderJson.data && window.Razorpay) {
+          const { orderId, amount, currency, keyId } = orderJson.data;
+
+          const options = {
+            key: keyId,
+            amount: amount,
+            currency: currency || 'INR',
+            name: 'MedMarg Healthcare',
+            description: `Diagnostic Lab Booking (${orderItems.length} items)`,
+            image: '/logo-icon.png',
+            order_id: orderId,
+            prefill: {
+              name: selectedCareSeekerName,
+              email: user?.email || '',
+              contact: careSeekerPhone || ''
+            },
+            theme: { color: '#006B70' },
+            handler: async function (paymentResponse) {
+              const finalPayload = {
+                ...basePayload,
+                paymentStatus: 'PAID_SUCCESS',
+                razorpayPaymentId: paymentResponse.razorpay_payment_id,
+                razorpayOrderId: paymentResponse.razorpay_order_id,
+                razorpaySignature: paymentResponse.razorpay_signature
+              };
+
+              try {
+                const bookRes = await fetch(`${API_BASE}/api/v1/patient/orders/book`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(finalPayload)
+                });
+                const bookData = await bookRes.json();
+                onOrderSuccess(bookData.order || finalPayload);
+              } catch (bErr) {
+                onOrderSuccess(finalPayload);
+              }
+              setIsSubmitting(false);
+              onClose();
+            },
+            modal: {
+              ondismiss: function () {
+                setIsSubmitting(false);
+              }
+            }
+          };
+
+          const rzp = new window.Razorpay(options);
+          rzp.open();
+          return;
+        }
+      } catch (gateErr) {
+        console.warn('Payment gateway init note:', gateErr);
+      }
+    }
 
     try {
       const response = await fetch(`${API_BASE}/api/v1/patient/orders/book`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(basePayload)
       });
 
       const resData = await response.json();
       if (resData.success) {
         onOrderSuccess(resData.order || {
-          ...payload,
+          ...basePayload,
           id: resData.orderId || `MM-LAB-${Math.floor(1000 + Math.random() * 9000)}`,
           status: 'ASSIGNED',
           eta: isExpress ? '30 Mins' : 'Tomorrow Morning',
@@ -118,7 +192,7 @@ export default function CareSeekerCheckoutModal({
     } catch (err) {
       console.error('Booking error:', err);
       onOrderSuccess({
-        ...payload,
+        ...basePayload,
         id: `MM-LAB-${Math.floor(1000 + Math.random() * 9000)}`,
         status: 'ASSIGNED',
         eta: isExpress ? '30 Mins' : 'Tomorrow Morning',

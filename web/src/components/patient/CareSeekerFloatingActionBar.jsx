@@ -13,7 +13,7 @@ export default function CareSeekerFloatingActionBar({
   handleOrderWhatsApp = () => {},
   handleOrderCall = () => {}
 }) {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <div style={{
