@@ -14,7 +14,7 @@ import {
   AlertCircle,
   Building2
 } from 'lucide-react';
-import { API_BASE } from '../../data/apiConfig';
+import { API_BASE, safeJson } from '../../data/apiConfig';
 import { getItemPriceForLab } from '../../data/catalogStore';
 
 export default function CareSeekerCheckoutModal({
@@ -109,7 +109,7 @@ export default function CareSeekerCheckoutModal({
           })
         });
 
-        const orderJson = await orderRes.json();
+        const orderJson = await safeJson(orderRes);
 
         if (orderJson && orderJson.success && orderJson.data && window.Razorpay) {
           const { orderId, amount, currency, keyId } = orderJson.data;
@@ -143,8 +143,8 @@ export default function CareSeekerCheckoutModal({
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(finalPayload)
                 });
-                const bookData = await bookRes.json();
-                onOrderSuccess(bookData.order || finalPayload);
+                const bookData = await safeJson(bookRes);
+                onOrderSuccess((bookData && bookData.order) || finalPayload);
               } catch (bErr) {
                 onOrderSuccess(finalPayload);
               }
@@ -174,8 +174,8 @@ export default function CareSeekerCheckoutModal({
         body: JSON.stringify(basePayload)
       });
 
-      const resData = await response.json();
-      if (resData.success) {
+      const resData = await safeJson(response);
+      if (resData && resData.success) {
         onOrderSuccess(resData.order || {
           ...basePayload,
           id: resData.orderId || `MM-LAB-${Math.floor(1000 + Math.random() * 9000)}`,

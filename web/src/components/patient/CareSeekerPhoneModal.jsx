@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Phone, ShieldCheck, ArrowRight, CheckCircle2 } from 'lucide-react';
-import { API_BASE, safeFetch } from '../../data/apiConfig';
+import { API_BASE, safeFetch, safeJson } from '../../data/apiConfig';
 
 export default function CareSeekerPhoneModal({
   isOpen,
@@ -38,7 +38,7 @@ export default function CareSeekerPhoneModal({
         })
       });
 
-      const data = await res.json();
+      const data = await safeJson(res);
       if (data && (data.success || data.user)) {
         onPhoneSaved(fullPhone);
       } else {
