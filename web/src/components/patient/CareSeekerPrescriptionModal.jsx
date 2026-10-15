@@ -16,8 +16,6 @@ export default function CareSeekerPrescriptionModal({
   onClose,
   user
 }) {
-  if (!isOpen) return null;
-
   const [careSeekerName, setCareSeekerName] = useState(user?.name || 'Rahul Sharma');
   const [phone, setPhone] = useState(user?.phone || user?.identifier || '+91 98765 43210');
   const [address, setAddress] = useState('Plot 42, Air Bypass Road, Tirupati, AP');
@@ -27,6 +25,8 @@ export default function CareSeekerPrescriptionModal({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  if (!isOpen) return null;
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];

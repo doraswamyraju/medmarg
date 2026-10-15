@@ -19,8 +19,6 @@ export default function PatientAddressModal({
   onSaveAddress,
   existingAddress = null
 }) {
-  if (!isOpen) return null;
-
   const [addressTag, setAddressTag] = useState('Home');
   const [flatNo, setFlatNo] = useState('');
   const [buildingName, setBuildingName] = useState('');
@@ -42,6 +40,8 @@ export default function PatientAddressModal({
       setPincode(existingAddress.pincode || '517501');
     }
   }, [existingAddress]);
+
+  if (!isOpen) return null;
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {

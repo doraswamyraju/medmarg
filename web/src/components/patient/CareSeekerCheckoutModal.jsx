@@ -30,8 +30,6 @@ export default function CareSeekerCheckoutModal({
   onOrderSuccess,
   selectedLabProvider = 'medmarg_suggested'
 }) {
-  if (!isOpen) return null;
-
   // Compute maximum persons booked across items in cart
   const maxPersons = Math.max(...cart.map(c => c.personsCount || 1), 1);
   const isMultiPerson = maxPersons > 1;
@@ -133,6 +131,8 @@ export default function CareSeekerCheckoutModal({
   const [paymentMode, setPaymentMode] = useState('PREPAID_UPI'); // 'PREPAID_UPI' | 'DOORSTEP_QR' | 'CASH'
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  if (!isOpen) return null;
 
   // If multi-person, provider is ALWAYS MedMarg because slabs are MedMarg exclusive
   const effectiveLabProvider = isMultiPerson ? 'medmarg_suggested' : selectedLabProvider;

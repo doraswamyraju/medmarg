@@ -17,8 +17,6 @@ export default function CareSeekerAddressModal({
   onSaveAddress,
   existingAddress = null
 }) {
-  if (!isOpen) return null;
-
   const [addressTag, setAddressTag] = useState('Home');
   const [flatNo, setFlatNo] = useState('');
   const [buildingName, setBuildingName] = useState('');
@@ -40,6 +38,8 @@ export default function CareSeekerAddressModal({
       setPincode(existingAddress.pincode || '517501');
     }
   }, [existingAddress]);
+
+  if (!isOpen) return null;
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
