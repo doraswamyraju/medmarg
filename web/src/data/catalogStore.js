@@ -177,10 +177,11 @@ export function getDefaultLabPricing(basePrice = 299, baseMrp = null, tatHours =
 }
 
 export const PREFERRED_LAB_STORAGE_KEY = 'medmarg_preferred_lab_choice';
+export const PREFERRED_LAB_KEY_ALT = 'medmarg_preferred_lab';
 
 export function getPreferredLab() {
     try {
-        const stored = localStorage.getItem(PREFERRED_LAB_STORAGE_KEY);
+        const stored = localStorage.getItem(PREFERRED_LAB_STORAGE_KEY) || localStorage.getItem(PREFERRED_LAB_KEY_ALT);
         if (stored && (stored === 'medmarg_suggested' || stored === 'thyrocare' || stored === 'lalpath')) {
             return stored;
         }
@@ -192,8 +193,13 @@ export function getPreferredLab() {
 
 export function savePreferredLab(labId) {
     try {
-        if (labId) {
+        if (labId && (labId === 'medmarg_suggested' || labId === 'thyrocare' || labId === 'lalpath')) {
             localStorage.setItem(PREFERRED_LAB_STORAGE_KEY, labId);
+            localStorage.setItem(PREFERRED_LAB_KEY_ALT, labId);
+            localStorage.setItem('medmarg_remember_lab_flag', 'true');
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('medmarg_lab_changed', { detail: { labId } }));
+            }
         }
     } catch (e) {
         console.warn('Could not save preferred lab:', e);

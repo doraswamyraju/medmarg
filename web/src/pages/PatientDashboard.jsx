@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Sparkles
+  Sparkles,
+  PackageCheck
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { 
@@ -29,6 +30,7 @@ import { API_BASE } from '../data/apiConfig';
 
 // Role-Specific Modular Subcomponents (src/components/patient/)
 import CareSeekerHomeTab from '../components/patient/CareSeekerHomeTab';
+import CareSeekerOrdersTab from '../components/patient/CareSeekerOrdersTab';
 import PatientCatalogMatrixTab from '../components/patient/PatientCatalogMatrixTab';
 import CareSeekerVitalsModule from '../components/patient/CareSeekerVitalsModule';
 import CareSeekerTrackingTab from '../components/patient/CareSeekerTrackingTab';
@@ -151,6 +153,18 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
       .catch(() => {});
   }, []);
 
+  // Sync preferred lab across window events
+  useEffect(() => {
+    const handleLabChange = (e) => {
+      const newLab = e.detail?.labId || e.detail?.lab;
+      if (newLab) {
+        setSelectedLabProvider(newLab);
+      }
+    };
+    window.addEventListener('medmarg_lab_changed', handleLabChange);
+    return () => window.removeEventListener('medmarg_lab_changed', handleLabChange);
+  }, []);
+
   const getFilteredItems = () => {
     let items = [];
     if (catalogSubTab === 'ALL') {
@@ -226,8 +240,11 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
     setSavedAddresses([newAddr, ...savedAddresses]);
   };
 
+  const activeOrdersCount = allOrders.filter(o => o.status === 'ASSIGNED' || o.status === 'ENROUTE' || o.status === 'SAMPLE_COLLECTED').length;
+
   const navMenuItems = [
     { key: 'HOME', label: 'Home', icon: HomeIcon },
+    { key: 'ORDERS', label: 'My Orders', icon: PackageCheck, badge: activeOrdersCount > 0 ? `${activeOrdersCount} Active` : `${allOrders.length} Orders` },
     { key: 'TESTS', label: 'Labs & Tests Matrix', icon: FlaskConical, badge: `${catalog.tests?.length || 913}+` },
     { key: 'VITALS', label: 'Daily Vitals Log', icon: HeartPulse, badge: 'Live' },
     { key: 'TRACK', label: 'Live Tracking', icon: Activity, badge: `${allOrders.length} Active` },
@@ -401,6 +418,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
             </div>
             <h1 style={{ fontSize: '1.85rem', fontWeight: '900', color: '#0F172A', marginTop: '0.35rem' }}>
               {activeTab === 'HOME' && 'MedMarg Healthcare & Wellness Hub'}
+              {activeTab === 'ORDERS' && 'My Diagnostic Orders & History'}
               {activeTab === 'TESTS' && 'Pathology Lab Tests Matrix & Packages'}
               {activeTab === 'VITALS' && 'Care Seeker Daily Vitals & Health Biometrics'}
               {activeTab === 'TRACK' && 'Live Phlebotomist Dispatch & Telemetry Radar'}
@@ -437,7 +455,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         {/* MODULAR FEATURE SUBCOMPONENTS */}
         {activeTab === 'HOME' && (
           <CareSeekerHomeTab 
-            user={user} 
+            user={currentUserProfile || user} 
             setActiveTab={setActiveTab} 
             setCatalogSubTab={setCatalogSubTab} 
             setSelectedDetailItem={setSelectedDetailItem} 
@@ -448,6 +466,21 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
             addToCart={addToCart}
             catalog={catalog} 
             liveOrdersCount={allOrders.length}
+            activeOrder={activeOrder}
+            allOrders={allOrders}
+          />
+        )}
+
+        {activeTab === 'ORDERS' && (
+          <CareSeekerOrdersTab 
+            orders={allOrders}
+            onSelectOrder={(ord) => {
+              setActiveOrder(ord);
+            }}
+            onNavigateToTracking={() => {
+              setActiveTab('TRACK');
+            }}
+            handleOrderCall={handleOrderCall}
           />
         )}
 
@@ -501,10 +534,13 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
 
         {activeTab === 'PROFILE' && (
           <PatientProfileTab 
-            user={user} 
+            user={currentUserProfile || user} 
             onLogout={onLogout} 
             onOpenAddressModal={() => setShowAddressModal(true)}
             savedAddresses={savedAddresses}
+            onUpdateUser={(updated) => {
+              setCurrentUserProfile(updated);
+            }}
           />
         )}
 
