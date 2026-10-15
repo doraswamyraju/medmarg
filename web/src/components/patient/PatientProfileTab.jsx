@@ -185,6 +185,11 @@ export default function PatientProfileTab({
       };
 
       try {
+        const userEmailKey = (email || user?.email || 'patient').toLowerCase().replace(/[^a-z0-9]/g, '_');
+        localStorage.setItem('medmarg_phone_completed', 'true');
+        localStorage.setItem(`medmarg_phone_completed_${userEmailKey}`, 'true');
+        localStorage.setItem('medmarg_user_phone', fullPhone);
+        localStorage.setItem(`medmarg_phone_${userEmailKey}`, fullPhone);
         localStorage.setItem('medmarg_user', JSON.stringify(updatedUser));
       } catch (err) {}
 

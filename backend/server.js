@@ -226,16 +226,21 @@ app.post('/api/v1/auth/google', (req, res) => {
         organization = 'MedPlus Pharmacy (Generic Dispenser)';
     }
 
-    const requiresPhone = !phone || phone.trim().length < 10;
-
     // Automatically register/update customer in central dbStore
     if (!dbStore.customers) dbStore.customers = [];
     let existingCust = dbStore.customers.find(c => c.email && c.email.toLowerCase() === emailLower);
+
+    const finalPhone = (phone && phone.trim().length >= 10) 
+        ? phone.trim() 
+        : (existingCust && existingCust.phone ? existingCust.phone : '');
+
+    const requiresPhone = !finalPhone || finalPhone.replace(/[^0-9]/g, '').length < 10;
+
     if (!existingCust && detectedRole === 'PATIENT') {
         existingCust = {
             id: `CUST-${Math.floor(1000 + Math.random() * 9000)}`,
             name: name || email.split('@')[0],
-            phone: phone || '',
+            phone: finalPhone,
             email: emailLower,
             city: 'Tirupati',
             picture: picture || '',
@@ -256,7 +261,7 @@ app.post('/api/v1/auth/google', (req, res) => {
         dbStore.customers.unshift(existingCust);
         saveDbStore();
     } else if (existingCust) {
-        if (phone && phone.trim().length >= 10) existingCust.phone = phone.trim();
+        if (finalPhone && finalPhone.trim().length >= 10) existingCust.phone = finalPhone.trim();
         if (name && (!existingCust.name || existingCust.name === 'Google User')) existingCust.name = name;
         if (picture) {
             existingCust.picture = picture;
@@ -273,8 +278,8 @@ app.post('/api/v1/auth/google', (req, res) => {
             id: existingCust ? existingCust.id : `usr_g_${googleId || Date.now()}`,
             name: name || (existingCust ? existingCust.name : email.split('@')[0]),
             email: emailLower,
-            identifier: phone || emailLower,
-            phone: phone || (existingCust ? existingCust.phone : ''),
+            identifier: finalPhone || emailLower,
+            phone: finalPhone,
             picture: picture || (existingCust ? (existingCust.picture || existingCust.avatarUrl) : null) || null,
             avatar: picture || (existingCust ? (existingCust.picture || existingCust.avatarUrl) : null) || null,
             role: detectedRole,
@@ -1260,47 +1265,71 @@ app.get('/api/v1/patient/orders', (req, res) => {
 });
 
 // Book new lab test / package order
-app.post('/api/v1/patient/orders/book', (req, res) => {
+const handleOrderBooking = (req, res) => {
     const { 
         patientName, 
+        careSeekerName,
         phone, 
+        patientPhone,
+        careSeekerPhone,
         address, 
         city = 'Tirupati', 
         pincode = '517501', 
         scheduledDate, 
         scheduledSlot, 
+        slot,
         items = [], 
         totalAmount, 
         paymentMode = 'DOORSTEP_QR',
+        paymentStatus,
+        handoverOtp,
+        beneficiaries = [],
+        totalPersons = 1,
+        selectedLabProvider = 'medmarg_suggested',
+        labName = 'MedMarg (Home Phlebotomy Fleet)',
+        isExpress = false,
         notes
     } = req.body;
 
     const newOrderId = `MM-LAB-${Math.floor(1000 + Math.random() * 9000)}`;
-    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    const otp = handoverOtp || Math.floor(1000 + Math.random() * 9000).toString();
 
     const matchedZone = (dbStore.territories && dbStore.territories.find(t => t.pincodes.includes(pincode))) || (dbStore.territories && dbStore.territories[0]) || { name: 'Tirupati Central Zone', primaryAgentId: 'AG-01' };
     const primaryAgent = (dbStore.salariedAgents && dbStore.salariedAgents.find(a => a.id === matchedZone.primaryAgentId)) || { name: 'Ramesh Kumar', id: 'AG-01', phone: '+91 98765 11223' };
 
+    const effectivePhone = phone || patientPhone || careSeekerPhone || '+91 98765 43210';
+    const effectiveName = patientName || careSeekerName || 'Rahul Sharma';
+
     const newOrder = {
         id: newOrderId,
-        patientName: patientName || 'Rahul Sharma',
-        phone: phone || '+91 98765 43210',
+        patientName: effectiveName,
+        careSeekerName: effectiveName,
+        phone: effectivePhone,
+        patientPhone: effectivePhone,
         city: city,
         address: address || 'Plot 42, Air Bypass Road, Tirupati',
         items: Array.isArray(items) ? items.map(i => typeof i === 'string' ? i : i.name).join(', ') : (items || 'MedMarg Master Health Checkup'),
         itemsDetails: Array.isArray(items) ? items : [],
+        beneficiaries: Array.isArray(beneficiaries) && beneficiaries.length > 0 ? beneficiaries : [{ personNumber: 1, name: effectiveName, phone: effectivePhone }],
+        totalPersons: Math.max(Number(totalPersons) || 1, Array.isArray(beneficiaries) ? beneficiaries.length : 1),
+        selectedLabProvider: selectedLabProvider,
+        labProvider: labName || 'MedMarg',
+        labName: labName || 'MedMarg',
         amount: Number(totalAmount) || 1499,
-        status: 'EN_ROUTE',
+        totalAmount: Number(totalAmount) || 1499,
+        status: 'ENROUTE',
         assignedAgent: `${primaryAgent.name} (${primaryAgent.id})`,
         phleboName: `${primaryAgent.name} (Certified Phlebotomist)`,
         phleboPhone: primaryAgent.phone || '+91 98765 11223',
+        phleboRating: '4.8 (320+ collections)',
         otp: otp,
-        slot: scheduledSlot || '07:30 AM - 08:30 AM',
+        handoverOtp: otp,
+        slot: slot || scheduledSlot || '07:30 AM - 08:30 AM',
         date: scheduledDate || 'Today',
-        eta: '25 Mins',
-        tempTelemetry: '4.2°C (Optimal 2-8°C Cold-Chain)',
+        eta: isExpress ? '12 Mins' : '25 Mins',
+        tempTelemetry: '3.9°C (Optimal 2-8°C IoT Cold-Chain)',
         paymentMode: paymentMode,
-        paymentStatus: paymentMode === 'ONLINE_PREPAID' ? 'PAID_SUCCESS' : 'PENDING_DOORSTEP',
+        paymentStatus: paymentStatus || (paymentMode === 'PREPAID_UPI' || paymentMode === 'ONLINE_PREPAID' ? 'PAID_SUCCESS' : 'PENDING_DOORSTEP'),
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         notes: notes || ''
     };
@@ -1314,7 +1343,10 @@ app.post('/api/v1/patient/orders/book', (req, res) => {
         order: newOrder,
         message: 'Order booked successfully! Certified phlebotomist assigned.'
     });
-});
+};
+
+app.post('/api/v1/patient/orders/book', handleOrderBooking);
+app.post('/api/v1/orders/book', handleOrderBooking);
 
 // Patient Digital Health Reports Vault
 app.get('/api/v1/patient/reports', (req, res) => {

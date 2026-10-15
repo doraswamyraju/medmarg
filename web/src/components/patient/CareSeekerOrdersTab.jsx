@@ -19,7 +19,8 @@ import {
   Sparkles,
   Building2,
   RefreshCw,
-  Search
+  Search,
+  Users
 } from 'lucide-react';
 
 export const getSafeOrderItems = (rawItems, totalAmount = 0) => {
@@ -409,6 +410,21 @@ export default function CareSeekerOrdersTab({
                       <MapPin size={16} color="#006B70" style={{ flexShrink: 0 }} />
                       <span>{order.address}</span>
                     </div>
+
+                    {order.beneficiaries && order.beneficiaries.length > 1 && (
+                      <div style={{ marginTop: '0.85rem', backgroundColor: '#F0FDF4', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #86EFAC' }}>
+                        <div style={{ fontSize: '0.74rem', fontWeight: '900', color: '#166534', textTransform: 'uppercase', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <Users size={14} /> Tested Beneficiaries ({order.beneficiaries.length} Individuals)
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                          {order.beneficiaries.map((b, bIdx) => (
+                            <span key={bIdx} style={{ fontSize: '0.74rem', backgroundColor: '#FFFFFF', color: '#0F172A', padding: '0.25rem 0.55rem', borderRadius: '6px', border: '1px solid #CBD5E1', fontWeight: '700' }}>
+                              #{b.personNumber || bIdx + 1}: {b.name} ({b.relation || 'Member'}, {b.age}y/{b.gender})
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Right: Phlebotomist Assigned & Status */}

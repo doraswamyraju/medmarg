@@ -61,12 +61,7 @@ export default function PatientCartDrawer({
     setRememberPreference(checked);
     try {
       localStorage.setItem('medmarg_remember_lab_flag', checked ? 'true' : 'false');
-      if (checked) {
-        savePreferredLab(selectedLabProvider);
-      } else {
-        localStorage.removeItem('medmarg_preferred_lab_choice');
-        localStorage.removeItem('medmarg_preferred_lab');
-      }
+      savePreferredLab(selectedLabProvider);
     } catch (err) {}
   };
 

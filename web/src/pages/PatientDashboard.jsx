@@ -72,27 +72,52 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   const [orderSuccessBanner, setOrderSuccessBanner] = useState(null);
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   const [offersNotifySubmitted, setOffersNotifySubmitted] = useState(false);
-  const cleanPhone = (p) => {
-    if (!p) return '+91 79979 91101';
-    if (typeof p === 'string' && (p.includes('83745 42478') || p.includes('8374542478'))) return '+91 79979 91101';
-    return p;
+  const getUserEmailKey = () => {
+    return (user?.email || 'patient').toLowerCase().replace(/[^a-z0-9]/g, '_');
+  };
+
+  const getEffectiveUserPhone = () => {
+    try {
+      const emailKey = getUserEmailKey();
+      const stored = localStorage.getItem(`medmarg_phone_${emailKey}`) || localStorage.getItem('medmarg_user_phone');
+      if (stored && stored.replace(/[^0-9]/g, '').length >= 10) return stored;
+      if (user?.phone && user.phone.replace(/[^0-9]/g, '').length >= 10) return user.phone;
+    } catch (e) {}
+    return '';
   };
 
   const [currentUserProfile, setCurrentUserProfile] = useState(() => {
     if (!user) return null;
-    const phone = cleanPhone(user.phone || user.identifier);
-    const updated = { ...user, phone, identifier: phone };
+    const phone = getEffectiveUserPhone() || user.phone || '';
+    const updated = { ...user, phone, identifier: phone || user.email || user.identifier };
     try {
       localStorage.setItem('medmarg_user', JSON.stringify(updated));
     } catch (e) {}
     return updated;
   });
+
   const [showPhoneModal, setShowPhoneModal] = useState(() => {
-    const rawPhone = (cleanPhone(user?.phone || user?.identifier || '')).replace(/[^0-9]/g, '');
-    return !!(user && user.email && (!rawPhone || rawPhone.length < 10));
+    try {
+      const emailKey = getUserEmailKey();
+      const isCompleted = localStorage.getItem('medmarg_phone_completed') === 'true' ||
+                          localStorage.getItem(`medmarg_phone_completed_${emailKey}`) === 'true';
+      if (isCompleted) return false;
+      const phone = getEffectiveUserPhone();
+      const digits = (phone || '').replace(/[^0-9]/g, '');
+      return !!(user && user.email && digits.length < 10);
+    } catch (e) {
+      return false;
+    }
   });
 
   const handlePhoneSaved = (newPhone) => {
+    const emailKey = getUserEmailKey();
+    try {
+      localStorage.setItem('medmarg_phone_completed', 'true');
+      localStorage.setItem(`medmarg_phone_completed_${emailKey}`, 'true');
+      localStorage.setItem('medmarg_user_phone', newPhone);
+      localStorage.setItem(`medmarg_phone_${emailKey}`, newPhone);
+    } catch (e) {}
     const updated = { ...currentUserProfile, phone: newPhone, identifier: newPhone };
     setCurrentUserProfile(updated);
     try {
@@ -109,6 +134,13 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
 
   // Selected Processing Laboratory (MedMarg, Thyrocare, Lalpath) with persistence
   const [selectedLabProvider, setSelectedLabProvider] = useState(getPreferredLab);
+
+  const handleLabChange = (newLab) => {
+    if (newLab) {
+      setSelectedLabProvider(newLab);
+      savePreferredLab(newLab);
+    }
+  };
 
   // Cart State (Array of Base Items)
   const [cart, setCart] = useState([]);
@@ -1021,7 +1053,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         onProceedToCheckout={() => setShowCheckoutModal(true)}
         catalog={catalog}
         selectedLabProvider={selectedLabProvider}
-        setSelectedLabProvider={setSelectedLabProvider}
+        setSelectedLabProvider={handleLabChange}
       />
 
       {/* 2. Multi-step Checkout & Booking Modal */}
@@ -1029,7 +1061,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         isOpen={showCheckoutModal}
         onClose={() => setShowCheckoutModal(false)}
         cart={cart}
-        user={user}
+        user={currentUserProfile || user}
         savedAddresses={savedAddresses}
         onOpenAddressModal={() => setShowAddressModal(true)}
         onOrderSuccess={handleOrderSuccess}
@@ -1039,6 +1071,9 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
       {/* 3. Universal Test/Package Detail Sheet */}
       <CareSeekerUniversalItemSheet
         item={selectedDetailItem}
+        catalog={catalog}
+        selectedLabProvider={selectedLabProvider}
+        setSelectedLabProvider={handleLabChange}
         onClose={() => setSelectedDetailItem(null)}
         onAddToCart={addToCart}
         isInCart={selectedDetailItem ? cart.some(c => (c.baseId || c.id) === (selectedDetailItem.id || selectedDetailItem.code || selectedDetailItem.name) || c.code === selectedDetailItem.code) : false}
