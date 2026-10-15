@@ -330,6 +330,24 @@ export default function CatalogManagementTab({
     const updatedCatalog = { ...catalog, tests: updatedTests };
     setCatalog(updatedCatalog);
     saveCatalogState(updatedCatalog);
+
+    // Persist to backend server API
+    try {
+      await safeFetch(`${API_BASE}/api/v1/catalog/tests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTest)
+      });
+
+      await safeFetch(`${API_BASE}/api/v1/catalog/sync-full`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tests: updatedTests, profiles: catalog.profiles, packages: catalog.packages })
+      });
+    } catch (err) {
+      console.warn('Backend test sync:', err);
+    }
+
     setShowCreateTestModal(false);
     setEditingItem(null);
     setSaveToast(`Single Test "${newTest.name}" saved with multi-lab rates & volume slabs!`);

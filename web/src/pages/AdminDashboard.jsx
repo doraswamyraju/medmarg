@@ -215,10 +215,29 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
               const localOnlyPackages = (localCatalog.packages || []).filter(p => !serverPkgCodes.has(p.code) && !serverPkgCodes.has(p.id));
               const allPackages = [...mergedPackages, ...localOnlyPackages];
 
+              // Safely merge tests without losing custom pricing, specimen, tat, or description
+              const mergedTests = tsts.tests.map(serverT => {
+                const localT = (localCatalog.tests || []).find(lt => lt.code === serverT.code || lt.id === serverT.id);
+                return {
+                  ...serverT,
+                  labPricing: serverT.labPricing || localT?.labPricing,
+                  tierPricing: serverT.tierPricing || localT?.tierPricing,
+                  price: localT?.price || serverT.price,
+                  mrp: localT?.mrp || serverT.mrp,
+                  sampleType: localT?.sampleType || serverT.sampleType,
+                  fasting: localT?.fasting || serverT.fasting,
+                  tatHours: localT?.tatHours || serverT.tatHours,
+                  description: localT?.description || serverT.description
+                };
+              });
+              const serverTestCodes = new Set(tsts.tests.map(t => t.code || t.id));
+              const localOnlyTests = (localCatalog.tests || []).filter(t => !serverTestCodes.has(t.code) && !serverTestCodes.has(t.id));
+              const allTests = [...mergedTests, ...localOnlyTests];
+
               const updated = {
                 packages: allPackages,
                 profiles: allProfiles,
-                tests: tsts.tests
+                tests: allTests
               };
               setCatalog(updated);
               saveCatalogState(updated);
@@ -250,10 +269,24 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
               tierPricing: p.tierPricing || localP?.tierPricing
             };
           });
+          const mergedTests = data.tests.map(t => {
+            const localT = (localCatalog.tests || []).find(lt => lt.code === t.code || lt.id === t.id);
+            return {
+              ...t,
+              labPricing: t.labPricing || localT?.labPricing,
+              tierPricing: t.tierPricing || localT?.tierPricing,
+              price: localT?.price || t.price,
+              mrp: localT?.mrp || t.mrp,
+              sampleType: localT?.sampleType || t.sampleType,
+              fasting: localT?.fasting || t.fasting,
+              tatHours: localT?.tatHours || t.tatHours,
+              description: localT?.description || t.description
+            };
+          });
           const updated = {
             packages: data.packages || catalog.packages,
             profiles: mergedProfiles,
-            tests: data.tests
+            tests: mergedTests
           };
           setCatalog(updated);
           saveCatalogState(updated);
