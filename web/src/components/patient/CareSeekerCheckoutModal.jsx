@@ -127,8 +127,8 @@ export default function CareSeekerCheckoutModal({
   const [selectedSlot, setSelectedSlot] = useState('07:00 AM - 08:00 AM (Recommended for Fasting)');
   const [isExpress, setIsExpress] = useState(false);
 
-  // Payment Mode
-  const [paymentMode, setPaymentMode] = useState('PREPAID_UPI'); // 'PREPAID_UPI' | 'DOORSTEP_QR' | 'CASH'
+  // Payment Mode (100% Cashless - Online or Doorstep UPI QR)
+  const [paymentMode, setPaymentMode] = useState('PREPAID_UPI'); // 'PREPAID_UPI' | 'DOORSTEP_QR'
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -279,7 +279,7 @@ export default function CareSeekerCheckoutModal({
             modal: {
               ondismiss: function () {
                 setIsSubmitting(false);
-                setErrorMsg('Payment popup was closed. You can retry payment or choose Doorstep QR / Cash.');
+                setErrorMsg('Payment popup was closed. You can retry payment or choose Doorstep UPI QR.');
               }
             }
           };
@@ -296,7 +296,7 @@ export default function CareSeekerCheckoutModal({
         await executeBookingCall(basePayload);
       }
     } else {
-      // Cash / Doorstep QR
+      // Doorstep UPI QR
       await executeBookingCall(basePayload);
     }
   };
@@ -779,12 +779,12 @@ export default function CareSeekerCheckoutModal({
                   Select Payment Method
                 </label>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.65rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <button
                     type="button"
                     onClick={() => setPaymentMode('PREPAID_UPI')}
                     style={{
-                      padding: '0.85rem 0.5rem',
+                      padding: '0.85rem 0.75rem',
                       borderRadius: '12px',
                       border: paymentMode === 'PREPAID_UPI' ? '2px solid #006B70' : '1px solid #CBD5E1',
                       backgroundColor: paymentMode === 'PREPAID_UPI' ? '#E0F2F1' : '#FFFFFF',
@@ -794,15 +794,15 @@ export default function CareSeekerCheckoutModal({
                     }}
                   >
                     <CreditCard size={20} style={{ margin: '0 auto 0.3rem auto' }} />
-                    <div style={{ fontSize: '0.82rem', fontWeight: '900' }}>Prepaid UPI / Cards</div>
-                    <div style={{ fontSize: '0.68rem', color: '#059669', fontWeight: '800', marginTop: '0.1rem' }}>Instant / Razorpay</div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: '900' }}>Prepaid UPI / Cards</div>
+                    <div style={{ fontSize: '0.7rem', color: '#059669', fontWeight: '800', marginTop: '0.15rem' }}>Instant / Razorpay (Priority)</div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setPaymentMode('DOORSTEP_QR')}
                     style={{
-                      padding: '0.85rem 0.5rem',
+                      padding: '0.85rem 0.75rem',
                       borderRadius: '12px',
                       border: paymentMode === 'DOORSTEP_QR' ? '2px solid #006B70' : '1px solid #CBD5E1',
                       backgroundColor: paymentMode === 'DOORSTEP_QR' ? '#E0F2F1' : '#FFFFFF',
@@ -812,26 +812,8 @@ export default function CareSeekerCheckoutModal({
                     }}
                   >
                     <QrCode size={20} style={{ margin: '0 auto 0.3rem auto' }} />
-                    <div style={{ fontSize: '0.82rem', fontWeight: '900' }}>Doorstep QR</div>
-                    <div style={{ fontSize: '0.68rem', color: '#64748B', marginTop: '0.1rem' }}>Pay Phlebo via UPI</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMode('CASH')}
-                    style={{
-                      padding: '0.85rem 0.5rem',
-                      borderRadius: '12px',
-                      border: paymentMode === 'CASH' ? '2px solid #006B70' : '1px solid #CBD5E1',
-                      backgroundColor: paymentMode === 'CASH' ? '#E0F2F1' : '#FFFFFF',
-                      color: paymentMode === 'CASH' ? '#006B70' : '#334155',
-                      cursor: 'pointer',
-                      textAlign: 'center'
-                    }}
-                  >
-                    <ShieldCheck size={20} style={{ margin: '0 auto 0.3rem auto' }} />
-                    <div style={{ fontSize: '0.82rem', fontWeight: '900' }}>Cash on Collection</div>
-                    <div style={{ fontSize: '0.68rem', color: '#64748B', marginTop: '0.1rem' }}>Doorstep Cash</div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: '900' }}>Doorstep QR</div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748B', marginTop: '0.15rem' }}>Pay Phlebo via UPI at Home</div>
                   </button>
                 </div>
               </div>
