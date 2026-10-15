@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   UserCog, 
@@ -183,16 +183,32 @@ export default function StaffManagementTab({
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [showAddRoleModal, setShowAddRoleModal] = useState(false);
   const [selectedStaffProfile, setSelectedStaffProfile] = useState(null);
+  const [editingStaff, setEditingStaff] = useState(null);
+
+  // Live Sync with Backend Staff API
+  useEffect(() => {
+    if (API_BASE && safeFetch) {
+      safeFetch(`${API_BASE}/api/v1/admin/staff`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.success && Array.isArray(data.staff) && data.staff.length > 0) {
+            setStaffList(data.staff);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [API_BASE, safeFetch]);
 
   // New Staff Form State
   const [newStaffForm, setNewStaffForm] = useState({
     id: `STF-${Math.floor(106 + Math.random() * 90)}`,
     name: '',
-    role: '',
+    role: 'Senior Lab Assistant & Patho-Tech',
     roleCategory: 'LAB_ASSISTANT',
     department: 'Central Pathology & Biochemistry Hub',
     phone: '',
     email: '',
+    password: 'medmarg@staff123',
     branch: 'MedMarg Central Processing Lab (Tirupati)',
     shift: 'General Shift (09:00 AM - 05:00 PM)',
     status: 'ON_DUTY',
@@ -202,23 +218,95 @@ export default function StaffManagementTab({
   // Filtered staff
   const filteredStaff = staffList.filter(stf => {
     const matchesCategory = selectedRoleFilter === 'ALL' || stf.roleCategory === selectedRoleFilter;
-    const matchesSearch = stf.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          stf.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          stf.phone.includes(searchQuery);
+    const matchesSearch = (stf.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (stf.role || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (stf.phone || '').includes(searchQuery) ||
+                          (stf.email || '').toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
-  const handleAddStaffSubmit = (e) => {
+  const handleAddStaffSubmit = async (e) => {
     e.preventDefault();
     const newMember = {
       ...newStaffForm,
+      email: newStaffForm.email || `${newStaffForm.name.toLowerCase().replace(/[^a-z0-9]/g, '')}@medmarg.com`,
       tasksCompletedToday: 0,
       accuracyScore: '100%',
       tatAvg: 'N/A'
     };
-    setStaffList(prev => [newMember, ...prev]);
+
+    try {
+      if (safeFetch && API_BASE) {
+        const res = await safeFetch(`${API_BASE}/api/v1/admin/staff`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newMember)
+        });
+        const data = await res.json();
+        if (data && data.success && data.staff) {
+          setStaffList(prev => [data.staff, ...prev]);
+        } else {
+          setStaffList(prev => [newMember, ...prev]);
+        }
+      } else {
+        setStaffList(prev => [newMember, ...prev]);
+      }
+    } catch (err) {
+      setStaffList(prev => [newMember, ...prev]);
+    }
+
     setShowAddStaffModal(false);
-    alert(`✅ Staff Account Created: ${newMember.name} (${newMember.id}) assigned as ${newMember.role}`);
+    alert(`✅ Staff Account Created: ${newMember.name} (${newMember.id})\nLogin Email: ${newMember.email}`);
+    setNewStaffForm({
+      id: `STF-${Math.floor(106 + Math.random() * 90)}`,
+      name: '',
+      role: 'Senior Lab Assistant & Patho-Tech',
+      roleCategory: 'LAB_ASSISTANT',
+      department: 'Central Pathology & Biochemistry Hub',
+      phone: '',
+      email: '',
+      password: 'medmarg@staff123',
+      branch: 'MedMarg Central Processing Lab (Tirupati)',
+      shift: 'General Shift (09:00 AM - 05:00 PM)',
+      status: 'ON_DUTY',
+      permissions: ['VIEW_LAB_QUEUE', 'PROCESS_SAMPLES']
+    });
+  };
+
+  const handleUpdateStaffSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingStaff) return;
+
+    try {
+      if (safeFetch && API_BASE) {
+        await safeFetch(`${API_BASE}/api/v1/admin/staff/${editingStaff.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editingStaff)
+        });
+      }
+    } catch (err) {}
+
+    setStaffList(prev => prev.map(s => s.id === editingStaff.id ? { ...s, ...editingStaff } : s));
+    setEditingStaff(null);
+    alert(`✅ Staff profile for ${editingStaff.name} (${editingStaff.id}) updated successfully.`);
+  };
+
+  const handleDeleteStaff = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to delete staff member ${name} (${id})? This will deactivate their portal access.`)) {
+      return;
+    }
+
+    try {
+      if (safeFetch && API_BASE) {
+        await safeFetch(`${API_BASE}/api/v1/admin/staff/${id}`, {
+          method: 'DELETE'
+        });
+      }
+    } catch (err) {}
+
+    setStaffList(prev => prev.filter(s => s.id !== id));
+    alert(`🗑️ Staff member ${name} (${id}) has been removed.`);
   };
 
   const toggleStaffPermission = (staffId, permKey) => {
@@ -383,86 +471,161 @@ export default function StaffManagementTab({
             </div>
           </div>
 
-          {/* Staff Roster Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
-            {filteredStaff.map(stf => {
-              const catObj = roleCategories.find(c => c.id === stf.roleCategory) || roleCategories[0];
-              return (
-                <div 
-                  key={stf.id}
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderRadius: '20px',
-                    border: '1px solid #E2E8F0',
-                    padding: '1.5rem',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between'
-                  }}
-                >
-                  <div>
-                    {/* Header with Status & Category Badge */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.74rem', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: '800', backgroundColor: '#DCFCE7', color: '#15803D', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }}></span> ON DUTY
-                      </span>
-                      <span style={{ fontSize: '0.76rem', color: catObj.color, fontWeight: '800', backgroundColor: 'rgba(0,107,112,0.08)', padding: '0.2rem 0.55rem', borderRadius: '6px' }}>
-                        {catObj.icon} {catObj.name.split(' ')[0]}
-                      </span>
-                    </div>
+          {/* Staff Roster Tabular View */}
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569', fontWeight: '800', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    <th style={{ padding: '0.9rem 1rem' }}>Staff Member</th>
+                    <th style={{ padding: '0.9rem 1rem' }}>Role & Dept</th>
+                    <th style={{ padding: '0.9rem 1rem' }}>Contact & Login</th>
+                    <th style={{ padding: '0.9rem 1rem' }}>Branch & Shift</th>
+                    <th style={{ padding: '0.9rem 1rem' }}>Performance</th>
+                    <th style={{ padding: '0.9rem 1rem' }}>Duty Status</th>
+                    <th style={{ padding: '0.9rem 1rem', textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredStaff.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ padding: '2.5rem', textAlign: 'center', color: '#94A3B8', fontWeight: '600' }}>
+                        No staff members found matching filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredStaff.map((stf, idx) => {
+                      const catObj = roleCategories.find(c => c.id === stf.roleCategory) || roleCategories[0];
+                      const isOnDuty = stf.status === 'ON_DUTY' || !stf.status;
 
-                    {/* Member Info */}
-                    <div style={{ marginTop: '0.85rem' }}>
-                      <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>{stf.name}</h3>
-                      <div style={{ fontSize: '0.82rem', color: '#006B70', fontWeight: '800', marginTop: '0.15rem' }}>{stf.role}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'monospace' }}>ID: {stf.id} • {stf.department}</div>
-                    </div>
+                      return (
+                        <tr 
+                          key={stf.id}
+                          style={{ 
+                            borderBottom: idx === filteredStaff.length - 1 ? 'none' : '1px solid #F1F5F9',
+                            backgroundColor: '#FFFFFF',
+                            transition: 'background-color 0.15s ease'
+                          }}
+                        >
+                          {/* Staff Name & ID */}
+                          <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                              <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: 'rgba(0,107,112,0.1)', color: '#006B70', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '0.88rem', flexShrink: 0 }}>
+                                {stf.name ? stf.name.charAt(0).toUpperCase() : 'S'}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: '900', color: '#0F172A', fontSize: '0.9rem' }}>{stf.name}</div>
+                                <span style={{ fontSize: '0.72rem', color: '#006B70', fontFamily: 'monospace', fontWeight: '800', backgroundColor: 'rgba(0,107,112,0.08)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                                  {stf.id}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
 
-                    {/* Shift & Branch */}
-                    <div style={{ marginTop: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.82rem', color: '#475569' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Building size={14} color="#64748B" /> {stf.branch}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Clock size={14} color="#D97706" /> {stf.shift}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Phone size={14} color="#006B70" /> {stf.phone} • {stf.email}
-                      </div>
-                    </div>
+                          {/* Role & Dept */}
+                          <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                              <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.82rem' }}>{stf.role}</div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                <span style={{ fontSize: '0.7rem', color: catObj.color, fontWeight: '800', backgroundColor: 'rgba(0,107,112,0.08)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                                  {catObj.icon} {catObj.name.split(' ')[0]}
+                                </span>
+                                <span style={{ fontSize: '0.72rem', color: '#64748B' }}>{stf.department}</span>
+                              </div>
+                            </div>
+                          </td>
 
-                    {/* Quick Stats Pill */}
-                    <div style={{ marginTop: '1rem', padding: '0.75rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem' }}>
-                      <div>
-                        <div style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: '700' }}>TASKS TODAY</div>
-                        <div style={{ fontSize: '1rem', fontWeight: '900', color: '#0F172A' }}>{stf.tasksCompletedToday} Processed</div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: '700' }}>ACCURACY</div>
-                        <div style={{ fontSize: '1rem', fontWeight: '900', color: '#15803D' }}>{stf.accuracyScore}</div>
-                      </div>
-                    </div>
-                  </div>
+                          {/* Contact & Login */}
+                          <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.8rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#334155' }}>
+                                <Phone size={13} color="#006B70" />
+                                <span>{stf.phone || 'N/A'}</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#64748B' }}>
+                                <Mail size={13} color="#64748B" />
+                                <span>{stf.email || `${stf.id.toLowerCase()}@medmarg.com`}</span>
+                              </div>
+                            </div>
+                          </td>
 
-                  {/* Actions Bar */}
-                  <div style={{ marginTop: '1.25rem', display: 'flex', gap: '0.6rem' }}>
-                    <button
-                      onClick={() => setSelectedStaffProfile(stf)}
-                      style={{ flex: 1, padding: '0.55rem', backgroundColor: '#F1F5F9', color: '#006B70', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}
-                    >
-                      <Key size={14} /> Edit Access & Controls ({stf.permissions.length})
-                    </button>
-                    <a
-                      href={`tel:${stf.phone}`}
-                      style={{ padding: '0.55rem 0.85rem', backgroundColor: '#006B70', color: '#FFF', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '800', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    >
-                      <Phone size={14} />
-                    </a>
-                  </div>
-                </div>
-              );
-            })}
+                          {/* Branch & Shift */}
+                          <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.78rem' }}>
+                              <div style={{ color: '#334155', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                <Building size={13} color="#64748B" /> {stf.branch}
+                              </div>
+                              <div style={{ color: '#D97706', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                <Clock size={13} /> {stf.shift}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Performance Stats */}
+                          <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                              <span style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.82rem' }}>
+                                {stf.tasksCompletedToday || 0} tasks today
+                              </span>
+                              <span style={{ fontSize: '0.72rem', color: '#15803D', fontWeight: '700' }}>
+                                Accuracy: {stf.accuracyScore || '100%'}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Duty Status */}
+                          <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                            <span style={{ 
+                              fontSize: '0.74rem', 
+                              padding: '0.2rem 0.55rem', 
+                              borderRadius: '6px', 
+                              fontWeight: '800', 
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              backgroundColor: isOnDuty ? '#DCFCE7' : '#F1F5F9', 
+                              color: isOnDuty ? '#15803D' : '#64748B' 
+                            }}>
+                              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: isOnDuty ? '#10B981' : '#94A3B8', display: 'inline-block' }}></span>
+                              {isOnDuty ? 'ON DUTY' : 'OFF DUTY'}
+                            </span>
+                          </td>
+
+                          {/* Actions */}
+                          <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle', textAlign: 'right' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.4rem', flexWrap: 'nowrap' }}>
+                              <button
+                                onClick={() => setSelectedStaffProfile(stf)}
+                                title="Edit Permissions & Access"
+                                style={{ padding: '0.4rem 0.55rem', backgroundColor: '#F1F5F9', color: '#006B70', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                              >
+                                <Key size={13} /> Access
+                              </button>
+
+                              <button
+                                onClick={() => setEditingStaff({ ...stf })}
+                                title="Edit / Update Staff Details"
+                                style={{ padding: '0.4rem 0.55rem', backgroundColor: '#F8FAFC', color: '#006B70', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                              >
+                                <Edit3 size={13} /> Edit
+                              </button>
+
+                              <button
+                                onClick={() => handleDeleteStaff(stf.id, stf.name)}
+                                title="Delete Staff Member"
+                                style={{ padding: '0.4rem 0.55rem', backgroundColor: '#FFF', color: '#EF4444', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
@@ -737,6 +900,32 @@ export default function StaffManagementTab({
                 />
               </div>
 
+              {/* Login Credentials: Email & Password */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', backgroundColor: '#F8FAFC', padding: '0.85rem', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: '#006B70', marginBottom: '0.3rem' }}>Staff Login Email *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="staff.member@medmarg.com"
+                    value={newStaffForm.email}
+                    onChange={(e) => setNewStaffForm({ ...newStaffForm, email: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem 0.85rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: '#006B70', marginBottom: '0.3rem' }}>Portal Password *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. medmarg@staff123"
+                    value={newStaffForm.password}
+                    onChange={(e) => setNewStaffForm({ ...newStaffForm, password: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem 0.85rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: '#475569', marginBottom: '0.3rem' }}>Phone Number *</label>
@@ -776,6 +965,146 @@ export default function StaffManagementTab({
                   style={{ padding: '0.65rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}
                 >
                   Save & Issue Credentials
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2.5: EDIT / UPDATE STAFF MEMBER MODAL */}
+      {editingStaff && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '560px', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>Edit Staff Member</h3>
+                <div style={{ fontSize: '0.8rem', color: '#006B70', fontWeight: '700' }}>ID: {editingStaff.id}</div>
+              </div>
+              <button onClick={() => setEditingStaff(null)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>
+            </div>
+
+            <form onSubmit={handleUpdateStaffSubmit} style={{ padding: '1.5rem', display: 'grid', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: '#475569', marginBottom: '0.3rem' }}>Staff Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingStaff.name || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, name: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem 0.85rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: '#475569', marginBottom: '0.3rem' }}>Role Category</label>
+                  <select
+                    value={editingStaff.roleCategory || 'LAB_ASSISTANT'}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, roleCategory: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem 0.85rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.85rem' }}
+                  >
+                    {roleCategories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: '#475569', marginBottom: '0.3rem' }}>Designation Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingStaff.role || ''}
+                  onChange={(e) => setEditingStaff({ ...editingStaff, role: e.target.value })}
+                  style={{ width: '100%', padding: '0.6rem 0.85rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', backgroundColor: '#F8FAFC', padding: '0.85rem', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: '#006B70', marginBottom: '0.3rem' }}>Staff Email *</label>
+                  <input
+                    type="email"
+                    required
+                    value={editingStaff.email || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, email: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem 0.85rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: '#006B70', marginBottom: '0.3rem' }}>New Password (Optional)</label>
+                  <input
+                    type="password"
+                    placeholder="Leave blank to keep unchanged"
+                    value={editingStaff.password || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, password: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem 0.85rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: '#475569', marginBottom: '0.3rem' }}>Phone Number *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingStaff.phone || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, phone: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem 0.85rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: '#475569', marginBottom: '0.3rem' }}>Shift Schedule</label>
+                  <select
+                    value={editingStaff.shift || 'General Shift (09:00 AM - 05:00 PM)'}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, shift: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem 0.85rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.85rem' }}
+                  >
+                    <option value="Morning Shift (06:00 AM - 02:00 PM)">Morning Shift (06:00 AM - 02:00 PM)</option>
+                    <option value="General Shift (09:00 AM - 05:00 PM)">General Shift (09:00 AM - 05:00 PM)</option>
+                    <option value="Evening Shift (02:00 PM - 10:00 PM)">Evening Shift (02:00 PM - 10:00 PM)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: '#475569', marginBottom: '0.3rem' }}>Branch Location</label>
+                  <input
+                    type="text"
+                    value={editingStaff.branch || ''}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, branch: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem 0.85rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: '#475569', marginBottom: '0.3rem' }}>Duty Status</label>
+                  <select
+                    value={editingStaff.status || 'ON_DUTY'}
+                    onChange={(e) => setEditingStaff({ ...editingStaff, status: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem 0.85rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.85rem' }}
+                  >
+                    <option value="ON_DUTY">ON DUTY</option>
+                    <option value="OFF_DUTY">OFF DUTY</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '1rem', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingStaff(null)}
+                  style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: '0.65rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Save Changes
                 </button>
               </div>
             </form>

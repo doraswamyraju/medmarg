@@ -31,7 +31,8 @@ import {
   TrendingUp,
   Activity,
   Clock,
-  HeartHandshake
+  HeartHandshake,
+  Briefcase
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState, saveCatalogState } from '../data/catalogStore';
@@ -311,7 +312,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { key: 'CUSTOMERS', label: 'Customers', icon: Users, badge: 'Care Seekers' },
     { key: 'GPS_RADAR', label: 'Tracking', icon: Navigation, badge: 'Live GPS' },
     { key: 'TERRITORY_MGMT', label: 'Territories', icon: Compass, badge: `${territories.length} Zones` },
-    { key: 'FREELANCERS', label: 'Freelancers', icon: UserCheck, badge: `${freelancers.filter(f => f.status === 'PENDING_VERIFICATION').length} Pending` },
+    { key: 'FREELANCERS', label: 'Freelancers', icon: Briefcase, badge: `${freelancers.filter(f => f.status === 'PENDING_VERIFICATION').length} Pending` },
     { key: 'SALARIED_FLEET', label: 'Fleet', icon: Truck, badge: `${salariedAgents.length}` },
     { key: 'INVENTORY', label: 'Inventory', icon: Boxes, badge: `${indents.filter(i => i.status === 'PENDING_APPROVAL').length || 1}` },
     { key: 'STAFF', label: 'Staff', icon: UserCog, badge: '5 Active' },
