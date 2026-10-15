@@ -78,38 +78,144 @@ router.post('/broadcast-jobs/claim', (req, res) => {
     res.json({ success: true, message: 'Job successfully claimed!', order: newOrder });
 });
 
-// AGENT CONSUMABLES INVENTORY
+// DEFAULT INVENTORY SEED
+const DEFAULT_AGENT_INVENTORY = [
+    { id: 'INV-01', name: 'Vacutainer Gold SST (Serum Gel)', code: 'TUBE-SST', stock: 18, unit: 'Tubes', minThreshold: 10, status: 'NORMAL' },
+    { id: 'INV-02', name: 'Vacutainer Purple (EDTA Whole Blood)', code: 'TUBE-EDTA', stock: 24, unit: 'Tubes', minThreshold: 10, status: 'NORMAL' },
+    { id: 'INV-03', name: 'Vacutainer Grey (Fluoride Sugar)', code: 'TUBE-FLR', stock: 6, unit: 'Tubes', minThreshold: 10, status: 'LOW' },
+    { id: 'INV-04', name: 'Vacutainer Light Blue (Citrate Coagulation)', code: 'TUBE-CIT', stock: 8, unit: 'Tubes', minThreshold: 5, status: 'NORMAL' },
+    { id: 'INV-05', name: 'Sterile Safety Syringes 5ml', code: 'SYR-5ML', stock: 30, unit: 'Units', minThreshold: 15, status: 'NORMAL' },
+    { id: 'INV-06', name: 'Sterile Safety Syringes 2ml', code: 'SYR-2ML', stock: 25, unit: 'Units', minThreshold: 15, status: 'NORMAL' },
+    { id: 'INV-07', name: 'Barcode Thermal Label Rolls', code: 'LBL-ROLL', stock: 2, unit: 'Rolls', minThreshold: 2, status: 'LOW' },
+    { id: 'INV-08', name: 'Biohazard Seal Bags (A4)', code: 'BIO-BAG', stock: 40, unit: 'Bags', minThreshold: 20, status: 'NORMAL' },
+    { id: 'INV-09', name: 'Cold-Chain Ice Gel Freeze Packs', code: 'ICE-GEL', stock: 4, unit: 'Packs', minThreshold: 2, status: 'NORMAL' }
+];
+
+// AGENT CONSUMABLES INVENTORY (LIVE SYNCED WITH ADMIN & STORE IN-CHARGE)
 router.get('/inventory', (req, res) => {
-    const inventory = [
-        { id: 'INV-01', name: 'Vacutainer Gold SST (Serum Gel)', code: 'TUBE-SST', stock: 18, unit: 'Tubes', minThreshold: 10, status: 'NORMAL' },
-        { id: 'INV-02', name: 'Vacutainer Purple (EDTA Whole Blood)', code: 'TUBE-EDTA', stock: 24, unit: 'Tubes', minThreshold: 10, status: 'NORMAL' },
-        { id: 'INV-03', name: 'Vacutainer Grey (Fluoride Sugar)', code: 'TUBE-FLR', stock: 6, unit: 'Tubes', minThreshold: 10, status: 'LOW' },
-        { id: 'INV-04', name: 'Vacutainer Light Blue (Citrate Coagulation)', code: 'TUBE-CIT', stock: 8, unit: 'Tubes', minThreshold: 5, status: 'NORMAL' },
-        { id: 'INV-05', name: 'Sterile Safety Syringes 5ml', code: 'SYR-5ML', stock: 30, unit: 'Units', minThreshold: 15, status: 'NORMAL' },
-        { id: 'INV-06', name: 'Sterile Safety Syringes 2ml', code: 'SYR-2ML', stock: 25, unit: 'Units', minThreshold: 15, status: 'NORMAL' },
-        { id: 'INV-07', name: 'Barcode Thermal Label Rolls', code: 'LBL-ROLL', stock: 2, unit: 'Rolls', minThreshold: 2, status: 'LOW' },
-        { id: 'INV-08', name: 'Biohazard Seal Bags (A4)', code: 'BIO-BAG', stock: 40, unit: 'Bags', minThreshold: 20, status: 'NORMAL' },
-        { id: 'INV-09', name: 'Cold-Chain Ice Gel Freeze Packs', code: 'ICE-GEL', stock: 4, unit: 'Packs', minThreshold: 2, status: 'NORMAL' }
-    ];
-    res.json({ success: true, inventory });
+    const agentId = req.query.agentId || 'AG-01';
+
+    if (!dbStore.agentInventory) dbStore.agentInventory = {};
+    if (!dbStore.agentInventory[agentId]) {
+        dbStore.agentInventory[agentId] = JSON.parse(JSON.stringify(DEFAULT_AGENT_INVENTORY));
+        saveDbStore();
+    }
+
+    const inHandInventory = dbStore.agentInventory[agentId];
+    const warehouseStock = dbStore.inventoryStock || [];
+    const agentIndents = (dbStore.indents || []).filter(i => !i.agentId || i.agentId === agentId || i.agentName?.includes(agentId));
+
+    res.json({
+        success: true,
+        agentId,
+        inventory: inHandInventory,
+        warehouseStock: warehouseStock,
+        indents: agentIndents
+    });
 });
 
+// RAISE INDENT (STOCK REPLENISHMENT REQUEST TO ADMIN/STORE IN-CHARGE)
 router.post('/indent', (req, res) => {
-    const { agentName, agentId, items, urgency = 'NORMAL', notes = '' } = req.body;
+    const { agentName, agentId = 'AG-01', items, urgency = 'NORMAL', notes = '' } = req.body;
     const newIndent = {
-        id: `IND-${Date.now()}`,
-        agentName: agentName || 'Phlebotomist Agent',
+        id: `IND-${Math.floor(1000 + Math.random() * 9000)}`,
+        agentName: agentName || 'Ramesh Kumar (AG-01)',
         agentId: agentId || 'AG-01',
         items: items || [],
         urgency,
         notes,
-        status: 'PENDING',
+        status: 'PENDING_APPROVAL',
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
         requestedAt: new Date().toISOString()
     };
     if (!dbStore.indents) dbStore.indents = [];
     dbStore.indents.unshift(newIndent);
     saveDbStore();
-    res.status(201).json({ success: true, indent: newIndent });
+    res.status(201).json({ success: true, message: 'Stock replenishment indent submitted to Admin Store Desk.', indent: newIndent });
+});
+
+// AGENT PROFILE MANAGEMENT & GET DETAILS
+router.get('/profile/:agentId', (req, res) => {
+    const { agentId } = req.params;
+    const agent = (dbStore.salariedAgents || []).find(a => a.id === agentId) || {
+        id: agentId,
+        name: 'Ramesh Kumar',
+        phone: '+91 97777 77777',
+        email: 'salaried@medmarg.com',
+        role: 'SALARIED_AGENT',
+        zone: 'Tirupati Urban & Bypass (Zone 1)',
+        vehicle: 'Hero Electric Nyx EV (AP 03 EV 4821)',
+        emergencyContact: '+91 94400 99881 (Spouse)',
+        bloodGroup: 'B+',
+        joiningDate: '12 Jan 2025',
+        qualification: 'DMLT Certified Phlebotomist'
+    };
+    res.json({ success: true, profile: agent });
+});
+
+router.post('/profile', (req, res) => {
+    const { agentId = 'AG-01', name, phone, email, vehicle, emergencyContact, bloodGroup } = req.body;
+    
+    if (!dbStore.salariedAgents) dbStore.salariedAgents = [];
+    let agent = dbStore.salariedAgents.find(a => a.id === agentId);
+
+    if (!agent) {
+        agent = {
+            id: agentId,
+            name: name || 'Ramesh Kumar',
+            phone: phone || '+91 97777 77777',
+            email: email || 'salaried@medmarg.com',
+            role: 'SALARIED_AGENT',
+            zone: 'Tirupati Urban & Bypass (Zone 1)',
+            vehicle: vehicle || 'Hero Electric Nyx EV (AP 03 EV 4821)',
+            emergencyContact: emergencyContact || '+91 94400 99881',
+            bloodGroup: bloodGroup || 'B+'
+        };
+        dbStore.salariedAgents.push(agent);
+    } else {
+        if (name) agent.name = name;
+        if (phone) agent.phone = phone;
+        if (email) agent.email = email;
+        if (vehicle) agent.vehicle = vehicle;
+        if (emergencyContact) agent.emergencyContact = emergencyContact;
+        if (bloodGroup) agent.bloodGroup = bloodGroup;
+    }
+
+    saveDbStore();
+    res.json({ success: true, message: 'Phlebotomist profile updated successfully.', profile: agent });
+});
+
+// DOORSTEP PAYMENTS & SETTLEMENTS LEDGER
+router.get('/payments/:agentId', (req, res) => {
+    const { agentId } = req.params;
+    
+    // Find all orders assigned to this agent with payment collected
+    const orders = (dbStore.orders || []).filter(o => 
+        o.assignedAgent && o.assignedAgent.includes(agentId)
+    );
+
+    const doorstepPayments = orders.map(ord => ({
+        id: `TXN-${ord.id}`,
+        orderId: ord.id,
+        patientName: ord.patientName,
+        phone: ord.phone,
+        amount: Number(ord.amount || ord.totalAmount) || 899,
+        paymentMode: ord.paymentMode || 'DOORSTEP_QR',
+        paymentStatus: ord.paymentStatus || (ord.paymentMode === 'PREPAID_UPI' ? 'PAID_ONLINE' : 'PAID_DOORSTEP_QR'),
+        date: ord.createdAt || 'Today',
+        razorpayPaymentId: ord.razorpayPaymentId || `pay_qr_${ord.id}`
+    }));
+
+    const totalCollected = doorstepPayments
+        .filter(p => p.paymentStatus.includes('PAID') || p.paymentStatus === 'PAID_DOORSTEP_QR')
+        .reduce((sum, p) => sum + p.amount, 0);
+
+    res.json({
+        success: true,
+        agentId,
+        totalCollected,
+        transactions: doorstepPayments
+    });
 });
 
 // AGENT WALLET & EARNINGS
