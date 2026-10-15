@@ -21,7 +21,21 @@ import {
   HeartPulse,
   HeartHandshake,
   Check,
-  Plus
+  Plus,
+  Navigation,
+  MapPin,
+  Bike,
+  Heart,
+  Droplets,
+  Scale,
+  Wind,
+  Download,
+  Bell,
+  Clock,
+  ChevronRight,
+  TrendingUp,
+  AlertTriangle,
+  Calendar
 } from 'lucide-react';
 import CareSeekerOffersCarousel from './CareSeekerOffersCarousel';
 
@@ -36,11 +50,24 @@ export default function CareSeekerHomeTab({
   onOpenAddressModal = () => {},
   addToCart = () => {},
   catalog = {},
-  liveOrdersCount = 0
+  liveOrdersCount = 0,
+  activeOrder = null,
+  allOrders = []
 }) {
   const [homeSearchQuery, setHomeSearchQuery] = useState('');
   const [activeSearchScope, setActiveSearchScope] = useState('TESTS'); // 'TESTS' | 'DOCTORS' | 'MEDICINES'
+  const [activeSnapshotTab, setActiveSnapshotTab] = useState('Vitals'); // 'Vitals' | 'Activity' | 'Sleep' | 'Weight & BMI' | 'Trends'
   const searchInputRef = useRef(null);
+
+  // Active Ongoing Order Data (matching live order or demo tracking)
+  const ongoingOrder = activeOrder || (allOrders && allOrders.find(o => o.status === 'ENROUTE' || o.status === 'ASSIGNED' || o.status === 'SAMPLE_COLLECTED')) || {
+    id: 'MM-LAB-4054',
+    phleboName: 'Ajay Kumar',
+    phleboPhone: '+91 98765 11223',
+    phleboRating: '4.8 (320+ collections)',
+    eta: '8 minutes',
+    status: 'ENROUTE'
+  };
 
   const topPackage = (catalog.packages && catalog.packages[0]) || {
     id: 'pkg_aarogyam_13',
@@ -347,13 +374,762 @@ export default function CareSeekerHomeTab({
         )}
       </div>
 
-      {/* 2. HORIZONTAL SCROLLABLE OFFERS CAROUSEL */}
+      {/* 2. ONGOING ORDER TRACKING WIDGET (MATCHING USER'S IMAGE 4) */}
+      {ongoingOrder && (
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '24px',
+          padding: '1.5rem 1.75rem',
+          border: '1.5px solid #E2E8F0',
+          boxShadow: '0 8px 24px rgba(0, 107, 112, 0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.25rem'
+        }}>
+          {/* Header */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+              Ongoing Order
+            </h3>
+            <button
+              onClick={() => setActiveTab('ORDERS')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#006B70',
+                fontWeight: '800',
+                fontSize: '0.88rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem'
+              }}
+            >
+              View Details <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {/* Phlebotomist and Arrival Status */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              {/* Phlebotomist Avatar with Phone Call Overlay */}
+              <div style={{ position: 'relative' }}>
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #006B70 0%, #004D40 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#FFF',
+                  fontWeight: '900',
+                  fontSize: '1.5rem',
+                  border: '3px solid #E0F2F1',
+                  boxShadow: '0 4px 12px rgba(0,107,112,0.2)'
+                }}>
+                  👨‍⚕️
+                </div>
+                {ongoingOrder.phleboPhone && (
+                  <button
+                    onClick={() => handleOrderCall(ongoingOrder.phleboPhone)}
+                    title="Call Phlebotomist"
+                    style={{
+                      position: 'absolute',
+                      bottom: '-2px',
+                      right: '-2px',
+                      backgroundColor: '#10B981',
+                      color: '#FFF',
+                      border: '2px solid #FFF',
+                      borderRadius: '50%',
+                      width: '26px',
+                      height: '26px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+                    }}
+                  >
+                    <PhoneCall size={13} />
+                  </button>
+                )}
+              </div>
+
+              <div>
+                <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+                  {ongoingOrder.phleboName || 'Ajay Kumar'}
+                </h4>
+                <div style={{ fontSize: '0.84rem', color: '#64748B', marginTop: '0.15rem' }}>
+                  Your Phlebotomist
+                </div>
+                <div style={{ fontSize: '0.8rem', color: '#F59E0B', fontWeight: '800', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  ★ {ongoingOrder.phleboRating || '4.8 (320+ collections)'}
+                </div>
+              </div>
+            </div>
+
+            {/* Arrival & Live Tracking Button */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+              <div style={{
+                backgroundColor: '#ECFDF5',
+                color: '#065F46',
+                border: '1px solid #A7F3D0',
+                padding: '0.45rem 0.95rem',
+                borderRadius: '20px',
+                fontSize: '0.88rem',
+                fontWeight: '800',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }} />
+                Arriving in {ongoingOrder.eta || '8 minutes'}
+              </div>
+
+              <button
+                onClick={() => setActiveTab('TRACK')}
+                style={{
+                  padding: '0.45rem 1rem',
+                  backgroundColor: '#006B70',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: '800',
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  boxShadow: '0 3px 10px rgba(0,107,112,0.2)'
+                }}
+              >
+                <Navigation size={14} /> Live Tracking
+              </button>
+            </div>
+          </div>
+
+          {/* 4-Step Progress Line with Animated Scooter Icon */}
+          <div style={{ position: 'relative', margin: '0.75rem 0' }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              position: 'relative'
+            }}>
+              {/* Connector line */}
+              <div style={{
+                position: 'absolute',
+                top: '16px',
+                left: '12%',
+                right: '12%',
+                height: '4px',
+                backgroundColor: '#E2E8F0',
+                zIndex: 1
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: '68%',
+                  backgroundColor: '#006B70',
+                  borderRadius: '2px'
+                }} />
+              </div>
+
+              {/* Steps */}
+              {[
+                { title: 'Order Confirmed', time: '9:10 AM', done: true },
+                { title: 'Phlebotomist Assigned', time: '9:15 AM', done: true },
+                { title: 'On the Way', time: '9:25 AM', done: true, current: true },
+                { title: 'Sample Collection Pending', time: 'Pending', done: false }
+              ].map((step, idx) => (
+                <div key={idx} style={{ textAlign: 'center', position: 'relative', zIndex: 2 }}>
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    backgroundColor: step.current ? '#006B70' : (step.done ? '#006B70' : '#E2E8F0'),
+                    color: step.done ? '#FFF' : '#64748B',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    margin: '0 auto 0.5rem',
+                    boxShadow: step.current ? '0 0 0 4px rgba(0,107,112,0.2)' : 'none',
+                    border: step.current ? '2px solid #FFF' : 'none'
+                  }}>
+                    {step.current ? '🛵' : (step.done ? <Check size={16} /> : (idx + 1))}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', fontWeight: step.current ? '900' : '700', color: step.current ? '#006B70' : '#1E293B' }}>
+                    {step.title}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '0.1rem' }}>
+                    {step.time}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Mini Road Map Snippet with Route & ETA Pill */}
+          <div style={{
+            height: '105px',
+            borderRadius: '16px',
+            backgroundColor: '#F8FAFC',
+            border: '1.5px solid #E2E8F0',
+            position: 'relative',
+            overflow: 'hidden',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundImage: 'radial-gradient(#CBD5E1 1px, transparent 1px)',
+            backgroundSize: '16px 16px'
+          }}>
+            {/* SVG Road Route */}
+            <svg style={{ position: 'absolute', width: '100%', height: '100%', top: 0, left: 0 }}>
+              <path
+                d="M 100 75 Q 250 20 450 65 T 800 40"
+                fill="none"
+                stroke="#006B70"
+                strokeWidth="4"
+                strokeDasharray="6 4"
+              />
+            </svg>
+
+            {/* Scooter Marker & ETA Pill */}
+            <div style={{
+              position: 'absolute',
+              left: '46%',
+              top: '25px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              zIndex: 3
+            }}>
+              <div style={{
+                backgroundColor: '#006B70',
+                color: '#FFF',
+                fontSize: '0.72rem',
+                fontWeight: '800',
+                padding: '0.2rem 0.55rem',
+                borderRadius: '10px',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                whiteSpace: 'nowrap',
+                marginBottom: '4px'
+              }}>
+                8 mins
+              </div>
+              <div style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '50%',
+                backgroundColor: '#FFF',
+                border: '2px solid #006B70',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.1rem',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.15)'
+              }}>
+                🛵
+              </div>
+            </div>
+
+            {/* Destination Home Pin */}
+            <div style={{
+              position: 'absolute',
+              right: '15%',
+              top: '25px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              zIndex: 3
+            }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                backgroundColor: '#10B981',
+                color: '#FFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 10px rgba(16,185,129,0.3)'
+              }}>
+                <MapPin size={18} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. HORIZONTAL SCROLLABLE OFFERS CAROUSEL */}
       <CareSeekerOffersCarousel 
         onSelectOffer={setSelectedDetailItem}
         catalog={catalog}
       />
 
-      {/* 3. STREAMLINED COMPACT 1-TAP HERO BLOCK */}
+      {/* 4. MY HEALTH SNAPSHOT SECTION (MATCHING USER'S IMAGE 5) */}
+      <div style={{
+        backgroundColor: '#FFFFFF',
+        borderRadius: '24px',
+        padding: '1.75rem',
+        border: '1.5px solid #E2E8F0',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.25rem'
+      }}>
+        {/* Header Row */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h3 style={{ fontSize: '1.35rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+              My Health Snapshot
+            </h3>
+            <p style={{ fontSize: '0.82rem', color: '#64748B', margin: '0.2rem 0 0 0' }}>
+              Last updated: 12 Oct 2026, 8:45 AM
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => alert('Apple Health Sync: Connected to HealthKit sandbox.')}
+              style={{
+                backgroundColor: '#FFF1F2',
+                color: '#BE123C',
+                border: '1px solid #FECDD3',
+                padding: '0.45rem 0.85rem',
+                borderRadius: '20px',
+                fontSize: '0.8rem',
+                fontWeight: '800',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                cursor: 'pointer'
+              }}
+            >
+              ❤️ Sync with Apple Health
+            </button>
+
+            <button
+              onClick={() => setActiveTab('VITALS')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#006B70',
+                fontWeight: '800',
+                fontSize: '0.86rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.25rem'
+              }}
+            >
+              View Details <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+
+        {/* Sub-tabs Row */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.6rem' }}>
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+            {['Vitals', 'Activity', 'Sleep', 'Weight & BMI', 'Trends'].map(tab => {
+              const isSelected = activeSnapshotTab === tab;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveSnapshotTab(tab)}
+                  style={{
+                    padding: '0.4rem 0.9rem',
+                    borderRadius: '12px',
+                    border: 'none',
+                    backgroundColor: isSelected ? '#006B70' : '#F1F5F9',
+                    color: isSelected ? '#FFFFFF' : '#475569',
+                    fontWeight: '800',
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {tab}
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() => setActiveTab('VITALS')}
+            style={{
+              padding: '0.4rem 0.85rem',
+              borderRadius: '10px',
+              border: '1.5px solid #CBD5E1',
+              backgroundColor: '#FFFFFF',
+              color: '#006B70',
+              fontWeight: '800',
+              fontSize: '0.82rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              cursor: 'pointer'
+            }}
+          >
+            <Plus size={15} /> Add Reading
+          </button>
+        </div>
+
+        {/* 6 Biometric Cards with Sparklines */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '0.9rem' }}>
+          
+          {/* 1. Blood Pressure */}
+          <div style={{
+            backgroundColor: '#FFF5F5',
+            borderRadius: '18px',
+            padding: '1.15rem 1rem',
+            border: '1px solid #FFE4E6',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '0.75rem'
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#E11D48', fontSize: '0.78rem', fontWeight: '800' }}>
+                <Heart size={15} /> Blood Pressure
+              </div>
+              <div style={{ fontSize: '1.65rem', fontWeight: '900', color: '#0F172A', marginTop: '0.4rem' }}>
+                120/80
+              </div>
+              <div style={{ fontSize: '0.74rem', color: '#64748B' }}>mmHg</div>
+            </div>
+
+            {/* Sparkline curve */}
+            <svg viewBox="0 0 100 25" style={{ width: '100%', height: '26px' }}>
+              <path d="M 0 18 Q 20 12 40 16 T 70 8 T 100 12" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.72rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.15rem 0.55rem', borderRadius: '6px', fontWeight: '800' }}>
+                Normal
+              </span>
+              <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>2 days ago</span>
+            </div>
+          </div>
+
+          {/* 2. Blood Sugar (Fasting) */}
+          <div style={{
+            backgroundColor: '#F0F9FF',
+            borderRadius: '18px',
+            padding: '1.15rem 1rem',
+            border: '1px solid #E0F2FE',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '0.75rem'
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#0284C7', fontSize: '0.78rem', fontWeight: '800' }}>
+                <Droplets size={15} /> Blood Sugar (Fasting)
+              </div>
+              <div style={{ fontSize: '1.65rem', fontWeight: '900', color: '#0F172A', marginTop: '0.4rem' }}>
+                92
+              </div>
+              <div style={{ fontSize: '0.74rem', color: '#64748B' }}>mg/dL</div>
+            </div>
+
+            {/* Sparkline curve */}
+            <svg viewBox="0 0 100 25" style={{ width: '100%', height: '26px' }}>
+              <path d="M 0 20 Q 30 16 55 18 T 85 10 T 100 8" fill="none" stroke="#0284C7" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.72rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.15rem 0.55rem', borderRadius: '6px', fontWeight: '800' }}>
+                Normal
+              </span>
+              <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>Yesterday</span>
+            </div>
+          </div>
+
+          {/* 3. Heart Rate */}
+          <div style={{
+            backgroundColor: '#FFF7ED',
+            borderRadius: '18px',
+            padding: '1.15rem 1rem',
+            border: '1px solid #FFEDD5',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '0.75rem'
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#EA580C', fontSize: '0.78rem', fontWeight: '800' }}>
+                <Activity size={15} /> Heart Rate
+              </div>
+              <div style={{ fontSize: '1.65rem', fontWeight: '900', color: '#0F172A', marginTop: '0.4rem' }}>
+                76
+              </div>
+              <div style={{ fontSize: '0.74rem', color: '#64748B' }}>bpm</div>
+            </div>
+
+            {/* Sparkline curve */}
+            <svg viewBox="0 0 100 25" style={{ width: '100%', height: '26px' }}>
+              <path d="M 0 18 Q 25 15 50 16 T 75 8 T 100 9" fill="none" stroke="#EA580C" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.72rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.15rem 0.55rem', borderRadius: '6px', fontWeight: '800' }}>
+                Normal
+              </span>
+              <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>2 days ago</span>
+            </div>
+          </div>
+
+          {/* 4. Weight */}
+          <div style={{
+            backgroundColor: '#F0FDF4',
+            borderRadius: '18px',
+            padding: '1.15rem 1rem',
+            border: '1px solid #DCFCE7',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '0.75rem'
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#16A34A', fontSize: '0.78rem', fontWeight: '800' }}>
+                <Scale size={15} /> Weight
+              </div>
+              <div style={{ fontSize: '1.65rem', fontWeight: '900', color: '#0F172A', marginTop: '0.4rem' }}>
+                72
+              </div>
+              <div style={{ fontSize: '0.74rem', color: '#64748B' }}>kg</div>
+            </div>
+
+            {/* Sparkline curve */}
+            <svg viewBox="0 0 100 25" style={{ width: '100%', height: '26px' }}>
+              <path d="M 0 18 Q 30 14 60 17 T 90 9 T 100 7" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.72rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.15rem 0.55rem', borderRadius: '6px', fontWeight: '800' }}>
+                ↓ 1.5 kg
+              </span>
+              <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>3 days ago</span>
+            </div>
+          </div>
+
+          {/* 5. BMI */}
+          <div style={{
+            backgroundColor: '#FAF5FF',
+            borderRadius: '18px',
+            padding: '1.15rem 1rem',
+            border: '1px solid #F3E8FF',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '0.75rem'
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#9333EA', fontSize: '0.78rem', fontWeight: '800' }}>
+                <Sparkles size={15} /> BMI
+              </div>
+              <div style={{ fontSize: '1.65rem', fontWeight: '900', color: '#0F172A', marginTop: '0.4rem' }}>
+                23.4
+              </div>
+              <div style={{ fontSize: '0.74rem', color: '#64748B' }}>kg/m²</div>
+            </div>
+
+            {/* Sparkline curve */}
+            <svg viewBox="0 0 100 25" style={{ width: '100%', height: '26px' }}>
+              <path d="M 0 18 Q 30 16 60 14 T 85 9 T 100 6" fill="none" stroke="#9333EA" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.72rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.15rem 0.55rem', borderRadius: '6px', fontWeight: '800' }}>
+                Normal
+              </span>
+              <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>3 days ago</span>
+            </div>
+          </div>
+
+          {/* 6. SpO2 */}
+          <div style={{
+            backgroundColor: '#F0FDFA',
+            borderRadius: '18px',
+            padding: '1.15rem 1rem',
+            border: '1px solid #CCFBF1',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '0.75rem'
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#0D9488', fontSize: '0.78rem', fontWeight: '800' }}>
+                <Wind size={15} /> SpO₂
+              </div>
+              <div style={{ fontSize: '1.65rem', fontWeight: '900', color: '#0F172A', marginTop: '0.4rem' }}>
+                98
+              </div>
+              <div style={{ fontSize: '0.74rem', color: '#64748B' }}>%</div>
+            </div>
+
+            {/* Sparkline curve */}
+            <svg viewBox="0 0 100 25" style={{ width: '100%', height: '26px' }}>
+              <path d="M 0 19 Q 30 15 65 17 T 90 10 T 100 8" fill="none" stroke="#0D9488" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.72rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.15rem 0.55rem', borderRadius: '6px', fontWeight: '800' }}>
+                Normal
+              </span>
+              <span style={{ fontSize: '0.72rem', color: '#94A3B8' }}>3 days ago</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* 5. RECENT LAB REPORTS & CLINICAL INSIGHTS SPLIT ROW */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+        
+        {/* Recent Reports Card */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '24px',
+          padding: '1.75rem',
+          border: '1.5px solid #E2E8F0',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          gap: '1rem'
+        }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <FileText size={20} color="#006B70" />
+                <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+                  Recent Lab Reports
+                </h4>
+              </div>
+              <button
+                onClick={() => setActiveTab('REPORTS')}
+                style={{ background: 'none', border: 'none', color: '#006B70', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+              >
+                Health Vault <ChevronRight size={15} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+              {[
+                { title: 'Complete Blood Count (CBC)', date: '28 Sep 2026', lab: 'Thyrocare NABL Lab', status: 'Verified' },
+                { title: 'Thyroid Profile Total (T3/T4/TSH)', date: '15 Aug 2026', lab: 'Thyrocare NABL Lab', status: 'Verified' },
+                { title: 'HbA1c Glycated Hemoglobin', date: '02 Jul 2026', lab: 'MedMarg Processing Hub', status: 'Verified' }
+              ].map((rep, rIdx) => (
+                <div
+                  key={rIdx}
+                  style={{
+                    padding: '0.85rem 1rem',
+                    backgroundColor: '#F8FAFC',
+                    borderRadius: '14px',
+                    border: '1px solid #E2E8F0',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '800', color: '#0F172A' }}>{rep.title}</div>
+                    <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: '0.15rem' }}>
+                      📅 {rep.date} • {rep.lab}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('REPORTS')}
+                    style={{
+                      padding: '0.4rem 0.75rem',
+                      backgroundColor: '#E0F2F1',
+                      color: '#006B70',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '0.78rem',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.3rem'
+                    }}
+                  >
+                    <Download size={13} /> PDF
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Reminders & Insights Card */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '24px',
+          padding: '1.75rem',
+          border: '1.5px solid #E2E8F0',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          gap: '1rem'
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
+              <Bell size={20} color="#D97706" />
+              <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+                Reminders & Clinical Insights
+              </h4>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{
+                padding: '0.85rem 1rem',
+                backgroundColor: '#FFFBEB',
+                borderRadius: '14px',
+                border: '1px solid #FDE68A',
+                display: 'flex',
+                gap: '0.75rem',
+                alignItems: 'flex-start'
+              }}>
+                <Clock size={18} color="#D97706" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: '0.86rem', fontWeight: '900', color: '#92400E' }}>
+                    Fasting Protocol Reminder
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: '#B45309', marginTop: '0.15rem', lineHeight: 1.4 }}>
+                    Your upcoming order includes Fasting Glucose & Lipids. Please maintain 8-10 hours water-only fasting before your phlebotomist arrives.
+                  </div>
+                </div>
+              </div>
+
+              <div style={{
+                padding: '0.85rem 1rem',
+                backgroundColor: '#F0FDF4',
+                borderRadius: '14px',
+                border: '1px solid #BBF7D0',
+                display: 'flex',
+                gap: '0.75rem',
+                alignItems: 'flex-start'
+              }}>
+                <ShieldCheck size={18} color="#15803D" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: '0.86rem', fontWeight: '900', color: '#166534' }}>
+                    Optimal Cold-Chain Guaranteed
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: '#15803D', marginTop: '0.15rem', lineHeight: 1.4 }}>
+                    Your samples will be transported in IoT digital thermal gel carriers at strictly 2°C - 8°C directly to Thyrocare / MedMarg testing labs.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* 6. STREAMLINED COMPACT 1-TAP HERO BLOCK */}
       <div style={{
         backgroundColor: '#004D40',
         borderRadius: '20px',

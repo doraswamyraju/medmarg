@@ -37,7 +37,9 @@ export default function PatientCartDrawer({
 
   const [inCartSearch, setInCartSearch] = useState('');
   const [rememberPreference, setRememberPreference] = useState(() => {
-    return !!localStorage.getItem('medmarg_preferred_lab_choice');
+    const flag = localStorage.getItem('medmarg_remember_lab_flag');
+    if (flag !== null) return flag === 'true';
+    return true; // Default to remembering user's selected lab
   });
 
   // Calculate totals across all 3 lab options
@@ -51,21 +53,21 @@ export default function PatientCartDrawer({
 
   const handleSelectLab = (labId) => {
     setSelectedLabProvider(labId);
-    if (rememberPreference) {
-      savePreferredLab(labId);
-    }
+    savePreferredLab(labId);
   };
 
   const handleToggleRemember = (e) => {
     const checked = e.target.checked;
     setRememberPreference(checked);
-    if (checked) {
-      savePreferredLab(selectedLabProvider);
-    } else {
-      try {
+    try {
+      localStorage.setItem('medmarg_remember_lab_flag', checked ? 'true' : 'false');
+      if (checked) {
+        savePreferredLab(selectedLabProvider);
+      } else {
         localStorage.removeItem('medmarg_preferred_lab_choice');
-      } catch (err) {}
-    }
+        localStorage.removeItem('medmarg_preferred_lab');
+      }
+    } catch (err) {}
   };
 
   // Quick Add-on Tests
