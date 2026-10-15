@@ -15,7 +15,7 @@ export default function DoctorReportsTab({ doctorOrders }) {
               <div>
                 <div style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800' }}>{ord.orderId} • {ord.date}</div>
                 <div style={{ fontWeight: '900', color: '#0F172A', fontSize: '1.05rem', marginTop: '0.15rem' }}>{ord.patientName}</div>
-                <div style={{ fontSize: '0.82rem', color: '#64748B' }}>Tests: {ord.items.join(', ')}</div>
+                <div style={{ fontSize: '0.82rem', color: '#64748B' }}>Tests: {Array.isArray(ord.items) ? ord.items.join(', ') : (ord.items || 'Diagnostic Tests')}</div>
               </div>
 
               <div style={{ textAlign: 'right' }}>
