@@ -12,19 +12,102 @@ import {
   AlertCircle,
   ExternalLink,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  Package,
+  AlertTriangle,
+  Camera,
+  Star
 } from 'lucide-react';
+import { API_BASE, safeFetch } from '../../data/apiConfig';
 
 export default function PhlebotomistPickupsTab({ 
   pickups = [], 
+  setPickups,
   completedPickups = new Set(), 
+  inventory = [],
+  setInventory,
   onStartTrip,
   onArriveDoorstep,
   onOpenScanModal,
-  onOpenPaymentModal
+  onOpenPaymentModal,
+  onNavigateToIndent
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'ASSIGNED' | 'EN_ROUTE' | 'ARRIVED' | 'DONE'
+  const [shortageModal, setShortageModal] = useState(null); // Shortage alert modal state
+
+  // Enforce Rule: Accepts ONE order at a time
+  const activeTripOrder = pickups.find(p => p.status === 'EN_ROUTE' || p.status === 'ARRIVED');
+
+  // Kit Requirements Helper for an order
+  const getRequiredKit = (pk) => {
+    const list = [];
+    const tubes = pk.tubes || ['Yellow SST (Serum)', 'Lavender (EDTA Blood)'];
+    tubes.forEach(t => {
+      if (t.includes('Yellow') || t.includes('SST')) {
+        list.push({ name: 'Vacutainer Gold SST', code: 'TUBE-SST', qty: 1 });
+      } else if (t.includes('Lavender') || t.includes('EDTA')) {
+        list.push({ name: 'Vacutainer Purple EDTA', code: 'TUBE-EDTA', qty: 1 });
+      } else if (t.includes('Grey') || t.includes('Fluoride')) {
+        list.push({ name: 'Vacutainer Grey Fluoride', code: 'TUBE-FLR', qty: 1 });
+      } else {
+        list.push({ name: t, code: 'TUBE-GEN', qty: 1 });
+      }
+    });
+    list.push({ name: 'Sterile Safety Syringe 5ml', code: 'SYR-5ML', qty: 1 });
+    list.push({ name: 'Barcode Thermal Label', code: 'LBL-ROLL', qty: 1 });
+    return list;
+  };
+
+  // Assess & Assign Kit from In-Hand Inventory
+  const handleAssignKit = async (pk) => {
+    const requiredKit = getRequiredKit(pk);
+    const shortages = [];
+
+    requiredKit.forEach(req => {
+      const stockItem = inventory.find(i => 
+        (req.code && i.code === req.code) || 
+        (req.name && i.name.toLowerCase().includes(req.name.toLowerCase()))
+      );
+      if (!stockItem || stockItem.stock < req.qty) {
+        shortages.push({
+          name: req.name,
+          needed: req.qty,
+          inHand: stockItem ? stockItem.stock : 0
+        });
+      }
+    });
+
+    if (shortages.length > 0) {
+      setShortageModal({ order: pk, shortages });
+      return;
+    }
+
+    // Deduct from in-hand stock
+    if (setInventory) {
+      setInventory(prev => prev.map(inv => {
+        const match = requiredKit.find(r => r.code === inv.code || inv.name.toLowerCase().includes(r.name.toLowerCase()));
+        if (match) {
+          return { ...inv, stock: Math.max(0, inv.stock - match.qty) };
+        }
+        return inv;
+      }));
+    }
+
+    if (setPickups) {
+      setPickups(prev => prev.map(p => p.id === pk.id ? { ...p, kitAssigned: true } : p));
+    }
+
+    // Persist to backend
+    safeFetch(`${API_BASE}/api/v1/agent/order/assign-kit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        orderId: pk.id,
+        kitItems: requiredKit
+      })
+    }).catch(() => {});
+  };
 
   // Filtered List
   const filteredPickups = pickups.filter(pk => {
@@ -71,8 +154,17 @@ export default function PhlebotomistPickupsTab({
           </h2>
         </div>
 
-        {/* Progress pill */}
+        {/* Active trip indicator pill */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {activeTripOrder ? (
+            <span style={{ fontSize: '0.8rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.45rem 0.85rem', borderRadius: '10px', border: '1.5px solid #FCD34D', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              <Navigation size={14} className="animate-spin" /> Active Trip: Order #{activeTripOrder.id}
+            </span>
+          ) : (
+            <span style={{ fontSize: '0.8rem', backgroundColor: '#ECFDF5', color: '#059669', padding: '0.45rem 0.85rem', borderRadius: '10px', border: '1px solid #A7F3D0', fontWeight: '800' }}>
+              Ready for Next Trip
+            </span>
+          )}
           <span style={{ fontSize: '0.82rem', backgroundColor: '#FFFFFF', color: '#006B70', padding: '0.45rem 0.85rem', borderRadius: '10px', border: '1.5px solid #006B70', fontWeight: '900' }}>
             Completed: {completedCount} / {pickups.length} Visits
           </span>
@@ -138,18 +230,19 @@ export default function PhlebotomistPickupsTab({
         {filteredPickups.length === 0 ? (
           <div style={{ backgroundColor: '#FFFFFF', padding: '3rem', borderRadius: '16px', border: '1px dashed #CBD5E1', textAlign: 'center', color: '#64748B' }}>
             <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0F172A' }}>No Pickups Found</div>
-            <div style={{ fontSize: '0.85rem', marginTop: '0.35rem' }}>No orders match your search or filter selection.</div>
+            <div style={{ fontSize: '0.82rem', marginTop: '0.35rem' }}>Try clearing filters or search query</div>
           </div>
         ) : (
-          filteredPickups.map(pk => {
+          filteredPickups.map((pk) => {
             const isDone = completedPickups.has(pk.id) || pk.status === 'SAMPLE_COLLECTED' || pk.status === 'TRANSFERRED_TO_LAB';
             const isEnRoute = pk.status === 'EN_ROUTE';
             const isArrived = pk.status === 'ARRIVED';
-            const isUnpaid = pk.paymentStatus === 'PAY_AT_DOORSTEP' || 
-              (typeof pk.amount === 'string' && pk.amount.includes('Collect')) ||
-              pk.paymentStatus === 'PENDING_DOORSTEP';
+            const isUnpaid = pk.paymentStatus === 'PAY_AT_DOORSTEP' || (typeof pk.paymentStatus === 'string' && pk.paymentStatus.includes('DOORSTEP'));
+            const amountValue = pk.amount || pk.totalAmount || 899;
+            const kitAssigned = pk.kitAssigned || isDone;
 
-            const amountValue = Number(pk.amount || pk.totalAmount) || 899;
+            // Single active trip enforcement
+            const isAnotherTripActive = activeTripOrder && activeTripOrder.id !== pk.id;
 
             return (
               <div
@@ -157,67 +250,67 @@ export default function PhlebotomistPickupsTab({
                 style={{
                   backgroundColor: '#FFFFFF',
                   borderRadius: '16px',
+                  border: isEnRoute ? '2px solid #0284C7' : isArrived ? '2px solid #006B70' : isDone ? '1px solid #BBF7D0' : '1px solid #E2E8F0',
                   padding: '1.25rem 1.5rem',
-                  border: isDone ? '1.5px solid #059669' : isArrived ? '2px solid #006B70' : '1px solid #E2E8F0',
-                  boxShadow: isArrived ? '0 4px 16px rgba(0,107,112,0.1)' : '0 2px 6px rgba(0,0,0,0.02)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   flexWrap: 'wrap',
                   gap: '1.25rem',
-                  transition: 'all 0.15s ease'
+                  boxShadow: isEnRoute || isArrived ? '0 8px 24px rgba(0, 107, 112, 0.08)' : '0 2px 6px rgba(0,0,0,0.02)',
+                  transition: 'all 0.2s ease'
                 }}
               >
-                {/* 1. Time Slot & Status Column */}
+                
+                {/* 1. Time Slot & Status Pill */}
                 <div style={{ minWidth: '150px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
                     <span style={{
                       fontSize: '0.72rem',
                       fontWeight: '900',
                       padding: '0.2rem 0.55rem',
                       borderRadius: '6px',
-                      backgroundColor: isDone ? '#D1FAE5' : isArrived ? '#E0F2FE' : isEnRoute ? '#FEF3C7' : '#F1F5F9',
-                      color: isDone ? '#059669' : isArrived ? '#0284C7' : isEnRoute ? '#D97706' : '#475569'
+                      backgroundColor: isDone ? '#DCFCE7' : isArrived ? '#FEF3C7' : isEnRoute ? '#E0F2FE' : '#F1F5F9',
+                      color: isDone ? '#166534' : isArrived ? '#B45309' : isEnRoute ? '#0369A1' : '#475569'
                     }}>
-                      {isDone ? '✓ SEALED' : isArrived ? '📍 ARRIVED' : isEnRoute ? '🛵 EN ROUTE' : 'SCHEDULED'}
+                      {isDone ? '✓ COMPLETED' : isArrived ? '📍 ARRIVED' : isEnRoute ? '🛵 EN ROUTE' : '⏱ SCHEDULED'}
                     </span>
                   </div>
-
-                  <div style={{ fontSize: '0.92rem', fontWeight: '900', color: '#0F172A' }}>
-                    {pk.time || pk.timeSlot || '08:00 AM - 09:00 AM'}
+                  <div style={{ fontSize: '0.88rem', fontWeight: '900', color: '#0F172A' }}>
+                    {pk.timeSlot || pk.time || '08:00 AM - 09:00 AM'}
                   </div>
-
-                  <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '700', marginTop: '0.15rem' }}>
-                    Ref: <strong>{pk.id}</strong>
-                  </div>
-
-                  <div style={{ fontSize: '0.7rem', color: pk.fastingVerified ? '#059669' : '#B45309', fontWeight: '800', marginTop: '0.25rem' }}>
-                    {pk.fastingVerified ? '🍽️ Fasting Compliant' : '☕ Non-Fasting / Random'}
+                  <div style={{ fontSize: '0.74rem', color: '#64748B', fontFamily: 'monospace', marginTop: '2px' }}>
+                    ID: {pk.id}
                   </div>
                 </div>
 
-                {/* 2. Patient Dossier & Contact Column */}
+                {/* 2. Patient Profile & Address Column */}
                 <div style={{ flex: 1.5, minWidth: '220px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
-                      {pk.patientName}
-                    </h3>
-                    <span style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: '700' }}>
-                      ({pk.age || '32M'})
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+                      {pk.patientName || pk.patient}
+                    </h4>
+                    <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '800', backgroundColor: '#F1F5F9', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                      {pk.age || '32M'}
                     </span>
+                    {pk.fastingVerified && (
+                      <span style={{ fontSize: '0.68rem', backgroundColor: '#FEF3C7', color: '#92400E', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>
+                        Fasting Required
+                      </span>
+                    )}
                   </div>
 
-                  <div style={{ fontSize: '0.82rem', color: '#475569', marginTop: '0.25rem', display: 'flex', alignItems: 'flex-start', gap: '0.35rem' }}>
-                    <MapPin size={14} color="#006B70" style={{ marginTop: '2px', flexShrink: 0 }} />
-                    <span style={{ lineHeight: '1.3' }}>{pk.address}</span>
+                  <div style={{ fontSize: '0.82rem', color: '#475569', marginTop: '0.35rem', display: 'flex', alignItems: 'flex-start', gap: '0.35rem', lineHeight: '1.3' }}>
+                    <MapPin size={14} color="#64748B" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <span>{pk.address || 'Air Bypass Road, Tirupati'}</span>
                   </div>
 
-                  {/* Call & Maps Action Links */}
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  {/* Contact & Navigation links */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.5rem' }}>
                     <a
-                      href={`tel:${pk.phone || '+919876543210'}`}
+                      href={`tel:${pk.phone}`}
                       style={{
-                        padding: '0.3rem 0.65rem',
+                        padding: '0.25rem 0.6rem',
                         backgroundColor: '#F8FAFC',
                         color: '#006B70',
                         borderRadius: '6px',
@@ -230,7 +323,7 @@ export default function PhlebotomistPickupsTab({
                         gap: '0.3rem'
                       }}
                     >
-                      <Phone size={12} /> {pk.phone || 'Call Patient'}
+                      <Phone size={11} /> {pk.phone || 'Call'}
                     </a>
 
                     <a
@@ -238,7 +331,7 @@ export default function PhlebotomistPickupsTab({
                       target="_blank"
                       rel="noreferrer"
                       style={{
-                        padding: '0.3rem 0.65rem',
+                        padding: '0.25rem 0.6rem',
                         backgroundColor: '#F8FAFC',
                         color: '#0284C7',
                         borderRadius: '6px',
@@ -251,18 +344,41 @@ export default function PhlebotomistPickupsTab({
                         gap: '0.3rem'
                       }}
                     >
-                      <Navigation size={12} /> Google Maps
+                      <Navigation size={11} /> Maps
                     </a>
                   </div>
                 </div>
 
-                {/* 3. Tests & Required Vacutainers Column */}
+                {/* 3. Kit Assessment & Required Supplies Column */}
                 <div style={{ flex: 1.5, minWidth: '220px' }}>
-                  <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '800', textTransform: 'uppercase' }}>
-                    Tests Ordered
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '800', textTransform: 'uppercase' }}>
+                      Required Kit & Tubes
+                    </div>
+                    {kitAssigned ? (
+                      <span style={{ fontSize: '0.68rem', backgroundColor: '#ECFDF5', color: '#059669', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '900' }}>
+                        ✓ Kit Assigned
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleAssignKit(pk)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#006B70',
+                          fontSize: '0.72rem',
+                          fontWeight: '900',
+                          cursor: 'pointer',
+                          textDecoration: 'underline'
+                        }}
+                      >
+                        Assess & Assign Kit →
+                      </button>
+                    )}
                   </div>
-                  <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#004D40', marginTop: '0.15rem', lineHeight: '1.3' }}>
-                    {pk.tests || 'Thyrocare Aarogyam Full Body Profile'}
+
+                  <div style={{ fontSize: '0.84rem', fontWeight: '800', color: '#004D40', marginTop: '0.15rem', lineHeight: '1.3' }}>
+                    {pk.tests || 'Complete Blood Profile'}
                   </div>
 
                   {/* Required Vacutainer Tags */}
@@ -285,84 +401,113 @@ export default function PhlebotomistPickupsTab({
                   </div>
                 </div>
 
-                {/* 4. Payment Column & Instant Scan to Pay */}
-                <div style={{ minWidth: '160px', textAlign: 'center' }}>
+                {/* 4. Payment Column */}
+                <div style={{ minWidth: '150px', textAlign: 'center' }}>
                   {isUnpaid ? (
                     <div>
                       <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#0F172A' }}>
                         ₹{amountValue}
                       </div>
-                      <button
-                        onClick={() => onOpenPaymentModal && onOpenPaymentModal(pk)}
-                        style={{
-                          marginTop: '0.35rem',
-                          padding: '0.45rem 0.85rem',
-                          backgroundColor: '#059669',
-                          color: '#FFFFFF',
-                          border: 'none',
-                          borderRadius: '8px',
-                          fontSize: '0.78rem',
-                          fontWeight: '900',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.3rem',
-                          boxShadow: '0 2px 6px rgba(5,150,105,0.25)'
-                        }}
-                      >
-                        <QrCode size={13} /> ⚡ Scan to Pay (QR)
-                      </button>
+                      <span style={{ fontSize: '0.7rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800', display: 'inline-block', marginTop: '2px' }}>
+                        Post-Paid (Doorstep QR)
+                      </span>
                     </div>
                   ) : (
                     <div>
-                      <span style={{ fontSize: '0.78rem', backgroundColor: '#ECFDF5', color: '#059669', padding: '0.3rem 0.65rem', borderRadius: '6px', fontWeight: '900', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <CheckCircle2 size={14} /> Paid Online (₹{amountValue})
+                      <span style={{ fontSize: '0.78rem', backgroundColor: '#ECFDF5', color: '#059669', padding: '0.25rem 0.6rem', borderRadius: '6px', fontWeight: '900', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <CheckCircle2 size={13} /> Paid Online (₹{amountValue})
                       </span>
-                      <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: '700', marginTop: '0.25rem' }}>
-                        Razorpay Verified
+                      <div style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: '700', marginTop: '2px' }}>
+                        Prepaid via Razorpay
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* 5. Field Action Progression Button */}
-                <div style={{ minWidth: '180px', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                {/* 5. Sequential Progression Buttons (One Order at a Time) */}
+                <div style={{ minWidth: '190px', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   {!isDone ? (
                     <>
-                      {/* Step 1: Start Trip */}
+                      {/* State 1: Scheduled / Not Started */}
                       {!isEnRoute && !isArrived && (
-                        <button
-                          onClick={() => onStartTrip && onStartTrip(pk.id)}
-                          style={{
-                            width: '100%',
-                            padding: '0.55rem',
-                            backgroundColor: '#F1F5F9',
-                            color: '#0F172A',
-                            border: '1px solid #CBD5E1',
-                            borderRadius: '8px',
-                            fontWeight: '800',
-                            fontSize: '0.8rem',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '0.35rem'
-                          }}
-                        >
-                          <Navigation size={13} /> Start Trip
-                        </button>
+                        <div>
+                          {isAnotherTripActive ? (
+                            <button
+                              disabled
+                              style={{
+                                width: '100%',
+                                padding: '0.55rem',
+                                backgroundColor: '#F1F5F9',
+                                color: '#94A3B8',
+                                border: '1px solid #E2E8F0',
+                                borderRadius: '8px',
+                                fontWeight: '800',
+                                fontSize: '0.75rem',
+                                cursor: 'not-allowed'
+                              }}
+                            >
+                              Locked (Trip Active: #{activeTripOrder.id})
+                            </button>
+                          ) : !kitAssigned ? (
+                            <button
+                              onClick={() => handleAssignKit(pk)}
+                              style={{
+                                width: '100%',
+                                padding: '0.55rem',
+                                backgroundColor: '#FEF3C7',
+                                color: '#92400E',
+                                border: '1px solid #FCD34D',
+                                borderRadius: '8px',
+                                fontWeight: '900',
+                                fontSize: '0.78rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.35rem'
+                              }}
+                            >
+                              <Package size={13} /> Assess & Assign Kit First
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => onStartTrip && onStartTrip(pk.id)}
+                              style={{
+                                width: '100%',
+                                padding: '0.6rem',
+                                backgroundColor: '#006B70',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontWeight: '900',
+                                fontSize: '0.82rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.4rem',
+                                boxShadow: '0 2px 8px rgba(0,107,112,0.2)'
+                              }}
+                            >
+                              <Navigation size={13} /> Accept & Start Trip
+                            </button>
+                          )}
+                        </div>
                       )}
 
-                      {/* Step 2: Arrived at Doorstep */}
+                      {/* State 2: En Route -> Mark Arrived */}
                       {isEnRoute && !isArrived && (
                         <button
-                          onClick={() => onArriveDoorstep && onArriveDoorstep(pk.id)}
+                          onClick={() => {
+                            if (onArriveDoorstep) onArriveDoorstep(pk.id);
+                            onOpenScanModal(pk);
+                          }}
                           style={{
                             width: '100%',
-                            padding: '0.55rem',
-                            backgroundColor: '#E0F2FE',
-                            color: '#0369A1',
-                            border: '1px solid #BAE6FD',
+                            padding: '0.65rem',
+                            backgroundColor: '#0284C7',
+                            color: '#FFFFFF',
+                            border: 'none',
                             borderRadius: '8px',
                             fontWeight: '900',
                             fontSize: '0.82rem',
@@ -370,43 +515,46 @@ export default function PhlebotomistPickupsTab({
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            gap: '0.35rem'
+                            gap: '0.4rem',
+                            boxShadow: '0 2px 8px rgba(2,132,199,0.25)'
                           }}
                         >
-                          <MapPin size={14} /> Mark Arrived at Door
+                          <MapPin size={14} /> Reached Location (Send First Pic)
                         </button>
                       )}
 
-                      {/* Step 3: Scan Tubes & OTP Handover */}
-                      <button
-                        onClick={() => onOpenScanModal(pk)}
-                        style={{
-                          width: '100%',
-                          padding: '0.65rem 0.85rem',
-                          backgroundColor: '#006B70',
-                          color: '#FFFFFF',
-                          border: 'none',
-                          borderRadius: '8px',
-                          fontWeight: '900',
-                          fontSize: '0.82rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '0.4rem',
-                          boxShadow: '0 2px 8px rgba(0,107,112,0.2)'
-                        }}
-                      >
-                        <QrCode size={14} /> Collect & Scan Tubes
-                      </button>
+                      {/* State 3: Arrived -> Open Doorstep Visit */}
+                      {isArrived && (
+                        <button
+                          onClick={() => onOpenScanModal(pk)}
+                          style={{
+                            width: '100%',
+                            padding: '0.65rem 0.85rem',
+                            backgroundColor: '#006B70',
+                            color: '#FFFFFF',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontWeight: '900',
+                            fontSize: '0.82rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.4rem',
+                            boxShadow: '0 2px 8px rgba(0,107,112,0.25)'
+                          }}
+                        >
+                          <Camera size={14} /> Open Visit (First Pic & Draw)
+                        </button>
+                      )}
                     </>
                   ) : (
                     <div style={{ padding: '0.6rem 0.8rem', backgroundColor: '#ECFDF5', borderRadius: '8px', textAlign: 'center', border: '1px solid #BBF7D0' }}>
                       <div style={{ fontSize: '0.8rem', color: '#059669', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
-                        <CheckCircle2 size={15} /> Sample Sealed
+                        <CheckCircle2 size={15} /> Visit Complete
                       </div>
                       <div style={{ fontSize: '0.7rem', color: '#065F46', marginTop: '2px', fontWeight: '700' }}>
-                        Cold-Chain 2-8°C Active
+                        {pk.reviewRequestSent ? '⭐ Review Requested' : 'Closed Without Review'}
                       </div>
                     </div>
                   )}
@@ -417,6 +565,102 @@ export default function PhlebotomistPickupsTab({
           })
         )}
       </div>
+
+      {/* ========================================================================= */}
+      {/* SHORTAGE MODAL (PROMPTS INDENT & VISIT TO MEDMARG STORE)                 */}
+      {/* ========================================================================= */}
+      {shortageModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 150,
+          backgroundColor: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '1.25rem'
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '22px',
+            maxWidth: '460px',
+            width: '100%',
+            padding: '1.75rem',
+            border: '2px solid #F59E0B',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#D97706', marginBottom: '0.5rem' }}>
+              <AlertTriangle size={24} />
+              <h3 style={{ fontSize: '1.2rem', fontWeight: '900', margin: 0, color: '#0F172A' }}>
+                Insufficient In-Hand Supplies!
+              </h3>
+            </div>
+            
+            <p style={{ fontSize: '0.84rem', color: '#475569', lineHeight: '1.4', marginTop: '0.25rem' }}>
+              You do not have enough consumables in your field kit to fulfill Order <strong>#{shortageModal.order.id}</strong>.
+            </p>
+
+            <div style={{ backgroundColor: '#FFFBEB', padding: '1rem', borderRadius: '12px', border: '1px solid #FDE68A', margin: '1rem 0' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#92400E', marginBottom: '0.4rem' }}>
+                SHORTAGE BREAKDOWN:
+              </div>
+              {shortageModal.shortages.map((s, idx) => (
+                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', padding: '0.2rem 0', color: '#78350F' }}>
+                  <span>• {s.name}</span>
+                  <strong>Needs {s.needed} (Have {s.inHand})</strong>
+                </div>
+              ))}
+            </div>
+
+            <p style={{ fontSize: '0.78rem', color: '#64748B', lineHeight: '1.4', marginBottom: '1.25rem' }}>
+              💡 <strong>Next Step:</strong> Place a replenishment indent now and visit the <strong>MedMarg Store</strong> to collect your supplies from the Store In-Charge before starting this trip.
+            </p>
+
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                onClick={() => setShortageModal(null)}
+                style={{
+                  flex: 1,
+                  padding: '0.7rem',
+                  backgroundColor: '#F1F5F9',
+                  color: '#475569',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: '10px',
+                  fontWeight: '800',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShortageModal(null);
+                  if (onNavigateToIndent) onNavigateToIndent();
+                }}
+                style={{
+                  flex: 2,
+                  padding: '0.7rem',
+                  backgroundColor: '#006B70',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: '900',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.4rem'
+                }}
+              >
+                <Package size={15} /> Raise Indent & Visit Store
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -39,15 +39,42 @@ router.get('/freelancers', (req, res) => {
 });
 
 router.post('/freelancers/verify', (req, res) => {
-    const { id, status } = req.body;
+    const { id, action, status, commission, commissionType, assignedZone, onboardingFeeCredited } = req.body;
     const fl = (dbStore.freelancers || []).find(f => f.id === id);
     if (fl) {
-        fl.status = status;
-        if (status === 'APPROVED') fl.walletBalance = 2000;
+        const nextStatus = action === 'APPROVE' ? 'APPROVED' : action === 'REJECT' ? 'REJECTED' : (status || fl.status);
+        fl.status = nextStatus;
+        if (nextStatus === 'APPROVED') {
+            const fee = onboardingFeeCredited || dbStore.settings?.freelancerOnboardingFee || 2000;
+            fl.walletBalance = fee;
+            fl.payoutPending = fee;
+            fl.commission = Number(commission) || 300;
+            fl.commissionType = commissionType || 'FLAT_PER_ORDER';
+            fl.assignedZone = assignedZone || 'Tirupati Urban (Zone 1)';
+            fl.approvedAt = new Date().toISOString();
+        }
         saveDbStore();
         return res.json({ success: true, freelancer: fl });
     }
     res.status(404).json({ error: 'Freelancer not found' });
+});
+
+// ONBOARDING FEE CONFIG (SETUP BY ADMIN, REVISABLE ANYTIME)
+router.get('/settings/onboarding-fee', (req, res) => {
+    const fee = dbStore.settings?.freelancerOnboardingFee || 2000;
+    res.json({ success: true, onboardingFee: fee });
+});
+
+router.post('/settings/onboarding-fee', (req, res) => {
+    const { onboardingFee } = req.body;
+    if (!dbStore.settings) dbStore.settings = {};
+    dbStore.settings.freelancerOnboardingFee = Number(onboardingFee) || 2000;
+    saveDbStore();
+    res.json({ 
+        success: true, 
+        onboardingFee: dbStore.settings.freelancerOnboardingFee, 
+        message: 'Freelancer onboarding fee updated successfully.' 
+    });
 });
 
 // CUSTOMERS MANAGEMENT

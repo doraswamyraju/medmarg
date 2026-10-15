@@ -8,21 +8,96 @@ router.get('/roster', (req, res) => {
     res.json({ success: true, roster: orders });
 });
 
-// SAMPLE PICKUP & STATUS UPDATE (DOORSTEP QR DIGITAL COLLECTION)
+// SAMPLE PICKUP & STATUS UPDATE (DOORSTEP VISIT & DIGITAL EXECUTION)
 router.post('/pickup/update', (req, res) => {
-    const { orderId, status, barcode, otp, paymentCollected, notes } = req.body;
+    const { orderId, status, barcode, arrivalPhoto, samplePhotos, paymentCollected, paymentMode, sendReviewRequest, notes } = req.body;
     const order = (dbStore.orders || []).find(o => o.id === orderId);
     if (order) {
         if (status) order.status = status;
         if (barcode) order.barcode = barcode;
-        if (otp) order.handoverOtp = otp;
-        if (paymentCollected) order.paymentStatus = 'PAID_DOORSTEP_QR';
+        if (arrivalPhoto) order.arrivalPhoto = arrivalPhoto;
+        if (samplePhotos) order.samplePhotos = samplePhotos;
+        if (paymentCollected) {
+            order.paymentStatus = 'PAID_DOORSTEP_QR';
+            order.paymentMode = paymentMode || 'DOORSTEP_QR';
+            order.paymentCollectedAt = new Date().toISOString();
+        }
+        if (typeof sendReviewRequest === 'boolean') {
+            order.reviewRequestSent = sendReviewRequest;
+            if (sendReviewRequest) {
+                order.reviewStatus = 'PENDING_CUSTOMER_FEEDBACK';
+            }
+        }
         if (notes) order.agentNotes = notes;
         order.lastUpdated = new Date().toISOString();
         saveDbStore();
         return res.json({ success: true, order });
     }
     res.status(404).json({ error: 'Pickup order not found' });
+});
+
+// ASSESS & ASSIGN KIT FROM IN-HAND INVENTORY TO ORDER
+router.post('/order/assign-kit', (req, res) => {
+    const { orderId, agentId = 'AG-01', kitItems = [] } = req.body;
+    const order = (dbStore.orders || []).find(o => o.id === orderId);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    if (!dbStore.agentInventory) dbStore.agentInventory = {};
+    if (!dbStore.agentInventory[agentId]) {
+        dbStore.agentInventory[agentId] = JSON.parse(JSON.stringify(DEFAULT_AGENT_INVENTORY));
+    }
+
+    const currentInventory = dbStore.agentInventory[agentId];
+    const shortages = [];
+
+    // Check if sufficient supplies exist in in-hand kit
+    kitItems.forEach(item => {
+        const invItem = currentInventory.find(i => 
+            (item.code && i.code === item.code) || 
+            (item.name && i.name.toLowerCase().includes(item.name.toLowerCase()))
+        );
+        const needed = item.qty || 1;
+        if (!invItem || invItem.stock < needed) {
+            shortages.push({
+                name: item.name || item.code,
+                code: item.code,
+                needed,
+                available: invItem ? invItem.stock : 0
+            });
+        }
+    });
+
+    if (shortages.length > 0) {
+        return res.status(400).json({
+            success: false,
+            insufficient: true,
+            shortages,
+            message: `Insufficient in-hand supplies! You are short of: ${shortages.map(s => s.name).join(', ')}. Please place an indent and visit the MedMarg Store.`
+        });
+    }
+
+    // Deduct kit from in-hand inventory
+    kitItems.forEach(item => {
+        const invItem = currentInventory.find(i => 
+            (item.code && i.code === item.code) || 
+            (item.name && i.name.toLowerCase().includes(item.name.toLowerCase()))
+        );
+        if (invItem) {
+            invItem.stock = Math.max(0, invItem.stock - (item.qty || 1));
+        }
+    });
+
+    order.kitAssigned = true;
+    order.kitAssignedAt = new Date().toISOString();
+    order.assignedKitItems = kitItems;
+    saveDbStore();
+
+    res.json({
+        success: true,
+        message: 'Kit supplies successfully assigned and reserved from in-hand inventory.',
+        remainingInventory: currentInventory,
+        order
+    });
 });
 
 // BROADCAST JOBS FOR FREELANCERS
