@@ -15,7 +15,9 @@ import {
   ShieldCheck,
   BatteryCharging,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Award,
+  Navigation
 } from 'lucide-react';
 
 import PhlebotomistPickupsTab from '../components/phlebotomist/PhlebotomistPickupsTab';
@@ -24,16 +26,36 @@ import PhlebotomistInventoryTab from '../components/phlebotomist/PhlebotomistInv
 import PhlebotomistWalletTab from '../components/phlebotomist/PhlebotomistWalletTab';
 import PhlebotomistLabHandoverTab from '../components/phlebotomist/PhlebotomistLabHandoverTab';
 import PhlebotomistTubeScannerModal from '../components/phlebotomist/PhlebotomistTubeScannerModal';
+import AgentLocationPermissionModal from '../components/phlebotomist/AgentLocationPermissionModal';
+import SalariedShiftQuotaTab from '../components/phlebotomist/SalariedShiftQuotaTab';
 
 import { API_BASE, safeFetch, safeJson } from '../data/apiConfig';
 
 export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', onSwitchRole, onLogout }) {
-  const [activeTab, setActiveTab] = useState('ROSTER'); // 'ROSTER' | 'BROADCAST' | 'INVENTORY' | 'WALLET' | 'LAB_HANDOVER'
+  const [activeTab, setActiveTab] = useState('ROSTER'); // 'ROSTER' | 'SHIFT_QUOTA' | 'BROADCAST' | 'INVENTORY' | 'WALLET' | 'LAB_HANDOVER'
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isOnDuty, setIsOnDuty] = useState(true);
   const [completedPickups, setCompletedPickups] = useState(new Set());
   const [activePickupModal, setActivePickupModal] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Mandatory First Login Location Permission State
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(() => {
+    try {
+      return !localStorage.getItem('medmarg_location_granted');
+    } catch (e) {
+      return true;
+    }
+  });
+
+  const [currentLocation, setCurrentLocation] = useState(() => {
+    try {
+      const stored = localStorage.getItem('medmarg_agent_location');
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      return null;
+    }
+  });
 
   // Pickups State
   const [pickups, setPickups] = useState([
@@ -185,7 +207,64 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
     refreshAgentData();
   }, []);
 
+  // Continuous Live GPS Telemetry Watcher
+  useEffect(() => {
+    if (!isOnDuty) return;
+
+    const transmitLocation = (coords) => {
+      safeFetch(`${API_BASE}/api/v1/agent/location`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentId: user?.id || 'AG-01',
+          agentName: user?.name || 'Ramesh Kumar',
+          ...coords
+        })
+      }).catch(() => {});
+    };
+
+    if (navigator.geolocation) {
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const coords = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            heading: pos.coords.heading || 0,
+            speed: pos.coords.speed || 0,
+            timestamp: new Date().toISOString()
+          };
+          setCurrentLocation(coords);
+          try {
+            localStorage.setItem('medmarg_agent_location', JSON.stringify(coords));
+          } catch (e) {}
+          transmitLocation(coords);
+        },
+        (err) => console.warn('Location watch note:', err.message),
+        { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 }
+      );
+
+      return () => navigator.geolocation.clearWatch(watchId);
+    }
+  }, [isOnDuty, user]);
+
   // Action Handlers
+  const handleToggleDuty = () => {
+    const nextDuty = !isOnDuty;
+    setIsOnDuty(nextDuty);
+    safeFetch(`${API_BASE}/api/v1/agent/shift`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        agentId: user?.id || 'AG-01',
+        agentName: user?.name || 'Ramesh Kumar',
+        status: nextDuty ? 'ON_DUTY' : 'OFF_DUTY',
+        lat: currentLocation?.lat,
+        lng: currentLocation?.lng
+      })
+    }).catch(() => {});
+  };
+
   const handleStartTrip = (orderId) => {
     setPickups(prev => prev.map(p => p.id === orderId ? { ...p, status: 'EN_ROUTE' } : p));
     safeFetch(`${API_BASE}/api/v1/agent/pickup/update`, {
@@ -302,10 +381,22 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
 
   const handleConfirmLabHandover = (handoverDetails) => {
     setPickups(prev => prev.map(p => ({ ...p, status: 'TRANSFERRED_TO_LAB' })));
+    safeFetch(`${API_BASE}/api/v1/agent/lab-handover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(handoverDetails)
+    }).catch(() => {});
   };
 
-  const navigationItems = [
+  // Tailored Navigation Items for SALARIED vs FREELANCE
+  const isSalaried = agentType === 'SALARIED';
+  const navigationItems = isSalaried ? [
     { key: 'ROSTER', label: 'Assigned Pickups', icon: Bike, badge: pickups.length },
+    { key: 'SHIFT_QUOTA', label: 'Shift & Daily Quota', icon: Award, badge: `${completedPickups.size || 8}/15` },
+    { key: 'INVENTORY', label: 'In-Hand Supplies', icon: Package, badge: `${inventory.length}` },
+    { key: 'LAB_HANDOVER', label: 'NABL Lab Handover', icon: Building2, badge: '2 Labs' }
+  ] : [
+    { key: 'ROSTER', label: 'Claimed Pickups', icon: Bike, badge: pickups.length },
     { key: 'BROADCAST', label: 'Broadcast Overflow', icon: Zap, badge: `${broadcastJobs.length} Live` },
     { key: 'INVENTORY', label: 'In-Hand Supplies', icon: Package, badge: `${inventory.length}` },
     { key: 'WALLET', label: 'Earnings & Wallet', icon: Wallet, badge: `₹${wallet.availableCashoutBalance?.toLocaleString('en-IN')}` },
@@ -480,17 +571,18 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <h1 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
                 {activeTab === 'ROSTER' && 'Assigned Doorstep Pickups'}
+                {activeTab === 'SHIFT_QUOTA' && 'Daily Duty Shift & Quota Monitor'}
                 {activeTab === 'BROADCAST' && 'Broadcast Overflow Marketplace'}
                 {activeTab === 'INVENTORY' && 'In-Hand Supplies & Indents'}
                 {activeTab === 'WALLET' && 'Earnings & Payout Wallet'}
                 {activeTab === 'LAB_HANDOVER' && 'Designated Diagnostic Labs Handover'}
               </h1>
               <span style={{ fontSize: '0.75rem', backgroundColor: '#ECFDF5', color: '#065F46', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '900' }}>
-                Omnipresent Fleet Desk
+                {isSalaried ? 'In-House Salaried Fleet' : 'Omnipresent Fleet Desk'}
               </span>
             </div>
             <div style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '0.2rem' }}>
-              Zone: <strong>Tirupati Urban & Bypass (Zone 1)</strong> • Progress: <strong>{wallet.completedTripsToday || 6} / 12 Pickups Done</strong>
+              Zone: <strong>Tirupati Urban & Bypass (Zone 1)</strong> • Progress: <strong>{completedPickups.size || 8} / 15 Pickups Completed Today</strong>
             </div>
           </div>
 
@@ -499,7 +591,7 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
             
             {/* Duty Status Switch */}
             <button
-              onClick={() => setIsOnDuty(!isOnDuty)}
+              onClick={handleToggleDuty}
               style={{
                 padding: '0.45rem 0.85rem',
                 borderRadius: '8px',
@@ -559,6 +651,16 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
             />
           )}
 
+          {activeTab === 'SHIFT_QUOTA' && (
+            <SalariedShiftQuotaTab
+              user={user}
+              isOnDuty={isOnDuty}
+              onToggleDuty={handleToggleDuty}
+              completedCount={completedPickups.size}
+              currentLocation={currentLocation}
+            />
+          )}
+
           {activeTab === 'BROADCAST' && (
             <PhlebotomistBroadcastJobsTab
               jobs={broadcastJobs}
@@ -596,6 +698,17 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
         activePickupModal={activePickupModal} 
         setActivePickupModal={setActivePickupModal} 
         onCompleteCollection={handleCompleteCollection}
+      />
+
+      {/* Mandatory First-Login Location Permission Modal */}
+      <AgentLocationPermissionModal
+        user={user}
+        isOpen={isLocationModalOpen}
+        onLocationGranted={(coords) => {
+          setCurrentLocation(coords);
+          setIsLocationModalOpen(false);
+        }}
+        onClose={() => setIsLocationModalOpen(false)}
       />
 
     </div>
