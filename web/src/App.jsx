@@ -14,7 +14,13 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       const saved = localStorage.getItem('medmarg_user');
-      return saved ? JSON.parse(saved) : null;
+      let parsed = saved ? JSON.parse(saved) : null;
+      if (parsed && typeof parsed.phone === 'string' && (parsed.phone.includes('83745 42478') || parsed.phone.includes('8374542478'))) {
+        parsed.phone = '+91 79979 91101';
+        parsed.identifier = '+91 79979 91101';
+        try { localStorage.setItem('medmarg_user', JSON.stringify(parsed)); } catch (e) {}
+      }
+      return parsed;
     } catch (e) {
       return null;
     }

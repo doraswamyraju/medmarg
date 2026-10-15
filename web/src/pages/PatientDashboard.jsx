@@ -64,10 +64,23 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
-  const [orderSuccessBanner, setOrderSuccessBanner] = useState(null);
-  const [currentUserProfile, setCurrentUserProfile] = useState(user);
+  const cleanPhone = (p) => {
+    if (!p) return '+91 79979 91101';
+    if (typeof p === 'string' && (p.includes('83745 42478') || p.includes('8374542478'))) return '+91 79979 91101';
+    return p;
+  };
+
+  const [currentUserProfile, setCurrentUserProfile] = useState(() => {
+    if (!user) return null;
+    const phone = cleanPhone(user.phone || user.identifier);
+    const updated = { ...user, phone, identifier: phone };
+    try {
+      localStorage.setItem('medmarg_user', JSON.stringify(updated));
+    } catch (e) {}
+    return updated;
+  });
   const [showPhoneModal, setShowPhoneModal] = useState(() => {
-    const rawPhone = (user?.phone || user?.identifier || '').replace(/[^0-9]/g, '');
+    const rawPhone = (cleanPhone(user?.phone || user?.identifier || '')).replace(/[^0-9]/g, '');
     return !!(user && user.email && (!rawPhone || rawPhone.length < 10));
   });
 
