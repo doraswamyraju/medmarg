@@ -293,7 +293,14 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
 
   const handleCompleteCollection = (orderId, details) => {
     setCompletedPickups(prev => new Set([...prev, orderId]));
-    setPickups(prev => prev.map(p => p.id === orderId ? { ...p, status: 'SAMPLE_COLLECTED', paymentStatus: 'PAID_DOORSTEP_QR' } : p));
+    setPickups(prev => prev.map(p => p.id === orderId ? { 
+      ...p, 
+      status: 'SAMPLE_COLLECTED', 
+      paymentStatus: details.paymentDone ? 'PAID_DOORSTEP_QR' : p.paymentStatus,
+      arrivalPhoto: details.arrivalPhoto,
+      samplePhotos: details.samplePhotos,
+      reviewRequestSent: details.sendReviewRequest
+    } : p));
     
     setWallet(prev => ({
       ...prev,
@@ -308,9 +315,10 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
       body: JSON.stringify({
         orderId,
         status: 'SAMPLE_COLLECTED',
-        barcode: Object.values(details.scannedTubes || {}).join(','),
-        otp: details.otp,
-        paymentCollected: details.paymentDone
+        arrivalPhoto: details.arrivalPhoto,
+        samplePhotos: details.samplePhotos,
+        paymentCollected: details.paymentDone,
+        sendReviewRequest: details.sendReviewRequest
       })
     }).catch(() => {});
   };
@@ -658,11 +666,15 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
           {activeTab === 'ROSTER' && (
             <PhlebotomistPickupsTab 
               pickups={pickups} 
+              setPickups={setPickups}
               completedPickups={completedPickups} 
+              inventory={inventory}
+              setInventory={setInventory}
               onStartTrip={handleStartTrip}
               onArriveDoorstep={handleArriveDoorstep}
               onOpenScanModal={(pk) => setActivePickupModal(pk)} 
               onOpenPaymentModal={(pk) => setActivePaymentModalOrder(pk)}
+              onNavigateToIndent={() => setActiveTab('INVENTORY')}
             />
           )}
 

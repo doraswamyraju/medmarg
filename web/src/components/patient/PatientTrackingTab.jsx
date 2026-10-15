@@ -113,7 +113,7 @@ export default function PatientTrackingTab({
           </div>
         </div>
 
-        {/* 4-Digit Handover Security OTP Card */}
+        {/* Live GPS Tracking Telemetry Status Card */}
         <div style={{
           backgroundColor: '#003830',
           borderRadius: '18px',
@@ -123,16 +123,17 @@ export default function PatientTrackingTab({
           flexDirection: 'column',
           alignItems: 'center',
           textAlign: 'center',
-          gap: '0.35rem'
+          gap: '0.4rem'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: '#FBBF24', fontWeight: '800' }}>
-            <Lock size={14} /> DOORSTEP HANDOVER OTP
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', color: '#10B981', fontWeight: '800' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block', boxShadow: '0 0 8px #10B981' }}></span>
+            LIVE FLEET RADAR
           </div>
-          <div style={{ fontSize: '2.2rem', fontWeight: '900', letterSpacing: '6px', color: '#FFFFFF', fontFamily: 'monospace' }}>
-            {currentOrder.handoverOtp || '4821'}
+          <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#FFFFFF' }}>
+            GPS Active & On Route
           </div>
           <div style={{ fontSize: '0.74rem', color: '#80CBC4' }}>
-            Share this 4-digit OTP with your phlebotomist upon arrival to start collection
+            Continuous vehicle telemetry streaming • Direct to doorstep
           </div>
         </div>
       </div>

@@ -44,6 +44,46 @@ export default function FreelancerDeskTab({
   const [selectedPayout, setSelectedPayout] = useState(null);
   const [filterKyc, setFilterKyc] = useState('ALL');
 
+  // Onboarding Fee Config State (Set once, revisable anytime by Admin)
+  const [onboardingFee, setOnboardingFee] = useState(2000);
+  const [showFeeModal, setShowFeeModal] = useState(false);
+  const [tempFee, setTempFee] = useState(2000);
+
+  // Approval with Commission & Zone Modal State
+  const [approvingFreelancer, setApprovingFreelancer] = useState(null);
+  const [commissionAmount, setCommissionAmount] = useState(300);
+  const [commissionType, setCommissionType] = useState('FLAT_PER_ORDER');
+  const [assignedZone, setAssignedZone] = useState('Tirupati Urban (Zone 1)');
+
+  useEffect(() => {
+    if (API_BASE) {
+      safeFetch(`${API_BASE}/api/v1/admin/settings/onboarding-fee`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.success && data.onboardingFee) {
+            setOnboardingFee(data.onboardingFee);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [API_BASE]);
+
+  const handleSaveOnboardingFee = async (e) => {
+    e.preventDefault();
+    const feeVal = Number(tempFee) || 2000;
+    setOnboardingFee(feeVal);
+    setShowFeeModal(false);
+    try {
+      if (safeFetch && API_BASE) {
+        await safeFetch(`${API_BASE}/api/v1/admin/settings/onboarding-fee`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ onboardingFee: feeVal })
+        });
+      }
+    } catch (e) {}
+  };
+
   // New Freelancer Form State
   const [addForm, setAddForm] = useState({
     id: `FL-${Math.floor(100 + Math.random() * 900)}`,
@@ -145,14 +185,30 @@ export default function FreelancerDeskTab({
     }
   ]);
 
-  // Handle KYC Approval
-  const handleApprove = async (fl) => {
+  // Handle KYC Approval Trigger (Opens Approval Modal to set Commission & Zone)
+  const handleApprove = (fl) => {
+    setApprovingFreelancer(fl);
+    setCommissionAmount(fl.commission || 300);
+    setCommissionType(fl.commissionType || 'FLAT_PER_ORDER');
+    setAssignedZone(fl.assignedZone || 'Tirupati Urban (Zone 1)');
+  };
+
+  const handleConfirmApproval = async () => {
+    if (!approvingFreelancer) return;
+    const fl = approvingFreelancer;
     try {
       if (safeFetch && API_BASE) {
         await safeFetch(`${API_BASE}/api/v1/admin/freelancers/verify`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: fl.id, action: 'APPROVE' })
+          body: JSON.stringify({
+            id: fl.id,
+            action: 'APPROVE',
+            commission: Number(commissionAmount) || 300,
+            commissionType,
+            assignedZone,
+            onboardingFeeCredited: onboardingFee
+          })
         });
       }
     } catch (e) {}
@@ -160,9 +216,14 @@ export default function FreelancerDeskTab({
     setFreelancers(prev => prev.map(f => f.id === fl.id ? { 
       ...f, 
       status: 'APPROVED', 
-      walletBalance: (f.walletBalance || 0) || 2000,
-      payoutPending: (f.payoutPending || 0) || 2000
+      commission: Number(commissionAmount) || 300,
+      commissionType,
+      assignedZone,
+      walletBalance: onboardingFee,
+      payoutPending: onboardingFee
     } : f));
+
+    setApprovingFreelancer(null);
   };
 
   // Handle KYC Rejection
@@ -259,13 +320,40 @@ export default function FreelancerDeskTab({
             End-to-end management for freelance phlebotomists: Paramedical Council KYC, Gig Broadcasts, Wallet Ledgers & Quality SLAs.
           </p>
         </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          {/* Onboarding Fee Config Widget */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', backgroundColor: '#FFFFFF', padding: '0.45rem 0.85rem', borderRadius: '10px', border: '1.5px solid #E2E8F0', boxShadow: '0 2px 6px rgba(0,0,0,0.02)' }}>
+            <div>
+              <div style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: '800' }}>ONBOARDING FEE</div>
+              <div style={{ fontSize: '0.95rem', fontWeight: '900', color: '#006B70' }}>₹{onboardingFee.toLocaleString()}</div>
+            </div>
+            <button
+              onClick={() => {
+                setTempFee(onboardingFee);
+                setShowFeeModal(true);
+              }}
+              style={{
+                padding: '0.3rem 0.6rem',
+                backgroundColor: '#F0FDFA',
+                color: '#006B70',
+                border: '1px solid #99F6E4',
+                borderRadius: '6px',
+                fontSize: '0.72rem',
+                fontWeight: '900',
+                cursor: 'pointer'
+              }}
+            >
+              Edit Fee
+            </button>
+          </div>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          style={{ padding: '0.65rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem', boxShadow: '0 4px 14px rgba(0,107,112,0.2)' }}
-        >
-          <PlusCircle size={16} color="#FBBF24" /> Register New Freelancer
-        </button>
+          <button
+            onClick={() => setShowAddModal(true)}
+            style={{ padding: '0.65rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.45rem', boxShadow: '0 4px 14px rgba(0,107,112,0.2)' }}
+          >
+            <PlusCircle size={16} color="#FBBF24" /> Register New Freelancer
+          </button>
+        </div>
       </div>
 
       {/* Sub-Navigation Tabs Bar (VR Here Style) */}
@@ -421,7 +509,7 @@ export default function FreelancerDeskTab({
                           onClick={() => handleApprove(fl)}
                           style={{ flex: 1, padding: '0.65rem', backgroundColor: '#10B981', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', boxShadow: '0 4px 12px rgba(16,185,129,0.2)' }}
                         >
-                          <CheckCircle size={16} /> Approve & Credit ₹2,000
+                          <CheckCircle size={16} /> Approve & Set Commission
                         </button>
                         <button 
                           onClick={() => handleReject(fl)}
@@ -431,13 +519,19 @@ export default function FreelancerDeskTab({
                         </button>
                       </div>
                     ) : isApproved ? (
-                      <div style={{ width: '100%', padding: '0.75rem 1rem', backgroundColor: '#F8FAFC', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.84rem', border: '1px solid #E2E8F0' }}>
-                        <span style={{ color: '#059669', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                          <ShieldCheck size={18} /> Verified Freelancer
-                        </span>
-                        <span style={{ color: '#D97706', fontWeight: '900', fontSize: '0.9rem' }}>
-                          Wallet: ₹{fl.walletBalance || 2000}
-                        </span>
+                      <div style={{ width: '100%', padding: '0.75rem 1rem', backgroundColor: '#F8FAFC', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.84rem', border: '1px solid #E2E8F0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ color: '#059669', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <ShieldCheck size={18} /> Verified Freelancer
+                          </span>
+                          <span style={{ color: '#D97706', fontWeight: '900', fontSize: '0.9rem' }}>
+                            Wallet: ₹{(fl.walletBalance || onboardingFee).toLocaleString()}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.76rem', color: '#475569', borderTop: '1px solid #F1F5F9', paddingTop: '0.4rem' }}>
+                          <span>Zone: <strong style={{ color: '#006B70' }}>{fl.assignedZone || 'Tirupati Urban (Zone 1)'}</strong></span>
+                          <span>Commission: <strong style={{ color: '#0F172A' }}>₹{fl.commission || 300}/trip</strong></span>
+                        </div>
                       </div>
                     ) : (
                       <div style={{ width: '100%', padding: '0.75rem 1rem', backgroundColor: '#FEF2F2', borderRadius: '10px', color: '#DC2626', fontWeight: '800', fontSize: '0.84rem', textAlign: 'center' }}>
@@ -950,6 +1044,174 @@ export default function FreelancerDeskTab({
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: REVISE ONBOARDING FEE (ADMIN CONFIGURABLE ANYTIME)               */}
+      {/* ========================================================================= */}
+      {showFeeModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '440px', borderRadius: '20px', border: '2px solid #006B70', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>Revise Onboarding Fee</h3>
+                <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '2px' }}>Admin Policy Configuration</div>
+              </div>
+              <button onClick={() => setShowFeeModal(false)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleSaveOnboardingFee} style={{ padding: '1.5rem' }}>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '800', color: '#334155', marginBottom: '0.4rem' }}>
+                  Freelancer One-Time Registration Fee (₹):
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="100"
+                  required
+                  value={tempFee}
+                  onChange={(e) => setTempFee(e.target.value)}
+                  style={{ width: '100%', padding: '0.75rem 1rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '1.2rem', fontWeight: '900', color: '#006B70', outline: 'none', boxSizing: 'border-box' }}
+                />
+                <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.4rem', lineHeight: '1.4' }}>
+                  💡 <strong>Rule:</strong> This fee is converted 100% into the agent's MedMarg Inventory Wallet upon approval so they can procure sample collection supplies.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowFeeModal(false)}
+                  style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: '0.65rem 1.5rem', backgroundColor: '#006B70', color: '#FFFFFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Save Revised Fee
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: APPROVE FREELANCER (SET COMMISSION & ASSIGN OPERATING ZONE)     */}
+      {/* ========================================================================= */}
+      {approvingFreelancer && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '520px', borderRadius: '22px', border: '2px solid #006B70', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }}>
+            
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', backgroundColor: '#F0FDFA', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <span style={{ fontSize: '0.72rem', backgroundColor: '#CCFBF1', color: '#0F766E', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '900' }}>
+                  ADMIN APPROVAL & FLEET ENROLLMENT
+                </span>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0F172A', marginTop: '0.25rem', margin: 0 }}>
+                  Approve {approvingFreelancer.name}
+                </h3>
+                <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '2px' }}>
+                  ID: {approvingFreelancer.id} • {approvingFreelancer.qualification}
+                </div>
+              </div>
+              <button onClick={() => setApprovingFreelancer(null)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', fontSize: '1.2rem' }}>✕</button>
+            </div>
+
+            <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+              
+              {/* Notice */}
+              <div style={{ backgroundColor: '#F8FAFC', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #E2E8F0', fontSize: '0.82rem', color: '#475569' }}>
+                📋 <strong>Paramedical Board:</strong> {approvingFreelancer.paramedicalCert} (Credentials Verified). As Admin, configure their locked commission payout and assigned territory.
+              </div>
+
+              {/* Commission Setting */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '800', color: '#334155', marginBottom: '0.4rem' }}>
+                  Decide Commission Payout per Pickup Order:
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.75rem' }}>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)', fontWeight: '900', color: '#64748B' }}>₹</span>
+                    <input
+                      type="number"
+                      min="100"
+                      step="50"
+                      value={commissionAmount}
+                      onChange={(e) => setCommissionAmount(e.target.value)}
+                      placeholder="300"
+                      style={{ width: '100%', padding: '0.65rem 0.85rem 0.65rem 2rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '1rem', fontWeight: '900', color: '#0F172A', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                  <select
+                    value={commissionType}
+                    onChange={(e) => setCommissionType(e.target.value)}
+                    style={{ padding: '0.65rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '0.82rem', fontWeight: '800', color: '#0F172A', backgroundColor: '#FFFFFF' }}
+                  >
+                    <option value="FLAT_PER_ORDER">Flat / Trip</option>
+                    <option value="PERCENTAGE">% of Order</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Assigned Operating Zone (Admin Controlled) */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '800', color: '#334155', marginBottom: '0.4rem' }}>
+                  Assign Operating Zone (Admin Enforced):
+                </label>
+                <select
+                  value={assignedZone}
+                  onChange={(e) => setAssignedZone(e.target.value)}
+                  style={{ width: '100%', padding: '0.7rem 0.9rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '0.88rem', fontWeight: '800', color: '#0F172A', backgroundColor: '#FFFFFF' }}
+                >
+                  <option value="Tirupati Urban (Zone 1)">Tirupati Urban (Zone 1 - Central)</option>
+                  <option value="Tirupati Bypass & Outer (Zone 2)">Tirupati Bypass & Outer (Zone 2)</option>
+                  <option value="Chandragiri & Suburbs (Zone 3)">Chandragiri & Suburbs (Zone 3)</option>
+                  <option value="Renigunta Industrial (Zone 4)">Renigunta Industrial (Zone 4)</option>
+                  <option value="Chittoor District Highway (Zone 5)">Chittoor District Highway (Zone 5)</option>
+                </select>
+                <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: '0.35rem' }}>
+                  🔒 Freelancer cannot access or alter zones independently. Restricted to broadcasts within this territory.
+                </div>
+              </div>
+
+              {/* Onboarding Fee Conversion Summary */}
+              <div style={{ backgroundColor: '#ECFDF5', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #A7F3D0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#065F46' }}>INVENTORY WALLET CONVERSION</div>
+                  <div style={{ fontSize: '0.82rem', color: '#047857' }}>Onboarding Fee Credited 1:1 to Wallet</div>
+                </div>
+                <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#059669' }}>
+                  +₹{onboardingFee.toLocaleString()}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setApprovingFreelancer(null)}
+                  style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmApproval}
+                  style={{ padding: '0.75rem 1.5rem', backgroundColor: '#059669', color: '#FFFFFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 12px rgba(5,150,105,0.2)' }}
+                >
+                  <ShieldCheck size={16} /> Confirm Approval & Issue License
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
