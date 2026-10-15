@@ -64,6 +64,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
+  const [orderSuccessBanner, setOrderSuccessBanner] = useState(null);
   const cleanPhone = (p) => {
     if (!p) return '+91 79979 91101';
     if (typeof p === 'string' && (p.includes('83745 42478') || p.includes('8374542478'))) return '+91 79979 91101';
