@@ -15,10 +15,13 @@ export default function App() {
     try {
       const saved = localStorage.getItem('medmarg_user');
       let parsed = saved ? JSON.parse(saved) : null;
-      if (parsed && typeof parsed.phone === 'string' && (parsed.phone.includes('83745 42478') || parsed.phone.includes('8374542478'))) {
-        parsed.phone = '+91 79979 91101';
-        parsed.identifier = '+91 79979 91101';
-        try { localStorage.setItem('medmarg_user', JSON.stringify(parsed)); } catch (e) {}
+      if (parsed) {
+        const emailKey = (parsed.email || 'patient').toLowerCase().replace(/[^a-z0-9]/g, '_');
+        const storedPhone = localStorage.getItem(`medmarg_phone_${emailKey}`) || localStorage.getItem('medmarg_user_phone');
+        if (storedPhone && storedPhone.replace(/[^0-9]/g, '').length >= 10) {
+          parsed.phone = storedPhone;
+          parsed.identifier = storedPhone;
+        }
       }
       return parsed;
     } catch (e) {

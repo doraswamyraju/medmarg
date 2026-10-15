@@ -182,8 +182,8 @@ export const PREFERRED_LAB_KEY_ALT = 'medmarg_preferred_lab';
 export function getPreferredLab() {
     try {
         const stored = localStorage.getItem(PREFERRED_LAB_STORAGE_KEY) || localStorage.getItem(PREFERRED_LAB_KEY_ALT);
-        if (stored && (stored === 'medmarg_suggested' || stored === 'thyrocare' || stored === 'lalpath')) {
-            return stored;
+        if (stored && typeof stored === 'string' && stored.trim()) {
+            return stored.trim();
         }
     } catch (e) {
         // Fallback
@@ -193,12 +193,13 @@ export function getPreferredLab() {
 
 export function savePreferredLab(labId) {
     try {
-        if (labId && (labId === 'medmarg_suggested' || labId === 'thyrocare' || labId === 'lalpath')) {
-            localStorage.setItem(PREFERRED_LAB_STORAGE_KEY, labId);
-            localStorage.setItem(PREFERRED_LAB_KEY_ALT, labId);
+        if (labId && typeof labId === 'string' && labId.trim()) {
+            const clean = labId.trim();
+            localStorage.setItem(PREFERRED_LAB_STORAGE_KEY, clean);
+            localStorage.setItem(PREFERRED_LAB_KEY_ALT, clean);
             localStorage.setItem('medmarg_remember_lab_flag', 'true');
             if (typeof window !== 'undefined') {
-                window.dispatchEvent(new CustomEvent('medmarg_lab_changed', { detail: { labId } }));
+                window.dispatchEvent(new CustomEvent('medmarg_lab_changed', { detail: { labId: clean } }));
             }
         }
     } catch (e) {
@@ -409,4 +410,235 @@ export function getRecommendedLabOption(item) {
     const list = getItemLabPricing(item);
     return list.find(l => l.isRecommended || l.isMedmargSuggested) || list[0];
 }
+
+/**
+ * Decomposes standard clinical profiles into individual biomarker tests
+ */
+export function getDecomposedBiomarkersForProfile(profileName = '', sampleType = 'SERUM', fasting = 'NO') {
+    const nameLower = (profileName || '').toLowerCase();
+    
+    if (nameLower.includes('lipid')) {
+        return [
+            { code: 'CHOL_T', name: 'Total Cholesterol', sampleType: 'SERUM', fasting: 'YES', tatHours: 24, description: 'Measures total circulating cholesterol in bloodstream.' },
+            { code: 'HDL_C', name: 'HDL Cholesterol (Good Cholesterol)', sampleType: 'SERUM', fasting: 'YES', tatHours: 24, description: 'High-density lipoprotein protects against cardiovascular disease.' },
+            { code: 'LDL_C', name: 'LDL Cholesterol (Bad Cholesterol - Direct)', sampleType: 'SERUM', fasting: 'YES', tatHours: 24, description: 'Low-density lipoprotein causes arterial plaque buildup.' },
+            { code: 'TRIGL', name: 'Triglycerides', sampleType: 'SERUM', fasting: 'YES', tatHours: 24, description: 'Primary circulating fat; risk indicator for coronary artery disease.' },
+            { code: 'VLDL_C', name: 'VLDL Cholesterol', sampleType: 'SERUM', fasting: 'YES', tatHours: 24, description: 'Very low-density lipoprotein carrying triglycerides.' },
+            { code: 'NON_HDL', name: 'Non-HDL Cholesterol', sampleType: 'SERUM', fasting: 'YES', tatHours: 24, description: 'Total atherogenic particle concentration.' },
+            { code: 'CHOL_RAT', name: 'Total / HDL Cholesterol Ratio', sampleType: 'SERUM', fasting: 'YES', tatHours: 24, description: 'Coronary artery disease risk ratio.' },
+            { code: 'LDL_HDL', name: 'LDL / HDL Ratio', sampleType: 'SERUM', fasting: 'YES', tatHours: 24, description: 'Atherogenic index of vascular health.' }
+        ];
+    }
+
+    if (nameLower.includes('liver') || nameLower.includes('lft') || nameLower.includes('hepatic')) {
+        return [
+            { code: 'BILI_T', name: 'Bilirubin Total', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Detects jaundice and evaluates liver clearance.' },
+            { code: 'BILI_D', name: 'Bilirubin Direct (Conjugated)', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Identifies biliary obstruction or intrahepatic cholestasis.' },
+            { code: 'BILI_I', name: 'Bilirubin Indirect (Unconjugated)', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Hemolytic indicator.' },
+            { code: 'SGOT_AST', name: 'SGOT / AST (Aspartate Aminotransferase)', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Enzyme indicative of hepatocellular necrosis or cardiac injury.' },
+            { code: 'SGPT_ALT', name: 'SGPT / ALT (Alanine Aminotransferase)', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Key enzyme specific to liver cell inflammation.' },
+            { code: 'ALP', name: 'Alkaline Phosphatase (ALP)', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Marker of biliary tract and bone metabolism.' },
+            { code: 'PROT_T', name: 'Total Protein', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Measures albumin and globulin in blood.' },
+            { code: 'ALB', name: 'Serum Albumin', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Major circulating protein manufactured by liver.' },
+            { code: 'GLOB', name: 'Serum Globulin', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Immunoglobulins and transport proteins.' },
+            { code: 'AG_RAT', name: 'Albumin / Globulin (A/G) Ratio', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Calculated nutritional and synthetic liver marker.' },
+            { code: 'GGTP', name: 'Gamma Glutamyl Transferase (GGT)', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Sensitive indicator of alcohol exposure and cholestasis.' }
+        ];
+    }
+
+    if (nameLower.includes('renal') || nameLower.includes('kidney') || nameLower.includes('kft') || nameLower.includes('rft')) {
+        return [
+            { code: 'CREAT', name: 'Serum Creatinine', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Critical biomarker for glomerular filtration and renal function.' },
+            { code: 'BUN', name: 'Blood Urea Nitrogen (BUN)', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Metabolic waste product filtered by functional kidneys.' },
+            { code: 'UREA', name: 'Serum Urea', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Evaluates hydration and renal excretion capacity.' },
+            { code: 'URIC', name: 'Uric Acid', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Screens for hyperuricemia, gout, and renal calculi.' },
+            { code: 'CALC', name: 'Serum Calcium Total', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Essential mineral regulated by kidneys and parathyroid.' },
+            { code: 'PHOS', name: 'Inorganic Phosphorus', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Mineral balance indicator in renal disease.' },
+            { code: 'SOD', name: 'Serum Sodium (Na+)', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Electrolyte regulating fluid balance and blood pressure.' },
+            { code: 'POT', name: 'Serum Potassium (K+)', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Crucial cardiac and renal intracellular electrolyte.' },
+            { code: 'CHL', name: 'Serum Chloride (Cl-)', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Acid-base and neuromuscular homeostasis marker.' },
+            { code: 'EGFR', name: 'Estimated Glomerular Filtration Rate (eGFR)', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Calculated staging of chronic kidney function.' }
+        ];
+    }
+
+    if (nameLower.includes('thyroid')) {
+        return [
+            { code: 'T3_TOT', name: 'Total Triiodothyronine (T3)', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Active metabolic thyroid hormone.' },
+            { code: 'T4_TOT', name: 'Total Thyroxine (T4)', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Primary prohormone released by thyroid gland.' },
+            { code: 'TSH_ULT', name: 'Thyroid Stimulating Hormone (TSH Ultra-sensitive)', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Pituitary gland regulator for hyperthyroidism and hypothyroidism.' }
+        ];
+    }
+
+    if (nameLower.includes('cbc') || nameLower.includes('hemogram') || nameLower.includes('blood count')) {
+        return [
+            { code: 'HB', name: 'Hemoglobin (Hb)', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Oxygen carrying protein in red blood cells.' },
+            { code: 'RBC', name: 'Total RBC Count', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Red blood cell count per microliter.' },
+            { code: 'PCV', name: 'Packed Cell Volume / Hematocrit (PCV)', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Percentage of blood volume composed of erythrocytes.' },
+            { code: 'MCV', name: 'Mean Corpuscular Volume (MCV)', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Average volume of single erythrocyte (Anemia classification).' },
+            { code: 'MCH', name: 'Mean Corpuscular Hemoglobin (MCH)', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Average hemoglobin weight per red cell.' },
+            { code: 'MCHC', name: 'Mean Corpuscular Hemoglobin Concentration (MCHC)', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Hemoglobin concentration per packed unit.' },
+            { code: 'RDW', name: 'Red Cell Distribution Width (RDW)', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Variation in red blood cell sizing (Anisocytosis).' },
+            { code: 'TLC_WBC', name: 'Total Leukocyte Count (WBC)', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Immune defense cells fighting infection and inflammation.' },
+            { code: 'NEUT', name: 'Neutrophils %', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'First responders in bacterial infection defense.' },
+            { code: 'LYMPH', name: 'Lymphocytes %', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Adaptive immune cells (T-cells, B-cells).' },
+            { code: 'MONO', name: 'Monocytes %', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Phagocytic cells clearing tissue cellular debris.' },
+            { code: 'EOS', name: 'Eosinophils %', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Allergic reactions and parasite defense indicator.' },
+            { code: 'BASO', name: 'Basophils %', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Histamine producing immune granulocytes.' },
+            { code: 'PLT', name: 'Platelet Count (Thrombocytes)', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Coagulation cells preventing blood loss and hemorrhage.' },
+            { code: 'MPV', name: 'Mean Platelet Volume (MPV)', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Average size of platelets in circulation.' }
+        ];
+    }
+
+    if (nameLower.includes('diabet') || nameLower.includes('glycem') || nameLower.includes('sugar')) {
+        return [
+            { code: 'GLUC_F', name: 'Fasting Blood Sugar (FBS)', sampleType: 'FLUORIDE', fasting: 'YES', tatHours: 12, description: 'Baseline glucose concentration following 8-10 hour fast.' },
+            { code: 'HBA1C', name: 'HbA1c Glycated Hemoglobin', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Gold standard 90-day average blood sugar control marker.' },
+            { code: 'EAG', name: 'Estimated Average Glucose (eAG)', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Calculated average daily blood sugar level.' }
+        ];
+    }
+
+    if (nameLower.includes('iron') || nameLower.includes('anemia')) {
+        return [
+            { code: 'FE', name: 'Serum Iron', sampleType: 'SERUM', fasting: 'YES', tatHours: 24, description: 'Circulating iron attached to transferrin.' },
+            { code: 'TIBC', name: 'Total Iron Binding Capacity (TIBC)', sampleType: 'SERUM', fasting: 'YES', tatHours: 24, description: 'Total binding sites available for iron transport.' },
+            { code: 'UIBC', name: 'Unsaturated Iron Binding Capacity (UIBC)', sampleType: 'SERUM', fasting: 'YES', tatHours: 24, description: 'Reserve iron binding capability.' },
+            { code: 'TRANS_SAT', name: 'Transferrin Saturation %', sampleType: 'SERUM', fasting: 'YES', tatHours: 24, description: 'Percentage of iron transport proteins saturated.' },
+            { code: 'FERRITIN', name: 'Serum Ferritin', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Intracellular iron storage reserve.' }
+        ];
+    }
+
+    if (nameLower.includes('allergy') || nameLower.includes('rhinitis') || nameLower.includes('phadia')) {
+        return [
+            { code: 'IGE_TOT', name: 'Total IgE Antibodies', sampleType: 'SERUM', fasting: 'NO', tatHours: 24, description: 'Immunoglobulin E level associated with allergic hypersensitivity.' },
+            { code: 'ALLERG_P1', name: 'Inhalant Allergen Specific Panel (Phadia)', sampleType: 'SERUM', fasting: 'NO', tatHours: 48, description: 'Detects specific IgE antibodies against airborne pollen and dust mites.' },
+            { code: 'ALLERG_P2', name: 'Food Allergen Specific Panel (Phadia)', sampleType: 'SERUM', fasting: 'NO', tatHours: 48, description: 'Detects antibodies against dietary and environmental allergens.' },
+            { code: 'ABS_EOS', name: 'Absolute Eosinophil Count (AEC)', sampleType: 'EDTA', fasting: 'NO', tatHours: 12, description: 'Quantifies circulating eosinophils during active allergic reactions.' }
+        ];
+    }
+
+    if (nameLower.includes('aldosterone') || nameLower.includes('renin')) {
+        return [
+            { code: 'ALDO', name: 'Plasma Aldosterone', sampleType: 'EDTA', fasting: 'YES', tatHours: 48, description: 'Adrenal cortex steroid hormone regulating sodium retention.' },
+            { code: 'RENIN_DIR', name: 'Direct Renin Concentration', sampleType: 'EDTA', fasting: 'YES', tatHours: 48, description: 'Kidney enzyme regulating blood pressure and vascular volume.' },
+            { code: 'ARR_RAT', name: 'Aldosterone / Renin Ratio (ARR)', sampleType: 'EDTA', fasting: 'YES', tatHours: 48, description: 'Diagnostic index for primary aldosteronism (Conn syndrome).' }
+        ];
+    }
+
+    // Generic fallback decomposition: split by slash, commas, or parentheses
+    const parts = profileName
+        .replace(/panel|profile|screening|by phadia/gi, '')
+        .split(/[/,()&+-]/)
+        .map(s => s.trim())
+        .filter(s => s.length > 2);
+
+    if (parts.length > 1) {
+        return parts.map((part, pIdx) => ({
+            code: `PARAM_${pIdx + 1}`,
+            name: part.charAt(0).toUpperCase() + part.slice(1),
+            sampleType: sampleType || 'SERUM',
+            fasting: fasting || 'NO',
+            tatHours: 24,
+            description: `Biomarker parameter tested as part of ${profileName}.`
+        }));
+    }
+
+    return [
+        {
+            code: 'PARAM_1',
+            name: `${profileName} - Quantitative Biomarker Assay`,
+            sampleType: sampleType || 'SERUM',
+            fasting: fasting || 'NO',
+            tatHours: 24,
+            description: `Core clinical laboratory biomarker assay.`
+        }
+    ];
+}
+
+/**
+ * Resolves all single tests covered under a profile
+ */
+export function resolveProfileTests(profile, allTests = []) {
+    if (!profile) return [];
+    
+    // 1. If profile has explicit tests array of codes or objects
+    if (profile.tests && Array.isArray(profile.tests) && profile.tests.length > 0) {
+        return profile.tests.map(tCodeOrObj => {
+            const tCode = typeof tCodeOrObj === 'string' ? tCodeOrObj : (tCodeOrObj.code || tCodeOrObj.id);
+            const found = allTests.find(t => t.code === tCode || t.id === tCode);
+            return found || (typeof tCodeOrObj === 'object' ? tCodeOrObj : {
+                name: tCode,
+                code: tCode,
+                sampleType: profile.sampleType || 'SERUM',
+                fasting: profile.fasting || 'NO',
+                description: `Quantitative biomarker in ${profile.name}`
+            });
+        });
+    }
+
+    // 2. If profile has includes array
+    if (profile.includes && Array.isArray(profile.includes) && profile.includes.length > 0) {
+        return profile.includes.map((incName, idx) => {
+            const found = allTests.find(t => t.name.toLowerCase() === incName.toLowerCase());
+            return found || {
+                code: `PARAM_${idx + 1}`,
+                name: incName,
+                sampleType: profile.sampleType || 'SERUM',
+                fasting: profile.fasting || 'NO',
+                description: `Biomarker component analyzed under ${profile.name}`
+            };
+        });
+    }
+
+    // 3. Fallback: Decompose based on medical profile name
+    return getDecomposedBiomarkersForProfile(profile.name, profile.sampleType, profile.fasting);
+}
+
+/**
+ * Resolves full hierarchical composition of a package (both profiles and standalone tests)
+ */
+export function resolvePackageContents(pkg, catalog = {}) {
+    if (!pkg) return { profiles: [], standaloneTests: [], totalBiomarkersCount: 0 };
+    const allProfiles = catalog.profiles || [];
+    const allTests = catalog.tests || [];
+
+    // Resolve profiles
+    const profiles = (pkg.profiles || []).map(pCodeOrObj => {
+        const pCode = typeof pCodeOrObj === 'string' ? pCodeOrObj : (pCodeOrObj.code || pCodeOrObj.id);
+        const pObj = allProfiles.find(p => p.code === pCode || p.id === pCode) || (typeof pCodeOrObj === 'object' ? pCodeOrObj : null);
+        const baseProfile = pObj || {
+            code: pCode,
+            name: pCode,
+            sampleType: 'SERUM',
+            fasting: 'NO',
+            description: `Diagnostic profile within ${pkg.name}`
+        };
+        const testsInside = resolveProfileTests(baseProfile, allTests);
+        return {
+            ...baseProfile,
+            testsInside
+        };
+    });
+
+    // Resolve standalone tests
+    const standaloneTests = (pkg.tests || []).map(tCodeOrObj => {
+        const tCode = typeof tCodeOrObj === 'string' ? tCodeOrObj : (tCodeOrObj.code || tCodeOrObj.id);
+        const found = allTests.find(t => t.code === tCode || t.id === tCode);
+        return found || (typeof tCodeOrObj === 'object' ? tCodeOrObj : {
+            code: tCode,
+            name: tCode,
+            sampleType: 'SERUM',
+            fasting: 'NO',
+            description: `Biomarker test included in ${pkg.name}`
+        });
+    });
+
+    const totalBiomarkersCount = profiles.reduce((sum, p) => sum + (p.testsInside?.length || 1), 0) + standaloneTests.length;
+
+    return {
+        profiles,
+        standaloneTests,
+        totalBiomarkersCount: Math.max(totalBiomarkersCount, pkg.testCount || 0)
+    };
+}
+
 

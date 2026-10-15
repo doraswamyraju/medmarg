@@ -25,8 +25,27 @@ export default function CareSeekerPhoneModal({
     setLoading(true);
     setError('');
 
+    const fullPhone = `+91 ${cleaned}`;
+    const userEmailKey = (user?.email || 'patient').toLowerCase().replace(/[^a-z0-9]/g, '_');
+
     try {
-      const fullPhone = `+91 ${cleaned}`;
+      localStorage.setItem('medmarg_phone_completed', 'true');
+      localStorage.setItem(`medmarg_phone_completed_${userEmailKey}`, 'true');
+      localStorage.setItem('medmarg_user_phone', fullPhone);
+      localStorage.setItem(`medmarg_phone_${userEmailKey}`, fullPhone);
+      
+      const rawUser = localStorage.getItem('medmarg_user');
+      if (rawUser) {
+        try {
+          const parsed = JSON.parse(rawUser);
+          parsed.phone = fullPhone;
+          parsed.identifier = fullPhone;
+          localStorage.setItem('medmarg_user', JSON.stringify(parsed));
+        } catch (e) {}
+      }
+    } catch (e) {}
+
+    try {
       const res = await safeFetch(`${API_BASE}/api/v1/auth/update-phone`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -39,15 +58,10 @@ export default function CareSeekerPhoneModal({
       });
 
       const data = await safeJson(res);
-      if (data && (data.success || data.user)) {
-        onPhoneSaved(fullPhone);
-      } else {
-        // Fallback save locally
-        onPhoneSaved(fullPhone);
-      }
+      onPhoneSaved(fullPhone);
     } catch (err) {
       console.warn('Phone update fallback:', err);
-      onPhoneSaved(`+91 ${cleaned}`);
+      onPhoneSaved(fullPhone);
     } finally {
       setLoading(false);
     }
