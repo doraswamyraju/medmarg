@@ -39,7 +39,7 @@ export default function PatientCheckoutModal({
   const [selectedSlot, setSelectedSlot] = useState('07:00 AM - 08:00 AM (Recommended for Fasting)');
   const [isExpress, setIsExpress] = useState(false);
 
-  const [paymentMode, setPaymentMode] = useState('PREPAID_UPI'); // 'PREPAID_UPI' | 'DOORSTEP_QR' | 'CASH'
+  const [paymentMode, setPaymentMode] = useState('PREPAID_UPI'); // 'PREPAID_UPI' | 'DOORSTEP_QR'
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
