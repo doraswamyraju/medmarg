@@ -498,18 +498,31 @@ app.get('/api/v1/catalog/tests', (req, res) => {
 
 // CREATE / ADD / UPDATE TEST (Syncs to Google Sheets & MedMarg DB)
 app.post('/api/v1/catalog/tests', async (req, res) => {
-    const { code, name, sampleType, fasting, mrp, price, tatHours, description } = req.body;
+    const { 
+        id, 
+        serialNo, 
+        code, 
+        name, 
+        sampleType, 
+        fasting, 
+        mrp, 
+        price, 
+        tatHours, 
+        description, 
+        labPricing, 
+        tierPricing 
+    } = req.body;
 
     if (!code || !name) {
         return res.status(400).json({ error: 'Test Code and Test Name are required.' });
     }
 
     const testCode = code.trim().toUpperCase();
-    const existingIndex = catalogState.tests.findIndex(t => t.code === testCode);
+    const existingIndex = catalogState.tests.findIndex(t => t.code === testCode || (id && t.id === id));
 
     const testItem = {
-        id: existingIndex >= 0 ? catalogState.tests[existingIndex].id : `TEST_${catalogState.tests.length + 1}`,
-        serialNo: existingIndex >= 0 ? catalogState.tests[existingIndex].serialNo : catalogState.tests.length + 1,
+        id: id || (existingIndex >= 0 ? catalogState.tests[existingIndex].id : `TEST_${catalogState.tests.length + 1}`),
+        serialNo: serialNo || (existingIndex >= 0 ? catalogState.tests[existingIndex].serialNo : catalogState.tests.length + 1),
         code: testCode,
         name: name.trim(),
         sampleType: (sampleType || 'SERUM').trim().toUpperCase(),
@@ -519,6 +532,8 @@ app.post('/api/v1/catalog/tests', async (req, res) => {
         price: Number(price) || 299,
         tatHours: Number(tatHours) || 24,
         description: description || `Clinical laboratory test for ${name}.`,
+        labPricing: labPricing || (existingIndex >= 0 ? catalogState.tests[existingIndex].labPricing : null),
+        tierPricing: tierPricing || (existingIndex >= 0 ? catalogState.tests[existingIndex].tierPricing : null),
         active: true
     };
 
