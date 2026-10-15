@@ -277,7 +277,7 @@ export default function RealMapView({
             <strong style="color:#EF4444;">📍 Order #${ord.id}</strong><br/>
             <strong>Patient:</strong> ${ord.name || ord.patientName}<br/>
             <strong>Address:</strong> ${ord.address}<br/>
-            <strong>Tests:</strong> ${ord.items || ord.item}
+            <strong>Tests:</strong> ${Array.isArray(ord.items) ? ord.items.map(i => i.name || i.title || i).join(', ') : (ord.items || ord.item || 'Diagnostic Tests')}
           </div>
         `);
       }

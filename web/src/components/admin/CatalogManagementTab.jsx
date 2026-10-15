@@ -19,15 +19,27 @@ import {
   CheckCircle2,
   Award,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Users,
+  CheckSquare,
+  Square,
+  Activity,
+  Trash2,
+  TrendingDown
 } from 'lucide-react';
 import { 
   calculateAggregatedSamples, 
   calculateFastingRequirement,
   getItemLabPricing,
   getDefaultLabPricing,
+  getDefaultTierPricing,
+  getItemTierPricing,
+  getItemPriceForPeople,
   DEFAULT_LAB_PROVIDERS
 } from '../../data/catalogStore';
+import MultiLabPricingEditor from './catalog/MultiLabPricingEditor';
+import MultiPeopleTierPricingEditor from './catalog/MultiPeopleTierPricingEditor';
+import SingleTestsSelector from './catalog/SingleTestsSelector';
 
 export default function CatalogManagementTab({ 
   catalog, 
@@ -44,7 +56,7 @@ export default function CatalogManagementTab({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50); // 50 | 100 | 250 | 500 | 'ALL'
 
-  // Multi-Lab Pricing State
+  // Multi-Lab Pricing & Volume Slabs State
   const [labPricingFilterType, setLabPricingFilterType] = useState('ALL'); // 'ALL' | 'TESTS' | 'PROFILES' | 'PACKAGES'
   const [selectedItemForLabPricing, setSelectedItemForLabPricing] = useState(null);
   const [showLabPricingModal, setShowLabPricingModal] = useState(false);
@@ -52,8 +64,14 @@ export default function CatalogManagementTab({
   const [previewItem, setPreviewItem] = useState(null);
   const [globalSuggestedLab, setGlobalSuggestedLab] = useState('Central Partner Hub (Tirupati/Regional)');
   const [labPricingForm, setLabPricingForm] = useState([]);
+  const [tierPricingForm, setTierPricingForm] = useState(null);
+  const [activeRateModalTab, setActiveRateModalTab] = useState('LABS'); // 'LABS' | 'PEOPLE'
   const [saveToast, setSaveToast] = useState(null);
 
+  // Modals active sub-tabs
+  const [activeTestModalTab, setActiveTestModalTab] = useState('DETAILS'); // 'DETAILS' | 'LABS' | 'PEOPLE'
+  const [activeProfileModalTab, setActiveProfileModalTab] = useState('DETAILS'); // 'DETAILS' | 'TESTS' | 'LABS' | 'PEOPLE'
+  const [activePackageModalTab, setActivePackageModalTab] = useState('COMPONENTS'); // 'COMPONENTS' | 'LABS' | 'PEOPLE'
 
   // Filtered lists (defined before pagination calculation)
   const filteredTests = (catalog?.tests || []).filter(t => {
@@ -93,7 +111,9 @@ export default function CatalogManagementTab({
     mrp: 499,
     price: 299,
     tatHours: 24,
-    description: ''
+    description: '',
+    labPricing: [],
+    tierPricing: null
   });
 
   const [profileForm, setProfileForm] = useState({
@@ -104,7 +124,10 @@ export default function CatalogManagementTab({
     mrp: 1499,
     price: 899,
     tatHours: 24,
-    description: ''
+    description: '',
+    selectedTests: [],
+    labPricing: [],
+    tierPricing: null
   });
 
   const [packageBuilderForm, setPackageBuilderForm] = useState({
@@ -117,13 +140,168 @@ export default function CatalogManagementTab({
     selectedProfiles: ['APASTS', 'BEAP'],
     selectedTests: ['AHGLU', 'VITDC', 'SGPT'],
     tatHours: 24,
-    description: ''
+    description: '',
+    labPricing: [],
+    tierPricing: null
   });
   const [builderSearch, setBuilderSearch] = useState('');
 
-  // Handlers
+  // OPEN HANDLERS
+  const handleOpenCreateTest = () => {
+    setEditingItem(null);
+    const labs = getDefaultLabPricing(299, 499, 24);
+    const tiers = getDefaultTierPricing(299, 499);
+    setTestForm({
+      code: '',
+      name: '',
+      sampleType: 'SERUM',
+      fasting: 'NO',
+      mrp: 499,
+      price: 299,
+      tatHours: 24,
+      description: '',
+      labPricing: labs,
+      tierPricing: tiers
+    });
+    setActiveTestModalTab('DETAILS');
+    setShowCreateTestModal(true);
+  };
+
+  const handleOpenEditTest = (test) => {
+    setEditingItem(test);
+    const labs = getItemLabPricing(test);
+    const tiers = getItemTierPricing(test);
+    setTestForm({
+      code: test.code || '',
+      name: test.name || '',
+      sampleType: test.sampleType || 'SERUM',
+      fasting: test.fasting || 'NO',
+      mrp: test.mrp || 499,
+      price: test.price || 299,
+      tatHours: test.tatHours || 24,
+      description: test.description || '',
+      labPricing: JSON.parse(JSON.stringify(labs)),
+      tierPricing: JSON.parse(JSON.stringify(tiers))
+    });
+    setActiveTestModalTab('DETAILS');
+    setShowCreateTestModal(true);
+  };
+
+  const handleOpenCreateProfile = () => {
+    setEditingItem(null);
+    const labs = getDefaultLabPricing(899, 1499, 24);
+    const tiers = getDefaultTierPricing(899, 1499);
+    setProfileForm({
+      code: '',
+      name: '',
+      sampleType: 'SERUM',
+      fasting: 'NO',
+      mrp: 1499,
+      price: 899,
+      tatHours: 24,
+      description: '',
+      selectedTests: [],
+      labPricing: labs,
+      tierPricing: tiers
+    });
+    setActiveProfileModalTab('DETAILS');
+    setShowCreateProfileModal(true);
+  };
+
+  const handleOpenEditProfile = (profile) => {
+    setEditingItem(profile);
+    const labs = getItemLabPricing(profile);
+    const tiers = getItemTierPricing(profile);
+    setProfileForm({
+      code: profile.code || '',
+      name: profile.name || '',
+      sampleType: profile.sampleType || 'SERUM',
+      fasting: profile.fasting || 'NO',
+      mrp: profile.mrp || 1499,
+      price: profile.price || 899,
+      tatHours: profile.tatHours || 24,
+      description: profile.description || '',
+      selectedTests: profile.tests || [],
+      labPricing: JSON.parse(JSON.stringify(labs)),
+      tierPricing: JSON.parse(JSON.stringify(tiers))
+    });
+    setActiveProfileModalTab('DETAILS');
+    setShowCreateProfileModal(true);
+  };
+
+  const handleOpenPackageBuilder = (pkg = null) => {
+    if (pkg) {
+      setEditingItem(pkg);
+      const labs = getItemLabPricing(pkg);
+      const tiers = getItemTierPricing(pkg);
+      setPackageBuilderForm({
+        id: pkg.id,
+        name: pkg.name || '',
+        code: pkg.code || '',
+        tagline: pkg.tagline || '',
+        category: pkg.category || 'Full Body Wellness',
+        mrp: pkg.mrp || 2999,
+        price: pkg.price || 1299,
+        tatHours: pkg.tatHours || 24,
+        description: pkg.description || '',
+        selectedProfiles: pkg.profiles || [],
+        selectedTests: pkg.tests || [],
+        labPricing: JSON.parse(JSON.stringify(labs)),
+        tierPricing: JSON.parse(JSON.stringify(tiers))
+      });
+    } else {
+      setEditingItem(null);
+      const labs = getDefaultLabPricing(1299, 2999, 24);
+      const tiers = getDefaultTierPricing(1299, 2999);
+      setPackageBuilderForm({
+        name: '',
+        code: '',
+        tagline: 'Comprehensive Health & Biomarker Screening',
+        category: 'Full Body Wellness',
+        mrp: 2999,
+        price: 1299,
+        tatHours: 24,
+        description: '',
+        selectedProfiles: ['APASTS', 'BEAP'],
+        selectedTests: ['AHGLU', 'VITDC', 'SGPT'],
+        labPricing: labs,
+        tierPricing: tiers
+      });
+    }
+    setActivePackageModalTab('COMPONENTS');
+    setShowPackageBuilderModal(true);
+  };
+
+  const handleOpenLabPricingModal = (item) => {
+    setSelectedItemForLabPricing(item);
+    const existingLabs = getItemLabPricing(item);
+    const existingTiers = getItemTierPricing(item);
+    setLabPricingForm(JSON.parse(JSON.stringify(existingLabs)));
+    setTierPricingForm(JSON.parse(JSON.stringify(existingTiers)));
+    setActiveRateModalTab('LABS');
+    setShowLabPricingModal(true);
+  };
+
+  const handleOpenPreview = (item) => {
+    setPreviewItem(item);
+    setShowCareSeekerPreviewModal(true);
+  };
+
+  // SAVE HANDLERS
   const handleSaveTest = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    const baseP = Number(testForm.price) || 299;
+    const baseM = Number(testForm.mrp) || Math.round(baseP * 1.6);
+    const tat = Number(testForm.tatHours) || 24;
+
+    const effectiveLabs = (testForm.labPricing && testForm.labPricing.length > 0)
+      ? testForm.labPricing
+      : getDefaultLabPricing(baseP, baseM, tat);
+
+    const effectiveTiers = (testForm.tierPricing && testForm.tierPricing['1'])
+      ? testForm.tierPricing
+      : getDefaultTierPricing(baseP, baseM);
+
     const newTest = {
       id: editingItem ? editingItem.id : `TEST_${(catalog.tests?.length || 0) + 1}`,
       serialNo: editingItem ? editingItem.serialNo : (catalog.tests?.length || 0) + 1,
@@ -132,16 +310,18 @@ export default function CatalogManagementTab({
       sampleType: testForm.sampleType.trim().toUpperCase(),
       fasting: testForm.fasting.trim().toUpperCase(),
       category: 'Individual Test',
-      mrp: Number(testForm.mrp) || 499,
-      price: Number(testForm.price) || 299,
-      tatHours: Number(testForm.tatHours) || 24,
-      description: testForm.description || `Clinical laboratory test for ${testForm.name}.`,
+      mrp: baseM,
+      price: baseP,
+      tatHours: tat,
+      description: testForm.description || `Clinical laboratory biomarker test for ${testForm.name}.`,
+      labPricing: effectiveLabs,
+      tierPricing: effectiveTiers,
       active: true
     };
 
     let updatedTests = [...(catalog.tests || [])];
     if (editingItem) {
-      updatedTests = updatedTests.map(t => t.id === editingItem.id ? newTest : t);
+      updatedTests = updatedTests.map(t => (t.id === editingItem.id || t.code === editingItem.code) ? newTest : t);
     } else {
       updatedTests.unshift(newTest);
     }
@@ -151,28 +331,55 @@ export default function CatalogManagementTab({
     saveCatalogState(updatedCatalog);
     setShowCreateTestModal(false);
     setEditingItem(null);
+    setSaveToast(`Single Test "${newTest.name}" saved with multi-lab rates & volume slabs!`);
+    setTimeout(() => setSaveToast(null), 4000);
   };
 
   const handleSaveProfile = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    const baseP = Number(profileForm.price) || 899;
+    const baseM = Number(profileForm.mrp) || Math.round(baseP * 1.6);
+    const tat = Number(profileForm.tatHours) || 24;
+
+    const effectiveLabs = (profileForm.labPricing && profileForm.labPricing.length > 0)
+      ? profileForm.labPricing
+      : getDefaultLabPricing(baseP, baseM, tat);
+
+    const effectiveTiers = (profileForm.tierPricing && profileForm.tierPricing['1'])
+      ? profileForm.tierPricing
+      : getDefaultTierPricing(baseP, baseM);
+
+    const selectedTests = profileForm.selectedTests || [];
+    const derivedSamples = selectedTests.length > 0 
+      ? calculateAggregatedSamples([], selectedTests, [], catalog.tests).join(', ')
+      : (profileForm.sampleType || 'SERUM');
+
+    const derivedFasting = selectedTests.length > 0 
+      ? (calculateFastingRequirement([], selectedTests, [], catalog.tests) ? 'YES' : 'NO')
+      : (profileForm.fasting || 'NO');
+
     const newProfile = {
       id: editingItem ? editingItem.id : `PROF_${(catalog.profiles?.length || 0) + 1}`,
       serialNo: editingItem ? editingItem.serialNo : (catalog.profiles?.length || 0) + 1,
       code: profileForm.code.trim().toUpperCase(),
       name: profileForm.name.trim(),
-      sampleType: profileForm.sampleType.trim().toUpperCase(),
-      fasting: profileForm.fasting.trim().toUpperCase(),
+      sampleType: derivedSamples,
+      fasting: derivedFasting,
       category: 'Diagnostic Profile',
-      mrp: Number(profileForm.mrp) || 1499,
-      price: Number(profileForm.price) || 899,
-      tatHours: Number(profileForm.tatHours) || 24,
+      mrp: baseM,
+      price: baseP,
+      tatHours: tat,
       description: profileForm.description || `Diagnostic profile panel for ${profileForm.name}.`,
+      tests: selectedTests,
+      testCount: selectedTests.length || 1,
+      labPricing: effectiveLabs,
+      tierPricing: effectiveTiers,
       active: true
     };
 
     let updatedProfiles = [...(catalog.profiles || [])];
     if (editingItem) {
-      updatedProfiles = updatedProfiles.map(p => p.id === editingItem.id ? newProfile : p);
+      updatedProfiles = updatedProfiles.map(p => (p.id === editingItem.id || p.code === editingItem.code) ? newProfile : p);
     } else {
       updatedProfiles.unshift(newProfile);
     }
@@ -182,10 +389,16 @@ export default function CatalogManagementTab({
     saveCatalogState(updatedCatalog);
     setShowCreateProfileModal(false);
     setEditingItem(null);
+    setSaveToast(`Diagnostic Profile "${newProfile.name}" (${selectedTests.length} tests) saved with multi-lab rates & volume slabs!`);
+    setTimeout(() => setSaveToast(null), 4000);
   };
 
   const handleSavePackage = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    const baseP = Number(packageBuilderForm.price) || 1299;
+    const baseM = Number(packageBuilderForm.mrp) || Math.round(baseP * 2);
+    const tat = Number(packageBuilderForm.tatHours) || 24;
+
     const sampleTypes = calculateAggregatedSamples(
       packageBuilderForm.selectedProfiles,
       packageBuilderForm.selectedTests,
@@ -200,46 +413,50 @@ export default function CatalogManagementTab({
       catalog.tests
     );
 
+    const effectiveLabs = (packageBuilderForm.labPricing && packageBuilderForm.labPricing.length > 0)
+      ? packageBuilderForm.labPricing
+      : getDefaultLabPricing(baseP, baseM, tat);
+
+    const effectiveTiers = (packageBuilderForm.tierPricing && packageBuilderForm.tierPricing['1'])
+      ? packageBuilderForm.tierPricing
+      : getDefaultTierPricing(baseP, baseM);
+
     const newPkg = {
-      id: `PKG_${Date.now()}`,
+      id: editingItem ? editingItem.id : `PKG_${Date.now()}`,
       name: packageBuilderForm.name.trim(),
       code: (packageBuilderForm.code || `MM_PKG_${Date.now().toString().slice(-4)}`).toUpperCase(),
       tagline: packageBuilderForm.tagline,
       category: packageBuilderForm.category,
-      mrp: Number(packageBuilderForm.mrp) || Number(packageBuilderForm.price) * 2,
-      price: Number(packageBuilderForm.price),
-      discountPercent: Math.round(((Number(packageBuilderForm.mrp) - Number(packageBuilderForm.price)) / Number(packageBuilderForm.mrp)) * 100) || 50,
+      mrp: baseM,
+      price: baseP,
+      discountPercent: Math.round(((baseM - baseP) / baseM) * 100) || 50,
       fasting: requiresFasting ? 'YES' : 'NO',
       fastingNote: requiresFasting ? '8-10 hours overnight fasting recommended' : 'No fasting required',
       sampleTypes,
-      tatHours: Number(packageBuilderForm.tatHours) || 24,
+      tatHours: tat,
       popular: true,
       profiles: packageBuilderForm.selectedProfiles,
       tests: packageBuilderForm.selectedTests,
       testCount: packageBuilderForm.selectedProfiles.length * 8 + packageBuilderForm.selectedTests.length,
-      description: packageBuilderForm.description || `Custom package composed of ${packageBuilderForm.selectedProfiles.length} profiles and ${packageBuilderForm.selectedTests.length} tests.`
+      description: packageBuilderForm.description || `Comprehensive package composed of ${packageBuilderForm.selectedProfiles.length} profiles and ${packageBuilderForm.selectedTests.length} tests.`,
+      labPricing: effectiveLabs,
+      tierPricing: effectiveTiers
     };
 
-    const updatedCatalog = {
-      ...catalog,
-      packages: [newPkg, ...(catalog.packages || [])]
-    };
+    let updatedPackages = [...(catalog.packages || [])];
+    if (editingItem) {
+      updatedPackages = updatedPackages.map(p => (p.id === editingItem.id || p.code === editingItem.code) ? newPkg : p);
+    } else {
+      updatedPackages.unshift(newPkg);
+    }
+
+    const updatedCatalog = { ...catalog, packages: updatedPackages };
     setCatalog(updatedCatalog);
     saveCatalogState(updatedCatalog);
     setShowPackageBuilderModal(false);
-  };
-
-  // Handlers for Multi-Lab Pricing
-  const handleOpenLabPricingModal = (item) => {
-    setSelectedItemForLabPricing(item);
-    const existing = getItemLabPricing(item);
-    setLabPricingForm(JSON.parse(JSON.stringify(existing)));
-    setShowLabPricingModal(true);
-  };
-
-  const handleOpenPreview = (item) => {
-    setPreviewItem(item);
-    setShowCareSeekerPreviewModal(true);
+    setEditingItem(null);
+    setSaveToast(`Package "${newPkg.name}" saved with multi-lab rates & volume slabs!`);
+    setTimeout(() => setSaveToast(null), 4000);
   };
 
   const handleSaveLabPricing = (e) => {
@@ -253,40 +470,27 @@ export default function CatalogManagementTab({
     let updatedCatalog = { ...catalog };
     const medmargOpt = labPricingForm.find(l => l.isMedmargSuggested) || labPricingForm[0];
 
+    const patchItem = (item) => ({
+      ...item,
+      labPricing: labPricingForm,
+      tierPricing: tierPricingForm,
+      price: medmargOpt?.price || item.price,
+      mrp: medmargOpt?.mrp || item.mrp
+    });
+
     if (isPkg) {
-      updatedCatalog.packages = (catalog.packages || []).map(p => 
-        (p.id === itemId || p.code === itemId) ? { 
-          ...p, 
-          labPricing: labPricingForm, 
-          price: medmargOpt?.price || p.price, 
-          mrp: medmargOpt?.mrp || p.mrp 
-        } : p
-      );
+      updatedCatalog.packages = (catalog.packages || []).map(p => (p.id === itemId || p.code === itemId) ? patchItem(p) : p);
     } else if (isProf) {
-      updatedCatalog.profiles = (catalog.profiles || []).map(p => 
-        (p.id === itemId || p.code === itemId) ? { 
-          ...p, 
-          labPricing: labPricingForm, 
-          price: medmargOpt?.price || p.price, 
-          mrp: medmargOpt?.mrp || p.mrp 
-        } : p
-      );
+      updatedCatalog.profiles = (catalog.profiles || []).map(p => (p.id === itemId || p.code === itemId) ? patchItem(p) : p);
     } else {
-      updatedCatalog.tests = (catalog.tests || []).map(t => 
-        (t.id === itemId || t.code === itemId) ? { 
-          ...t, 
-          labPricing: labPricingForm, 
-          price: medmargOpt?.price || t.price, 
-          mrp: medmargOpt?.mrp || t.mrp 
-        } : t
-      );
+      updatedCatalog.tests = (catalog.tests || []).map(t => (t.id === itemId || t.code === itemId) ? patchItem(t) : t);
     }
 
     setCatalog(updatedCatalog);
     saveCatalogState(updatedCatalog);
     setShowLabPricingModal(false);
     setSelectedItemForLabPricing(null);
-    setSaveToast(`Pricing for ${selectedItemForLabPricing.name || selectedItemForLabPricing.code} updated across all 3 labs!`);
+    setSaveToast(`Pricing and volume slabs for ${selectedItemForLabPricing.name || selectedItemForLabPricing.code} updated across all labs!`);
     setTimeout(() => setSaveToast(null), 4000);
   };
 
@@ -348,29 +552,29 @@ export default function CatalogManagementTab({
       {/* KPI Stats Overview Header Bar */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem', marginBottom: '1.75rem' }}>
         <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1.5px solid #006B70', padding: '1.25rem', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
-          <div style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800', letterSpacing: '0.05em' }}>3-LAB PRICING SYSTEM</div>
+          <div style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800', letterSpacing: '0.05em' }}>3-LAB & VOLUME MATRIX</div>
           <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem' }}>
-            Active (3 Providers)
+            Multi-Lab & Volume
           </div>
           <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: '700', marginTop: '0.2rem' }}>
-            MedMarg • Thyrocare • Lalpath Labs
+            MedMarg • Thyrocare • Lalpath • 1P/2P/5P/10+P
           </div>
         </div>
 
         <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.25rem', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
           <div style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800', letterSpacing: '0.05em' }}>SINGLE BIOMARKER TESTS</div>
           <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem' }}>
-            {catalog.tests?.length || 913} <span style={{ fontSize: '0.85rem', color: '#059669', fontWeight: '700' }}>Live</span>
+            {catalog.tests?.length || 913} <span style={{ fontSize: '0.85rem', color: '#059669', fontWeight: '700' }}>Individual</span>
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.2rem' }}>With 3-Way Lab Rates</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.2rem' }}>Single tests with multi-lab & people rates</div>
         </div>
 
         <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.25rem', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
           <div style={{ fontSize: '0.78rem', color: '#D97706', fontWeight: '800', letterSpacing: '0.05em' }}>DIAGNOSTIC PROFILES</div>
           <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem' }}>
-            {catalog.profiles?.length || 87} <span style={{ fontSize: '0.85rem', color: '#D97706', fontWeight: '700' }}>Active</span>
+            {catalog.profiles?.length || 87} <span style={{ fontSize: '0.85rem', color: '#D97706', fontWeight: '700' }}>Panels</span>
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.2rem' }}>Multi-parameter Panels</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.2rem' }}>Combinations of single tests</div>
         </div>
 
         <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.25rem', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
@@ -378,7 +582,7 @@ export default function CatalogManagementTab({
           <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem' }}>
             {catalog.packages?.length || 4} <span style={{ fontSize: '0.85rem', color: '#7E22CE', fontWeight: '700' }}>Promoted</span>
           </div>
-          <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.2rem' }}>Aggregated Biomarker Scans</div>
+          <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.2rem' }}>Combinations of profiles & tests</div>
         </div>
       </div>
 
@@ -386,11 +590,11 @@ export default function CatalogManagementTab({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.85rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {[
-            { key: 'LAB_PRICING', label: '3-Lab Pricing & Offers Desk', icon: DollarSign, count: (catalog.tests?.length || 0) + (catalog.profiles?.length || 0) + (catalog.packages?.length || 0) },
+            { key: 'LAB_PRICING', label: 'Rate & Slabs Desk', icon: DollarSign, count: (catalog.tests?.length || 0) + (catalog.profiles?.length || 0) + (catalog.packages?.length || 0) },
             { key: 'TESTS', label: 'Single Tests Master', icon: FlaskConical, count: catalog.tests?.length || 913 },
             { key: 'PROFILES', label: 'Diagnostic Profiles', icon: Layers, count: catalog.profiles?.length || 87 },
             { key: 'PACKAGES', label: 'Health Packages', icon: Package, count: catalog.packages?.length || 4 },
-            { key: 'SYNC_HUB', label: 'Google Sheets Two-Way Sync', icon: FileSpreadsheet }
+            { key: 'SYNC_HUB', label: 'Google Sheets Sync', icon: FileSpreadsheet }
           ].map(st => {
             const isSel = testsSubTab === st.key;
             const IconC = st.icon;
@@ -423,23 +627,23 @@ export default function CatalogManagementTab({
         <div style={{ display: 'flex', gap: '0.6rem' }}>
           {testsSubTab === 'TESTS' && (
             <button 
-              onClick={() => { setEditingItem(null); setTestForm({ code: '', name: '', sampleType: 'SERUM', fasting: 'NO', mrp: 499, price: 299, tatHours: 24, description: '' }); setShowCreateTestModal(true); }}
+              onClick={handleOpenCreateTest}
               style={{ padding: '0.6rem 1.2rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 12px rgba(0,107,112,0.2)' }}
             >
-              <PlusCircle size={16} /> Add Test to Master
+              <PlusCircle size={16} /> + Add Single Test
             </button>
           )}
           {testsSubTab === 'PROFILES' && (
             <button 
-              onClick={() => { setEditingItem(null); setProfileForm({ code: '', name: '', sampleType: 'SERUM', fasting: 'NO', mrp: 1499, price: 899, tatHours: 24, description: '' }); setShowCreateProfileModal(true); }}
+              onClick={handleOpenCreateProfile}
               style={{ padding: '0.6rem 1.2rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 12px rgba(0,107,112,0.2)' }}
             >
-              <PlusCircle size={16} /> Add Profile to Master
+              <PlusCircle size={16} /> + Compose Diagnostic Profile
             </button>
           )}
           {testsSubTab === 'PACKAGES' && (
             <button 
-              onClick={() => setShowPackageBuilderModal(true)}
+              onClick={() => handleOpenPackageBuilder(null)}
               style={{ padding: '0.6rem 1.2rem', backgroundColor: '#D97706', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 12px rgba(217,119,6,0.2)' }}
             >
               <Plus size={16} /> Visual Package Builder
@@ -448,85 +652,73 @@ export default function CatalogManagementTab({
         </div>
       </div>
 
-      {/* 3-LAB PRICING & OFFERS DESK (MEDMARG SUGGESTED, THYROCARE, DR. LAL PATHLABS) */}
+      {/* 1. RATE & SLABS DESK (MEDMARG SUGGESTED, THYROCARE, DR. LAL PATHLABS + VOLUME SLABS) */}
       {testsSubTab === 'LAB_PRICING' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           
           {/* Hub Configuration & Multi-Lab Global Banner */}
-          <div style={{ backgroundColor: '#004D40', color: '#FFF', borderRadius: '18px', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.25rem', boxShadow: '0 8px 24px rgba(0,77,64,0.18)' }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                <span style={{ backgroundColor: '#FBBF24', color: '#78350F', fontSize: '0.72rem', fontWeight: '900', padding: '0.2rem 0.55rem', borderRadius: '6px' }}>
-                  MULTI-LAB PRICING ENGINE
-                </span>
-                <span style={{ fontSize: '0.78rem', color: '#80CBC4', fontWeight: '700' }}>
-                  Transparent 3-Tier Provider Pricing
-                </span>
+          <div style={{ backgroundColor: '#F8FAFC', borderRadius: '18px', border: '1.5px solid #CBD5E1', padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ width: '42px', height: '42px', backgroundColor: '#006B70', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF' }}>
+                <Building2 size={22} />
               </div>
-              <h2 style={{ fontSize: '1.35rem', fontWeight: '900', margin: 0 }}>
-                Manage Rates for MedMarg Suggested, Thyrocare & Lalpath Labs
-              </h2>
-              <p style={{ fontSize: '0.82rem', color: '#B2DFDB', margin: '0.3rem 0 0 0', maxWidth: '650px' }}>
-                Care seekers see <strong>MedMarg (Big)</strong> with the suggested partner lab (Small) as the primary smart recommendation, with direct 1-tap options to choose <strong>Thyrocare</strong> or <strong>Dr. Lal PathLabs</strong>.
-              </p>
+              <div>
+                <div style={{ fontSize: '0.95rem', fontWeight: '900', color: '#0F172A' }}>
+                  Laboratory Partners & Volume Tier Master Desk
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.15rem' }}>
+                  Manage multiple lab rates and multi-person volume slabs (1, 2, 5, 10+ people) across tests, profiles, and packages.
+                </div>
+              </div>
             </div>
 
-            {/* Global Suggested Lab Partner Quick Setter */}
-            <div style={{ backgroundColor: 'rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.2)', minWidth: '320px' }}>
-              <div style={{ fontSize: '0.74rem', color: '#FBBF24', fontWeight: '800', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
-                🏢 Global Suggested Lab Partner Name
-              </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <input
-                  type="text"
-                  value={globalSuggestedLab}
-                  onChange={(e) => setGlobalSuggestedLab(e.target.value)}
-                  placeholder="e.g. Central Partner Hub (Tirupati)"
-                  style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.3)', backgroundColor: 'rgba(0,0,0,0.25)', color: '#FFF', fontSize: '0.82rem', fontWeight: '700', outline: 'none' }}
-                />
-                <button
-                  type="button"
-                  onClick={handleApplyGlobalSuggestedLab}
-                  style={{ padding: '0.5rem 0.85rem', backgroundColor: '#FBBF24', color: '#78350F', border: 'none', borderRadius: '8px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                >
-                  Apply All
-                </button>
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#004D40' }}>MedMarg Hub Partner:</span>
+              <input
+                type="text"
+                value={globalSuggestedLab}
+                onChange={(e) => setGlobalSuggestedLab(e.target.value)}
+                placeholder="e.g. Central Partner Hub (Tirupati)"
+                style={{ padding: '0.45rem 0.75rem', border: '1.5px solid #006B70', borderRadius: '8px', fontSize: '0.82rem', fontWeight: '700', color: '#0F172A', minWidth: '220px' }}
+              />
+              <button
+                onClick={handleApplyGlobalSuggestedLab}
+                style={{ padding: '0.45rem 0.9rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer' }}
+              >
+                Apply to All Items
+              </button>
             </div>
           </div>
 
-          {/* Search, Filter Category & Page Controls Header */}
-          <div style={{ backgroundColor: '#FFFFFF', padding: '1.25rem', borderRadius: '16px', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-            
-            {/* Type Filters */}
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          {/* Filter Bar */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div style={{ display: 'flex', gap: '0.4rem' }}>
               {[
-                { key: 'ALL', label: 'All Catalog Items', count: (catalog.tests?.length || 0) + (catalog.profiles?.length || 0) + (catalog.packages?.length || 0) },
-                { key: 'TESTS', label: 'Single Tests', count: catalog.tests?.length || 913 },
-                { key: 'PROFILES', label: 'Profiles', count: catalog.profiles?.length || 87 },
-                { key: 'PACKAGES', label: 'Packages', count: catalog.packages?.length || 4 }
-              ].map(ft => (
+                { key: 'ALL', label: 'All Items' },
+                { key: 'TESTS', label: 'Single Tests Only' },
+                { key: 'PROFILES', label: 'Diagnostic Profiles Only' },
+                { key: 'PACKAGES', label: 'Health Packages Only' }
+              ].map(f => (
                 <button
-                  key={ft.key}
-                  onClick={() => { setLabPricingFilterType(ft.key); setCurrentPage(1); }}
+                  key={f.key}
+                  onClick={() => { setLabPricingFilterType(f.key); setCurrentPage(1); }}
                   style={{
                     padding: '0.45rem 0.85rem',
                     borderRadius: '8px',
-                    border: 'none',
-                    backgroundColor: labPricingFilterType === ft.key ? '#006B70' : '#F1F5F9',
-                    color: labPricingFilterType === ft.key ? '#FFF' : '#475569',
-                    fontSize: '0.82rem',
+                    border: labPricingFilterType === f.key ? 'none' : '1px solid #CBD5E1',
+                    backgroundColor: labPricingFilterType === f.key ? '#006B70' : '#FFFFFF',
+                    color: labPricingFilterType === f.key ? '#FFF' : '#475569',
+                    fontSize: '0.8rem',
                     fontWeight: '800',
                     cursor: 'pointer'
                   }}
                 >
-                  {ft.label} ({ft.count})
+                  {f.label}
                 </button>
               ))}
             </div>
 
-            {/* Search Input & Pagination */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end', minWidth: '300px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
               <div style={{ position: 'relative', minWidth: '240px' }}>
                 <Search size={16} color="#64748B" style={{ position: 'absolute', left: '10px', top: '10px' }} />
                 <input
@@ -576,36 +768,41 @@ export default function CatalogManagementTab({
             </div>
           </div>
 
-          {/* 3-Lab Multi-Provider Pricing Matrix Table */}
+          {/* Pricing Matrix Table */}
           <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1.5px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 18px rgba(0,0,0,0.03)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.86rem' }}>
               <thead>
                 <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1.5px solid #E2E8F0', color: '#475569', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  <th style={{ padding: '1rem 1.25rem', width: '28%' }}>Item & Specifications</th>
-                  <th style={{ padding: '1rem 1.25rem', width: '24%', backgroundColor: 'rgba(0, 107, 112, 0.06)', borderLeft: '2px solid #006B70' }}>
+                  <th style={{ padding: '1rem 1.25rem', width: '25%' }}>Item & Specifications</th>
+                  <th style={{ padding: '1rem 1.25rem', width: '22%', backgroundColor: 'rgba(0, 107, 112, 0.06)', borderLeft: '2px solid #006B70' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <span style={{ fontSize: '0.88rem', fontWeight: '900', color: '#006B70' }}>1. MEDMARG</span>
-                      <span style={{ fontSize: '0.68rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: '900' }}>SUGGESTED LAB</span>
+                      <span style={{ fontSize: '0.68rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: '900' }}>SMART PICK</span>
                     </div>
                   </th>
-                  <th style={{ padding: '1rem 1.25rem', width: '20%', borderLeft: '1px solid #E2E8F0' }}>
+                  <th style={{ padding: '1rem 1.25rem', width: '18%', borderLeft: '1px solid #E2E8F0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <span style={{ fontSize: '0.88rem', fontWeight: '900', color: '#B91C1C' }}>2. THYROCARE</span>
-                      <span style={{ fontSize: '0.68rem', backgroundColor: '#FEE2E2', color: '#991B1B', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: '800' }}>DIRECT</span>
                     </div>
                   </th>
-                  <th style={{ padding: '1rem 1.25rem', width: '20%', borderLeft: '1px solid #E2E8F0' }}>
+                  <th style={{ padding: '1rem 1.25rem', width: '18%', borderLeft: '1px solid #E2E8F0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <span style={{ fontSize: '0.88rem', fontWeight: '900', color: '#D97706' }}>3. DR. LAL PATHLABS</span>
-                      <span style={{ fontSize: '0.68rem', backgroundColor: '#FEF3C7', color: '#92400E', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: '800' }}>NABL REF</span>
                     </div>
                   </th>
-                  <th style={{ padding: '1rem 1.25rem', textAlign: 'center', width: '8%' }}>ACTIONS</th>
+                  <th style={{ padding: '1rem 1.25rem', width: '17%', borderLeft: '1px solid #E2E8F0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Users size={14} color="#7E22CE" />
+                      <span style={{ fontSize: '0.88rem', fontWeight: '900', color: '#7E22CE' }}>PEOPLE SLABS</span>
+                    </div>
+                  </th>
+                  <th style={{ padding: '1rem 1.25rem', textAlign: 'center', width: '10%' }}>ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedLabItems.map((item, idx) => {
                   const pricing = getItemLabPricing(item);
+                  const tiers = getItemTierPricing(item);
                   const medmargLab = pricing.find(l => l.isMedmargSuggested) || pricing[0];
                   const thyrocareLab = pricing.find(l => l.labId === 'thyrocare') || pricing[1];
                   const lalpathLab = pricing.find(l => l.labId === 'lalpath') || pricing[2];
@@ -621,7 +818,7 @@ export default function CatalogManagementTab({
                       <td style={{ padding: '1rem 1.25rem', verticalAlign: 'middle' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
                           <span style={{ fontSize: '0.68rem', backgroundColor: isPkg ? '#FEF3C7' : isProf ? '#E0F2FE' : '#E0F2F1', color: isPkg ? '#B45309' : isProf ? '#0369A1' : '#006B70', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '900' }}>
-                            {isPkg ? 'PACKAGE' : isProf ? 'PROFILE' : 'TEST'}
+                            {isPkg ? 'PACKAGE' : isProf ? `PROFILE (${item.tests?.length || item.testCount || 1} Tests)` : 'SINGLE TEST'}
                           </span>
                           <span style={{ fontSize: '0.72rem', color: '#64748B', fontFamily: 'monospace', fontWeight: '800' }}>
                             {item.code || item.id}
@@ -640,20 +837,20 @@ export default function CatalogManagementTab({
                         </div>
                       </td>
 
-                      {/* 2. MedMarg Suggested Lab (Big MedMarg + Small Suggested Lab) */}
+                      {/* 2. MedMarg Suggested Lab */}
                       <td style={{ padding: '1rem 1.25rem', verticalAlign: 'middle', backgroundColor: 'rgba(0, 107, 112, 0.03)', borderLeft: '2px solid #006B70' }}>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-                          <span style={{ fontSize: '1.25rem', fontWeight: '900', color: '#006B70' }}>
+                          <span style={{ fontSize: '1.2rem', fontWeight: '900', color: '#006B70' }}>
                             MedMarg
                           </span>
-                          <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: '800' }}>
+                          <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: '800' }}>
                             ★ Curated
                           </span>
                         </div>
                         <div style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: '700', marginTop: '0.1rem' }}>
                           via <span style={{ color: '#004D40', fontWeight: '800' }}>{medmargLab?.suggestedLabName || globalSuggestedLab}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.4rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.35rem' }}>
                           <span style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A' }}>
                             ₹{medmargLab?.price || item.price || 299}
                           </span>
@@ -671,18 +868,12 @@ export default function CatalogManagementTab({
                         <div style={{ fontSize: '0.95rem', fontWeight: '900', color: '#B91C1C' }}>
                           Thyrocare
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '0.1rem' }}>
-                          Automated Track Lab
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.4rem' }}>
-                          <span style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.35rem' }}>
+                          <span style={{ fontSize: '1.1rem', fontWeight: '900', color: '#0F172A' }}>
                             ₹{thyrocareLab?.price || Math.round((item.price || 299) * 1.15)}
                           </span>
                           <span style={{ fontSize: '0.75rem', color: '#94A3B8', textDecoration: 'line-through' }}>
                             ₹{thyrocareLab?.mrp || Math.round((item.mrp || 499) * 1.1)}
-                          </span>
-                          <span style={{ fontSize: '0.7rem', backgroundColor: '#FEE2E2', color: '#991B1B', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: '800' }}>
-                            {thyrocareLab?.discountPercent || 35}% OFF
                           </span>
                         </div>
                       </td>
@@ -692,38 +883,50 @@ export default function CatalogManagementTab({
                         <div style={{ fontSize: '0.95rem', fontWeight: '900', color: '#D97706' }}>
                           Dr. Lal PathLabs
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '0.1rem' }}>
-                          National Reference Lab
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.4rem' }}>
-                          <span style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.35rem' }}>
+                          <span style={{ fontSize: '1.1rem', fontWeight: '900', color: '#0F172A' }}>
                             ₹{lalpathLab?.price || Math.round((item.price || 299) * 1.30)}
                           </span>
                           <span style={{ fontSize: '0.75rem', color: '#94A3B8', textDecoration: 'line-through' }}>
                             ₹{lalpathLab?.mrp || Math.round((item.mrp || 499) * 1.25)}
                           </span>
-                          <span style={{ fontSize: '0.7rem', backgroundColor: '#FEF3C7', color: '#92400E', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: '800' }}>
-                            {lalpathLab?.discountPercent || 30}% OFF
+                        </div>
+                      </td>
+
+                      {/* 5. Volume Slabs (People) */}
+                      <td style={{ padding: '1rem 1.25rem', verticalAlign: 'middle', borderLeft: '1px solid #E2E8F0' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.74rem' }}>
+                          <span style={{ backgroundColor: '#F0FDF4', color: '#006B70', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>
+                            1P: ₹{tiers['1']?.offerPrice || tiers['1']?.pricePerPerson || item.price || 299}
+                          </span>
+                          <span style={{ backgroundColor: '#F0F9FF', color: '#0284C7', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>
+                            2P: ₹{tiers['2']?.offerPrice || tiers['2']?.pricePerPerson}/p
+                          </span>
+                          <span style={{ backgroundColor: '#FFFBEB', color: '#D97706', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>
+                            5P: ₹{tiers['5']?.offerPrice || tiers['5']?.pricePerPerson}/p
+                          </span>
+                          <span style={{ backgroundColor: '#FAF5FF', color: '#7E22CE', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>
+                            10+P: ₹{tiers['10']?.offerPrice || tiers['10']?.pricePerPerson}/p
                           </span>
                         </div>
                       </td>
 
-                      {/* 5. Actions */}
+                      {/* 6. Actions */}
                       <td style={{ padding: '1rem 1.25rem', verticalAlign: 'middle', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'center' }}>
+                          <button
+                            title="Edit Multi-Lab Rates & Volume Slabs"
+                            onClick={() => handleOpenLabPricingModal(item)}
+                            style={{ padding: '0.45rem 0.85rem', backgroundColor: '#006B70', border: 'none', borderRadius: '8px', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.76rem', fontWeight: '900', width: '100%', justifyContent: 'center' }}
+                          >
+                            <Sliders size={14} /> Edit Rates & Slabs
+                          </button>
                           <button
                             title="Preview Care Seeker Card"
                             onClick={() => handleOpenPreview(item)}
-                            style={{ padding: '0.45rem 0.65rem', backgroundColor: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: '800' }}
+                            style={{ padding: '0.35rem 0.65rem', backgroundColor: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '6px', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.74rem', fontWeight: '700', width: '100%', justifyContent: 'center' }}
                           >
-                            <Eye size={14} /> Preview
-                          </button>
-                          <button
-                            title="Edit Multi-Lab Pricing"
-                            onClick={() => handleOpenLabPricingModal(item)}
-                            style={{ padding: '0.45rem 0.75rem', backgroundColor: '#006B70', border: 'none', borderRadius: '8px', color: '#FFF', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: '900' }}
-                          >
-                            <Sliders size={14} /> Edit Rates
+                            <Eye size={13} /> Preview
                           </button>
                         </div>
                       </td>
@@ -737,25 +940,25 @@ export default function CatalogManagementTab({
         </div>
       )}
 
-
-      {/* TESTS LIST */}
+      {/* 2. SINGLE TESTS MASTER TAB */}
       {testsSubTab === 'TESTS' && (
-        <div>
-          {/* Search Bar & Page Controls Header */}
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ position: 'relative', flex: 1, minWidth: '280px' }}>
-              <Search size={18} color="#64748B" style={{ position: 'absolute', left: '12px', top: '12px' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          
+          {/* Top Filter & Search Bar */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>
+              <Search size={16} color="#64748B" style={{ position: 'absolute', left: '12px', top: '12px' }} />
               <input
                 type="text"
-                placeholder={`Search ${catalog.tests?.length || 913} tests by name, code, or sample type...`}
+                placeholder={`Search ${catalog.tests?.length || 913} single tests by name, code, or tube...`}
                 value={searchTerm}
                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                style={{ width: '100%', padding: '0.7rem 1rem 0.7rem 2.4rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '10px', color: '#0F172A', fontSize: '0.88rem', outline: 'none' }}
+                style={{ width: '100%', padding: '0.65rem 1rem 0.65rem 2.4rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '10px', color: '#0F172A', fontSize: '0.86rem', outline: 'none' }}
               />
             </div>
 
-            {/* Page Size & Pagination Bar */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+            {/* Pagination controls */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.82rem', color: '#475569', fontWeight: '700' }}>
                 <span>Show:</span>
                 <select
@@ -766,7 +969,6 @@ export default function CatalogManagementTab({
                   <option value={50}>50 per page</option>
                   <option value={100}>100 per page</option>
                   <option value={250}>250 per page</option>
-                  <option value={500}>500 per page</option>
                   <option value="ALL">Show All ({totalDisplayTests})</option>
                 </select>
               </div>
@@ -778,185 +980,311 @@ export default function CatalogManagementTab({
                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                     style={{ padding: '0.4rem 0.75rem', backgroundColor: currentPage === 1 ? '#F1F5F9' : '#006B70', color: currentPage === 1 ? '#94A3B8' : '#FFF', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
                   >
-                    ← Prev
+                    ←
                   </button>
                   <span style={{ fontSize: '0.82rem', fontWeight: '800', color: '#0F172A', padding: '0 0.3rem' }}>
-                    Page {currentPage} of {totalPages}
+                    {currentPage} / {totalPages}
                   </span>
                   <button
                     disabled={currentPage >= totalPages}
                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                     style={{ padding: '0.4rem 0.75rem', backgroundColor: currentPage >= totalPages ? '#F1F5F9' : '#006B70', color: currentPage >= totalPages ? '#94A3B8' : '#FFF', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer' }}
                   >
-                    Next →
+                    →
                   </button>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Tests Table Container */}
+          {/* Tests Table */}
           <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
               <thead>
                 <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
-                  <th style={{ padding: '1rem 1.25rem' }}>SERIAL / CODE</th>
-                  <th style={{ padding: '1rem' }}>TEST NAME</th>
-                  <th style={{ padding: '1rem' }}>SAMPLE TYPE</th>
-                  <th style={{ padding: '1rem' }}>FASTING</th>
-                  <th style={{ padding: '1rem' }}>PRICE (₹)</th>
-                  <th style={{ padding: '1rem' }}>TAT</th>
-                  <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>ACTIONS</th>
+                  <th style={{ padding: '1rem 1.25rem', width: '15%' }}>SERIAL / CODE</th>
+                  <th style={{ padding: '1rem', width: '25%' }}>TEST NAME</th>
+                  <th style={{ padding: '1rem', width: '14%' }}>SPECIMEN & FASTING</th>
+                  <th style={{ padding: '1rem', width: '22%' }}>MULTI-LAB RATES (₹)</th>
+                  <th style={{ padding: '1rem', width: '14%' }}>VOLUME SLABS (1P-10P)</th>
+                  <th style={{ padding: '1rem 1.25rem', textAlign: 'right', width: '10%' }}>ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedTests.map(test => (
-                  <tr key={test.id || test.code} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                    <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#006B70', fontWeight: '700' }}>
-                      #{test.serialNo || '-'} • {test.code}
-                    </td>
-                    <td style={{ padding: '1rem', fontWeight: '700', color: '#0F172A' }}>
-                      {test.name}
-                    </td>
-                    <td style={{ padding: '1rem', color: '#334155' }}>
-                      <span style={{ backgroundColor: '#F1F5F9', padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid #CBD5E1' }}>
-                        {test.sampleType || 'SERUM'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem' }}>
-                      <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '800', backgroundColor: test.fasting === 'YES' ? '#FEF3C7' : '#DCFCE7', color: test.fasting === 'YES' ? '#B45309' : '#15803D' }}>
-                        {test.fasting}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem', color: '#006B70', fontWeight: '900' }}>₹{test.price}</td>
-                    <td style={{ padding: '1rem', color: '#64748B' }}>{test.tatHours || 24}h</td>
-                    <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
-                      <button 
-                        onClick={() => { setEditingItem(test); setTestForm(test); setShowCreateTestModal(true); }}
-                        style={{ background: 'none', border: 'none', color: '#0284C7', cursor: 'pointer', marginRight: '0.6rem' }}
-                      >
-                        <Edit3 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {paginatedTests.map(test => {
+                  const labs = getItemLabPricing(test);
+                  const tiers = getItemTierPricing(test);
+                  const medmargLab = labs[0];
+                  const thyrocareLab = labs[1];
+                  const lalpathLab = labs[2];
+
+                  return (
+                    <tr key={test.id || test.code} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                      <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#006B70', fontWeight: '800' }}>
+                        #{test.serialNo || '-'} • {test.code}
+                      </td>
+                      <td style={{ padding: '1rem', fontWeight: '700', color: '#0F172A' }}>
+                        {test.name}
+                        <div style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: '500', marginTop: '0.15rem' }}>
+                          TAT: {test.tatHours || 24} Hours
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <span style={{ backgroundColor: '#F1F5F9', padding: '0.15rem 0.45rem', borderRadius: '4px', border: '1px solid #CBD5E1', fontSize: '0.75rem', fontWeight: '700', color: '#334155' }}>
+                            🩸 {test.sampleType || 'SERUM'}
+                          </span>
+                          <span style={{ fontSize: '0.72rem', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '800', backgroundColor: test.fasting === 'YES' ? '#FEF3C7' : '#DCFCE7', color: test.fasting === 'YES' ? '#B45309' : '#15803D' }}>
+                            ⏱ Fasting: {test.fasting || 'NO'}
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.76rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#006B70', fontWeight: '800' }}>
+                            <span>MedMarg:</span>
+                            <span>₹{medmargLab?.price || test.price} <span style={{ textDecoration: 'line-through', color: '#94A3B8', fontWeight: '500' }}>₹{medmargLab?.mrp || test.mrp}</span></span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#B91C1C', fontWeight: '700' }}>
+                            <span>Thyrocare:</span>
+                            <span>₹{thyrocareLab?.price || Math.round((test.price || 299) * 1.15)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#D97706', fontWeight: '700' }}>
+                            <span>Dr. Lal:</span>
+                            <span>₹{lalpathLab?.price || Math.round((test.price || 299) * 1.30)}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', fontSize: '0.72rem' }}>
+                          <span style={{ backgroundColor: '#F0FDF4', color: '#006B70', padding: '0.15rem 0.35rem', borderRadius: '4px', fontWeight: '800' }}>
+                            1P: ₹{tiers['1']?.offerPrice || test.price}
+                          </span>
+                          <span style={{ backgroundColor: '#F0F9FF', color: '#0284C7', padding: '0.15rem 0.35rem', borderRadius: '4px', fontWeight: '800' }}>
+                            2P: ₹{tiers['2']?.offerPrice}/p
+                          </span>
+                          <span style={{ backgroundColor: '#FFFBEB', color: '#D97706', padding: '0.15rem 0.35rem', borderRadius: '4px', fontWeight: '800' }}>
+                            5P: ₹{tiers['5']?.offerPrice}/p
+                          </span>
+                          <span style={{ backgroundColor: '#FAF5FF', color: '#7E22CE', padding: '0.15rem 0.35rem', borderRadius: '4px', fontWeight: '800' }}>
+                            10+P: ₹{tiers['10']?.offerPrice}/p
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
+                          <button 
+                            title="Edit Single Test & Multi-Lab Rates"
+                            onClick={() => handleOpenEditTest(test)}
+                            style={{ padding: '0.4rem 0.65rem', backgroundColor: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0284C7', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '800', fontSize: '0.76rem' }}
+                          >
+                            <Edit3 size={14} /> Edit
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
-
-            {/* Bottom Pagination Bar */}
-            <div style={{ padding: '1rem 1.25rem', backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.84rem' }}>
-              <span style={{ color: '#64748B', fontWeight: '700' }}>
-                Showing {Math.min(startIndex + 1, totalDisplayTests)}–{Math.min(startIndex + effectivePageSize, totalDisplayTests)} of {totalDisplayTests} Biomarker Tests
-              </span>
-              {pageSize !== 'ALL' && totalPages > 1 && (
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  <button
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    style={{ padding: '0.35rem 0.75rem', backgroundColor: currentPage === 1 ? '#E2E8F0' : '#006B70', color: currentPage === 1 ? '#94A3B8' : '#FFF', border: 'none', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    disabled={currentPage >= totalPages}
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    style={{ padding: '0.35rem 0.75rem', backgroundColor: currentPage >= totalPages ? '#E2E8F0' : '#006B70', color: currentPage >= totalPages ? '#94A3B8' : '#FFF', border: 'none', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer' }}
-                  >
-                    Next Page →
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
+
         </div>
       )}
 
-      {/* PROFILES LIST */}
+      {/* 3. PROFILES TAB (COMBINATIONS OF SINGLE TESTS) */}
       {testsSubTab === 'PROFILES' && (
-        <div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          
+          {/* Profiles Table */}
           <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
               <thead>
                 <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
-                  <th style={{ padding: '1rem 1.25rem' }}>PROFILE CODE</th>
-                  <th style={{ padding: '1rem' }}>PROFILE NAME</th>
-                  <th style={{ padding: '1rem' }}>SAMPLE TYPE</th>
-                  <th style={{ padding: '1rem' }}>FASTING</th>
-                  <th style={{ padding: '1rem' }}>PRICE (₹)</th>
-                  <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>ACTIONS</th>
+                  <th style={{ padding: '1rem 1.25rem', width: '15%' }}>PROFILE CODE</th>
+                  <th style={{ padding: '1rem', width: '22%' }}>PROFILE NAME</th>
+                  <th style={{ padding: '1rem', width: '20%' }}>INCLUDED SINGLE TESTS</th>
+                  <th style={{ padding: '1rem', width: '13%' }}>SPECIMEN & FASTING</th>
+                  <th style={{ padding: '1rem', width: '18%' }}>MULTI-LAB RATES</th>
+                  <th style={{ padding: '1rem 1.25rem', textAlign: 'right', width: '12%' }}>ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredProfiles.map(profile => (
-                  <tr key={profile.id || profile.code} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                    <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#B45309', fontWeight: '800' }}>
-                      {profile.code}
-                    </td>
-                    <td style={{ padding: '1rem', fontWeight: '700', color: '#0F172A' }}>
-                      {profile.name}
-                    </td>
-                    <td style={{ padding: '1rem', color: '#334155' }}>
-                      <span style={{ backgroundColor: '#F1F5F9', padding: '0.2rem 0.5rem', borderRadius: '4px', border: '1px solid #CBD5E1' }}>
-                        {profile.sampleType || 'SERUM'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem' }}>
-                      <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', borderRadius: '4px', fontWeight: '800', backgroundColor: profile.fasting === 'YES' ? '#FEF3C7' : '#DCFCE7', color: profile.fasting === 'YES' ? '#B45309' : '#15803D' }}>
-                        {profile.fasting}
-                      </span>
-                    </td>
-                    <td style={{ padding: '1rem', color: '#006B70', fontWeight: '900' }}>₹{profile.price}</td>
-                    <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
-                      <button 
-                        onClick={() => { setEditingItem(profile); setProfileForm(profile); setShowCreateProfileModal(true); }}
-                        style={{ background: 'none', border: 'none', color: '#0284C7', cursor: 'pointer' }}
-                      >
-                        <Edit3 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredProfiles.map(profile => {
+                  const labs = getItemLabPricing(profile);
+                  const tiers = getItemTierPricing(profile);
+                  const testsCount = profile.tests?.length || profile.testCount || 1;
+
+                  return (
+                    <tr key={profile.id || profile.code} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                      <td style={{ padding: '1rem 1.25rem', fontFamily: 'monospace', color: '#B45309', fontWeight: '800' }}>
+                        {profile.code}
+                      </td>
+                      <td style={{ padding: '1rem', fontWeight: '700', color: '#0F172A' }}>
+                        {profile.name}
+                        <div style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: '500', marginTop: '0.15rem' }}>
+                          {profile.description?.slice(0, 50) || 'Diagnostic biomarker panel'}...
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                          <span style={{ 
+                            backgroundColor: '#E0F2FE', 
+                            color: '#0369A1', 
+                            padding: '0.2rem 0.55rem', 
+                            borderRadius: '6px', 
+                            fontWeight: '800', 
+                            fontSize: '0.78rem',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            width: 'fit-content'
+                          }}>
+                            🔬 {testsCount} Single Tests Included
+                          </span>
+                          {profile.tests && profile.tests.length > 0 && (
+                            <div style={{ fontSize: '0.72rem', color: '#64748B', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                              {profile.tests.slice(0, 4).map(c => (
+                                <span key={c} style={{ backgroundColor: '#F1F5F9', padding: '0.1rem 0.35rem', borderRadius: '4px', fontFamily: 'monospace' }}>
+                                  {c}
+                                </span>
+                              ))}
+                              {profile.tests.length > 4 && <span>+{profile.tests.length - 4} more</span>}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <span style={{ backgroundColor: '#F1F5F9', padding: '0.15rem 0.45rem', borderRadius: '4px', border: '1px solid #CBD5E1', fontSize: '0.74rem', fontWeight: '700', color: '#334155' }}>
+                            🩸 {profile.sampleType || 'SERUM'}
+                          </span>
+                          <span style={{ fontSize: '0.72rem', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '800', backgroundColor: profile.fasting === 'YES' ? '#FEF3C7' : '#DCFCE7', color: profile.fasting === 'YES' ? '#B45309' : '#15803D' }}>
+                            ⏱ Fasting: {profile.fasting || 'NO'}
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.76rem' }}>
+                          <span style={{ color: '#006B70', fontWeight: '800' }}>
+                            MedMarg: ₹{labs[0]?.price || profile.price}
+                          </span>
+                          <span style={{ color: '#B91C1C', fontWeight: '700' }}>
+                            Thyrocare: ₹{labs[1]?.price || Math.round((profile.price || 899) * 1.15)}
+                          </span>
+                          <span style={{ color: '#D97706', fontWeight: '700' }}>
+                            Dr. Lal: ₹{labs[2]?.price || Math.round((profile.price || 899) * 1.30)}
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
+                          <button 
+                            title="Edit Profile & Included Tests"
+                            onClick={() => handleOpenEditProfile(profile)}
+                            style={{ padding: '0.45rem 0.75rem', backgroundColor: '#006B70', border: 'none', borderRadius: '8px', color: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: '800', fontSize: '0.78rem' }}
+                          >
+                            <Edit3 size={14} /> Edit Tests & Rates
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
+
         </div>
       )}
 
-      {/* HEALTH PACKAGES */}
+      {/* 4. HEALTH PACKAGES TAB (COMBINATIONS OF PROFILES & TESTS) */}
       {testsSubTab === 'PACKAGES' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem' }}>
-          {(catalog.packages || []).map(pkg => (
-            <div key={pkg.id} style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.55rem', borderRadius: '4px', fontWeight: '800' }}>
-                    {pkg.discountPercent}% OFF • {pkg.category}
-                  </span>
-                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'monospace' }}>
-                    {pkg.code}
-                  </span>
-                </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.5rem' }}>
+          {(catalog.packages || []).map(pkg => {
+            const labs = getItemLabPricing(pkg);
+            const tiers = getItemTierPricing(pkg);
 
-                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#0F172A', marginTop: '0.5rem' }}>
-                  {pkg.name}
-                </h3>
-                <p style={{ fontSize: '0.84rem', color: '#64748B', marginTop: '0.3rem', lineHeight: 1.4 }}>
-                  {pkg.tagline || pkg.description}
-                </p>
-              </div>
-
-              <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            return (
+              <div key={pkg.id} style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1.5px solid #E2E8F0', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
                 <div>
-                  <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#006B70' }}>₹{pkg.price}</span>
-                  <span style={{ fontSize: '0.8rem', color: '#94A3B8', textDecoration: 'line-through', marginLeft: '0.4rem' }}>₹{pkg.mrp}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.55rem', borderRadius: '4px', fontWeight: '800' }}>
+                      {pkg.discountPercent || 50}% OFF • {pkg.category || 'Full Body Wellness'}
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'monospace', fontWeight: '800' }}>
+                      {pkg.code}
+                    </span>
+                  </div>
+
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0F172A', marginTop: '0.5rem', marginBottom: '0.35rem' }}>
+                    {pkg.name}
+                  </h3>
+                  <p style={{ fontSize: '0.84rem', color: '#64748B', margin: 0, lineHeight: 1.4 }}>
+                    {pkg.tagline || pkg.description}
+                  </p>
+
+                  {/* Composition breakdown */}
+                  <div style={{ marginTop: '0.85rem', padding: '0.75rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.78rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '800', color: '#006B70' }}>
+                      <span>🔬 Included Profiles:</span>
+                      <span>{pkg.profiles?.length || 2} Profiles</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '800', color: '#B45309' }}>
+                      <span>🧪 Standalone Tests:</span>
+                      <span>{pkg.tests?.length || 3} Tests</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '900', color: '#0F172A', borderTop: '1px solid #E2E8F0', paddingTop: '0.35rem' }}>
+                      <span>Total Diagnostic Biomarkers:</span>
+                      <span style={{ color: '#059669' }}>{pkg.testCount || 85}+ Parameters</span>
+                    </div>
+                  </div>
+
+                  {/* Multi-Person Volume Slabs preview */}
+                  <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.35rem', flexWrap: 'wrap', fontSize: '0.72rem' }}>
+                    <span style={{ backgroundColor: '#F0FDF4', color: '#006B70', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>
+                      1P: ₹{tiers['1']?.offerPrice || pkg.price}
+                    </span>
+                    <span style={{ backgroundColor: '#F0F9FF', color: '#0284C7', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>
+                      2P: ₹{tiers['2']?.offerPrice}/p
+                    </span>
+                    <span style={{ backgroundColor: '#FFFBEB', color: '#D97706', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>
+                      5P: ₹{tiers['5']?.offerPrice}/p
+                    </span>
+                    <span style={{ backgroundColor: '#FAF5FF', color: '#7E22CE', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>
+                      10+P: ₹{tiers['10']?.offerPrice}/p
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#006B70' }}>₹{pkg.price}</span>
+                    <span style={{ fontSize: '0.8rem', color: '#94A3B8', textDecoration: 'line-through', marginLeft: '0.4rem' }}>₹{pkg.mrp}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.4rem' }}>
+                    <button
+                      onClick={() => handleOpenPackageBuilder(pkg)}
+                      style={{ padding: '0.55rem 0.95rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                    >
+                      <Edit3 size={14} /> Edit Package
+                    </button>
+                    <button
+                      onClick={() => handleOpenLabPricingModal(pkg)}
+                      style={{ padding: '0.55rem 0.75rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer' }}
+                    >
+                      <Sliders size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* GOOGLE SHEETS SYNC HUB */}
+      {/* 5. GOOGLE SHEETS SYNC HUB */}
       {testsSubTab === 'SYNC_HUB' && (
         <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1.5px solid #006B70', padding: '2rem' }}>
           <h2 style={{ fontSize: '1.6rem', fontWeight: '900', color: '#FFF' }}>Google Sheets Live Sync Engine</h2>
@@ -967,445 +1295,676 @@ export default function CatalogManagementTab({
         </div>
       )}
 
-      {/* MODAL 1: ADD / EDIT TEST */}
+      {/* MODAL 1: ADD / EDIT SINGLE TEST (WITH MULTI-LAB & VOLUME SLABS) */}
       {showCreateTestModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
-          <div style={{ backgroundColor: '#1E293B', borderRadius: '22px', maxWidth: '520px', width: '100%', padding: '2rem', border: '1px solid #334155' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#FFF' }}>
-                {editingItem ? 'Edit Test' : 'Add New Clinical Test to Master'}
-              </h3>
-              <button onClick={() => setShowCreateTestModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
-            </div>
-
-            <form onSubmit={handleSaveTest} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Test Code</label>
-                  <input
-                    type="text"
-                    value={testForm.code}
-                    onChange={(e) => setTestForm({ ...testForm, code: e.target.value })}
-                    placeholder="e.g. VITDC"
-                    required
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#67E8F9', fontWeight: '800', marginTop: '0.2rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Test Name</label>
-                  <input
-                    type="text"
-                    value={testForm.name}
-                    onChange={(e) => setTestForm({ ...testForm, name: e.target.value })}
-                    placeholder="e.g. 25-OH VITAMIN D (TOTAL)"
-                    required
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontWeight: '700', marginTop: '0.2rem' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Sample Type</label>
-                  <input
-                    type="text"
-                    value={testForm.sampleType}
-                    onChange={(e) => setTestForm({ ...testForm, sampleType: e.target.value })}
-                    placeholder="SERUM / EDTA / URINE"
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', marginTop: '0.2rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Fasting Required?</label>
-                  <select
-                    value={testForm.fasting}
-                    onChange={(e) => setTestForm({ ...testForm, fasting: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', marginTop: '0.2rem' }}
-                  >
-                    <option value="NO">NO</option>
-                    <option value="YES">YES</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '700' }}>MedMarg Price (₹)</label>
-                  <input
-                    type="number"
-                    value={testForm.price}
-                    onChange={(e) => setTestForm({ ...testForm, price: e.target.value })}
-                    required
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #F59E0B', borderRadius: '8px', color: '#FBBF24', fontWeight: '800', marginTop: '0.2rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Standard MRP (₹)</label>
-                  <input
-                    type="number"
-                    value={testForm.mrp}
-                    onChange={(e) => setTestForm({ ...testForm, mrp: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#94A3B8', marginTop: '0.2rem' }}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                style={{ marginTop: '0.75rem', padding: '0.85rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer' }}
-              >
-                {editingItem ? 'Update Test' : 'Save Test & Sync to Google Sheets'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 2: ADD / EDIT PROFILE */}
-      {showCreateProfileModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 120, backgroundColor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
-          <div style={{ backgroundColor: '#1E293B', borderRadius: '22px', maxWidth: '520px', width: '100%', padding: '2rem', border: '1px solid #334155' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#FFF' }}>
-                {editingItem ? 'Edit Profile' : 'Add Diagnostic Profile to Master'}
-              </h3>
-              <button onClick={() => setShowCreateProfileModal(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
-            </div>
-
-            <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Profile Code</label>
-                  <input
-                    type="text"
-                    value={profileForm.code}
-                    onChange={(e) => setProfileForm({ ...profileForm, code: e.target.value })}
-                    placeholder="e.g. APCOM"
-                    required
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FBBF24', fontWeight: '800', marginTop: '0.2rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Profile Name</label>
-                  <input
-                    type="text"
-                    value={profileForm.name}
-                    onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                    placeholder="e.g. ALLERGY COMPREHENSIVE PROFILE"
-                    required
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', fontWeight: '700', marginTop: '0.2rem' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Sample Type</label>
-                  <input
-                    type="text"
-                    value={profileForm.sampleType}
-                    onChange={(e) => setProfileForm({ ...profileForm, sampleType: e.target.value })}
-                    placeholder="SERUM / EDTA"
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', marginTop: '0.2rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Fasting Required?</label>
-                  <select
-                    value={profileForm.fasting}
-                    onChange={(e) => setProfileForm({ ...profileForm, fasting: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#FFF', marginTop: '0.2rem' }}
-                  >
-                    <option value="NO">NO</option>
-                    <option value="YES">YES</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#FBBF24', fontWeight: '700' }}>MedMarg Price (₹)</label>
-                  <input
-                    type="number"
-                    value={profileForm.price}
-                    onChange={(e) => setProfileForm({ ...profileForm, price: e.target.value })}
-                    required
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #F59E0B', borderRadius: '8px', color: '#FBBF24', fontWeight: '800', marginTop: '0.2rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: '#94A3B8', fontWeight: '700' }}>Standard MRP (₹)</label>
-                  <input
-                    type="number"
-                    value={profileForm.mrp}
-                    onChange={(e) => setProfileForm({ ...profileForm, mrp: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0F172A', border: '1px solid #334155', borderRadius: '8px', color: '#94A3B8', marginTop: '0.2rem' }}
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                style={{ marginTop: '0.75rem', padding: '0.85rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer' }}
-              >
-                {editingItem ? 'Update Profile' : 'Save Profile & Sync to Google Sheets'}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 3: VISUAL PACKAGE BUILDER */}
-      {showPackageBuilderModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '1000px', width: '100%', padding: '2rem', border: '1px solid #E2E8F0', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '850px', width: '100%', padding: '2rem', border: '1px solid #CBD5E1', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
             
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '1rem' }}>
+              <div>
+                <span style={{ fontSize: '0.72rem', backgroundColor: '#E0F2F1', color: '#006B70', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
+                  SINGLE TEST MASTER
+                </span>
+                <h3 style={{ fontSize: '1.35rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', margin: 0 }}>
+                  {editingItem ? `Edit Test: ${editingItem.name}` : 'Add New Single Biomarker Test'}
+                </h3>
+                <div style={{ fontSize: '0.8rem', color: '#64748B', marginTop: '0.15rem' }}>
+                  Configure individual test details, certified multi-lab rates, and multi-person volume slabs.
+                </div>
+              </div>
+              <button onClick={() => setShowCreateTestModal(false)} style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '1.3rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            {/* Modal Subtabs */}
+            <div style={{ display: 'flex', gap: '0.4rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
+              {[
+                { key: 'DETAILS', label: '1. Clinical Details & Sample', icon: FlaskConical },
+                { key: 'LABS', label: '2. Multi-Lab Prices (3+ Labs)', icon: Building2 },
+                { key: 'PEOPLE', label: '3. Multi-Person Volume Slabs', icon: Users }
+              ].map(t => (
+                <button
+                  type="button"
+                  key={t.key}
+                  onClick={() => setActiveTestModalTab(t.key)}
+                  style={{
+                    padding: '0.55rem 1rem',
+                    borderRadius: '8px',
+                    border: activeTestModalTab === t.key ? 'none' : '1px solid #CBD5E1',
+                    backgroundColor: activeTestModalTab === t.key ? '#006B70' : '#F8FAFC',
+                    color: activeTestModalTab === t.key ? '#FFFFFF' : '#475569',
+                    fontSize: '0.84rem',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem'
+                  }}
+                >
+                  <t.icon size={15} />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            <form onSubmit={handleSaveTest} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              
+              {/* TAB 1: CLINICAL DETAILS */}
+              {activeTestModalTab === 'DETAILS' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '800', display: 'block', marginBottom: '0.2rem' }}>Test Code *</label>
+                      <input
+                        type="text"
+                        value={testForm.code}
+                        onChange={(e) => setTestForm({ ...testForm, code: e.target.value })}
+                        placeholder="e.g. VITDC"
+                        required
+                        style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#006B70', fontWeight: '900', fontFamily: 'monospace', fontSize: '0.88rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '800', display: 'block', marginBottom: '0.2rem' }}>Test Name *</label>
+                      <input
+                        type="text"
+                        value={testForm.name}
+                        onChange={(e) => setTestForm({ ...testForm, name: e.target.value })}
+                        placeholder="e.g. 25-OH VITAMIN D (TOTAL)"
+                        required
+                        style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontWeight: '800', fontSize: '0.88rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Specimen and Fasting */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr', gap: '0.75rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '800', display: 'block', marginBottom: '0.2rem' }}>Sample Tube / Specimen</label>
+                      <input
+                        type="text"
+                        value={testForm.sampleType}
+                        onChange={(e) => setTestForm({ ...testForm, sampleType: e.target.value })}
+                        placeholder="SERUM / EDTA / URINE"
+                        style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                      />
+                      <div style={{ display: 'flex', gap: '0.3rem', marginTop: '0.35rem', flexWrap: 'wrap' }}>
+                        {['SERUM', 'EDTA', 'FLUORIDE', 'CITRATE', 'URINE'].map(tube => (
+                          <button
+                            type="button"
+                            key={tube}
+                            onClick={() => setTestForm({ ...testForm, sampleType: tube })}
+                            style={{ padding: '0.2rem 0.45rem', fontSize: '0.7rem', backgroundColor: testForm.sampleType === tube ? '#006B70' : '#F1F5F9', color: testForm.sampleType === tube ? '#FFF' : '#475569', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: '700' }}
+                          >
+                            + {tube}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '800', display: 'block', marginBottom: '0.2rem' }}>Fasting Required?</label>
+                      <select
+                        value={testForm.fasting}
+                        onChange={(e) => setTestForm({ ...testForm, fasting: e.target.value })}
+                        style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                      >
+                        <option value="NO">NO - Anytime Sample</option>
+                        <option value="YES">YES - 8-10h Fasting</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '800', display: 'block', marginBottom: '0.2rem' }}>Turnaround (TAT)</label>
+                      <input
+                        type="number"
+                        value={testForm.tatHours}
+                        onChange={(e) => setTestForm({ ...testForm, tatHours: e.target.value })}
+                        placeholder="24"
+                        style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pricing defaults */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '900', display: 'block', marginBottom: '0.2rem' }}>MedMarg Base Offer Price (₹) *</label>
+                      <input
+                        type="number"
+                        value={testForm.price}
+                        onChange={(e) => setTestForm({ ...testForm, price: e.target.value })}
+                        required
+                        style={{ width: '100%', padding: '0.65rem', border: '1.5px solid #006B70', borderRadius: '8px', color: '#006B70', fontWeight: '900', fontSize: '1rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700', display: 'block', marginBottom: '0.2rem' }}>Standard Market MRP (₹)</label>
+                      <input
+                        type="number"
+                        value={testForm.mrp}
+                        onChange={(e) => setTestForm({ ...testForm, mrp: e.target.value })}
+                        style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#64748B', fontSize: '0.9rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '800', display: 'block', marginBottom: '0.2rem' }}>Clinical Description & Scope</label>
+                    <textarea
+                      value={testForm.description}
+                      onChange={(e) => setTestForm({ ...testForm, description: e.target.value })}
+                      placeholder="Clinical overview, diagnostic significance, and sample instructions..."
+                      rows={2}
+                      style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.86rem' }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: MULTI-LAB PRICES */}
+              {activeTestModalTab === 'LABS' && (
+                <MultiLabPricingEditor
+                  labPricing={testForm.labPricing}
+                  onChange={(updatedLabs) => setTestForm({ ...testForm, labPricing: updatedLabs })}
+                  basePrice={testForm.price}
+                  baseMrp={testForm.mrp}
+                  tatHours={testForm.tatHours}
+                />
+              )}
+
+              {/* TAB 3: MULTI-PERSON VOLUME SLABS */}
+              {activeTestModalTab === 'PEOPLE' && (
+                <MultiPeopleTierPricingEditor
+                  tierPricing={testForm.tierPricing}
+                  onChange={(updatedTiers) => setTestForm({ ...testForm, tierPricing: updatedTiers })}
+                  basePrice={testForm.price}
+                  baseMrp={testForm.mrp}
+                />
+              )}
+
+              {/* Footer */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', borderTop: '1px solid #E2E8F0', paddingTop: '1.25rem', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateTestModal(false)}
+                  style={{ padding: '0.75rem 1.4rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: '0.75rem 1.75rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,107,112,0.25)' }}
+                >
+                  {editingItem ? 'Update Test & Rates' : 'Save Test to Master Catalog'}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: ADD / EDIT DIAGNOSTIC PROFILE (COMBINATION OF TESTS) */}
+      {showCreateProfileModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '920px', width: '100%', padding: '2rem', border: '1px solid #CBD5E1', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '1rem' }}>
               <div>
                 <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
-                  ADMIN STUDIO
+                  DIAGNOSTIC PROFILE COMPOSER
                 </span>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem' }}>
-                  Visual Health Package Builder & Biomarker Aggregator
+                <h3 style={{ fontSize: '1.35rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', margin: 0 }}>
+                  {editingItem ? `Edit Profile: ${editingItem.name}` : 'Compose New Diagnostic Profile Panel'}
+                </h3>
+                <div style={{ fontSize: '0.8rem', color: '#64748B', marginTop: '0.15rem' }}>
+                  Profiles are combinations of single biomarker tests (e.g. Lipid Profile, Liver Function Profile).
+                </div>
+              </div>
+              <button onClick={() => setShowCreateProfileModal(false)} style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '1.3rem', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            {/* Modal Subtabs */}
+            <div style={{ display: 'flex', gap: '0.4rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+              {[
+                { key: 'DETAILS', label: '1. Profile Details', icon: Layers },
+                { key: 'TESTS', label: `2. Select Single Tests (${profileForm.selectedTests?.length || 0})`, icon: FlaskConical },
+                { key: 'LABS', label: '3. Multi-Lab Prices (3+ Labs)', icon: Building2 },
+                { key: 'PEOPLE', label: '4. Multi-Person Volume Slabs', icon: Users }
+              ].map(t => (
+                <button
+                  type="button"
+                  key={t.key}
+                  onClick={() => setActiveProfileModalTab(t.key)}
+                  style={{
+                    padding: '0.55rem 1rem',
+                    borderRadius: '8px',
+                    border: activeProfileModalTab === t.key ? 'none' : '1px solid #CBD5E1',
+                    backgroundColor: activeProfileModalTab === t.key ? '#006B70' : '#F8FAFC',
+                    color: activeProfileModalTab === t.key ? '#FFFFFF' : '#475569',
+                    fontSize: '0.84rem',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem'
+                  }}
+                >
+                  <t.icon size={15} />
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              
+              {/* TAB 1: PROFILE DETAILS */}
+              {activeProfileModalTab === 'DETAILS' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '800', display: 'block', marginBottom: '0.2rem' }}>Profile Code *</label>
+                      <input
+                        type="text"
+                        value={profileForm.code}
+                        onChange={(e) => setProfileForm({ ...profileForm, code: e.target.value })}
+                        placeholder="e.g. APCOM"
+                        required
+                        style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#B45309', fontWeight: '900', fontFamily: 'monospace', fontSize: '0.88rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '800', display: 'block', marginBottom: '0.2rem' }}>Profile Name *</label>
+                      <input
+                        type="text"
+                        value={profileForm.name}
+                        onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                        placeholder="e.g. LIPID PROFILE EXTENSIVE PANEL"
+                        required
+                        style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontWeight: '800', fontSize: '0.88rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '900', display: 'block', marginBottom: '0.2rem' }}>Profile Bundle Price (₹) *</label>
+                      <input
+                        type="number"
+                        value={profileForm.price}
+                        onChange={(e) => setProfileForm({ ...profileForm, price: e.target.value })}
+                        required
+                        style={{ width: '100%', padding: '0.65rem', border: '1.5px solid #006B70', borderRadius: '8px', color: '#006B70', fontWeight: '900', fontSize: '1rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700', display: 'block', marginBottom: '0.2rem' }}>Standard Market MRP (₹)</label>
+                      <input
+                        type="number"
+                        value={profileForm.mrp}
+                        onChange={(e) => setProfileForm({ ...profileForm, mrp: e.target.value })}
+                        style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#64748B', fontSize: '0.9rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '800', display: 'block', marginBottom: '0.2rem' }}>Profile Description</label>
+                    <textarea
+                      value={profileForm.description}
+                      onChange={(e) => setProfileForm({ ...profileForm, description: e.target.value })}
+                      placeholder="Clinical scope of this multi-biomarker profile panel..."
+                      rows={3}
+                      style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.86rem' }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: SELECT SINGLE TESTS ("profiles are combination of tests") */}
+              {activeProfileModalTab === 'TESTS' && (
+                <SingleTestsSelector
+                  allTests={catalog.tests || []}
+                  selectedTestCodes={profileForm.selectedTests || []}
+                  onChange={(newCodes) => setProfileForm({ ...profileForm, selectedTests: newCodes })}
+                  onAutoCalculateProfile={(info) => {
+                    setProfileForm(prev => ({
+                      ...prev,
+                      price: info.suggestedPrice,
+                      mrp: info.suggestedMrp,
+                      sampleType: info.sampleType,
+                      fasting: info.fasting
+                    }));
+                    setSaveToast(`Applied suggested bundled pricing: ₹${info.suggestedPrice}!`);
+                    setTimeout(() => setSaveToast(null), 3000);
+                  }}
+                />
+              )}
+
+              {/* TAB 3: MULTI-LAB PRICES */}
+              {activeProfileModalTab === 'LABS' && (
+                <MultiLabPricingEditor
+                  labPricing={profileForm.labPricing}
+                  onChange={(updatedLabs) => setProfileForm({ ...profileForm, labPricing: updatedLabs })}
+                  basePrice={profileForm.price}
+                  baseMrp={profileForm.mrp}
+                  tatHours={profileForm.tatHours}
+                />
+              )}
+
+              {/* TAB 4: MULTI-PERSON VOLUME SLABS */}
+              {activeProfileModalTab === 'PEOPLE' && (
+                <MultiPeopleTierPricingEditor
+                  tierPricing={profileForm.tierPricing}
+                  onChange={(updatedTiers) => setProfileForm({ ...profileForm, tierPricing: updatedTiers })}
+                  basePrice={profileForm.price}
+                  baseMrp={profileForm.mrp}
+                />
+              )}
+
+              {/* Footer */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', borderTop: '1px solid #E2E8F0', paddingTop: '1.25rem', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateProfileModal(false)}
+                  style={{ padding: '0.75rem 1.4rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: '0.75rem 1.75rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,107,112,0.25)' }}
+                >
+                  {editingItem ? 'Update Profile & Tests' : 'Save Diagnostic Profile to Master'}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 3: VISUAL PACKAGE BUILDER (COMBINATION OF TESTS & PROFILES) */}
+      {showPackageBuilderModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '1020px', width: '100%', padding: '2rem', border: '1px solid #E2E8F0', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '1rem' }}>
+              <div>
+                <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
+                  PACKAGE BUILDER STUDIO
+                </span>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', margin: 0 }}>
+                  Visual Health Package Builder (Profiles + Single Tests)
                 </h2>
-                <p style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '0.1rem' }}>
-                  Combine multi-parameter diagnostic profiles and single biomarker tests into promoted health packages.
+                <p style={{ fontSize: '0.82rem', color: '#64748B', margin: '0.15rem 0 0 0' }}>
+                  Package is a combination of diagnostic profiles and single biomarker tests.
                 </p>
               </div>
               <button onClick={() => setShowPackageBuilderModal(false)} style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '1.25rem', cursor: 'pointer', padding: '0.5rem' }}>✕</button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.75rem' }}>
-              {/* LEFT COLUMN: Component Selection */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ position: 'relative' }}>
-                  <Search size={16} color="#64748B" style={{ position: 'absolute', left: '12px', top: '12px' }} />
-                  <input
-                    type="text"
-                    placeholder="Search from 87 profiles & 913 tests by name or code..."
-                    value={builderSearch}
-                    onChange={(e) => setBuilderSearch(e.target.value)}
-                    style={{ width: '100%', padding: '0.65rem 0.75rem 0.65rem 2.4rem', backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '10px', color: '#0F172A', fontSize: '0.85rem', outline: 'none' }}
-                  />
-                </div>
-
-                {/* Selected Basket Chips */}
-                <div style={{ backgroundColor: '#F1F5F9', borderRadius: '12px', padding: '0.85rem', border: '1px solid #CBD5E1' }}>
-                  <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#006B70', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
-                    Selected Package Components ({packageBuilderForm.selectedProfiles.length} Profiles, {packageBuilderForm.selectedTests.length} Tests)
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', maxHeight: '90px', overflowY: 'auto' }}>
-                    {packageBuilderForm.selectedProfiles.map(code => (
-                      <span key={code} style={{ fontSize: '0.72rem', backgroundColor: '#006B70', color: '#FFF', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                        🔬 {code}
-                        <button type="button" onClick={() => setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: packageBuilderForm.selectedProfiles.filter(c => c !== code) })} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', padding: 0, fontWeight: '900' }}>✕</button>
-                      </span>
-                    ))}
-                    {packageBuilderForm.selectedTests.map(code => (
-                      <span key={code} style={{ fontSize: '0.72rem', backgroundColor: '#B45309', color: '#FFF', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                        🧪 {code}
-                        <button type="button" onClick={() => setPackageBuilderForm({ ...packageBuilderForm, selectedTests: packageBuilderForm.selectedTests.filter(c => c !== code) })} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', padding: 0, fontWeight: '900' }}>✕</button>
-                      </span>
-                    ))}
-                    {packageBuilderForm.selectedProfiles.length === 0 && packageBuilderForm.selectedTests.length === 0 && (
-                      <span style={{ fontSize: '0.78rem', color: '#94A3B8', italic: true }}>No profiles or tests selected yet. Select items below.</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Profiles List */}
-                <div>
-                  <div style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800', marginBottom: '0.35rem', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>🔬 DIAGNOSTIC PROFILES & PANELS ({catalog.profiles?.length || 87})</span>
-                  </div>
-                  <div style={{ maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.5rem', backgroundColor: '#FFFFFF' }}>
-                    {(catalog.profiles || []).filter(p => !builderSearch || p.name.toLowerCase().includes(builderSearch.toLowerCase()) || p.code.toLowerCase().includes(builderSearch.toLowerCase())).slice(0, 40).map(p => {
-                      const isSel = packageBuilderForm.selectedProfiles.includes(p.code);
-                      return (
-                        <div
-                          key={p.code}
-                          onClick={() => {
-                            if (isSel) setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: packageBuilderForm.selectedProfiles.filter(c => c !== p.code) });
-                            else setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: [...packageBuilderForm.selectedProfiles, p.code] });
-                          }}
-                          style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', backgroundColor: isSel ? 'rgba(0,107,112,0.1)' : '#F8FAFC', border: isSel ? '1.5px solid #006B70' : '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '0.82rem' }}
-                        >
-                          <span style={{ color: isSel ? '#006B70' : '#0F172A', fontWeight: isSel ? '800' : '600' }}>{isSel ? '✓ ' : '+ '}{p.name} ({p.code})</span>
-                          <span style={{ color: '#006B70', fontSize: '0.72rem', backgroundColor: '#E0F2FE', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '700' }}>{p.sampleType || 'SERUM'}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Tests List */}
-                <div>
-                  <div style={{ fontSize: '0.78rem', color: '#B45309', fontWeight: '800', marginBottom: '0.35rem', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>🧪 INDIVIDUAL BIOMARKER TESTS ({catalog.tests?.length || 913})</span>
-                  </div>
-                  <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.5rem', backgroundColor: '#FFFFFF' }}>
-                    {(catalog.tests || []).filter(t => !builderSearch || t.name.toLowerCase().includes(builderSearch.toLowerCase()) || t.code.toLowerCase().includes(builderSearch.toLowerCase())).slice(0, 50).map(t => {
-                      const isSel = packageBuilderForm.selectedTests.includes(t.code);
-                      return (
-                        <div
-                          key={t.code}
-                          onClick={() => {
-                            if (isSel) setPackageBuilderForm({ ...packageBuilderForm, selectedTests: packageBuilderForm.selectedTests.filter(c => c !== t.code) });
-                            else setPackageBuilderForm({ ...packageBuilderForm, selectedTests: [...packageBuilderForm.selectedTests, t.code] });
-                          }}
-                          style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', backgroundColor: isSel ? '#FEF3C7' : '#F8FAFC', border: isSel ? '1.5px solid #F59E0B' : '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '0.82rem' }}
-                        >
-                          <span style={{ color: isSel ? '#B45309' : '#0F172A', fontWeight: isSel ? '800' : '600' }}>{isSel ? '✓ ' : '+ '}{t.name} ({t.code})</span>
-                          <span style={{ color: '#B45309', fontSize: '0.72rem', backgroundColor: '#FEF3C7', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '700' }}>{t.sampleType || 'SERUM'}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* RIGHT COLUMN: Package Form & Live Preview */}
-              <div>
-                <form onSubmit={handleSavePackage} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                  
-                  {/* Live Card Preview Box */}
-                  <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '16px', padding: '1rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800' }}>
-                        {Math.round(((Number(packageBuilderForm.mrp || 2999) - Number(packageBuilderForm.price || 1299)) / Number(packageBuilderForm.mrp || 2999)) * 100) || 50}% OFF • {packageBuilderForm.category}
-                      </span>
-                      <span style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'monospace', fontWeight: '800' }}>
-                        {packageBuilderForm.code || 'MM_PKG_NEW'}
-                      </span>
-                    </div>
-                    <div style={{ fontWeight: '900', fontSize: '1.05rem', color: '#0F172A' }}>
-                      {packageBuilderForm.name || 'Untitled Health Package'}
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.15rem' }}>
-                      {packageBuilderForm.tagline}
-                    </div>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', fontSize: '0.75rem', flexWrap: 'wrap' }}>
-                      <span style={{ backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800' }}>
-                        {packageBuilderForm.selectedProfiles.length * 8 + packageBuilderForm.selectedTests.length} Total Biomarkers
-                      </span>
-                      <span style={{ backgroundColor: '#E0F2FE', color: '#0369A1', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800' }}>
-                        Fasting: {calculateFastingRequirement(packageBuilderForm.selectedProfiles, packageBuilderForm.selectedTests, catalog.profiles, catalog.tests) ? 'YES (8-10h)' : 'NO'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '700' }}>Package Name</label>
-                    <input
-                      type="text"
-                      value={packageBuilderForm.name}
-                      onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, name: e.target.value })}
-                      placeholder="e.g. Master Executive Health Shield"
-                      required
-                      style={{ width: '100%', padding: '0.6rem 0.8rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontWeight: '700', fontSize: '0.88rem', marginTop: '0.2rem' }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    <div>
-                      <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '700' }}>Package Code</label>
-                      <input
-                        type="text"
-                        value={packageBuilderForm.code}
-                        onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, code: e.target.value })}
-                        placeholder="e.g. MM_EXEC_FB"
-                        style={{ width: '100%', padding: '0.6rem 0.8rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#006B70', fontWeight: '800', fontSize: '0.88rem', marginTop: '0.2rem', fontFamily: 'monospace' }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '700' }}>Category</label>
-                      <select
-                        value={packageBuilderForm.category}
-                        onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, category: e.target.value })}
-                        style={{ width: '100%', padding: '0.6rem 0.8rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontWeight: '700', fontSize: '0.88rem', marginTop: '0.2rem' }}
-                      >
-                        <option value="Full Body Wellness">Full Body Wellness</option>
-                        <option value="Cardio & Diabetes">Cardio & Diabetes Care</option>
-                        <option value="Immunity & Allergy">Immunity & Allergy</option>
-                        <option value="Women Health">Women Health & Hormones</option>
-                        <option value="Senior Citizen Care">Senior Citizen Care</option>
-                        <option value="Metabolic Profile">Metabolic & Thyroid Profile</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '700' }}>Tagline / Catchphrase</label>
-                    <input
-                      type="text"
-                      value={packageBuilderForm.tagline}
-                      onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, tagline: e.target.value })}
-                      placeholder="e.g. Complete 85+ Vital Biomarkers & Full Body Evaluation"
-                      style={{ width: '100%', padding: '0.6rem 0.8rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem', marginTop: '0.2rem' }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.6rem' }}>
-                    <div>
-                      <label style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800' }}>Offer Price (₹)</label>
-                      <input
-                        type="number"
-                        value={packageBuilderForm.price}
-                        onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, price: e.target.value })}
-                        required
-                        style={{ width: '100%', padding: '0.6rem 0.8rem', backgroundColor: '#FFFFFF', border: '1.5px solid #006B70', borderRadius: '8px', color: '#006B70', fontWeight: '900', fontSize: '0.88rem', marginTop: '0.2rem' }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700' }}>Market MRP (₹)</label>
-                      <input
-                        type="number"
-                        value={packageBuilderForm.mrp}
-                        onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, mrp: e.target.value })}
-                        style={{ width: '100%', padding: '0.6rem 0.8rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#64748B', fontSize: '0.88rem', marginTop: '0.2rem' }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700' }}>TAT (Hours)</label>
-                      <input
-                        type="number"
-                        value={packageBuilderForm.tatHours}
-                        onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, tatHours: e.target.value })}
-                        style={{ width: '100%', padding: '0.6rem 0.8rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem', marginTop: '0.2rem' }}
-                      />
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                    <button type="button" onClick={() => setShowPackageBuilderModal(false)} style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}>Cancel</button>
-                    <button
-                      type="submit"
-                      style={{ padding: '0.65rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,107,112,0.25)' }}
-                    >
-                      Publish Package to Live Catalog
-                    </button>
-                  </div>
-                </form>
-              </div>
+            {/* Modal Tabs */}
+            <div style={{ display: 'flex', gap: '0.4rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+              {[
+                { key: 'COMPONENTS', label: `1. Select Profiles & Tests (${packageBuilderForm.selectedProfiles.length} Prof, ${packageBuilderForm.selectedTests.length} Tests)`, icon: Package },
+                { key: 'LABS', label: '2. Multi-Lab Prices (3+ Labs)', icon: Building2 },
+                { key: 'PEOPLE', label: '3. Multi-Person Volume Slabs', icon: Users }
+              ].map(t => (
+                <button
+                  type="button"
+                  key={t.key}
+                  onClick={() => setActivePackageModalTab(t.key)}
+                  style={{
+                    padding: '0.55rem 1rem',
+                    borderRadius: '8px',
+                    border: activePackageModalTab === t.key ? 'none' : '1px solid #CBD5E1',
+                    backgroundColor: activePackageModalTab === t.key ? '#006B70' : '#F8FAFC',
+                    color: activePackageModalTab === t.key ? '#FFFFFF' : '#475569',
+                    fontSize: '0.84rem',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem'
+                  }}
+                >
+                  <t.icon size={15} />
+                  {t.label}
+                </button>
+              ))}
             </div>
 
+            <form onSubmit={handleSavePackage} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              
+              {/* TAB 1: VISUAL COMPONENTS SELECTOR */}
+              {activePackageModalTab === 'COMPONENTS' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.75rem' }}>
+                  
+                  {/* Left Column: Profiles & Tests Picker */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div style={{ position: 'relative' }}>
+                      <Search size={16} color="#64748B" style={{ position: 'absolute', left: '12px', top: '12px' }} />
+                      <input
+                        type="text"
+                        placeholder="Search profiles and single tests..."
+                        value={builderSearch}
+                        onChange={(e) => setBuilderSearch(e.target.value)}
+                        style={{ width: '100%', padding: '0.65rem 0.75rem 0.65rem 2.4rem', backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '10px', color: '#0F172A', fontSize: '0.85rem', outline: 'none' }}
+                      />
+                    </div>
+
+                    {/* Selected Components Chips */}
+                    <div style={{ backgroundColor: '#F1F5F9', borderRadius: '12px', padding: '0.85rem', border: '1px solid #CBD5E1' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#006B70', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                        Selected Components ({packageBuilderForm.selectedProfiles.length} Profiles, {packageBuilderForm.selectedTests.length} Tests)
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', maxHeight: '90px', overflowY: 'auto' }}>
+                        {packageBuilderForm.selectedProfiles.map(code => (
+                          <span key={code} style={{ fontSize: '0.72rem', backgroundColor: '#006B70', color: '#FFF', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                            🔬 {code}
+                            <button type="button" onClick={() => setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: packageBuilderForm.selectedProfiles.filter(c => c !== code) })} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', padding: 0, fontWeight: '900' }}>✕</button>
+                          </span>
+                        ))}
+                        {packageBuilderForm.selectedTests.map(code => (
+                          <span key={code} style={{ fontSize: '0.72rem', backgroundColor: '#B45309', color: '#FFF', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                            🧪 {code}
+                            <button type="button" onClick={() => setPackageBuilderForm({ ...packageBuilderForm, selectedTests: packageBuilderForm.selectedTests.filter(c => c !== code) })} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', padding: 0, fontWeight: '900' }}>✕</button>
+                          </span>
+                        ))}
+                        {packageBuilderForm.selectedProfiles.length === 0 && packageBuilderForm.selectedTests.length === 0 && (
+                          <span style={{ fontSize: '0.78rem', color: '#94A3B8', fontStyle: 'italic' }}>No profiles or tests selected yet. Select items below.</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Profiles List */}
+                    <div>
+                      <div style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800', marginBottom: '0.35rem', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>🔬 DIAGNOSTIC PROFILES ({catalog.profiles?.length || 87})</span>
+                      </div>
+                      <div style={{ maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.5rem', backgroundColor: '#FFFFFF' }}>
+                        {(catalog.profiles || []).filter(p => !builderSearch || p.name.toLowerCase().includes(builderSearch.toLowerCase()) || p.code.toLowerCase().includes(builderSearch.toLowerCase())).slice(0, 40).map(p => {
+                          const isSel = packageBuilderForm.selectedProfiles.includes(p.code);
+                          return (
+                            <div
+                              key={p.code}
+                              onClick={() => {
+                                if (isSel) setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: packageBuilderForm.selectedProfiles.filter(c => c !== p.code) });
+                                else setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: [...packageBuilderForm.selectedProfiles, p.code] });
+                              }}
+                              style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', backgroundColor: isSel ? 'rgba(0,107,112,0.1)' : '#F8FAFC', border: isSel ? '1.5px solid #006B70' : '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '0.82rem' }}
+                            >
+                              <span style={{ color: isSel ? '#006B70' : '#0F172A', fontWeight: isSel ? '800' : '600' }}>{isSel ? '✓ ' : '+ '}{p.name} ({p.code})</span>
+                              <span style={{ color: '#006B70', fontSize: '0.72rem', backgroundColor: '#E0F2FE', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '700' }}>{p.sampleType || 'SERUM'}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Single Tests List */}
+                    <div>
+                      <div style={{ fontSize: '0.78rem', color: '#B45309', fontWeight: '800', marginBottom: '0.35rem', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>🧪 INDIVIDUAL TESTS ({catalog.tests?.length || 913})</span>
+                      </div>
+                      <div style={{ maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.5rem', backgroundColor: '#FFFFFF' }}>
+                        {(catalog.tests || []).filter(t => !builderSearch || t.name.toLowerCase().includes(builderSearch.toLowerCase()) || t.code.toLowerCase().includes(builderSearch.toLowerCase())).slice(0, 50).map(t => {
+                          const isSel = packageBuilderForm.selectedTests.includes(t.code);
+                          return (
+                            <div
+                              key={t.code}
+                              onClick={() => {
+                                if (isSel) setPackageBuilderForm({ ...packageBuilderForm, selectedTests: packageBuilderForm.selectedTests.filter(c => c !== t.code) });
+                                else setPackageBuilderForm({ ...packageBuilderForm, selectedTests: [...packageBuilderForm.selectedTests, t.code] });
+                              }}
+                              style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', backgroundColor: isSel ? '#FEF3C7' : '#F8FAFC', border: isSel ? '1.5px solid #F59E0B' : '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '0.82rem' }}
+                            >
+                              <span style={{ color: isSel ? '#B45309' : '#0F172A', fontWeight: isSel ? '800' : '600' }}>{isSel ? '✓ ' : '+ '}{t.name} ({t.code})</span>
+                              <span style={{ color: '#B45309', fontSize: '0.72rem', backgroundColor: '#FEF3C7', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '700' }}>{t.sampleType || 'SERUM'}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Package Metadata */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '800', display: 'block', marginBottom: '0.2rem' }}>Package Name *</label>
+                      <input
+                        type="text"
+                        value={packageBuilderForm.name}
+                        onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, name: e.target.value })}
+                        placeholder="e.g. Master Executive Health Shield"
+                        required
+                        style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontWeight: '800', fontSize: '0.88rem' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                      <div>
+                        <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '800', display: 'block', marginBottom: '0.2rem' }}>Package Code</label>
+                        <input
+                          type="text"
+                          value={packageBuilderForm.code}
+                          onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, code: e.target.value })}
+                          placeholder="e.g. MM_EXEC_FB"
+                          style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#006B70', fontWeight: '800', fontFamily: 'monospace', fontSize: '0.88rem' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '800', display: 'block', marginBottom: '0.2rem' }}>Category</label>
+                        <select
+                          value={packageBuilderForm.category}
+                          onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, category: e.target.value })}
+                          style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                        >
+                          <option value="Full Body Wellness">Full Body Wellness</option>
+                          <option value="Cardio & Diabetes">Cardio & Diabetes Care</option>
+                          <option value="Immunity & Allergy">Immunity & Allergy</option>
+                          <option value="Women Health">Women Health & Hormones</option>
+                          <option value="Senior Citizen Care">Senior Citizen Care</option>
+                          <option value="Metabolic Profile">Metabolic & Thyroid Profile</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '800', display: 'block', marginBottom: '0.2rem' }}>Tagline / Subtitle</label>
+                      <input
+                        type="text"
+                        value={packageBuilderForm.tagline}
+                        onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, tagline: e.target.value })}
+                        placeholder="e.g. Complete 85+ Vital Biomarkers & Full Body Screening"
+                        style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                      <div>
+                        <label style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '900', display: 'block', marginBottom: '0.2rem' }}>Offer Price (₹) *</label>
+                        <input
+                          type="number"
+                          value={packageBuilderForm.price}
+                          onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, price: e.target.value })}
+                          required
+                          style={{ width: '100%', padding: '0.65rem', border: '1.5px solid #006B70', borderRadius: '8px', color: '#006B70', fontWeight: '900', fontSize: '1rem' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700', display: 'block', marginBottom: '0.2rem' }}>Market MRP (₹)</label>
+                        <input
+                          type="number"
+                          value={packageBuilderForm.mrp}
+                          onChange={(e) => setPackageBuilderForm({ ...packageBuilderForm, mrp: e.target.value })}
+                          style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#64748B', fontSize: '0.9rem' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* TAB 2: MULTI-LAB PRICES */}
+              {activePackageModalTab === 'LABS' && (
+                <MultiLabPricingEditor
+                  labPricing={packageBuilderForm.labPricing}
+                  onChange={(updatedLabs) => setPackageBuilderForm({ ...packageBuilderForm, labPricing: updatedLabs })}
+                  basePrice={packageBuilderForm.price}
+                  baseMrp={packageBuilderForm.mrp}
+                  tatHours={packageBuilderForm.tatHours}
+                />
+              )}
+
+              {/* TAB 3: MULTI-PERSON VOLUME SLABS */}
+              {activePackageModalTab === 'PEOPLE' && (
+                <MultiPeopleTierPricingEditor
+                  tierPricing={packageBuilderForm.tierPricing}
+                  onChange={(updatedTiers) => setPackageBuilderForm({ ...packageBuilderForm, tierPricing: updatedTiers })}
+                  basePrice={packageBuilderForm.price}
+                  baseMrp={packageBuilderForm.mrp}
+                />
+              )}
+
+              {/* Footer */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', borderTop: '1px solid #E2E8F0', paddingTop: '1.25rem', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowPackageBuilderModal(false)}
+                  style={{ padding: '0.75rem 1.4rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{ padding: '0.75rem 1.75rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,107,112,0.25)' }}
+                >
+                  Publish Package & Slabs to Catalog
+                </button>
+              </div>
+
+            </form>
           </div>
         </div>
       )}
 
-      {/* MODAL 4: MULTI-LAB PRICING & OFFERS MANAGER */}
+      {/* MODAL 4: MULTI-LAB & VOLUME SLABS MANAGER (QUICK EDITOR) */}
       {showLabPricingModal && selectedItemForLabPricing && (
-
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '820px', width: '100%', padding: '2rem', border: '1.5px solid #E2E8F0', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '880px', width: '100%', padding: '2rem', border: '1.5px solid #CBD5E1', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
             
             {/* Modal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '1rem' }}>
               <div>
                 <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginBottom: '0.3rem' }}>
                   <span style={{ fontSize: '0.72rem', backgroundColor: '#006B70', color: '#FFF', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
-                    MULTI-LAB RATE MANAGER
+                    RATE & VOLUME MANAGER
                   </span>
                   <span style={{ fontSize: '0.78rem', color: '#64748B', fontFamily: 'monospace', fontWeight: '800' }}>
                     {selectedItemForLabPricing.code || selectedItemForLabPricing.id}
@@ -1415,357 +1974,75 @@ export default function CatalogManagementTab({
                   {selectedItemForLabPricing.name || selectedItemForLabPricing.title}
                 </h2>
                 <div style={{ fontSize: '0.8rem', color: '#64748B', marginTop: '0.2rem' }}>
-                  Set distinct consumer pricing & partner offers across all 3 certified lab providers.
+                  Manage multiple lab rates and multi-person volume slabs (1, 2, 5, 10+ people) for family members & corporate staff.
                 </div>
               </div>
               <button onClick={() => setShowLabPricingModal(false)} style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '1.3rem', cursor: 'pointer', padding: '0.4rem' }}>✕</button>
             </div>
 
+            {/* Modal Tabs */}
+            <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
+              <button
+                type="button"
+                onClick={() => setActiveRateModalTab('LABS')}
+                style={{
+                  padding: '0.6rem 1.25rem',
+                  borderRadius: '10px',
+                  border: activeRateModalTab === 'LABS' ? 'none' : '1px solid #CBD5E1',
+                  backgroundColor: activeRateModalTab === 'LABS' ? '#006B70' : '#F8FAFC',
+                  color: activeRateModalTab === 'LABS' ? '#FFFFFF' : '#475569',
+                  fontWeight: '800',
+                  fontSize: '0.86rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
+                }}
+              >
+                <Building2 size={16} /> 1. Multiple Certified Labs ({labPricingForm.length} Labs)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveRateModalTab('PEOPLE')}
+                style={{
+                  padding: '0.6rem 1.25rem',
+                  borderRadius: '10px',
+                  border: activeRateModalTab === 'PEOPLE' ? 'none' : '1px solid #CBD5E1',
+                  backgroundColor: activeRateModalTab === 'PEOPLE' ? '#006B70' : '#F8FAFC',
+                  color: activeRateModalTab === 'PEOPLE' ? '#FFFFFF' : '#475569',
+                  fontWeight: '800',
+                  fontSize: '0.86rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
+                }}
+              >
+                <Users size={16} /> 2. Multiple People Volume Slabs (1, 2, 5, 10+ People)
+              </button>
+            </div>
+
             <form onSubmit={handleSaveLabPricing} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               
-              {/* 3-LAB PRICING CARDS */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                
-                {/* 1. MedMarg Suggested Lab Option (Big MedMarg + Small Suggested Lab) */}
-                <div style={{ backgroundColor: '#F0FDF4', borderRadius: '16px', border: '2px solid #006B70', padding: '1.25rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '1.3rem', fontWeight: '900', color: '#006B70' }}>
-                        1. MedMarg
-                      </span>
-                      <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
-                        ⭐ SMART PICK / SUGGESTED LAB
-                      </span>
-                    </div>
-                    <span style={{ fontSize: '0.75rem', color: '#059669', fontWeight: '800' }}>
-                      Default Care Seeker Recommendation
-                    </span>
-                  </div>
+              {activeRateModalTab === 'LABS' && (
+                <MultiLabPricingEditor
+                  labPricing={labPricingForm}
+                  onChange={setLabPricingForm}
+                  basePrice={selectedItemForLabPricing.price || 299}
+                  baseMrp={selectedItemForLabPricing.mrp || 499}
+                  tatHours={selectedItemForLabPricing.tatHours || 24}
+                />
+              )}
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: '0.75rem' }}>
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: '#004D40', fontWeight: '800' }}>Suggested Partner Lab Name (Small Subtext)</label>
-                      <input
-                        type="text"
-                        value={labPricingForm[0]?.suggestedLabName || ''}
-                        onChange={(e) => {
-                          const updated = [...labPricingForm];
-                          if (updated[0]) updated[0].suggestedLabName = e.target.value;
-                          setLabPricingForm(updated);
-                        }}
-                        placeholder="e.g. Central Processing Partner Lab"
-                        style={{ width: '100%', padding: '0.55rem', border: '1.5px solid #006B70', borderRadius: '8px', color: '#0F172A', fontWeight: '700', fontSize: '0.84rem', marginTop: '0.2rem' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: '#004D40', fontWeight: '800' }}>Offer Price (₹)</label>
-                      <input
-                        type="number"
-                        value={labPricingForm[0]?.price || ''}
-                        onChange={(e) => {
-                          const updated = [...labPricingForm];
-                          if (updated[0]) {
-                            const newPrice = Number(e.target.value);
-                            updated[0].price = newPrice;
-                            updated[0].discountPercent = Math.max(0, Math.round(((updated[0].mrp - newPrice) / (updated[0].mrp || 1)) * 100));
-                          }
-                          setLabPricingForm(updated);
-                        }}
-                        required
-                        style={{ width: '100%', padding: '0.55rem', border: '1.5px solid #006B70', borderRadius: '8px', color: '#006B70', fontWeight: '900', fontSize: '0.9rem', marginTop: '0.2rem' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '700' }}>MRP (₹)</label>
-                      <input
-                        type="number"
-                        value={labPricingForm[0]?.mrp || ''}
-                        onChange={(e) => {
-                          const updated = [...labPricingForm];
-                          if (updated[0]) {
-                            const newMrp = Number(e.target.value);
-                            updated[0].mrp = newMrp;
-                            updated[0].discountPercent = Math.max(0, Math.round(((newMrp - updated[0].price) / (newMrp || 1)) * 100));
-                          }
-                          setLabPricingForm(updated);
-                        }}
-                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#64748B', fontSize: '0.86rem', marginTop: '0.2rem' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '700' }}>TAT (Hours)</label>
-                      <input
-                        type="number"
-                        value={labPricingForm[0]?.tatHours || 24}
-                        onChange={(e) => {
-                          const updated = [...labPricingForm];
-                          if (updated[0]) updated[0].tatHours = Number(e.target.value);
-                          setLabPricingForm(updated);
-                        }}
-                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.86rem', marginTop: '0.2rem' }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 2. Thyrocare Option */}
-                <div style={{ backgroundColor: '#FEF2F2', borderRadius: '16px', border: '1.5px solid #FECACA', padding: '1.25rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '1.15rem', fontWeight: '900', color: '#B91C1C' }}>
-                        2. Thyrocare
-                      </span>
-                      <span style={{ fontSize: '0.72rem', backgroundColor: '#FEE2E2', color: '#991B1B', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800' }}>
-                        DIRECT AUTOMATED LAB
-                      </span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: '0.75rem' }}>
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: '#991B1B', fontWeight: '700' }}>Provider Brand</label>
-                      <input
-                        type="text"
-                        value="Thyrocare Technologies"
-                        disabled
-                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #FCA5A5', borderRadius: '8px', color: '#991B1B', fontWeight: '800', backgroundColor: 'rgba(255,255,255,0.7)', fontSize: '0.84rem', marginTop: '0.2rem' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: '#991B1B', fontWeight: '800' }}>Offer Price (₹)</label>
-                      <input
-                        type="number"
-                        value={labPricingForm[1]?.price || ''}
-                        onChange={(e) => {
-                          const updated = [...labPricingForm];
-                          if (updated[1]) {
-                            const newPrice = Number(e.target.value);
-                            updated[1].price = newPrice;
-                            updated[1].discountPercent = Math.max(0, Math.round(((updated[1].mrp - newPrice) / (updated[1].mrp || 1)) * 100));
-                          }
-                          setLabPricingForm(updated);
-                        }}
-                        required
-                        style={{ width: '100%', padding: '0.55rem', border: '1.5px solid #DC2626', borderRadius: '8px', color: '#B91C1C', fontWeight: '900', fontSize: '0.9rem', marginTop: '0.2rem' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '700' }}>MRP (₹)</label>
-                      <input
-                        type="number"
-                        value={labPricingForm[1]?.mrp || ''}
-                        onChange={(e) => {
-                          const updated = [...labPricingForm];
-                          if (updated[1]) {
-                            const newMrp = Number(e.target.value);
-                            updated[1].mrp = newMrp;
-                            updated[1].discountPercent = Math.max(0, Math.round(((newMrp - updated[1].price) / (newMrp || 1)) * 100));
-                          }
-                          setLabPricingForm(updated);
-                        }}
-                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#64748B', fontSize: '0.86rem', marginTop: '0.2rem' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '700' }}>TAT (Hours)</label>
-                      <input
-                        type="number"
-                        value={labPricingForm[1]?.tatHours || 24}
-                        onChange={(e) => {
-                          const updated = [...labPricingForm];
-                          if (updated[1]) updated[1].tatHours = Number(e.target.value);
-                          setLabPricingForm(updated);
-                        }}
-                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.86rem', marginTop: '0.2rem' }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. Dr. Lal PathLabs Option */}
-                <div style={{ backgroundColor: '#FFFBEB', borderRadius: '16px', border: '1.5px solid #FDE68A', padding: '1.25rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '1.15rem', fontWeight: '900', color: '#D97706' }}>
-                        3. Dr. Lal PathLabs
-                      </span>
-                      <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#92400E', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800' }}>
-                        NATIONAL REFERENCE LAB
-                      </span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: '0.75rem' }}>
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: '#92400E', fontWeight: '700' }}>Provider Brand</label>
-                      <input
-                        type="text"
-                        value="Dr. Lal PathLabs"
-                        disabled
-                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #FCD34D', borderRadius: '8px', color: '#92400E', fontWeight: '800', backgroundColor: 'rgba(255,255,255,0.7)', fontSize: '0.84rem', marginTop: '0.2rem' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: '#92400E', fontWeight: '800' }}>Offer Price (₹)</label>
-                      <input
-                        type="number"
-                        value={labPricingForm[2]?.price || ''}
-                        onChange={(e) => {
-                          const updated = [...labPricingForm];
-                          if (updated[2]) {
-                            const newPrice = Number(e.target.value);
-                            updated[2].price = newPrice;
-                            updated[2].discountPercent = Math.max(0, Math.round(((updated[2].mrp - newPrice) / (updated[2].mrp || 1)) * 100));
-                          }
-                          setLabPricingForm(updated);
-                        }}
-                        required
-                        style={{ width: '100%', padding: '0.55rem', border: '1.5px solid #D97706', borderRadius: '8px', color: '#B45309', fontWeight: '900', fontSize: '0.9rem', marginTop: '0.2rem' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '700' }}>MRP (₹)</label>
-                      <input
-                        type="number"
-                        value={labPricingForm[2]?.mrp || ''}
-                        onChange={(e) => {
-                          const updated = [...labPricingForm];
-                          if (updated[2]) {
-                            const newMrp = Number(e.target.value);
-                            updated[2].mrp = newMrp;
-                            updated[2].discountPercent = Math.max(0, Math.round(((newMrp - updated[2].price) / (newMrp || 1)) * 100));
-                          }
-                          setLabPricingForm(updated);
-                        }}
-                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#64748B', fontSize: '0.86rem', marginTop: '0.2rem' }}
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '700' }}>TAT (Hours)</label>
-                      <input
-                        type="number"
-                        value={labPricingForm[2]?.tatHours || 24}
-                        onChange={(e) => {
-                          const updated = [...labPricingForm];
-                          if (updated[2]) updated[2].tatHours = Number(e.target.value);
-                          setLabPricingForm(updated);
-                        }}
-                        style={{ width: '100%', padding: '0.55rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.86rem', marginTop: '0.2rem' }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Additional Dynamic Signed-up Labs (Extensibility) */}
-                {labPricingForm.slice(3).map((customLab, cIdx) => (
-                  <div key={cIdx} style={{ backgroundColor: '#F8FAFC', borderRadius: '16px', border: '1.5px solid #CBD5E1', padding: '1.25rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                      <span style={{ fontSize: '1.1rem', fontWeight: '900', color: '#0F172A' }}>
-                        {cIdx + 4}. {customLab.labName || 'Custom Signed-Up Lab'}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = labPricingForm.filter((_, idx) => idx !== cIdx + 3);
-                          setLabPricingForm(updated);
-                        }}
-                        style={{ background: 'none', border: 'none', color: '#EF4444', fontWeight: '800', cursor: 'pointer', fontSize: '0.8rem' }}
-                      >
-                        Remove Lab
-                      </button>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: '0.75rem' }}>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', color: '#475569', fontWeight: '700' }}>Lab Partner Name</label>
-                        <input
-                          type="text"
-                          value={customLab.labName}
-                          onChange={(e) => {
-                            const updated = [...labPricingForm];
-                            updated[cIdx + 3].labName = e.target.value;
-                            setLabPricingForm(updated);
-                          }}
-                          placeholder="e.g. Vijaya Diagnostics"
-                          style={{ width: '100%', padding: '0.55rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.84rem', marginTop: '0.2rem' }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', color: '#475569', fontWeight: '700' }}>Offer Price (₹)</label>
-                        <input
-                          type="number"
-                          value={customLab.price}
-                          onChange={(e) => {
-                            const updated = [...labPricingForm];
-                            updated[cIdx + 3].price = Number(e.target.value);
-                            setLabPricingForm(updated);
-                          }}
-                          style={{ width: '100%', padding: '0.55rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.84rem', marginTop: '0.2rem' }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', color: '#475569', fontWeight: '700' }}>MRP (₹)</label>
-                        <input
-                          type="number"
-                          value={customLab.mrp}
-                          onChange={(e) => {
-                            const updated = [...labPricingForm];
-                            updated[cIdx + 3].mrp = Number(e.target.value);
-                            setLabPricingForm(updated);
-                          }}
-                          style={{ width: '100%', padding: '0.55rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.84rem', marginTop: '0.2rem' }}
-                        />
-                      </div>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', color: '#475569', fontWeight: '700' }}>TAT (Hours)</label>
-                        <input
-                          type="number"
-                          value={customLab.tatHours || 24}
-                          onChange={(e) => {
-                            const updated = [...labPricingForm];
-                            updated[cIdx + 3].tatHours = Number(e.target.value);
-                            setLabPricingForm(updated);
-                          }}
-                          style={{ width: '100%', padding: '0.55rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.84rem', marginTop: '0.2rem' }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {/* Add More Lab Option Button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setLabPricingForm([
-                      ...labPricingForm,
-                      {
-                        labId: `signed_lab_${Date.now()}`,
-                        labName: 'Signed-up Regional Lab',
-                        suggestedLabName: null,
-                        isMedmargSuggested: false,
-                        price: (labPricingForm[0]?.price || 299) + 50,
-                        mrp: (labPricingForm[0]?.mrp || 499) + 100,
-                        discountPercent: 30,
-                        tatHours: 24,
-                        tag: 'Partner Center'
-                      }
-                    ]);
-                  }}
-                  style={{ padding: '0.65rem', backgroundColor: '#F1F5F9', border: '1.5px dashed #94A3B8', borderRadius: '12px', color: '#475569', fontWeight: '800', fontSize: '0.84rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}
-                >
-                  <Plus size={16} /> + Add Signed-Up Partner Lab Option
-                </button>
-              </div>
+              {activeRateModalTab === 'PEOPLE' && (
+                <MultiPeopleTierPricingEditor
+                  tierPricing={tierPricingForm}
+                  onChange={setTierPricingForm}
+                  basePrice={selectedItemForLabPricing.price || 299}
+                  baseMrp={selectedItemForLabPricing.mrp || 499}
+                />
+              )}
 
               {/* Bottom Actions */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #E2E8F0', paddingTop: '1.25rem', marginTop: '0.5rem' }}>
@@ -1774,7 +2051,7 @@ export default function CatalogManagementTab({
                   onClick={() => handleOpenPreview(selectedItemForLabPricing)}
                   style={{ padding: '0.75rem 1.25rem', backgroundColor: '#F8FAFC', color: '#0F172A', border: '1px solid #CBD5E1', borderRadius: '12px', fontWeight: '800', fontSize: '0.86rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                 >
-                  <Eye size={16} color="#006B70" /> Live Care Seeker Preview
+                  <Eye size={16} color="#006B70" /> Live Care Seeker Simulator Preview
                 </button>
 
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -1789,7 +2066,7 @@ export default function CatalogManagementTab({
                     type="submit"
                     style={{ padding: '0.75rem 1.6rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,107,112,0.25)' }}
                   >
-                    Save & Publish 3-Lab Rates
+                    Save & Publish All Rates & Slabs
                   </button>
                 </div>
               </div>
@@ -1816,10 +2093,10 @@ export default function CatalogManagementTab({
               <button onClick={() => setShowCareSeekerPreviewModal(false)} style={{ background: 'none', border: 'none', color: '#64748B', fontSize: '1.25rem', cursor: 'pointer' }}>✕</button>
             </div>
 
-            {/* 3 Interactive Cards shown to Patients */}
+            {/* Interactive Cards shown to Patients */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0F172A' }}>
-                Select Laboratory for Home Sample Processing:
+                1. Select Laboratory for Home Sample Processing:
               </div>
 
               {getItemLabPricing(previewItem).map((lab, lIdx) => {
@@ -1858,43 +2135,69 @@ export default function CatalogManagementTab({
                         </div>
                       ) : (
                         <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '1.15rem', fontWeight: '900', color: lab.labId === 'thyrocare' ? '#B91C1C' : '#D97706' }}>
-                              {lab.labName}
-                            </span>
-                            <span style={{ fontSize: '0.72rem', backgroundColor: '#F1F5F9', color: '#475569', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800' }}>
-                              {lab.tag || 'Certified Lab'}
-                            </span>
+                          <div style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A' }}>
+                            {lab.labName}
                           </div>
-                          <div style={{ fontSize: '0.76rem', color: '#64748B', marginTop: '0.15rem' }}>
-                            TAT: {lab.tatHours || 24} Hours Report
+                          <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.1rem' }}>
+                            Direct Diagnostic Provider • NABL & CAP Accredited
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: '#475569', marginTop: '0.2rem' }}>
+                            TAT: {lab.tatHours || 24} Hours
                           </div>
                         </div>
                       )}
                     </div>
 
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '1.35rem', fontWeight: '900', color: isMedmarg ? '#006B70' : '#0F172A' }}>
+                      <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A' }}>
                         ₹{lab.price}
                       </div>
-                      <div style={{ fontSize: '0.78rem', color: '#94A3B8', textDecoration: 'line-through' }}>
+                      <div style={{ fontSize: '0.8rem', color: '#94A3B8', textDecoration: 'line-through' }}>
                         ₹{lab.mrp}
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: '#059669', fontWeight: '800' }}>
-                        Save {lab.discountPercent || 35}%
+                      <div style={{ fontSize: '0.72rem', color: '#059669', fontWeight: '800', marginTop: '0.1rem' }}>
+                        {lab.discountPercent}% OFF
                       </div>
                     </div>
                   </div>
                 );
               })}
+
+              {/* Multi-Person Volume Slabs Preview */}
+              <div style={{ marginTop: '0.5rem' }}>
+                <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.5rem' }}>
+                  2. Booking for Family or Corporate Staff (Volume Slabs):
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                  {Object.entries(getItemTierPricing(previewItem)).map(([key, t]) => (
+                    <div key={key} style={{ backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '12px', padding: '0.75rem' }}>
+                      <div style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: '800' }}>
+                        {t.label}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.25rem' }}>
+                        <span style={{ fontSize: '1.1rem', fontWeight: '900', color: '#006B70' }}>
+                          ₹{t.offerPrice || t.pricePerPerson} <span style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: '600' }}>/ person</span>
+                        </span>
+                        <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: '800' }}>
+                          {t.discountPercent || 25}% OFF
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            <button
-              onClick={() => setShowCareSeekerPreviewModal(false)}
-              style={{ marginTop: '1.5rem', width: '100%', padding: '0.75rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '900', fontSize: '0.9rem', cursor: 'pointer' }}
-            >
-              Close Simulator Preview
-            </button>
+            <div style={{ marginTop: '1.5rem', textAlign: 'right' }}>
+              <button
+                type="button"
+                onClick={() => setShowCareSeekerPreviewModal(false)}
+                style={{ padding: '0.65rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', cursor: 'pointer' }}
+              >
+                Close Preview
+              </button>
+            </div>
+
           </div>
         </div>
       )}
@@ -1902,4 +2205,3 @@ export default function CatalogManagementTab({
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   X, 
   FlaskConical, 
@@ -10,9 +10,16 @@ import {
   Check, 
   Sparkles,
   Award,
-  Building2
+  Building2,
+  Users,
+  TrendingDown
 } from 'lucide-react';
-import { getStartingPrice } from '../../data/catalogStore';
+import { 
+  getStartingPrice, 
+  getItemLabPricing, 
+  getItemTierPricing, 
+  getItemPriceForPeople 
+} from '../../data/catalogStore';
 
 export default function CareSeekerUniversalItemSheet({
   item,
@@ -20,11 +27,16 @@ export default function CareSeekerUniversalItemSheet({
   onAddToCart,
   isInCart
 }) {
+  const [selectedPersonCount, setSelectedPersonCount] = useState(1);
+
   if (!item) return null;
 
   const isPackage = item.itemType === 'PACKAGE' || item.profiles || item.discountPercent;
   const isProfile = item.itemType === 'PROFILE' || (item.code && item.code.length <= 6 && !item.serialNo);
   const startPricing = getStartingPrice(item);
+  const labPricingList = getItemLabPricing(item);
+  const tierPricing = getItemTierPricing(item);
+  const currentTierInfo = getItemPriceForPeople(item, selectedPersonCount);
 
   return (
     <div style={{
@@ -45,13 +57,14 @@ export default function CareSeekerUniversalItemSheet({
       <div style={{
         backgroundColor: '#FFFFFF',
         borderRadius: '24px',
-        width: '100%',
         maxWidth: '680px',
+        width: '100%',
         maxHeight: '90vh',
-        overflowY: 'auto',
-        boxShadow: '0 20px 48px rgba(0,0,0,0.25)',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        overflow: 'hidden',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        border: '1.5px solid #E2E8F0'
       }}>
         {/* Header */}
         <div style={{
@@ -60,86 +73,175 @@ export default function CareSeekerUniversalItemSheet({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          backgroundColor: '#004D40',
-          color: '#FFFFFF'
+          backgroundColor: '#F8FAFC'
         }}>
           <div>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.4rem' }}>
-              <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '900' }}>
-                {isPackage ? 'COMPREHENSIVE PACKAGE' : isProfile ? 'DIAGNOSTIC PROFILE' : 'INDIVIDUAL TEST'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+              <span style={{
+                fontSize: '0.72rem',
+                fontWeight: '900',
+                padding: '0.2rem 0.55rem',
+                borderRadius: '6px',
+                backgroundColor: isPackage ? '#FEF3C7' : isProfile ? '#E0F2FE' : '#E0F2F1',
+                color: isPackage ? '#B45309' : isProfile ? '#0369A1' : '#006B70',
+                letterSpacing: '0.04em'
+              }}>
+                {isPackage ? 'HEALTH PACKAGE' : isProfile ? 'DIAGNOSTIC PROFILE' : 'INDIVIDUAL TEST'}
               </span>
-              <span style={{ fontSize: '0.78rem', color: '#80CBC4', fontFamily: 'monospace', fontWeight: '700' }}>
-                CODE: {item.code || item.id}
+              <span style={{ fontSize: '0.8rem', color: '#64748B', fontFamily: 'monospace', fontWeight: '700' }}>
+                {item.code || item.id}
               </span>
             </div>
-            <h2 style={{ fontSize: '1.45rem', fontWeight: '900', lineHeight: 1.25, margin: 0 }}>
+            <h3 style={{ fontSize: '1.35rem', fontWeight: '900', color: '#0F172A', margin: 0, lineHeight: 1.25 }}>
               {item.name || item.title}
-            </h2>
-            <div style={{ fontSize: '0.82rem', color: '#80CBC4', marginTop: '0.35rem' }}>
-              100% NABL Accredited Pathology Processing • Free Home Phlebotomy
-            </div>
+            </h3>
           </div>
 
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', color: '#80CBC4', cursor: 'pointer', padding: '0.4rem', borderRadius: '8px' }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: '#64748B',
+              cursor: 'pointer',
+              padding: '0.35rem',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
           >
-            <X size={22} />
+            <X size={20} />
           </button>
         </div>
 
         {/* Sheet Content */}
-        <div style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ padding: '1.75rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', overflowY: 'auto' }}>
           
           {/* Quick Specifications Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
-            <div style={{ padding: '0.85rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-              <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '800' }}>SPECIMEN TUBE</div>
-              <div style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0F172A', marginTop: '0.2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.65rem' }}>
+            <div style={{ padding: '0.8rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+              <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: '800' }}>SPECIMEN TUBE</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0F172A', marginTop: '0.2rem' }}>
                 🩸 {item.sampleType || item.sampleTypes?.join(', ') || 'SERUM (Gold SST)'}
               </div>
             </div>
 
-            <div style={{ padding: '0.85rem', backgroundColor: item.fasting === 'YES' ? '#FEF3C7' : '#F0FDF4', borderRadius: '12px', border: item.fasting === 'YES' ? '1px solid #FDE68A' : '1px solid #BBF7D0' }}>
-              <div style={{ fontSize: '0.72rem', color: item.fasting === 'YES' ? '#B45309' : '#15803D', fontWeight: '800' }}>FASTING REQUIRED</div>
-              <div style={{ fontSize: '0.88rem', fontWeight: '800', color: item.fasting === 'YES' ? '#92400E' : '#166534', marginTop: '0.2rem' }}>
+            <div style={{ padding: '0.8rem', backgroundColor: item.fasting === 'YES' ? '#FEF3C7' : '#F0FDF4', borderRadius: '12px', border: item.fasting === 'YES' ? '1px solid #FDE68A' : '1px solid #BBF7D0' }}>
+              <div style={{ fontSize: '0.7rem', color: item.fasting === 'YES' ? '#B45309' : '#15803D', fontWeight: '800' }}>FASTING REQUIRED</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: '800', color: item.fasting === 'YES' ? '#92400E' : '#166534', marginTop: '0.2rem' }}>
                 ⏱ {item.fasting === 'YES' ? '10-12 Hrs Fasting' : 'No Fasting'}
               </div>
             </div>
 
-            <div style={{ padding: '0.85rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-              <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '800' }}>REPORT TURNAROUND</div>
-              <div style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0F172A', marginTop: '0.2rem' }}>
-                ⚡ 24 Hours TAT
+            <div style={{ padding: '0.8rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+              <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: '800' }}>REPORT TAT</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0F172A', marginTop: '0.2rem' }}>
+                ⚡ {item.tatHours || 24} Hours
               </div>
             </div>
 
-            <div style={{ padding: '0.85rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
-              <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '800' }}>BIOMARKERS</div>
-              <div style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0F172A', marginTop: '0.2rem' }}>
+            <div style={{ padding: '0.8rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+              <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: '800' }}>BIOMARKERS</div>
+              <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0F172A', marginTop: '0.2rem' }}>
                 🔬 {item.testCount || item.params || 1} Parameters
               </div>
             </div>
           </div>
 
-          {/* Multi-Lab Notice */}
-          <div style={{ padding: '1.25rem', backgroundColor: '#F0FDF4', borderRadius: '16px', border: '1.5px solid #BBF7D0', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.92rem', fontWeight: '900', color: '#166534' }}>
-              <Building2 size={18} color="#006B70" />
-              <span>Multi-Lab Choice Available at Checkout</span>
+          {/* MULTI-PERSON VOLUME SLABS SELECTOR (FAMILY MEMBERS & STAFF) */}
+          <div style={{ 
+            backgroundColor: '#F0FDF4', 
+            borderRadius: '16px', 
+            border: '2px solid #006B70', 
+            padding: '1.15rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Users size={18} color="#006B70" />
+                <span style={{ fontSize: '0.9rem', fontWeight: '900', color: '#004D40' }}>
+                  Booking for Multiple People? (Family or Staff)
+                </span>
+              </div>
+              <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
+                TIERED VOLUME SAVINGS
+              </span>
             </div>
-            <p style={{ fontSize: '0.82rem', color: '#14532D', margin: 0, lineHeight: 1.45 }}>
-              Choose your preferred laboratory (<strong>MedMarg Suggested</strong>, <strong>Thyrocare</strong>, or <strong>Dr. Lal PathLabs</strong>) for all items in your cart before checkout with 1-click comparison.
-            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+              {[
+                { count: 1, label: '1 Person', tag: 'Single' },
+                { count: 2, label: '2 People', tag: 'Duo ~15% off' },
+                { count: 5, label: '5 People', tag: 'Family ~30% off' },
+                { count: 10, label: '10+ People', tag: 'Staff ~45% off' }
+              ].map(s => {
+                const isSelected = selectedPersonCount === s.count;
+                const tierInfo = getItemPriceForPeople(item, s.count);
+
+                return (
+                  <div
+                    key={s.count}
+                    onClick={() => setSelectedPersonCount(s.count)}
+                    style={{
+                      padding: '0.65rem 0.5rem',
+                      borderRadius: '10px',
+                      backgroundColor: isSelected ? '#006B70' : '#FFFFFF',
+                      border: isSelected ? '2px solid #004D40' : '1px solid #CBD5E1',
+                      color: isSelected ? '#FFFFFF' : '#0F172A',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ fontSize: '0.78rem', fontWeight: '800' }}>{s.label}</div>
+                    <div style={{ fontSize: '0.95rem', fontWeight: '900', marginTop: '0.2rem' }}>
+                      ₹{tierInfo.pricePerPerson}
+                      <span style={{ fontSize: '0.65rem', fontWeight: '600', opacity: 0.85 }}>/p</span>
+                    </div>
+                    <div style={{ fontSize: '0.65rem', color: isSelected ? '#FEF3C7' : '#059669', fontWeight: '800', marginTop: '0.15rem' }}>
+                      {tierInfo.discountPercent}% OFF
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {selectedPersonCount > 1 && (
+              <div style={{ fontSize: '0.78rem', color: '#166534', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <TrendingDown size={14} /> Group Total: ₹{currentTierInfo.totalPrice} for {selectedPersonCount} individuals (₹{currentTierInfo.pricePerPerson}/person)
+              </div>
+            )}
+          </div>
+
+          {/* MULTI-LAB PROCESSING NOTICE */}
+          <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '14px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.86rem', fontWeight: '800', color: '#0F172A' }}>
+              <Building2 size={16} color="#006B70" />
+              <span>Multi-Laboratory Choice at Checkout</span>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.76rem', marginTop: '0.2rem' }}>
+              <span style={{ backgroundColor: '#E0F2F1', color: '#006B70', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
+                MedMarg Smart Pick: ₹{labPricingList[0]?.price || item.price}
+              </span>
+              <span style={{ backgroundColor: '#FEE2E2', color: '#991B1B', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
+                Thyrocare: ₹{labPricingList[1]?.price || Math.round((item.price || 299) * 1.15)}
+              </span>
+              <span style={{ backgroundColor: '#FEF3C7', color: '#92400E', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
+                Dr. Lal PathLabs: ₹{labPricingList[2]?.price || Math.round((item.price || 299) * 1.30)}
+              </span>
+            </div>
           </div>
 
           {/* Description & Clinical Significance */}
           {item.description && (
             <div>
-              <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.4rem' }}>
+              <h4 style={{ fontSize: '0.92rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.35rem' }}>
                 About this Test & Clinical Overview
               </h4>
-              <p style={{ fontSize: '0.88rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
+              <p style={{ fontSize: '0.86rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>
                 {item.description}
               </p>
             </div>
@@ -148,13 +250,13 @@ export default function CareSeekerUniversalItemSheet({
           {/* Included Biomarkers Breakdown */}
           {item.includes && item.includes.length > 0 && (
             <div>
-              <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.6rem' }}>
+              <h4 style={{ fontSize: '0.92rem', fontWeight: '800', color: '#0F172A', marginBottom: '0.5rem' }}>
                 Biomarkers & Parameter Breakdown ({item.includes.length})
               </h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '0.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.45rem' }}>
                 {item.includes.map((param, pIdx) => (
-                  <div key={pIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.82rem', color: '#334155', backgroundColor: '#F1F5F9', padding: '0.45rem 0.75rem', borderRadius: '8px' }}>
-                    <CheckCircle2 size={14} color="#006B70" />
+                  <div key={pIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontSize: '0.8rem', color: '#334155', backgroundColor: '#F1F5F9', padding: '0.45rem 0.65rem', borderRadius: '8px' }}>
+                    <CheckCircle2 size={13} color="#006B70" />
                     <span>{param}</span>
                   </div>
                 ))}
@@ -163,13 +265,13 @@ export default function CareSeekerUniversalItemSheet({
           )}
 
           {/* Quality Assurance */}
-          <div style={{ backgroundColor: '#F8FAFC', borderRadius: '14px', padding: '1rem', border: '1px solid #E2E8F0', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-            <Award size={28} color="#006B70" />
+          <div style={{ backgroundColor: '#F8FAFC', borderRadius: '12px', padding: '0.85rem', border: '1px solid #E2E8F0', display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
+            <Award size={24} color="#006B70" />
             <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#0F172A' }}>
+              <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#0F172A' }}>
                 Certified NABL / CAP Pathology Processing
               </div>
-              <div style={{ fontSize: '0.78rem', color: '#64748B' }}>
+              <div style={{ fontSize: '0.74rem', color: '#64748B' }}>
                 Verified by MD Pathologists. Strict cold-chain telemetry during sample transit.
               </div>
             </div>
@@ -188,18 +290,23 @@ export default function CareSeekerUniversalItemSheet({
         }}>
           <div>
             <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '700', textTransform: 'uppercase' }}>
-              Starts From
+              {selectedPersonCount > 1 ? `Total for ${selectedPersonCount} People` : 'Single Person Booking'}
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
               <div style={{ fontSize: '1.5rem', fontWeight: '900', color: '#006B70' }}>
-                ₹{startPricing.price}
+                ₹{currentTierInfo.totalPrice}
               </div>
+              {selectedPersonCount > 1 && (
+                <div style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: '700' }}>
+                  (₹{currentTierInfo.pricePerPerson}/person)
+                </div>
+              )}
               <div style={{ fontSize: '0.8rem', color: '#94A3B8', textDecoration: 'line-through' }}>
-                ₹{startPricing.mrp}
+                ₹{currentTierInfo.mrpPerPerson * selectedPersonCount}
               </div>
-              {startPricing.discountPercent > 0 && (
+              {currentTierInfo.discountPercent > 0 && (
                 <span style={{ fontSize: '0.72rem', color: '#059669', backgroundColor: '#DCFCE7', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '800' }}>
-                  {startPricing.discountPercent}% OFF
+                  {currentTierInfo.discountPercent}% OFF
                 </span>
               )}
             </div>
@@ -207,7 +314,12 @@ export default function CareSeekerUniversalItemSheet({
 
           <button
             onClick={() => {
-              onAddToCart(item);
+              onAddToCart({
+                ...item,
+                personsCount: selectedPersonCount,
+                price: currentTierInfo.pricePerPerson,
+                totalTierPrice: currentTierInfo.totalPrice
+              });
               onClose();
             }}
             style={{
@@ -226,11 +338,10 @@ export default function CareSeekerUniversalItemSheet({
             }}
           >
             {isInCart ? <Check size={18} /> : <Plus size={18} />}
-            <span>{isInCart ? 'Added to Cart' : 'Add to Cart & Continue'}</span>
+            <span>{isInCart ? 'Added to Cart' : `Add for ${selectedPersonCount} ${selectedPersonCount === 1 ? 'Person' : 'People'}`}</span>
           </button>
         </div>
       </div>
     </div>
   );
 }
-

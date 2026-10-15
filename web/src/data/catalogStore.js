@@ -238,6 +238,83 @@ export function getStartingPrice(item) {
 /**
  * Gets price for a specific lab ID on a given item
  */
+/**
+ * Tiered Volume Pricing for Multiple People (1, 2, 5, 10+ people)
+ * Allows different rates if test is taken by family members or staff.
+ */
+export function getDefaultTierPricing(basePrice = 299, baseMrp = null) {
+    const p = Math.max(50, Number(basePrice) || 299);
+    const m = Number(baseMrp) || Math.round(p * 1.6);
+
+    return {
+        '1': {
+            persons: 1,
+            label: 'Individual (1 Person)',
+            tag: 'Standard Single',
+            pricePerPerson: p,
+            offerPrice: p,
+            mrpPerPerson: m,
+            discountPercent: Math.max(10, Math.round(((m - p) / m) * 100))
+        },
+        '2': {
+            persons: 2,
+            label: 'Couple / Pair (2 People)',
+            tag: 'Family / Duo ~15% Off',
+            pricePerPerson: Math.round((p * 0.85) / 10) * 10 - 1,
+            offerPrice: Math.round((p * 0.85) / 10) * 10 - 1,
+            mrpPerPerson: m,
+            discountPercent: Math.max(15, Math.round(((m - (p * 0.85)) / m) * 100))
+        },
+        '5': {
+            persons: 5,
+            label: 'Family Pack (5 People)',
+            tag: 'Family Pack ~30% Off',
+            pricePerPerson: Math.round((p * 0.70) / 10) * 10 - 1,
+            offerPrice: Math.round((p * 0.70) / 10) * 10 - 1,
+            mrpPerPerson: m,
+            discountPercent: Math.max(30, Math.round(((m - (p * 0.70)) / m) * 100))
+        },
+        '10': {
+            persons: 10,
+            label: 'Corporate Staff / Camp (10+ People)',
+            tag: 'Corporate Bulk ~45% Off',
+            pricePerPerson: Math.round((p * 0.55) / 10) * 10 - 1,
+            offerPrice: Math.round((p * 0.55) / 10) * 10 - 1,
+            mrpPerPerson: m,
+            discountPercent: Math.max(45, Math.round(((m - (p * 0.55)) / m) * 100))
+        }
+    };
+}
+
+export function getItemTierPricing(item) {
+    if (item && item.tierPricing && typeof item.tierPricing === 'object' && item.tierPricing['1']) {
+        return item.tierPricing;
+    }
+    const baseP = item?.price || (item?.labPricing?.[0]?.price) || 299;
+    const baseM = item?.mrp || (item?.labPricing?.[0]?.mrp) || Math.round(baseP * 1.6);
+    return getDefaultTierPricing(baseP, baseM);
+}
+
+export function getItemPriceForPeople(item, count = 1) {
+    const tiers = getItemTierPricing(item);
+    let tierKey = '1';
+    if (count >= 10) tierKey = '10';
+    else if (count >= 5) tierKey = '5';
+    else if (count >= 2) tierKey = '2';
+
+    const tier = tiers[tierKey] || tiers['1'];
+    const p = tier.pricePerPerson || tier.offerPrice || item.price || 299;
+    return {
+        tierKey,
+        persons: count,
+        pricePerPerson: p,
+        totalPrice: p * count,
+        mrpPerPerson: tier.mrpPerPerson || item.mrp || 499,
+        discountPercent: tier.discountPercent || 20,
+        label: tier.label || `${count} People`
+    };
+}
+
 export function getItemPriceForLab(item, labId = 'medmarg_suggested') {
     const list = getItemLabPricing(item);
     const opt = list.find(l => l.labId === labId) || list.find(l => l.isRecommended) || list[0];
