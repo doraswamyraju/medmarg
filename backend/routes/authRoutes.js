@@ -24,12 +24,12 @@ router.post('/login', (req, res) => {
 
     const cleanId = identifier.trim().toLowerCase().replace(/\s+/g, '');
 
-    // Search in DEMO_USERS_DB first
-    const foundUser = DEMO_USERS_DB.find(u => 
-        u.email.toLowerCase() === cleanId || 
-        u.phone === cleanId || 
-        u.phone === cleanId.replace(/\D/g, '') ||
-        cleanId.includes(u.email.split('@')[0])
+    // Search in registered users store and DEMO_USERS_DB first
+    const allUsers = [...(dbStore.users || []), ...DEMO_USERS_DB];
+    const foundUser = allUsers.find(u => 
+        (u.email && u.email.toLowerCase() === cleanId) || 
+        (u.phone && (u.phone === cleanId || u.phone === cleanId.replace(/\D/g, ''))) ||
+        (u.email && cleanId.includes(u.email.split('@')[0]))
     );
 
     if (foundUser) {

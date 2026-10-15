@@ -38,6 +38,99 @@ router.get('/freelancers', (req, res) => {
     res.json({ success: true, freelancers: dbStore.freelancers || [] });
 });
 
+router.post('/freelancers', (req, res) => {
+    const { 
+        name, 
+        phone, 
+        email, 
+        password, 
+        city = 'Tirupati', 
+        qualification = 'DMLT (Diploma Medical Lab Tech)', 
+        paramedicalCert, 
+        experience = '3 Years',
+        assignedZone = 'Tirupati Urban (Zone 1)',
+        commission = 300
+    } = req.body;
+
+    const newFreelancer = {
+        id: `FL-${Math.floor(100 + Math.random() * 900)}`,
+        name,
+        phone,
+        email: email || `${phone || 'fl'}@medmarg.com`,
+        password: password || 'Medmarg@123',
+        city,
+        qualification,
+        paramedicalCert: paramedicalCert || `AP-PMC-${Math.floor(10000 + Math.random() * 90000)}`,
+        experience,
+        assignedZone,
+        commission: Number(commission) || 300,
+        regFeePaid: true,
+        feeAmount: dbStore.settings?.freelancerOnboardingFee || 2000,
+        walletBalance: dbStore.settings?.freelancerOnboardingFee || 2000,
+        status: 'PENDING_VERIFICATION',
+        rating: 5.0,
+        completedOrders: 0,
+        createdAt: new Date().toISOString()
+    };
+
+    if (!dbStore.freelancers) dbStore.freelancers = [];
+    dbStore.freelancers.unshift(newFreelancer);
+
+    // Save to users store so freelancer can log in immediately
+    if (!dbStore.users) dbStore.users = [];
+    dbStore.users.push({
+        id: newFreelancer.id,
+        name: newFreelancer.name,
+        email: newFreelancer.email,
+        phone: newFreelancer.phone,
+        password: newFreelancer.password,
+        role: 'FREELANCE_AGENT',
+        organization: 'MedMarg Freelance Phlebotomy Fleet'
+    });
+
+    saveDbStore();
+    res.status(201).json({ success: true, freelancer: newFreelancer, message: 'Freelancer registered successfully.' });
+});
+
+router.put('/freelancers/:id', (req, res) => {
+    const { id } = req.params;
+    const fl = (dbStore.freelancers || []).find(f => f.id === id);
+    if (!fl) return res.status(404).json({ error: 'Freelancer not found' });
+
+    Object.assign(fl, req.body);
+    fl.updatedAt = new Date().toISOString();
+
+    // Also update in dbStore.users if email/phone changed
+    if (dbStore.users) {
+        const u = dbStore.users.find(usr => usr.id === id || usr.email === fl.email);
+        if (u) {
+            if (req.body.name) u.name = req.body.name;
+            if (req.body.phone) u.phone = req.body.phone;
+            if (req.body.email) u.email = req.body.email;
+            if (req.body.password) u.password = req.body.password;
+        }
+    }
+
+    saveDbStore();
+    res.json({ success: true, freelancer: fl, message: 'Freelancer updated successfully.' });
+});
+
+router.delete('/freelancers/:id', (req, res) => {
+    const { id } = req.params;
+    const initialLen = (dbStore.freelancers || []).length;
+    dbStore.freelancers = (dbStore.freelancers || []).filter(f => f.id !== id);
+    
+    if (dbStore.users) {
+        dbStore.users = dbStore.users.filter(u => u.id !== id);
+    }
+    saveDbStore();
+
+    if (dbStore.freelancers.length === initialLen) {
+        return res.status(404).json({ error: 'Freelancer not found' });
+    }
+    res.json({ success: true, message: 'Freelancer successfully deleted.' });
+});
+
 router.post('/freelancers/verify', (req, res) => {
     const { id, action, status, commission, commissionType, assignedZone, onboardingFeeCredited } = req.body;
     const fl = (dbStore.freelancers || []).find(f => f.id === id);
@@ -57,6 +150,99 @@ router.post('/freelancers/verify', (req, res) => {
         return res.json({ success: true, freelancer: fl });
     }
     res.status(404).json({ error: 'Freelancer not found' });
+});
+
+// STAFF MANAGEMENT (CRUD)
+router.get('/staff', (req, res) => {
+    res.json({ success: true, staff: dbStore.staff || [] });
+});
+
+router.post('/staff', (req, res) => {
+    const { 
+        name, 
+        role, 
+        roleCategory = 'LAB_ASSISTANT', 
+        department = 'Pathology Hub', 
+        phone, 
+        email, 
+        password,
+        branch = 'MedMarg Central Hub (Tirupati)', 
+        shift = 'Morning Shift (06:00 AM - 02:00 PM)',
+        permissions = ['VIEW_LAB_QUEUE']
+    } = req.body;
+
+    const newStaff = {
+        id: `STF-${Math.floor(100 + Math.random() * 900)}`,
+        name,
+        role: role || 'Medical Lab Assistant',
+        roleCategory,
+        department,
+        phone,
+        email: email || `${phone || 'staff'}@medmarg.com`,
+        password: password || 'Staff@123',
+        branch,
+        shift,
+        status: 'ON_DUTY',
+        tasksCompletedToday: 0,
+        accuracyScore: '100%',
+        permissions,
+        createdAt: new Date().toISOString()
+    };
+
+    if (!dbStore.staff) dbStore.staff = [];
+    dbStore.staff.unshift(newStaff);
+
+    // Save user for portal login
+    if (!dbStore.users) dbStore.users = [];
+    dbStore.users.push({
+        id: newStaff.id,
+        name: newStaff.name,
+        email: newStaff.email,
+        phone: newStaff.phone,
+        password: newStaff.password,
+        role: 'STAFF',
+        organization: newStaff.branch
+    });
+
+    saveDbStore();
+    res.status(201).json({ success: true, staff: newStaff, message: 'Staff member onboarded successfully.' });
+});
+
+router.put('/staff/:id', (req, res) => {
+    const { id } = req.params;
+    const stf = (dbStore.staff || []).find(s => s.id === id);
+    if (!stf) return res.status(404).json({ error: 'Staff member not found' });
+
+    Object.assign(stf, req.body);
+    stf.updatedAt = new Date().toISOString();
+
+    if (dbStore.users) {
+        const u = dbStore.users.find(usr => usr.id === id || usr.email === stf.email);
+        if (u) {
+            if (req.body.name) u.name = req.body.name;
+            if (req.body.phone) u.phone = req.body.phone;
+            if (req.body.email) u.email = req.body.email;
+        }
+    }
+
+    saveDbStore();
+    res.json({ success: true, staff: stf, message: 'Staff details updated successfully.' });
+});
+
+router.delete('/staff/:id', (req, res) => {
+    const { id } = req.params;
+    const initialLen = (dbStore.staff || []).length;
+    dbStore.staff = (dbStore.staff || []).filter(s => s.id !== id);
+
+    if (dbStore.users) {
+        dbStore.users = dbStore.users.filter(u => u.id !== id);
+    }
+    saveDbStore();
+
+    if (dbStore.staff.length === initialLen) {
+        return res.status(404).json({ error: 'Staff member not found' });
+    }
+    res.json({ success: true, message: 'Staff member successfully deleted.' });
 });
 
 // ONBOARDING FEE CONFIG (SETUP BY ADMIN, REVISABLE ANYTIME)

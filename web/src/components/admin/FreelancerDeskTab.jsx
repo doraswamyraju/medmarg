@@ -20,7 +20,11 @@ import {
   TrendingUp,
   CreditCard,
   Layers,
-  MapPin
+  MapPin,
+  Edit3,
+  Trash2,
+  Mail,
+  Lock
 } from 'lucide-react';
 
 export default function FreelancerDeskTab({
@@ -84,18 +88,26 @@ export default function FreelancerDeskTab({
     } catch (e) {}
   };
 
+  // Edit Freelancer Modal State
+  const [editingFreelancer, setEditingFreelancer] = useState(null);
+
   // New Freelancer Form State
   const [addForm, setAddForm] = useState({
     id: `FL-${Math.floor(100 + Math.random() * 900)}`,
     name: '',
+    email: '',
+    password: '',
     phone: '',
     city: 'Tirupati',
+    assignedZone: 'Tirupati Urban (Zone 1)',
     qualification: 'DMLT (Diploma Medical Lab Tech)',
     paramedicalCert: 'AP-PMC-',
     experience: '3 Years',
     regFeePaid: true,
     feeAmount: 2000,
     walletBalance: 2000,
+    commission: 300,
+    commissionType: 'FLAT_PER_ORDER',
     status: 'PENDING_VERIFICATION',
     rating: 4.9,
     completedOrders: 0,
@@ -274,21 +286,48 @@ export default function FreelancerDeskTab({
     alert(`✅ ₹${payoutAmt} successfully released via UPI Gateway to ${fl.name}. Transaction ID: ${newTx.id}`);
   };
 
-  const handleAddSubmit = (e) => {
+  const handleAddSubmit = async (e) => {
     e.preventDefault();
-    setFreelancers(prev => [addForm, ...prev]);
+    const createdObj = { ...addForm };
+
+    try {
+      if (safeFetch && API_BASE) {
+        const res = await safeFetch(`${API_BASE}/api/v1/admin/freelancers`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(createdObj)
+        });
+        const data = await res.json();
+        if (data && data.success && data.freelancer) {
+          setFreelancers(prev => [data.freelancer, ...prev]);
+        } else {
+          setFreelancers(prev => [createdObj, ...prev]);
+        }
+      } else {
+        setFreelancers(prev => [createdObj, ...prev]);
+      }
+    } catch (err) {
+      setFreelancers(prev => [createdObj, ...prev]);
+    }
+
     setShowAddModal(false);
+    alert(`✅ Freelancer ${createdObj.name} registered successfully with email: ${createdObj.email || 'N/A'}`);
     setAddForm({
       id: `FL-${Math.floor(100 + Math.random() * 900)}`,
       name: '',
+      email: '',
+      password: '',
       phone: '',
       city: 'Tirupati',
+      assignedZone: 'Tirupati Urban (Zone 1)',
       qualification: 'DMLT (Diploma Medical Lab Tech)',
       paramedicalCert: 'AP-PMC-',
       experience: '3 Years',
       regFeePaid: true,
       feeAmount: 2000,
       walletBalance: 2000,
+      commission: 300,
+      commissionType: 'FLAT_PER_ORDER',
       status: 'PENDING_VERIFICATION',
       rating: 4.9,
       completedOrders: 0,
@@ -297,6 +336,42 @@ export default function FreelancerDeskTab({
       earnings: 0,
       payoutPending: 2000
     });
+  };
+
+  const handleUpdateFreelancerSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingFreelancer) return;
+
+    try {
+      if (safeFetch && API_BASE) {
+        await safeFetch(`${API_BASE}/api/v1/admin/freelancers/${editingFreelancer.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(editingFreelancer)
+        });
+      }
+    } catch (err) {}
+
+    setFreelancers(prev => prev.map(f => f.id === editingFreelancer.id ? { ...f, ...editingFreelancer } : f));
+    setEditingFreelancer(null);
+    alert(`✅ Freelancer ${editingFreelancer.name} (${editingFreelancer.id}) updated successfully.`);
+  };
+
+  const handleDeleteFreelancer = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to delete freelancer ${name} (${id})? This will also remove their credentials and revoke access.`)) {
+      return;
+    }
+
+    try {
+      if (safeFetch && API_BASE) {
+        await safeFetch(`${API_BASE}/api/v1/admin/freelancers/${id}`, {
+          method: 'DELETE'
+        });
+      }
+    } catch (err) {}
+
+    setFreelancers(prev => prev.filter(f => f.id !== id));
+    alert(`🗑️ Freelancer ${name} (${id}) has been removed.`);
   };
 
   const filteredFreelancers = freelancers.filter(f => {
@@ -446,102 +521,186 @@ export default function FreelancerDeskTab({
             ))}
           </div>
 
-          {/* Cards Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
-            {filteredFreelancers.map(fl => {
-              const isPending = fl.status === 'PENDING_VERIFICATION';
-              const isApproved = fl.status === 'APPROVED';
+          {/* Verification & KYC Tabular View */}
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569', fontWeight: '800', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                    <th style={{ padding: '0.9rem 1rem' }}>Freelancer</th>
+                    <th style={{ padding: '0.9rem 1rem' }}>Contact & Login</th>
+                    <th style={{ padding: '0.9rem 1rem' }}>Paramedical & Degree</th>
+                    <th style={{ padding: '0.9rem 1rem' }}>Territory & City</th>
+                    <th style={{ padding: '0.9rem 1rem' }}>Fee & Wallet</th>
+                    <th style={{ padding: '0.9rem 1rem' }}>Commission</th>
+                    <th style={{ padding: '0.9rem 1rem' }}>Status</th>
+                    <th style={{ padding: '0.9rem 1rem', textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredFreelancers.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} style={{ padding: '2.5rem', textAlign: 'center', color: '#94A3B8', fontWeight: '600' }}>
+                        No freelancers found matching filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredFreelancers.map((fl, idx) => {
+                      const isPending = fl.status === 'PENDING_VERIFICATION';
+                      const isApproved = fl.status === 'APPROVED';
+                      const isRejected = fl.status === 'REJECTED';
 
-              return (
-                <div 
-                  key={fl.id} 
-                  style={{ 
-                    backgroundColor: '#FFFFFF', 
-                    borderRadius: '20px', 
-                    border: isPending ? '1.5px solid #F59E0B' : isApproved ? '1px solid #10B981' : '1px solid #E2E8F0', 
-                    padding: '1.5rem',
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between'
-                  }}
-                >
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem', borderRadius: '6px', fontWeight: '800', backgroundColor: isApproved ? '#DCFCE7' : isPending ? '#FEF3C7' : '#FEE2E2', color: isApproved ? '#15803D' : isPending ? '#B45309' : '#DC2626' }}>
-                        {fl.status}
-                      </span>
-                      <span style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800', backgroundColor: 'rgba(0,107,112,0.08)', padding: '0.2rem 0.55rem', borderRadius: '6px' }}>
-                        ₹{fl.feeAmount || 2000} REG FEE PAID
-                      </span>
-                    </div>
-
-                    <div style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <div>
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0F172A' }}>{fl.name}</h3>
-                        <div style={{ fontSize: '0.8rem', color: '#64748B', fontFamily: 'monospace', marginTop: '0.1rem' }}>ID: {fl.id}</div>
-                      </div>
-                      <button
-                        onClick={() => setSelectedDocFreelancer(fl)}
-                        style={{ padding: '0.35rem 0.75rem', backgroundColor: '#F1F5F9', color: '#0284C7', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-                      >
-                        <Eye size={14} /> View Dossier
-                      </button>
-                    </div>
-
-                    <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.85rem' }}>
-                      <div style={{ color: '#334155', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Award size={15} color="#D97706" /> <strong>Qualification:</strong> {fl.qualification}
-                      </div>
-                      <div style={{ color: '#334155', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <FileText size={15} color="#006B70" /> <strong>Paramedical Council:</strong> {fl.paramedicalCert}
-                      </div>
-                      <div style={{ color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Phone size={14} /> {fl.phone || '+91 98765 00000'} • 📍 {fl.city || 'Tirupati'}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: '1.25rem' }}>
-                    {isPending ? (
-                      <div style={{ display: 'flex', gap: '0.75rem' }}>
-                        <button 
-                          onClick={() => handleApprove(fl)}
-                          style={{ flex: 1, padding: '0.65rem', backgroundColor: '#10B981', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', boxShadow: '0 4px 12px rgba(16,185,129,0.2)' }}
+                      return (
+                        <tr 
+                          key={fl.id}
+                          style={{ 
+                            borderBottom: idx === filteredFreelancers.length - 1 ? 'none' : '1px solid #F1F5F9',
+                            backgroundColor: isPending ? 'rgba(254, 243, 199, 0.25)' : '#FFFFFF',
+                            transition: 'background-color 0.15s ease'
+                          }}
                         >
-                          <CheckCircle size={16} /> Approve & Set Commission
-                        </button>
-                        <button 
-                          onClick={() => handleReject(fl)}
-                          style={{ padding: '0.65rem 1rem', backgroundColor: '#EF4444', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer' }}
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    ) : isApproved ? (
-                      <div style={{ width: '100%', padding: '0.75rem 1rem', backgroundColor: '#F8FAFC', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '0.45rem', fontSize: '0.84rem', border: '1px solid #E2E8F0' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ color: '#059669', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                            <ShieldCheck size={18} /> Verified Freelancer
-                          </span>
-                          <span style={{ color: '#D97706', fontWeight: '900', fontSize: '0.9rem' }}>
-                            Wallet: ₹{(fl.walletBalance || onboardingFee).toLocaleString()}
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.76rem', color: '#475569', borderTop: '1px solid #F1F5F9', paddingTop: '0.4rem' }}>
-                          <span>Zone: <strong style={{ color: '#006B70' }}>{fl.assignedZone || 'Tirupati Urban (Zone 1)'}</strong></span>
-                          <span>Commission: <strong style={{ color: '#0F172A' }}>₹{fl.commission || 300}/trip</strong></span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ width: '100%', padding: '0.75rem 1rem', backgroundColor: '#FEF2F2', borderRadius: '10px', color: '#DC2626', fontWeight: '800', fontSize: '0.84rem', textAlign: 'center' }}>
-                        Application Rejected
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                          {/* Freelancer Name & ID */}
+                          <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                              <div style={{ width: '36px', height: '36px', borderRadius: '10px', backgroundColor: isApproved ? '#DCFCE7' : isPending ? '#FEF3C7' : '#FEE2E2', color: isApproved ? '#15803D' : isPending ? '#B45309' : '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '0.88rem', flexShrink: 0 }}>
+                                {fl.name ? fl.name.charAt(0).toUpperCase() : 'F'}
+                              </div>
+                              <div>
+                                <div style={{ fontWeight: '900', color: '#0F172A', fontSize: '0.9rem' }}>{fl.name}</div>
+                                <span style={{ fontSize: '0.72rem', color: '#006B70', fontFamily: 'monospace', fontWeight: '800', backgroundColor: 'rgba(0,107,112,0.08)', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                                  {fl.id}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Contact & Login */}
+                          <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.8rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#334155' }}>
+                                <Phone size={13} color="#006B70" />
+                                <span>{fl.phone || 'N/A'}</span>
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#64748B' }}>
+                                <Mail size={13} color="#64748B" />
+                                <span>{fl.email || `${fl.id.toLowerCase()}@medmarg.com`}</span>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Paramedical & Degree */}
+                          <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                              <div style={{ fontWeight: '800', color: '#006B70', display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.82rem' }}>
+                                <FileText size={13} /> {fl.paramedicalCert}
+                              </div>
+                              <div style={{ color: '#64748B', fontSize: '0.76rem' }}>
+                                {fl.qualification} • {fl.experience || 'Exp N/A'}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Territory & City */}
+                          <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                              <span style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.82rem' }}>
+                                {fl.assignedZone || 'Tirupati Urban (Zone 1)'}
+                              </span>
+                              <span style={{ color: '#64748B', fontSize: '0.76rem' }}>
+                                📍 {fl.city || 'Tirupati'}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Fee & Wallet */}
+                          <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                              <span style={{ fontSize: '0.72rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: '800', width: 'fit-content' }}>
+                                ₹{fl.feeAmount || onboardingFee} PAID
+                              </span>
+                              <span style={{ fontSize: '0.82rem', fontWeight: '900', color: '#D97706' }}>
+                                Wallet: ₹{(fl.walletBalance || onboardingFee).toLocaleString()}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Commission */}
+                          <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                            <div style={{ fontWeight: '900', color: '#0F172A', fontSize: '0.84rem' }}>
+                              ₹{fl.commission || 300} <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '600' }}>/ trip</span>
+                            </div>
+                            <span style={{ fontSize: '0.7rem', color: '#64748B' }}>{fl.commissionType === 'PERCENTAGE' ? 'Percentage' : 'Flat rate'}</span>
+                          </td>
+
+                          {/* Status */}
+                          <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                            <span style={{ 
+                              fontSize: '0.74rem', 
+                              padding: '0.25rem 0.55rem', 
+                              borderRadius: '6px', 
+                              fontWeight: '900', 
+                              display: 'inline-block',
+                              backgroundColor: isApproved ? '#DCFCE7' : isPending ? '#FEF3C7' : '#FEE2E2', 
+                              color: isApproved ? '#15803D' : isPending ? '#B45309' : '#DC2626' 
+                            }}>
+                              {fl.status}
+                            </span>
+                          </td>
+
+                          {/* Actions */}
+                          <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle', textAlign: 'right' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.4rem', flexWrap: 'nowrap' }}>
+                              {isPending && (
+                                <>
+                                  <button
+                                    onClick={() => handleApprove(fl)}
+                                    title="Approve & Set Commission"
+                                    style={{ padding: '0.4rem 0.65rem', backgroundColor: '#10B981', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                                  >
+                                    <CheckCircle size={13} /> Approve
+                                  </button>
+                                  <button
+                                    onClick={() => handleReject(fl)}
+                                    title="Reject Application"
+                                    style={{ padding: '0.4rem 0.65rem', backgroundColor: '#FEE2E2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '800', cursor: 'pointer' }}
+                                  >
+                                    Reject
+                                  </button>
+                                </>
+                              )}
+
+                              <button
+                                onClick={() => setSelectedDocFreelancer(fl)}
+                                title="View Verification Dossier"
+                                style={{ padding: '0.4rem 0.55rem', backgroundColor: '#F1F5F9', color: '#0284C7', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                              >
+                                <Eye size={13} /> Dossier
+                              </button>
+
+                              <button
+                                onClick={() => setEditingFreelancer({ ...fl })}
+                                title="Edit / Update Freelancer"
+                                style={{ padding: '0.4rem 0.55rem', backgroundColor: '#F8FAFC', color: '#006B70', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
+                              >
+                                <Edit3 size={13} /> Edit
+                              </button>
+
+                              <button
+                                onClick={() => handleDeleteFreelancer(fl.id, fl.name)}
+                                title="Delete Freelancer"
+                                style={{ padding: '0.4rem 0.55rem', backgroundColor: '#FFF', color: '#EF4444', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
@@ -940,11 +1099,11 @@ export default function FreelancerDeskTab({
       {/* ========================================================================= */}
       {showAddModal && (
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
-          <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '540px', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
+          <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '560px', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
               <div>
                 <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A' }}>Register Freelance Phlebotomist</h3>
-                <div style={{ fontSize: '0.8rem', color: '#006B70', fontWeight: '700' }}>Assign ID: {addForm.id}</div>
+                <div style={{ fontSize: '0.8rem', color: '#006B70', fontWeight: '700' }}>Assign ID: {addForm.id} • Will be registered in Authentication & DB</div>
               </div>
               <button onClick={() => setShowAddModal(false)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>
             </div>
@@ -952,7 +1111,7 @@ export default function FreelancerDeskTab({
             <form onSubmit={handleAddSubmit} style={{ padding: '1.5rem', display: 'grid', gap: '1rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Phlebotomist Name</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Phlebotomist Name *</label>
                   <input
                     type="text"
                     required
@@ -963,13 +1122,39 @@ export default function FreelancerDeskTab({
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Phone Number</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Phone Number *</label>
                   <input
                     type="text"
                     required
                     placeholder="+91 98765 00000"
                     value={addForm.phone}
                     onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                  />
+                </div>
+              </div>
+
+              {/* Login Credentials: Email & Password */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', backgroundColor: '#F8FAFC', padding: '0.85rem', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '800', color: '#006B70', marginBottom: '0.35rem' }}>Login Email *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="freelancer@medmarg.com"
+                    value={addForm.email}
+                    onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '800', color: '#006B70', marginBottom: '0.35rem' }}>Portal Password *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. MedMarg@123"
+                    value={addForm.password}
+                    onChange={(e) => setAddForm({ ...addForm, password: e.target.value })}
                     style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
                   />
                 </div>
@@ -1037,7 +1222,146 @@ export default function FreelancerDeskTab({
                   type="submit" 
                   style={{ padding: '0.65rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}
                 >
-                  Save & Add Application
+                  Save & Register Freelancer
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 2.5: EDIT / UPDATE FREELANCER MODAL                                 */}
+      {/* ========================================================================= */}
+      {editingFreelancer && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '580px', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A' }}>Edit Freelancer Profile</h3>
+                <div style={{ fontSize: '0.8rem', color: '#006B70', fontWeight: '700' }}>ID: {editingFreelancer.id}</div>
+              </div>
+              <button onClick={() => setEditingFreelancer(null)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>
+            </div>
+
+            <form onSubmit={handleUpdateFreelancerSubmit} style={{ padding: '1.5rem', display: 'grid', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingFreelancer.name || ''}
+                    onChange={(e) => setEditingFreelancer({ ...editingFreelancer, name: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Phone</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingFreelancer.phone || ''}
+                    onChange={(e) => setEditingFreelancer({ ...editingFreelancer, phone: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', backgroundColor: '#F8FAFC', padding: '0.85rem', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '800', color: '#006B70', marginBottom: '0.35rem' }}>Login Email</label>
+                  <input
+                    type="email"
+                    value={editingFreelancer.email || ''}
+                    onChange={(e) => setEditingFreelancer({ ...editingFreelancer, email: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '800', color: '#006B70', marginBottom: '0.35rem' }}>New Password (Optional)</label>
+                  <input
+                    type="password"
+                    placeholder="Leave blank to keep current"
+                    value={editingFreelancer.password || ''}
+                    onChange={(e) => setEditingFreelancer({ ...editingFreelancer, password: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Paramedical Reg #</label>
+                  <input
+                    type="text"
+                    value={editingFreelancer.paramedicalCert || ''}
+                    onChange={(e) => setEditingFreelancer({ ...editingFreelancer, paramedicalCert: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Assigned Zone</label>
+                  <select
+                    value={editingFreelancer.assignedZone || 'Tirupati Urban (Zone 1)'}
+                    onChange={(e) => setEditingFreelancer({ ...editingFreelancer, assignedZone: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                  >
+                    <option value="Tirupati Urban (Zone 1 - Central)">Tirupati Urban (Zone 1 - Central)</option>
+                    <option value="Tirupati Bypass & Outer (Zone 2)">Tirupati Bypass & Outer (Zone 2)</option>
+                    <option value="Chandragiri & Suburbs (Zone 3)">Chandragiri & Suburbs (Zone 3)</option>
+                    <option value="Renigunta Industrial (Zone 4)">Renigunta Industrial (Zone 4)</option>
+                    <option value="Chittoor District Highway (Zone 5)">Chittoor District Highway (Zone 5)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Commission (₹)</label>
+                  <input
+                    type="number"
+                    value={editingFreelancer.commission || 300}
+                    onChange={(e) => setEditingFreelancer({ ...editingFreelancer, commission: Number(e.target.value) })}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Wallet Balance (₹)</label>
+                  <input
+                    type="number"
+                    value={editingFreelancer.walletBalance || 0}
+                    onChange={(e) => setEditingFreelancer({ ...editingFreelancer, walletBalance: Number(e.target.value) })}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Status</label>
+                  <select
+                    value={editingFreelancer.status || 'APPROVED'}
+                    onChange={(e) => setEditingFreelancer({ ...editingFreelancer, status: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                  >
+                    <option value="APPROVED">APPROVED</option>
+                    <option value="PENDING_VERIFICATION">PENDING_VERIFICATION</option>
+                    <option value="REJECTED">REJECTED</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '1rem', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setEditingFreelancer(null)} 
+                  style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  style={{ padding: '0.65rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Save Changes
                 </button>
               </div>
             </form>
