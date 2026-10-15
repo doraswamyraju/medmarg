@@ -40,6 +40,7 @@ import {
 import MultiLabPricingEditor from './catalog/MultiLabPricingEditor';
 import MultiPeopleTierPricingEditor from './catalog/MultiPeopleTierPricingEditor';
 import SingleTestsSelector from './catalog/SingleTestsSelector';
+import { API_BASE, safeFetch } from '../../data/apiConfig';
 
 export default function CatalogManagementTab({ 
   catalog, 
@@ -387,28 +388,49 @@ export default function CatalogManagementTab({
     const updatedCatalog = { ...catalog, profiles: updatedProfiles };
     setCatalog(updatedCatalog);
     saveCatalogState(updatedCatalog);
+
+    // Persist to backend server API
+    try {
+      await safeFetch(`${API_BASE}/api/v1/catalog/profiles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProfile)
+      });
+
+      await safeFetch(`${API_BASE}/api/v1/catalog/sync-full`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profiles: updatedProfiles, packages: catalog.packages, tests: catalog.tests })
+      });
+    } catch (err) {
+      console.warn('Backend profile sync:', err);
+    }
+
     setShowCreateProfileModal(false);
     setEditingItem(null);
     setSaveToast(`Diagnostic Profile "${newProfile.name}" (${selectedTests.length} tests) saved with multi-lab rates & volume slabs!`);
     setTimeout(() => setSaveToast(null), 4000);
   };
 
-  const handleSavePackage = (e) => {
+  const handleSavePackage = async (e) => {
     if (e) e.preventDefault();
     const baseP = Number(packageBuilderForm.price) || 1299;
     const baseM = Number(packageBuilderForm.mrp) || Math.round(baseP * 2);
     const tat = Number(packageBuilderForm.tatHours) || 24;
 
+    const selectedProfiles = packageBuilderForm.selectedProfiles || [];
+    const selectedTests = packageBuilderForm.selectedTests || [];
+
     const sampleTypes = calculateAggregatedSamples(
-      packageBuilderForm.selectedProfiles,
-      packageBuilderForm.selectedTests,
+      selectedProfiles,
+      selectedTests,
       catalog.profiles,
       catalog.tests
     );
 
     const requiresFasting = calculateFastingRequirement(
-      packageBuilderForm.selectedProfiles,
-      packageBuilderForm.selectedTests,
+      selectedProfiles,
+      selectedTests,
       catalog.profiles,
       catalog.tests
     );
@@ -422,7 +444,7 @@ export default function CatalogManagementTab({
       : getDefaultTierPricing(baseP, baseM);
 
     const newPkg = {
-      id: editingItem ? editingItem.id : `PKG_${Date.now()}`,
+      id: editingItem ? editingItem.id : (packageBuilderForm.id || `PKG_${Date.now()}`),
       name: packageBuilderForm.name.trim(),
       code: (packageBuilderForm.code || `MM_PKG_${Date.now().toString().slice(-4)}`).toUpperCase(),
       tagline: packageBuilderForm.tagline,
@@ -435,10 +457,10 @@ export default function CatalogManagementTab({
       sampleTypes,
       tatHours: tat,
       popular: true,
-      profiles: packageBuilderForm.selectedProfiles,
-      tests: packageBuilderForm.selectedTests,
-      testCount: packageBuilderForm.selectedProfiles.length * 8 + packageBuilderForm.selectedTests.length,
-      description: packageBuilderForm.description || `Comprehensive package composed of ${packageBuilderForm.selectedProfiles.length} profiles and ${packageBuilderForm.selectedTests.length} tests.`,
+      profiles: selectedProfiles,
+      tests: selectedTests,
+      testCount: (selectedProfiles.length * 8) + selectedTests.length,
+      description: packageBuilderForm.description || `Comprehensive package composed of ${selectedProfiles.length} profiles and ${selectedTests.length} tests.`,
       labPricing: effectiveLabs,
       tierPricing: effectiveTiers
     };
@@ -453,13 +475,31 @@ export default function CatalogManagementTab({
     const updatedCatalog = { ...catalog, packages: updatedPackages };
     setCatalog(updatedCatalog);
     saveCatalogState(updatedCatalog);
+
+    // Persist to backend server API
+    try {
+      await safeFetch(`${API_BASE}/api/v1/catalog/packages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPkg)
+      });
+
+      await safeFetch(`${API_BASE}/api/v1/catalog/sync-full`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packages: updatedPackages, profiles: catalog.profiles, tests: catalog.tests })
+      });
+    } catch (err) {
+      console.warn('Backend package sync:', err);
+    }
+
     setShowPackageBuilderModal(false);
     setEditingItem(null);
-    setSaveToast(`Package "${newPkg.name}" saved with multi-lab rates & volume slabs!`);
+    setSaveToast(`Package "${newPkg.name}" (${newPkg.profiles.length} profiles, ${newPkg.tests.length} tests) saved with multi-lab rates & volume slabs!`);
     setTimeout(() => setSaveToast(null), 4000);
   };
 
-  const handleSaveLabPricing = (e) => {
+  const handleSaveLabPricing = async (e) => {
     if (e) e.preventDefault();
     if (!selectedItemForLabPricing) return;
 
@@ -488,6 +528,17 @@ export default function CatalogManagementTab({
 
     setCatalog(updatedCatalog);
     saveCatalogState(updatedCatalog);
+
+    try {
+      await safeFetch(`${API_BASE}/api/v1/catalog/sync-full`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packages: updatedCatalog.packages, profiles: updatedCatalog.profiles, tests: updatedCatalog.tests })
+      });
+    } catch (err) {
+      console.warn('Backend sync-full on pricing save:', err);
+    }
+
     setShowLabPricingModal(false);
     setSelectedItemForLabPricing(null);
     setSaveToast(`Pricing and volume slabs for ${selectedItemForLabPricing.name || selectedItemForLabPricing.code} updated across all labs!`);
@@ -1113,7 +1164,9 @@ export default function CatalogManagementTab({
                 {filteredProfiles.map(profile => {
                   const labs = getItemLabPricing(profile);
                   const tiers = getItemTierPricing(profile);
-                  const testsCount = profile.tests?.length || profile.testCount || 1;
+                  const testsCount = (profile.tests && profile.tests.length > 0)
+                    ? profile.tests.length
+                    : (profile.testCount || 0);
 
                   return (
                     <tr key={profile.id || profile.code} style={{ borderBottom: '1px solid #F1F5F9' }}>
@@ -1228,15 +1281,15 @@ export default function CatalogManagementTab({
                   <div style={{ marginTop: '0.85rem', padding: '0.75rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.78rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '800', color: '#006B70' }}>
                       <span>🔬 Included Profiles:</span>
-                      <span>{pkg.profiles?.length || 2} Profiles</span>
+                      <span>{(pkg.profiles?.length ?? 0)} Profiles</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '800', color: '#B45309' }}>
                       <span>🧪 Standalone Tests:</span>
-                      <span>{pkg.tests?.length || 3} Tests</span>
+                      <span>{(pkg.tests?.length ?? 0)} Tests</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '900', color: '#0F172A', borderTop: '1px solid #E2E8F0', paddingTop: '0.35rem' }}>
                       <span>Total Diagnostic Biomarkers:</span>
-                      <span style={{ color: '#059669' }}>{pkg.testCount || 85}+ Parameters</span>
+                      <span style={{ color: '#059669' }}>{pkg.testCount || ((pkg.profiles?.length || 0) * 8 + (pkg.tests?.length || 0)) || 10}+ Parameters</span>
                     </div>
                   </div>
 
@@ -1628,7 +1681,7 @@ export default function CatalogManagementTab({
                 <SingleTestsSelector
                   allTests={catalog.tests || []}
                   selectedTestCodes={profileForm.selectedTests || []}
-                  onChange={(newCodes) => setProfileForm({ ...profileForm, selectedTests: newCodes })}
+                  onChange={(newCodes) => setProfileForm(prev => ({ ...prev, selectedTests: newCodes }))}
                   onAutoCalculateProfile={(info) => {
                     setProfileForm(prev => ({
                       ...prev,
@@ -1760,22 +1813,22 @@ export default function CatalogManagementTab({
                     {/* Selected Components Chips */}
                     <div style={{ backgroundColor: '#F1F5F9', borderRadius: '12px', padding: '0.85rem', border: '1px solid #CBD5E1' }}>
                       <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#006B70', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
-                        Selected Components ({packageBuilderForm.selectedProfiles.length} Profiles, {packageBuilderForm.selectedTests.length} Tests)
+                        Selected Components ({(packageBuilderForm.selectedProfiles || []).length} Profiles, {(packageBuilderForm.selectedTests || []).length} Tests)
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', maxHeight: '90px', overflowY: 'auto' }}>
-                        {packageBuilderForm.selectedProfiles.map(code => (
+                        {(packageBuilderForm.selectedProfiles || []).map(code => (
                           <span key={code} style={{ fontSize: '0.72rem', backgroundColor: '#006B70', color: '#FFF', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                             🔬 {code}
-                            <button type="button" onClick={() => setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: packageBuilderForm.selectedProfiles.filter(c => c !== code) })} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', padding: 0, fontWeight: '900' }}>✕</button>
+                            <button type="button" onClick={() => setPackageBuilderForm(prev => ({ ...prev, selectedProfiles: (prev.selectedProfiles || []).filter(c => c !== code) }))} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', padding: 0, fontWeight: '900' }}>✕</button>
                           </span>
                         ))}
-                        {packageBuilderForm.selectedTests.map(code => (
+                        {(packageBuilderForm.selectedTests || []).map(code => (
                           <span key={code} style={{ fontSize: '0.72rem', backgroundColor: '#B45309', color: '#FFF', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
                             🧪 {code}
-                            <button type="button" onClick={() => setPackageBuilderForm({ ...packageBuilderForm, selectedTests: packageBuilderForm.selectedTests.filter(c => c !== code) })} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', padding: 0, fontWeight: '900' }}>✕</button>
+                            <button type="button" onClick={() => setPackageBuilderForm(prev => ({ ...prev, selectedTests: (prev.selectedTests || []).filter(c => c !== code) }))} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', padding: 0, fontWeight: '900' }}>✕</button>
                           </span>
                         ))}
-                        {packageBuilderForm.selectedProfiles.length === 0 && packageBuilderForm.selectedTests.length === 0 && (
+                        {(packageBuilderForm.selectedProfiles || []).length === 0 && (packageBuilderForm.selectedTests || []).length === 0 && (
                           <span style={{ fontSize: '0.78rem', color: '#94A3B8', fontStyle: 'italic' }}>No profiles or tests selected yet. Select items below.</span>
                         )}
                       </div>
@@ -1788,13 +1841,20 @@ export default function CatalogManagementTab({
                       </div>
                       <div style={{ maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.5rem', backgroundColor: '#FFFFFF' }}>
                         {(catalog.profiles || []).filter(p => !builderSearch || p.name.toLowerCase().includes(builderSearch.toLowerCase()) || p.code.toLowerCase().includes(builderSearch.toLowerCase())).slice(0, 40).map(p => {
-                          const isSel = packageBuilderForm.selectedProfiles.includes(p.code);
+                          const isSel = (packageBuilderForm.selectedProfiles || []).includes(p.code);
                           return (
                             <div
                               key={p.code}
                               onClick={() => {
-                                if (isSel) setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: packageBuilderForm.selectedProfiles.filter(c => c !== p.code) });
-                                else setPackageBuilderForm({ ...packageBuilderForm, selectedProfiles: [...packageBuilderForm.selectedProfiles, p.code] });
+                                setPackageBuilderForm(prev => {
+                                  const current = prev.selectedProfiles || [];
+                                  return {
+                                    ...prev,
+                                    selectedProfiles: current.includes(p.code)
+                                      ? current.filter(c => c !== p.code)
+                                      : [...current, p.code]
+                                  };
+                                });
                               }}
                               style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', backgroundColor: isSel ? 'rgba(0,107,112,0.1)' : '#F8FAFC', border: isSel ? '1.5px solid #006B70' : '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '0.82rem' }}
                             >
@@ -1813,13 +1873,20 @@ export default function CatalogManagementTab({
                       </div>
                       <div style={{ maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.5rem', backgroundColor: '#FFFFFF' }}>
                         {(catalog.tests || []).filter(t => !builderSearch || t.name.toLowerCase().includes(builderSearch.toLowerCase()) || t.code.toLowerCase().includes(builderSearch.toLowerCase())).slice(0, 50).map(t => {
-                          const isSel = packageBuilderForm.selectedTests.includes(t.code);
+                          const isSel = (packageBuilderForm.selectedTests || []).includes(t.code);
                           return (
                             <div
                               key={t.code}
                               onClick={() => {
-                                if (isSel) setPackageBuilderForm({ ...packageBuilderForm, selectedTests: packageBuilderForm.selectedTests.filter(c => c !== t.code) });
-                                else setPackageBuilderForm({ ...packageBuilderForm, selectedTests: [...packageBuilderForm.selectedTests, t.code] });
+                                setPackageBuilderForm(prev => {
+                                  const current = prev.selectedTests || [];
+                                  return {
+                                    ...prev,
+                                    selectedTests: current.includes(t.code)
+                                      ? current.filter(c => c !== t.code)
+                                      : [...current, t.code]
+                                  };
+                                });
                               }}
                               style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', backgroundColor: isSel ? '#FEF3C7' : '#F8FAFC', border: isSel ? '1.5px solid #F59E0B' : '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: '0.82rem' }}
                             >

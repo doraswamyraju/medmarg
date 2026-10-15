@@ -570,18 +570,38 @@ app.get('/api/v1/catalog/profiles', (req, res) => {
 
 // CREATE / ADD / UPDATE PROFILE (Syncs to Google Sheets & MedMarg DB)
 app.post('/api/v1/catalog/profiles', async (req, res) => {
-    const { code, name, sampleType, fasting, mrp, price, tatHours, description } = req.body;
+    const { 
+        id, 
+        serialNo, 
+        code, 
+        name, 
+        sampleType, 
+        fasting, 
+        mrp, 
+        price, 
+        tatHours, 
+        description, 
+        tests = [], 
+        selectedTests = [],
+        testCount,
+        labPricing, 
+        tierPricing 
+    } = req.body;
 
     if (!code || !name) {
         return res.status(400).json({ error: 'Profile Code and Profile Name are required.' });
     }
 
     const profCode = code.trim().toUpperCase();
-    const existingIndex = catalogState.profiles.findIndex(p => p.code === profCode);
+    const existingIndex = catalogState.profiles.findIndex(p => p.code === profCode || (id && p.id === id));
+
+    const finalTests = Array.isArray(tests) && tests.length > 0 
+        ? tests 
+        : (Array.isArray(selectedTests) ? selectedTests : (existingIndex >= 0 ? catalogState.profiles[existingIndex].tests || [] : []));
 
     const profItem = {
-        id: existingIndex >= 0 ? catalogState.profiles[existingIndex].id : `PROF_${catalogState.profiles.length + 1}`,
-        serialNo: existingIndex >= 0 ? catalogState.profiles[existingIndex].serialNo : catalogState.profiles.length + 1,
+        id: id || (existingIndex >= 0 ? catalogState.profiles[existingIndex].id : `PROF_${catalogState.profiles.length + 1}`),
+        serialNo: serialNo || (existingIndex >= 0 ? catalogState.profiles[existingIndex].serialNo : catalogState.profiles.length + 1),
         code: profCode,
         name: name.trim(),
         sampleType: (sampleType || 'SERUM').trim().toUpperCase(),
@@ -591,6 +611,10 @@ app.post('/api/v1/catalog/profiles', async (req, res) => {
         price: Number(price) || 899,
         tatHours: Number(tatHours) || 24,
         description: description || `Comprehensive diagnostic profile panel for ${name}.`,
+        tests: finalTests,
+        testCount: finalTests.length || Number(testCount) || 1,
+        labPricing: labPricing || (existingIndex >= 0 ? catalogState.profiles[existingIndex].labPricing : null),
+        tierPricing: tierPricing || (existingIndex >= 0 ? catalogState.profiles[existingIndex].tierPricing : null),
         active: true
     };
 
@@ -609,7 +633,7 @@ app.post('/api/v1/catalog/profiles', async (req, res) => {
 
     res.status(201).json({
         success: true,
-        message: existingIndex >= 0 ? 'Profile updated and synced to Google Sheets.' : 'Profile created and synced to Google Sheets.',
+        message: existingIndex >= 0 ? 'Profile updated and saved to MedMarg catalog.' : 'Profile created and saved to MedMarg catalog.',
         profile: profItem
     });
 });
@@ -639,16 +663,32 @@ app.get('/api/v1/catalog/packages', (req, res) => {
     });
 });
 
-// CREATE / PUBLISH NEW HEALTH PACKAGE (Package Builder)
+// CREATE / PUBLISH / UPDATE HEALTH PACKAGE (Package Builder)
 app.post('/api/v1/catalog/packages', (req, res) => {
-    const { name, code, tagline, category, mrp, price, selectedProfiles, selectedTests, description, tatHours } = req.body;
+    const { 
+        id, 
+        name, 
+        code, 
+        tagline, 
+        category, 
+        mrp, 
+        price, 
+        selectedProfiles, 
+        selectedTests, 
+        profiles, 
+        tests, 
+        description, 
+        tatHours,
+        labPricing,
+        tierPricing
+    } = req.body;
 
     if (!name || !price) {
         return res.status(400).json({ error: 'Package Name and Price are required.' });
     }
 
-    const profileCodes = selectedProfiles || [];
-    const testCodes = selectedTests || [];
+    const profileCodes = profiles || selectedProfiles || [];
+    const testCodes = tests || selectedTests || [];
 
     // Auto-calculate aggregated sample types and fasting
     const referencedProfiles = catalogState.profiles.filter(p => profileCodes.includes(p.code));
@@ -664,11 +704,14 @@ app.post('/api/v1/catalog/packages', (req, res) => {
     if (aggregatedSamples.length === 0) aggregatedSamples.push('SERUM');
 
     const needsFasting = [...referencedProfiles, ...referencedTests].some(item => item.fasting === 'YES');
+    const pkgCode = (code || `MM_PKG_${Date.now().toString().slice(-4)}`).toUpperCase();
 
-    const newPackage = {
-        id: `PKG_${Date.now()}`,
+    const existingIndex = catalogState.packages.findIndex(p => (id && p.id === id) || p.code === pkgCode);
+
+    const savedPackage = {
+        id: id || (existingIndex >= 0 ? catalogState.packages[existingIndex].id : `PKG_${Date.now()}`),
         name: name.trim(),
-        code: (code || `MM_PKG_${Date.now().toString().slice(-4)}`).toUpperCase(),
+        code: pkgCode,
         tagline: tagline || 'Custom Curated Health Assessment Bundle',
         category: category || 'Wellness Checkup',
         mrp: Number(mrp) || Number(price) * 2,
@@ -681,17 +724,41 @@ app.post('/api/v1/catalog/packages', (req, res) => {
         popular: true,
         profiles: profileCodes,
         tests: testCodes,
-        testCount: profileCodes.length * 10 + testCodes.length,
-        description: description || `Comprehensive health package combining ${profileCodes.length} profiles and ${testCodes.length} clinical tests.`
+        testCount: profileCodes.length * 8 + testCodes.length,
+        description: description || `Comprehensive health package combining ${profileCodes.length} profiles and ${testCodes.length} clinical tests.`,
+        labPricing: labPricing || (existingIndex >= 0 ? catalogState.packages[existingIndex].labPricing : null),
+        tierPricing: tierPricing || (existingIndex >= 0 ? catalogState.packages[existingIndex].tierPricing : null)
     };
 
-    catalogState.packages.unshift(newPackage);
+    if (existingIndex >= 0) {
+        catalogState.packages[existingIndex] = savedPackage;
+    } else {
+        catalogState.packages.unshift(savedPackage);
+    }
     saveCatalogData();
 
     res.status(201).json({
         success: true,
-        message: 'Package created and published successfully to MedMarg catalog.',
-        package: newPackage
+        message: existingIndex >= 0 ? 'Package updated successfully.' : 'Package created and published successfully to MedMarg catalog.',
+        package: savedPackage
+    });
+});
+
+// SYNC FULL CATALOG BULK SAVE
+app.post('/api/v1/catalog/sync-full', (req, res) => {
+    const { packages, profiles, tests } = req.body;
+    if (Array.isArray(packages)) catalogState.packages = packages;
+    if (Array.isArray(profiles)) catalogState.profiles = profiles;
+    if (Array.isArray(tests)) catalogState.tests = tests;
+    saveCatalogData();
+    res.json({
+        success: true,
+        message: 'Full catalog state successfully persisted to backend database.',
+        stats: {
+            tests: catalogState.tests.length,
+            profiles: catalogState.profiles.length,
+            packages: catalogState.packages.length
+        }
     });
 });
 
@@ -730,7 +797,16 @@ app.post('/api/v1/catalog/sync', async (req, res) => {
         if (result && result.tests && result.tests.length > 0) {
             catalogState.tests = result.tests;
             if (result.profiles && result.profiles.length > 0) {
-                catalogState.profiles = result.profiles;
+                catalogState.profiles = result.profiles.map(sp => {
+                    const existing = catalogState.profiles.find(ep => ep.code === sp.code || ep.id === sp.id);
+                    return {
+                        ...sp,
+                        tests: (existing && existing.tests && existing.tests.length > 0) ? existing.tests : (sp.tests || []),
+                        testCount: (existing && existing.tests && existing.tests.length > 0) ? existing.tests.length : (sp.testCount || existing?.testCount || 1),
+                        labPricing: existing?.labPricing || sp.labPricing || null,
+                        tierPricing: existing?.tierPricing || sp.tierPricing || null
+                    };
+                });
             }
             saveCatalogData();
         }
