@@ -1044,61 +1044,73 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
       {/* MODULAR OVERLAYS */}
       
       {/* 1. Slide-over Cart Drawer with In-Cart Test Browser */}
-      <PatientCartDrawer
-        isOpen={showCartDrawer}
-        onClose={() => setShowCartDrawer(false)}
-        cart={cart}
-        removeFromCart={removeFromCart}
-        addToCart={addToCart}
-        onProceedToCheckout={() => setShowCheckoutModal(true)}
-        catalog={catalog}
-        selectedLabProvider={selectedLabProvider}
-        setSelectedLabProvider={handleLabChange}
-      />
+      {showCartDrawer && (
+        <PatientCartDrawer
+          isOpen={showCartDrawer}
+          onClose={() => setShowCartDrawer(false)}
+          cart={cart}
+          removeFromCart={removeFromCart}
+          addToCart={addToCart}
+          onProceedToCheckout={() => setShowCheckoutModal(true)}
+          catalog={catalog}
+          selectedLabProvider={selectedLabProvider}
+          setSelectedLabProvider={handleLabChange}
+        />
+      )}
 
       {/* 2. Multi-step Checkout & Booking Modal */}
-      <CareSeekerCheckoutModal
-        isOpen={showCheckoutModal}
-        onClose={() => setShowCheckoutModal(false)}
-        cart={cart}
-        user={currentUserProfile || user}
-        savedAddresses={savedAddresses}
-        onOpenAddressModal={() => setShowAddressModal(true)}
-        onOrderSuccess={handleOrderSuccess}
-        selectedLabProvider={selectedLabProvider}
-      />
+      {showCheckoutModal && (
+        <CareSeekerCheckoutModal
+          isOpen={showCheckoutModal}
+          onClose={() => setShowCheckoutModal(false)}
+          cart={cart}
+          user={currentUserProfile || user}
+          savedAddresses={savedAddresses}
+          onOpenAddressModal={() => setShowAddressModal(true)}
+          onOrderSuccess={handleOrderSuccess}
+          selectedLabProvider={selectedLabProvider}
+        />
+      )}
 
       {/* 3. Universal Test/Package Detail Sheet */}
-      <CareSeekerUniversalItemSheet
-        item={selectedDetailItem}
-        catalog={catalog}
-        selectedLabProvider={selectedLabProvider}
-        setSelectedLabProvider={handleLabChange}
-        onClose={() => setSelectedDetailItem(null)}
-        onAddToCart={addToCart}
-        isInCart={selectedDetailItem ? cart.some(c => (c.baseId || c.id) === (selectedDetailItem.id || selectedDetailItem.code || selectedDetailItem.name) || c.code === selectedDetailItem.code) : false}
-      />
+      {selectedDetailItem && (
+        <CareSeekerUniversalItemSheet
+          item={selectedDetailItem}
+          catalog={catalog}
+          selectedLabProvider={selectedLabProvider}
+          setSelectedLabProvider={handleLabChange}
+          onClose={() => setSelectedDetailItem(null)}
+          onAddToCart={addToCart}
+          isInCart={cart.some(c => (c.baseId || c.id) === (selectedDetailItem.id || selectedDetailItem.code || selectedDetailItem.name) || c.code === selectedDetailItem.code)}
+        />
+      )}
 
       {/* 4. Prescription Upload Modal */}
-      <CareSeekerPrescriptionModal
-        isOpen={showPrescriptionModal}
-        onClose={() => setShowPrescriptionModal(false)}
-        user={user}
-      />
+      {showPrescriptionModal && (
+        <CareSeekerPrescriptionModal
+          isOpen={showPrescriptionModal}
+          onClose={() => setShowPrescriptionModal(false)}
+          user={user}
+        />
+      )}
 
       {/* 5. Address Manager Modal with Draggable Pinpoint Map */}
-      <CareSeekerAddressModal
-        isOpen={showAddressModal}
-        onClose={() => setShowAddressModal(false)}
-        onSaveAddress={handleSaveAddress}
-      />
+      {showAddressModal && (
+        <CareSeekerAddressModal
+          isOpen={showAddressModal}
+          onClose={() => setShowAddressModal(false)}
+          onSaveAddress={handleSaveAddress}
+        />
+      )}
 
       {/* 6. Contact Number Verification for Care Seekers */}
-      <CareSeekerPhoneModal
-        isOpen={showPhoneModal}
-        user={currentUserProfile}
-        onPhoneSaved={handlePhoneSaved}
-      />
+      {showPhoneModal && (
+        <CareSeekerPhoneModal
+          isOpen={showPhoneModal}
+          user={currentUserProfile}
+          onPhoneSaved={handlePhoneSaved}
+        />
+      )}
 
     </div>
   );

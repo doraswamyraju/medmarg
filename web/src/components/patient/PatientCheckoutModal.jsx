@@ -22,8 +22,6 @@ export default function PatientCheckoutModal({
   user,
   onOrderSuccess
 }) {
-  if (!isOpen) return null;
-
   const [step, setStep] = useState(1); // 1: Patient & Address, 2: Slot & Payment
   const [patientType, setPatientType] = useState('SELF'); // 'SELF' | 'FAMILY'
   const [selectedPatientName, setSelectedPatientName] = useState(user?.name || 'Rahul Sharma');
@@ -41,10 +39,11 @@ export default function PatientCheckoutModal({
   const [selectedSlot, setSelectedSlot] = useState('07:00 AM - 08:00 AM (Recommended for Fasting)');
   const [isExpress, setIsExpress] = useState(false);
 
-  // Payment Mode
   const [paymentMode, setPaymentMode] = useState('PREPAID_UPI'); // 'PREPAID_UPI' | 'DOORSTEP_QR' | 'CASH'
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  if (!isOpen) return null;
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.price || 0), 0);
   const hasFasting = cart.some(item => item.fasting === 'YES');

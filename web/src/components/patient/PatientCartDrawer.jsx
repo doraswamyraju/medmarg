@@ -33,14 +33,14 @@ export default function PatientCartDrawer({
   selectedLabProvider = 'medmarg_suggested',
   setSelectedLabProvider = () => {}
 }) {
-  if (!isOpen) return null;
-
   const [inCartSearch, setInCartSearch] = useState('');
   const [rememberPreference, setRememberPreference] = useState(() => {
     const flag = localStorage.getItem('medmarg_remember_lab_flag');
     if (flag !== null) return flag === 'true';
     return true; // Default to remembering user's selected lab
   });
+
+  if (!isOpen) return null;
 
   // Calculate totals across all 3 lab options
   const labOptions = getCartTotalsByLab(cart);

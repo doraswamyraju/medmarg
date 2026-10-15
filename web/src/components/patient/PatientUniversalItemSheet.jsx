@@ -45,24 +45,22 @@ export default function PatientUniversalItemSheet({
 
   const catalog = propCatalog || getCatalogState();
 
-  if (!item) return null;
+  const isPackage = !!(item && (item.itemType === 'PACKAGE' || !!item.profiles || item.discountPercent > 50));
+  const isProfile = !!(item && (item.itemType === 'PROFILE' || (!isPackage && (item.category === 'Diagnostic Profile' || (item.code && item.code.length <= 6 && !item.serialNo)))));
+  const isSingleTest = !!(item && !isPackage && !isProfile);
 
-  const isPackage = item.itemType === 'PACKAGE' || !!item.profiles || item.discountPercent > 50;
-  const isProfile = item.itemType === 'PROFILE' || (!isPackage && (item.category === 'Diagnostic Profile' || (item.code && item.code.length <= 6 && !item.serialNo)));
-  const isSingleTest = !isPackage && !isProfile;
-
-  const startPricing = getStartingPrice(item);
-  const labPricingList = getItemLabPricing(item);
-  const currentTierInfo = getItemPriceForPeople(item, selectedPersonCount);
+  const startPricing = item ? getStartingPrice(item) : { price: 0, mrp: 0, discountPercent: 0 };
+  const labPricingList = item ? getItemLabPricing(item) : [];
+  const currentTierInfo = item ? getItemPriceForPeople(item, selectedPersonCount) : { offerPrice: 0, mrp: 0, discountPercent: 0 };
 
   // Resolved contents for Packages and Profiles
   const packageContents = useMemo(() => {
-    if (!isPackage) return null;
+    if (!item || !isPackage) return null;
     return resolvePackageContents(item, catalog);
   }, [item, isPackage, catalog]);
 
   const profileTests = useMemo(() => {
-    if (!isProfile) return [];
+    if (!item || !isProfile) return [];
     return resolveProfileTests(item, catalog.tests || []);
   }, [item, isProfile, catalog]);
 
@@ -98,6 +96,8 @@ export default function PatientUniversalItemSheet({
       (t.description && t.description.toLowerCase().includes(q))
     );
   }, [profileTests, searchCoveredQuery]);
+
+  if (!item) return null;
 
   const totalBiomarkersCount = isPackage 
     ? (packageContents?.totalBiomarkersCount || item.testCount || 45)
