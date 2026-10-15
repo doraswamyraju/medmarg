@@ -98,7 +98,10 @@
       "phone": "+91 98765 43210",
       "city": "Tirupati",
       "address": "Bairagipatteda, Tirupati",
-      "items": "HbA1c + Complete Blood Count",
+      "items": [
+        { "name": "HbA1c Glycated Hemoglobin", "price": 399, "sampleType": "EDTA", "fasting": "NO" },
+        { "name": "Complete Blood Count (CBC)", "price": 500, "sampleType": "EDTA", "fasting": "NO" }
+      ],
       "amount": 899,
       "status": "EN_ROUTE",
       "assignedAgent": "Ramesh Kumar (AG-01)",
@@ -112,7 +115,9 @@
       "phone": "+91 98765 88990",
       "city": "Tirupati",
       "address": "Air Bypass Road, Tirupati",
-      "items": "Master Full Body Profile (87 Biomarkers)",
+      "items": [
+        { "name": "Master Full Body Profile (87 Biomarkers)", "price": 1499, "sampleType": "SERUM, EDTA", "fasting": "YES" }
+      ],
       "amount": 1499,
       "status": "SAMPLE_COLLECTED",
       "assignedAgent": "Suresh Babu (AG-02)",
@@ -126,7 +131,9 @@
       "phone": "+91 94400 55667",
       "city": "Chittoor",
       "address": "Gandhi Road, Chittoor",
-      "items": "Diabetic & Renal Health Check",
+      "items": [
+        { "name": "Diabetic & Renal Health Check", "price": 699, "sampleType": "SERUM", "fasting": "YES" }
+      ],
       "amount": 699,
       "status": "PENDING_DISPATCH",
       "assignedAgent": "Unassigned",

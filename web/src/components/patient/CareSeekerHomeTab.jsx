@@ -185,7 +185,7 @@ export default function CareSeekerHomeTab({
             onChange={(e) => setHomeSearchQuery(e.target.value)}
             style={{
               width: '100%',
-              padding: '0.95rem 7.5rem 0.95rem 3.4rem',
+              padding: '0.95rem 17.5rem 0.95rem 3.4rem',
               borderRadius: '16px',
               border: '2px solid #006B70',
               fontSize: '0.96rem',
@@ -219,28 +219,78 @@ export default function CareSeekerHomeTab({
                 ✕
               </button>
             )}
-            <button
-              onClick={() => {
-                setActiveTab('TESTS');
-                setCatalogSubTab('ALL_TESTS');
-              }}
-              style={{
-                backgroundColor: '#006B70',
-                color: '#FFFFFF',
-                border: 'none',
-                padding: '0.5rem 0.9rem',
-                borderRadius: '10px',
-                fontWeight: '800',
-                fontSize: '0.78rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem'
-              }}
-            >
-              <span>Explore Matrix</span>
-              <ArrowRight size={13} />
-            </button>
+            
+            {/* 1-Tap Quick Action Buttons (Upload Prescription, Call, WhatsApp) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+              <button
+                onClick={onOpenPrescriptionModal}
+                style={{
+                  backgroundColor: '#D97706',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  padding: '0.45rem 0.8rem',
+                  borderRadius: '10px',
+                  fontWeight: '800',
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  boxShadow: '0 2px 8px rgba(217,119,6,0.25)',
+                  whiteSpace: 'nowrap'
+                }}
+                title="Upload Doctor Prescription"
+              >
+                <UploadCloud size={14} />
+                <span>Upload Prescription</span>
+              </button>
+
+              <button
+                onClick={handleOrderCall}
+                style={{
+                  backgroundColor: '#0284C7',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  padding: '0.45rem 0.75rem',
+                  borderRadius: '10px',
+                  fontWeight: '800',
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  boxShadow: '0 2px 8px rgba(2,132,199,0.25)',
+                  whiteSpace: 'nowrap'
+                }}
+                title="Call MedMarg Dispatch"
+              >
+                <PhoneCall size={13} />
+                <span>Call</span>
+              </button>
+
+              <button
+                onClick={() => handleOrderWhatsApp()}
+                style={{
+                  backgroundColor: '#25D366',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  padding: '0.45rem 0.75rem',
+                  borderRadius: '10px',
+                  fontWeight: '800',
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.3rem',
+                  boxShadow: '0 2px 8px rgba(37,211,102,0.25)',
+                  whiteSpace: 'nowrap'
+                }}
+                title="Chat with MedMarg on WhatsApp"
+              >
+                <MessageCircle size={13} />
+                <span>WhatsApp</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -728,217 +778,307 @@ export default function CareSeekerHomeTab({
           }}>
             {/* 1. Blood Pressure */}
             <div style={{
-              flex: '0 0 160px',
-              minWidth: '150px',
-              maxWidth: '175px',
-              backgroundColor: '#FFF5F5',
+              flex: '0 0 170px',
+              minWidth: '165px',
+              maxWidth: '180px',
+              backgroundColor: '#FFFFFF',
               borderRadius: '16px',
-              padding: '0.9rem',
-              border: '1px solid #FFE4E6',
+              padding: '0.85rem',
+              border: '1.5px solid #FFE4E6',
+              boxShadow: '0 2px 8px rgba(225,29,72,0.04)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              gap: '0.5rem'
+              gap: '0.45rem'
             }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#E11D48', fontSize: '0.75rem', fontWeight: '800' }}>
+                {/* Target Achieved Meter Line */}
+                <div style={{ marginBottom: '0.45rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', fontWeight: '800', marginBottom: '0.2rem' }}>
+                    <span style={{ color: '#64748B' }}>Target Met</span>
+                    <span style={{ color: '#059669', fontWeight: '900' }}>96%</span>
+                  </div>
+                  <div style={{ width: '100%', height: '4px', backgroundColor: '#F1F5F9', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ width: '96%', height: '100%', background: 'linear-gradient(90deg, #10B981 0%, #059669 100%)', borderRadius: '4px' }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#E11D48', fontSize: '0.74rem', fontWeight: '800' }}>
                   <Heart size={14} /> Blood Pressure
                 </div>
-                <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#0F172A', marginTop: '0.25rem' }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
                   120/80
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#64748B' }}>mmHg</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
+                  <span style={{ fontSize: '0.68rem', color: '#64748B' }}>mmHg</span>
+                  <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: &lt;120/80</span>
+                </div>
               </div>
 
-              <svg viewBox="0 0 100 25" style={{ width: '100%', height: '22px' }}>
+              <svg viewBox="0 0 100 24" style={{ width: '100%', height: '20px' }}>
                 <path d="M 0 18 Q 20 12 40 16 T 70 8 T 100 12" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.7rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
+                <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
                   Normal
                 </span>
-                <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>2d ago</span>
+                <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>2d ago</span>
               </div>
             </div>
 
             {/* 2. Blood Sugar (Fasting) */}
             <div style={{
-              flex: '0 0 160px',
-              minWidth: '150px',
-              maxWidth: '175px',
-              backgroundColor: '#F0F9FF',
+              flex: '0 0 170px',
+              minWidth: '165px',
+              maxWidth: '180px',
+              backgroundColor: '#FFFFFF',
               borderRadius: '16px',
-              padding: '0.9rem',
-              border: '1px solid #E0F2FE',
+              padding: '0.85rem',
+              border: '1.5px solid #E0F2FE',
+              boxShadow: '0 2px 8px rgba(2,132,199,0.04)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              gap: '0.5rem'
+              gap: '0.45rem'
             }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#0284C7', fontSize: '0.75rem', fontWeight: '800' }}>
+                {/* Target Achieved Meter Line */}
+                <div style={{ marginBottom: '0.45rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', fontWeight: '800', marginBottom: '0.2rem' }}>
+                    <span style={{ color: '#64748B' }}>Target Met</span>
+                    <span style={{ color: '#0284C7', fontWeight: '900' }}>92%</span>
+                  </div>
+                  <div style={{ width: '100%', height: '4px', backgroundColor: '#F1F5F9', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ width: '92%', height: '100%', background: 'linear-gradient(90deg, #38BDF8 0%, #0284C7 100%)', borderRadius: '4px' }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#0284C7', fontSize: '0.74rem', fontWeight: '800' }}>
                   <Droplets size={14} /> Blood Sugar
                 </div>
-                <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#0F172A', marginTop: '0.25rem' }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
                   92
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#64748B' }}>mg/dL (Fasting)</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
+                  <span style={{ fontSize: '0.68rem', color: '#64748B' }}>mg/dL (Fast)</span>
+                  <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: 70-99</span>
+                </div>
               </div>
 
-              <svg viewBox="0 0 100 25" style={{ width: '100%', height: '22px' }}>
+              <svg viewBox="0 0 100 24" style={{ width: '100%', height: '20px' }}>
                 <path d="M 0 20 Q 30 16 55 18 T 85 10 T 100 8" fill="none" stroke="#0284C7" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.7rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
+                <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
                   Normal
                 </span>
-                <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>Yesterday</span>
+                <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>Yesterday</span>
               </div>
             </div>
 
             {/* 3. Heart Rate */}
             <div style={{
-              flex: '0 0 160px',
-              minWidth: '150px',
-              maxWidth: '175px',
-              backgroundColor: '#FFF7ED',
+              flex: '0 0 170px',
+              minWidth: '165px',
+              maxWidth: '180px',
+              backgroundColor: '#FFFFFF',
               borderRadius: '16px',
-              padding: '0.9rem',
-              border: '1px solid #FFEDD5',
+              padding: '0.85rem',
+              border: '1.5px solid #FFEDD5',
+              boxShadow: '0 2px 8px rgba(234,88,12,0.04)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              gap: '0.5rem'
+              gap: '0.45rem'
             }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#EA580C', fontSize: '0.75rem', fontWeight: '800' }}>
+                {/* Target Achieved Meter Line */}
+                <div style={{ marginBottom: '0.45rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', fontWeight: '800', marginBottom: '0.2rem' }}>
+                    <span style={{ color: '#64748B' }}>Target Met</span>
+                    <span style={{ color: '#EA580C', fontWeight: '900' }}>95%</span>
+                  </div>
+                  <div style={{ width: '100%', height: '4px', backgroundColor: '#F1F5F9', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ width: '95%', height: '100%', background: 'linear-gradient(90deg, #FB923C 0%, #EA580C 100%)', borderRadius: '4px' }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#EA580C', fontSize: '0.74rem', fontWeight: '800' }}>
                   <Activity size={14} /> Heart Rate
                 </div>
-                <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#0F172A', marginTop: '0.25rem' }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
                   76
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#64748B' }}>bpm</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
+                  <span style={{ fontSize: '0.68rem', color: '#64748B' }}>bpm</span>
+                  <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: 60-100</span>
+                </div>
               </div>
 
-              <svg viewBox="0 0 100 25" style={{ width: '100%', height: '22px' }}>
+              <svg viewBox="0 0 100 24" style={{ width: '100%', height: '20px' }}>
                 <path d="M 0 18 Q 25 15 50 16 T 75 8 T 100 9" fill="none" stroke="#EA580C" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.7rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
+                <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
                   Normal
                 </span>
-                <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>2d ago</span>
+                <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>2d ago</span>
               </div>
             </div>
 
             {/* 4. Weight */}
             <div style={{
-              flex: '0 0 160px',
-              minWidth: '150px',
-              maxWidth: '175px',
-              backgroundColor: '#F0FDF4',
+              flex: '0 0 170px',
+              minWidth: '165px',
+              maxWidth: '180px',
+              backgroundColor: '#FFFFFF',
               borderRadius: '16px',
-              padding: '0.9rem',
-              border: '1px solid #DCFCE7',
+              padding: '0.85rem',
+              border: '1.5px solid #DCFCE7',
+              boxShadow: '0 2px 8px rgba(22,163,74,0.04)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              gap: '0.5rem'
+              gap: '0.45rem'
             }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#16A34A', fontSize: '0.75rem', fontWeight: '800' }}>
+                {/* Target Achieved Meter Line */}
+                <div style={{ marginBottom: '0.45rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', fontWeight: '800', marginBottom: '0.2rem' }}>
+                    <span style={{ color: '#64748B' }}>Target Met</span>
+                    <span style={{ color: '#16A34A', fontWeight: '900' }}>88%</span>
+                  </div>
+                  <div style={{ width: '100%', height: '4px', backgroundColor: '#F1F5F9', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ width: '88%', height: '100%', background: 'linear-gradient(90deg, #4ADE80 0%, #16A34A 100%)', borderRadius: '4px' }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#16A34A', fontSize: '0.74rem', fontWeight: '800' }}>
                   <Scale size={14} /> Weight
                 </div>
-                <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#0F172A', marginTop: '0.25rem' }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
                   72
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#64748B' }}>kg</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
+                  <span style={{ fontSize: '0.68rem', color: '#64748B' }}>kg</span>
+                  <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: 70 kg</span>
+                </div>
               </div>
 
-              <svg viewBox="0 0 100 25" style={{ width: '100%', height: '22px' }}>
+              <svg viewBox="0 0 100 24" style={{ width: '100%', height: '20px' }}>
                 <path d="M 0 18 Q 30 14 60 17 T 90 9 T 100 7" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.7rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
+                <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
                   ↓ 1.5 kg
                 </span>
-                <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>3d ago</span>
+                <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>3d ago</span>
               </div>
             </div>
 
             {/* 5. BMI */}
             <div style={{
-              flex: '0 0 160px',
-              minWidth: '150px',
-              maxWidth: '175px',
-              backgroundColor: '#FAF5FF',
+              flex: '0 0 170px',
+              minWidth: '165px',
+              maxWidth: '180px',
+              backgroundColor: '#FFFFFF',
               borderRadius: '16px',
-              padding: '0.9rem',
-              border: '1px solid #F3E8FF',
+              padding: '0.85rem',
+              border: '1.5px solid #F3E8FF',
+              boxShadow: '0 2px 8px rgba(147,51,234,0.04)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              gap: '0.5rem'
+              gap: '0.45rem'
             }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#9333EA', fontSize: '0.75rem', fontWeight: '800' }}>
+                {/* Target Achieved Meter Line */}
+                <div style={{ marginBottom: '0.45rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', fontWeight: '800', marginBottom: '0.2rem' }}>
+                    <span style={{ color: '#64748B' }}>Target Met</span>
+                    <span style={{ color: '#9333EA', fontWeight: '900' }}>94%</span>
+                  </div>
+                  <div style={{ width: '100%', height: '4px', backgroundColor: '#F1F5F9', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ width: '94%', height: '100%', background: 'linear-gradient(90deg, #C084FC 0%, #9333EA 100%)', borderRadius: '4px' }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#9333EA', fontSize: '0.74rem', fontWeight: '800' }}>
                   <Sparkles size={14} /> BMI
                 </div>
-                <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#0F172A', marginTop: '0.25rem' }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
                   23.4
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#64748B' }}>kg/m²</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
+                  <span style={{ fontSize: '0.68rem', color: '#64748B' }}>kg/m²</span>
+                  <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: 18.5-24.9</span>
+                </div>
               </div>
 
-              <svg viewBox="0 0 100 25" style={{ width: '100%', height: '22px' }}>
+              <svg viewBox="0 0 100 24" style={{ width: '100%', height: '20px' }}>
                 <path d="M 0 18 Q 30 16 60 14 T 85 9 T 100 6" fill="none" stroke="#9333EA" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.7rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
+                <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
                   Optimal
                 </span>
-                <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>3d ago</span>
+                <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>3d ago</span>
               </div>
             </div>
 
             {/* 6. SpO2 */}
             <div style={{
-              flex: '0 0 160px',
-              minWidth: '150px',
-              maxWidth: '175px',
-              backgroundColor: '#F0FDFA',
+              flex: '0 0 170px',
+              minWidth: '165px',
+              maxWidth: '180px',
+              backgroundColor: '#FFFFFF',
               borderRadius: '16px',
-              padding: '0.9rem',
-              border: '1px solid #CCFBF1',
+              padding: '0.85rem',
+              border: '1.5px solid #CCFBF1',
+              boxShadow: '0 2px 8px rgba(13,148,136,0.04)',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              gap: '0.5rem'
+              gap: '0.45rem'
             }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#0D9488', fontSize: '0.75rem', fontWeight: '800' }}>
+                {/* Target Achieved Meter Line */}
+                <div style={{ marginBottom: '0.45rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', fontWeight: '800', marginBottom: '0.2rem' }}>
+                    <span style={{ color: '#64748B' }}>Target Met</span>
+                    <span style={{ color: '#0D9488', fontWeight: '900' }}>98%</span>
+                  </div>
+                  <div style={{ width: '100%', height: '4px', backgroundColor: '#F1F5F9', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ width: '98%', height: '100%', background: 'linear-gradient(90deg, #2DD4BF 0%, #0D9488 100%)', borderRadius: '4px' }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#0D9488', fontSize: '0.74rem', fontWeight: '800' }}>
                   <Wind size={14} /> SpO₂
                 </div>
-                <div style={{ fontSize: '1.45rem', fontWeight: '900', color: '#0F172A', marginTop: '0.25rem' }}>
+                <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
                   98
                 </div>
-                <div style={{ fontSize: '0.7rem', color: '#64748B' }}>%</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
+                  <span style={{ fontSize: '0.68rem', color: '#64748B' }}>%</span>
+                  <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: ≥95%</span>
+                </div>
               </div>
 
-              <svg viewBox="0 0 100 25" style={{ width: '100%', height: '22px' }}>
+              <svg viewBox="0 0 100 24" style={{ width: '100%', height: '20px' }}>
                 <path d="M 0 19 Q 30 15 65 17 T 90 10 T 100 8" fill="none" stroke="#0D9488" strokeWidth="2.5" strokeLinecap="round" />
               </svg>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.7rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
+                <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
                   Normal
                 </span>
-                <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>3d ago</span>
+                <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>3d ago</span>
               </div>
             </div>
           </div>
@@ -951,150 +1091,7 @@ export default function CareSeekerHomeTab({
         catalog={catalog}
       />
 
-      {/* 5. RECENT LAB REPORTS & CLINICAL INSIGHTS SPLIT ROW */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-        
-        {/* Recent Reports Card */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '24px',
-          padding: '1.75rem',
-          border: '1.5px solid #E2E8F0',
-          boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          gap: '1rem'
-        }}>
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <FileText size={20} color="#006B70" />
-                <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
-                  Recent Lab Reports
-                </h4>
-              </div>
-              <button
-                onClick={() => setActiveTab('REPORTS')}
-                style={{ background: 'none', border: 'none', color: '#006B70', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
-              >
-                Health Vault <ChevronRight size={15} />
-              </button>
-            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-              {[
-                { title: 'Complete Blood Count (CBC)', date: '28 Sep 2026', lab: 'Thyrocare NABL Lab', status: 'Verified' },
-                { title: 'Thyroid Profile Total (T3/T4/TSH)', date: '15 Aug 2026', lab: 'Thyrocare NABL Lab', status: 'Verified' },
-                { title: 'HbA1c Glycated Hemoglobin', date: '02 Jul 2026', lab: 'MedMarg Processing Hub', status: 'Verified' }
-              ].map((rep, rIdx) => (
-                <div
-                  key={rIdx}
-                  style={{
-                    padding: '0.85rem 1rem',
-                    backgroundColor: '#F8FAFC',
-                    borderRadius: '14px',
-                    border: '1px solid #E2E8F0',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: '800', color: '#0F172A' }}>{rep.title}</div>
-                    <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: '0.15rem' }}>
-                      📅 {rep.date} • {rep.lab}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setActiveTab('REPORTS')}
-                    style={{
-                      padding: '0.4rem 0.75rem',
-                      backgroundColor: '#E0F2F1',
-                      color: '#006B70',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '0.78rem',
-                      fontWeight: '800',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.3rem'
-                    }}
-                  >
-                    <Download size={13} /> PDF
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Reminders & Insights Card */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '24px',
-          padding: '1.75rem',
-          border: '1.5px solid #E2E8F0',
-          boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          gap: '1rem'
-        }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
-              <Bell size={20} color="#D97706" />
-              <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
-                Reminders & Clinical Insights
-              </h4>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div style={{
-                padding: '0.85rem 1rem',
-                backgroundColor: '#FFFBEB',
-                borderRadius: '14px',
-                border: '1px solid #FDE68A',
-                display: 'flex',
-                gap: '0.75rem',
-                alignItems: 'flex-start'
-              }}>
-                <Clock size={18} color="#D97706" style={{ marginTop: '2px', flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: '0.86rem', fontWeight: '900', color: '#92400E' }}>
-                    Fasting Protocol Reminder
-                  </div>
-                  <div style={{ fontSize: '0.76rem', color: '#B45309', marginTop: '0.15rem', lineHeight: 1.4 }}>
-                    Your upcoming order includes Fasting Glucose & Lipids. Please maintain 8-10 hours water-only fasting before your phlebotomist arrives.
-                  </div>
-                </div>
-              </div>
-
-              <div style={{
-                padding: '0.85rem 1rem',
-                backgroundColor: '#F0FDF4',
-                borderRadius: '14px',
-                border: '1px solid #BBF7D0',
-                display: 'flex',
-                gap: '0.75rem',
-                alignItems: 'flex-start'
-              }}>
-                <ShieldCheck size={18} color="#15803D" style={{ marginTop: '2px', flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: '0.86rem', fontWeight: '900', color: '#166534' }}>
-                    Optimal Cold-Chain Guaranteed
-                  </div>
-                  <div style={{ fontSize: '0.76rem', color: '#15803D', marginTop: '0.15rem', lineHeight: 1.4 }}>
-                    Your samples will be transported in IoT digital thermal gel carriers at strictly 2°C - 8°C directly to Thyrocare / MedMarg testing labs.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
 
       {/* 6. STREAMLINED COMPACT 1-TAP HERO BLOCK */}
       <div style={{
@@ -1292,6 +1289,151 @@ export default function CareSeekerHomeTab({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* 6. RECENT LAB REPORTS & CLINICAL INSIGHTS (AT BOTTOM OF HOME) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginTop: '0.5rem' }}>
+        
+        {/* Recent Reports Card */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '24px',
+          padding: '1.75rem',
+          border: '1.5px solid #E2E8F0',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          gap: '1rem'
+        }}>
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <FileText size={20} color="#006B70" />
+                <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+                  Recent Lab Reports
+                </h4>
+              </div>
+              <button
+                onClick={() => setActiveTab('REPORTS')}
+                style={{ background: 'none', border: 'none', color: '#006B70', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+              >
+                Health Vault <ChevronRight size={15} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+              {[
+                { title: 'Complete Blood Count (CBC)', date: '28 Sep 2026', lab: 'Thyrocare NABL Lab', status: 'Verified' },
+                { title: 'Thyroid Profile Total (T3/T4/TSH)', date: '15 Aug 2026', lab: 'Thyrocare NABL Lab', status: 'Verified' },
+                { title: 'HbA1c Glycated Hemoglobin', date: '02 Jul 2026', lab: 'MedMarg Processing Hub', status: 'Verified' }
+              ].map((rep, rIdx) => (
+                <div
+                  key={rIdx}
+                  style={{
+                    padding: '0.85rem 1rem',
+                    backgroundColor: '#F8FAFC',
+                    borderRadius: '14px',
+                    border: '1px solid #E2E8F0',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '800', color: '#0F172A' }}>{rep.title}</div>
+                    <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: '0.15rem' }}>
+                      📅 {rep.date} • {rep.lab}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab('REPORTS')}
+                    style={{
+                      padding: '0.4rem 0.75rem',
+                      backgroundColor: '#E0F2F1',
+                      color: '#006B70',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '0.78rem',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.3rem'
+                    }}
+                  >
+                    <Download size={13} /> PDF
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Reminders & Insights Card */}
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '24px',
+          padding: '1.75rem',
+          border: '1.5px solid #E2E8F0',
+          boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          gap: '1rem'
+        }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
+              <Bell size={20} color="#D97706" />
+              <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+                Reminders & Clinical Insights
+              </h4>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{
+                padding: '0.85rem 1rem',
+                backgroundColor: '#FFFBEB',
+                borderRadius: '14px',
+                border: '1px solid #FDE68A',
+                display: 'flex',
+                gap: '0.75rem',
+                alignItems: 'flex-start'
+              }}>
+                <Clock size={18} color="#D97706" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: '0.86rem', fontWeight: '900', color: '#92400E' }}>
+                    Fasting Protocol Reminder
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: '#B45309', marginTop: '0.15rem', lineHeight: 1.4 }}>
+                    Your upcoming order includes Fasting Glucose & Lipids. Please maintain 8-10 hours water-only fasting before your phlebotomist arrives.
+                  </div>
+                </div>
+              </div>
+
+              <div style={{
+                padding: '0.85rem 1rem',
+                backgroundColor: '#F0FDF4',
+                borderRadius: '14px',
+                border: '1px solid #BBF7D0',
+                display: 'flex',
+                gap: '0.75rem',
+                alignItems: 'flex-start'
+              }}>
+                <ShieldCheck size={18} color="#15803D" style={{ marginTop: '2px', flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: '0.86rem', fontWeight: '900', color: '#166534' }}>
+                    Optimal Cold-Chain Guaranteed
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: '#15803D', marginTop: '0.15rem', lineHeight: 1.4 }}>
+                    Your samples will be transported in IoT digital thermal gel carriers at strictly 2°C - 8°C directly to Thyrocare / MedMarg testing labs.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </div>

@@ -282,21 +282,36 @@ export default function CareSeekerTrackingTab({
         {/* Order Items & Payment Info */}
         <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '1.5rem', border: '1.5px solid #E2E8F0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.75rem' }}>
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#0F172A' }}>Ordered Tests ({currentOrder.items?.length || 1})</span>
-              <span style={{ fontSize: '0.72rem', backgroundColor: '#D1FAE5', color: '#047857', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
-                {currentOrder.paymentStatus || 'PAID'}
-              </span>
-            </div>
+            {(() => {
+              const rawItems = currentOrder.items;
+              let safeList = [];
+              if (Array.isArray(rawItems)) {
+                safeList = rawItems.map(i => typeof i === 'string' ? { name: i, price: currentOrder.totalAmount ? Math.round(currentOrder.totalAmount / rawItems.length) : 499 } : i);
+              } else if (typeof rawItems === 'string' && rawItems.trim()) {
+                safeList = rawItems.split(/[+,]/).map(s => s.trim()).filter(Boolean).map(n => ({ name: n, price: currentOrder.totalAmount ? Math.round(currentOrder.totalAmount / 2) : 499 }));
+              } else {
+                safeList = [{ name: 'Comprehensive Health Checkup', price: currentOrder.totalAmount || 1499 }];
+              }
+              return (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#0F172A' }}>Ordered Tests ({safeList.length})</span>
+                    <span style={{ fontSize: '0.72rem', backgroundColor: '#D1FAE5', color: '#047857', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: '800' }}>
+                      {currentOrder.paymentStatus || 'PAID'}
+                    </span>
+                  </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-              {(currentOrder.items || []).map((itm, idx) => (
-                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: '#475569' }}>
-                  <span>{typeof itm === 'string' ? itm : itm.name}</span>
-                  <span style={{ fontWeight: '700', color: '#0F172A' }}>₹{itm.price || (currentOrder.totalAmount ? Math.round(currentOrder.totalAmount / (currentOrder.items.length || 1)) : 999)}</span>
-                </div>
-              ))}
-            </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                    {safeList.map((itm, idx) => (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: '#475569' }}>
+                        <span>{itm.name || itm.title || 'Diagnostic Test'}</span>
+                        <span style={{ fontWeight: '700', color: '#0F172A' }}>₹{itm.price || (currentOrder.totalAmount ? Math.round(currentOrder.totalAmount / safeList.length) : 499)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '0.65rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

@@ -22,6 +22,30 @@ import {
   Search
 } from 'lucide-react';
 
+export const getSafeOrderItems = (rawItems, totalAmount = 0) => {
+  if (Array.isArray(rawItems)) {
+    return rawItems.map(it => {
+      if (typeof it === 'string') return { name: it, price: Math.round(totalAmount / (rawItems.length || 1)), sampleType: 'SERUM', fasting: 'NO' };
+      return {
+        name: it?.name || it?.title || 'Diagnostic Test',
+        price: it?.price || (totalAmount ? Math.round(totalAmount / (rawItems.length || 1)) : 499),
+        sampleType: it?.sampleType || 'SERUM',
+        fasting: it?.fasting || 'NO'
+      };
+    });
+  }
+  if (typeof rawItems === 'string' && rawItems.trim()) {
+    const parts = rawItems.split(/[+,]/).map(s => s.trim()).filter(Boolean);
+    return parts.map(name => ({
+      name,
+      price: totalAmount ? Math.round(totalAmount / (parts.length || 1)) : 499,
+      sampleType: 'SERUM',
+      fasting: 'NO'
+    }));
+  }
+  return [{ name: 'Comprehensive Pathology Test', price: totalAmount || 499, sampleType: 'SERUM', fasting: 'NO' }];
+};
+
 export default function CareSeekerOrdersTab({
   orders = [],
   onSelectOrder = () => {},
@@ -95,8 +119,10 @@ export default function CareSeekerOrdersTab({
     }
   ];
 
+
+
   const filteredOrders = displayOrders.filter(ord => {
-    const isAct = ord.status === 'ASSIGNED' || ord.status === 'ENROUTE' || ord.status === 'SAMPLE_COLLECTED';
+    const isAct = ord.status === 'ASSIGNED' || ord.status === 'ENROUTE' || ord.status === 'EN_ROUTE' || ord.status === 'SAMPLE_COLLECTED';
     const isComp = ord.status === 'COMPLETED' || ord.status === 'DELIVERED';
 
     if (activeFilter === 'ACTIVE' && !isAct) return false;
@@ -106,7 +132,8 @@ export default function CareSeekerOrdersTab({
       const q = searchTerm.toLowerCase();
       const matchId = (ord.id || '').toLowerCase().includes(q);
       const matchPhlebo = (ord.phleboName || '').toLowerCase().includes(q);
-      const matchItems = (ord.items || []).some(i => (i.name || '').toLowerCase().includes(q));
+      const orderItems = getSafeOrderItems(ord.items, ord.totalAmount);
+      const matchItems = orderItems.some(i => (i.name || '').toLowerCase().includes(q));
       return matchId || matchPhlebo || matchItems;
     }
     return true;
@@ -338,38 +365,45 @@ export default function CareSeekerOrdersTab({
                   
                   {/* Left: Tests Included */}
                   <div>
-                    <h5 style={{ fontSize: '0.84rem', fontWeight: '900', color: '#475569', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-                      Diagnostic Tests & Profiles ({order.items?.length || 1})
-                    </h5>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {(order.items || []).map((it, idx) => (
-                        <div
-                          key={idx}
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '0.75rem 1rem',
-                            backgroundColor: '#F8FAFC',
-                            borderRadius: '12px',
-                            border: '1px solid #E2E8F0'
-                          }}
-                        >
-                          <div>
-                            <div style={{ fontSize: '0.92rem', fontWeight: '800', color: '#0F172A' }}>{it.name}</div>
-                            <div style={{ fontSize: '0.74rem', color: '#64748B', display: 'flex', gap: '0.5rem', marginTop: '0.15rem' }}>
-                              <span>🩸 {it.sampleType || 'SERUM'}</span>
-                              {it.fasting === 'YES' && (
-                                <span style={{ color: '#D97706', fontWeight: '700' }}>⚠️ 8-10h Fasting Required</span>
-                              )}
-                            </div>
+                    {(() => {
+                      const safeItems = getSafeOrderItems(order.items, order.totalAmount);
+                      return (
+                        <>
+                          <h5 style={{ fontSize: '0.84rem', fontWeight: '900', color: '#475569', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+                            Diagnostic Tests & Profiles ({safeItems.length})
+                          </h5>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {safeItems.map((it, idx) => (
+                              <div
+                                key={idx}
+                                style={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  padding: '0.75rem 1rem',
+                                  backgroundColor: '#F8FAFC',
+                                  borderRadius: '12px',
+                                  border: '1px solid #E2E8F0'
+                                }}
+                              >
+                                <div>
+                                  <div style={{ fontSize: '0.92rem', fontWeight: '800', color: '#0F172A' }}>{it.name}</div>
+                                  <div style={{ fontSize: '0.74rem', color: '#64748B', display: 'flex', gap: '0.5rem', marginTop: '0.15rem' }}>
+                                    <span>🩸 {it.sampleType || 'SERUM'}</span>
+                                    {it.fasting === 'YES' && (
+                                      <span style={{ color: '#D97706', fontWeight: '700' }}>⚠️ 8-10h Fasting Required</span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div style={{ fontSize: '0.95rem', fontWeight: '900', color: '#0F172A' }}>
+                                  ₹{it.price || order.totalAmount}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                          <div style={{ fontSize: '0.95rem', fontWeight: '900', color: '#0F172A' }}>
-                            ₹{it.price || order.totalAmount}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        </>
+                      );
+                    })()}
 
                     <div style={{ marginTop: '0.85rem', fontSize: '0.82rem', color: '#64748B', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                       <MapPin size={16} color="#006B70" style={{ flexShrink: 0 }} />

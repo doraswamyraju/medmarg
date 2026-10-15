@@ -13,7 +13,12 @@ import {
   ChevronRight,
   LogOut,
   Sparkles,
-  PackageCheck
+  PackageCheck,
+  Bell,
+  Clock,
+  FileText,
+  Download,
+  ShieldCheck
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { 
@@ -65,6 +70,8 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [orderSuccessBanner, setOrderSuccessBanner] = useState(null);
+  const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
+  const [offersNotifySubmitted, setOffersNotifySubmitted] = useState(false);
   const cleanPhone = (p) => {
     if (!p) return '+91 79979 91101';
     if (typeof p === 'string' && (p.includes('83745 42478') || p.includes('8374542478'))) return '+91 79979 91101';
@@ -260,6 +267,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
     { key: 'HOME', label: 'Home', icon: HomeIcon },
     { key: 'ORDERS', label: 'My Orders', icon: PackageCheck, badge: activeOrdersCount > 0 ? `${activeOrdersCount} Active` : `${allOrders.length} Orders` },
     { key: 'TESTS', label: 'Labs & Tests Matrix', icon: FlaskConical, badge: `${catalog.tests?.length || 913}+` },
+    { key: 'OFFERS_ZONE', label: 'Offers Zone', icon: Sparkles, badge: 'Coming Soon' },
     { key: 'VITALS', label: 'Daily Vitals Log', icon: HeartPulse, badge: 'Live' },
     { key: 'TRACK', label: 'Live Tracking', icon: Activity, badge: `${allOrders.length} Active` },
     { key: 'REPORTS', label: 'Health Vault', icon: FolderHeart, badge: 'NABL' },
@@ -420,7 +428,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         )}
 
         {/* Top Header Bar */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem', position: 'relative' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ fontSize: '0.75rem', color: '#006B70', backgroundColor: '#E0F2F1', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '800' }}>
@@ -434,6 +442,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
               {activeTab === 'HOME' && 'MedMarg Healthcare & Wellness Hub'}
               {activeTab === 'ORDERS' && 'My Diagnostic Orders & History'}
               {activeTab === 'TESTS' && 'Pathology Lab Tests Matrix & Packages'}
+              {activeTab === 'OFFERS_ZONE' && 'Exclusive Offers & Healthcare Privilege Zone'}
               {activeTab === 'VITALS' && 'Care Seeker Daily Vitals & Health Biometrics'}
               {activeTab === 'TRACK' && 'Live Phlebotomist Dispatch & Telemetry Radar'}
               {activeTab === 'REPORTS' && 'Digital Health Vault & Lab Reports'}
@@ -442,7 +451,230 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
             </h1>
           </div>
 
-          <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center', position: 'relative' }}>
+            {/* Bell Icon for Notifications & Clinical Insights & Reports */}
+            <div style={{ position: 'relative' }}>
+              <button
+                id="medmarg-notification-bell-btn"
+                onClick={() => setShowNotificationsDropdown(!showNotificationsDropdown)}
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '12px',
+                  backgroundColor: showNotificationsDropdown ? '#E0F2F1' : '#FFFFFF',
+                  border: showNotificationsDropdown ? '1.5px solid #006B70' : '1.5px solid #E2E8F0',
+                  color: '#006B70',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                  transition: 'all 0.15s ease'
+                }}
+                title="Notifications, Clinical Reminders & Reports"
+              >
+                <Bell size={20} color="#006B70" />
+                <span style={{
+                  position: 'absolute',
+                  top: '-4px',
+                  right: '-4px',
+                  width: '18px',
+                  height: '18px',
+                  backgroundColor: '#EF4444',
+                  color: '#FFFFFF',
+                  borderRadius: '50%',
+                  fontSize: '0.68rem',
+                  fontWeight: '900',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 6px rgba(239,68,68,0.4)',
+                  border: '2px solid #FFFFFF'
+                }}>
+                  3
+                </span>
+              </button>
+
+              {/* Notifications Dropdown Drawer */}
+              {showNotificationsDropdown && (
+                <div style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 10px)',
+                  right: 0,
+                  width: '380px',
+                  maxWidth: '90vw',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '20px',
+                  border: '1.5px solid #006B70',
+                  boxShadow: '0 16px 40px -10px rgba(0,77,64,0.3)',
+                  zIndex: 1200,
+                  overflow: 'hidden',
+                  animation: 'fadeIn 0.15s ease-out'
+                }}>
+                  {/* Dropdown Header */}
+                  <div style={{
+                    padding: '0.95rem 1.15rem',
+                    backgroundColor: '#071F1A',
+                    color: '#FFFFFF',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Bell size={17} color="#FBBF24" />
+                      <span style={{ fontWeight: '900', fontSize: '0.88rem' }}>Health Alerts & Reports</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.68rem', backgroundColor: 'rgba(251,191,36,0.2)', color: '#FBBF24', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: '900' }}>
+                        3 Unread
+                      </span>
+                      <button
+                        onClick={() => setShowNotificationsDropdown(false)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#80CBC4',
+                          cursor: 'pointer',
+                          fontSize: '1rem',
+                          fontWeight: '900',
+                          padding: 0,
+                          lineHeight: 1
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Dropdown Body */}
+                  <div style={{ maxHeight: '420px', overflowY: 'auto', padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {/* Clinical Reminders Section */}
+                    <div>
+                      <div style={{ fontSize: '0.72rem', fontWeight: '900', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.45rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <Clock size={13} color="#D97706" /> Clinical Reminders
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                        <div style={{
+                          padding: '0.75rem 0.85rem',
+                          backgroundColor: '#FFFBEB',
+                          borderRadius: '12px',
+                          border: '1px solid #FDE68A'
+                        }}>
+                          <div style={{ fontSize: '0.82rem', fontWeight: '900', color: '#92400E' }}>
+                            Fasting Protocol Reminder
+                          </div>
+                          <div style={{ fontSize: '0.74rem', color: '#B45309', marginTop: '0.2rem', lineHeight: 1.35 }}>
+                            Upcoming order includes Fasting Glucose & Lipids. Maintain 8-10h water-only fasting before phlebotomist arrives.
+                          </div>
+                        </div>
+
+                        <div style={{
+                          padding: '0.75rem 0.85rem',
+                          backgroundColor: '#F0FDF4',
+                          borderRadius: '12px',
+                          border: '1px solid #BBF7D0'
+                        }}>
+                          <div style={{ fontSize: '0.82rem', fontWeight: '900', color: '#166534' }}>
+                            Optimal Cold-Chain Guaranteed
+                          </div>
+                          <div style={{ fontSize: '0.74rem', color: '#15803D', marginTop: '0.2rem', lineHeight: 1.35 }}>
+                            Samples transported in IoT digital thermal gel carriers at strictly 2°C - 8°C.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Verified Lab Reports Section */}
+                    <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: '0.65rem' }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: '900', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.45rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <FileText size={13} color="#006B70" /> Recent Lab Reports
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                        {[
+                          { title: 'Complete Blood Count (CBC)', date: '28 Sep 2026', lab: 'Thyrocare NABL Lab' },
+                          { title: 'Thyroid Profile Total (T3/T4/TSH)', date: '15 Aug 2026', lab: 'Thyrocare NABL Lab' },
+                          { title: 'HbA1c Glycated Hemoglobin', date: '02 Jul 2026', lab: 'MedMarg Hub' }
+                        ].map((rep, rIdx) => (
+                          <div
+                            key={rIdx}
+                            style={{
+                              padding: '0.65rem 0.8rem',
+                              backgroundColor: '#F8FAFC',
+                              borderRadius: '12px',
+                              border: '1px solid #E2E8F0',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
+                            }}
+                          >
+                            <div style={{ flex: 1, minWidth: 0, paddingRight: '0.5rem' }}>
+                              <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {rep.title}
+                              </div>
+                              <div style={{ fontSize: '0.7rem', color: '#64748B', marginTop: '0.1rem' }}>
+                                📅 {rep.date} • {rep.lab}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                alert(`Downloading official PDF for ${rep.title}`);
+                              }}
+                              style={{
+                                padding: '0.32rem 0.6rem',
+                                backgroundColor: '#E0F2F1',
+                                color: '#006B70',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontSize: '0.74rem',
+                                fontWeight: '800',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.25rem',
+                                flexShrink: 0
+                              }}
+                            >
+                              <Download size={12} /> PDF
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dropdown Footer Action */}
+                  <div style={{ padding: '0.75rem 1rem', backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <button
+                      onClick={() => {
+                        setActiveTab('REPORTS');
+                        setShowNotificationsDropdown(false);
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        backgroundColor: '#006B70',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontWeight: '800',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.35rem'
+                      }}
+                    >
+                      <FolderHeart size={14} /> Open Digital Health Vault →
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               onClick={() => setShowCartDrawer(true)}
               style={{
@@ -514,6 +746,200 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
             cart={cart} 
             setSelectedDetailItem={setSelectedDetailItem} 
           />
+        )}
+
+        {activeTab === 'OFFERS_ZONE' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+            {/* Hero Showcase Card with Coming Soon Ribbon */}
+            <div style={{
+              background: 'linear-gradient(135deg, #071F1A 0%, #004D40 60%, #006B70 100%)',
+              borderRadius: '24px',
+              padding: '2.5rem',
+              color: '#FFFFFF',
+              position: 'relative',
+              overflow: 'hidden',
+              boxShadow: '0 12px 32px rgba(0,77,64,0.25)'
+            }}>
+              {/* Subtle background circular glow */}
+              <div style={{
+                position: 'absolute',
+                top: '-50px',
+                right: '-50px',
+                width: '260px',
+                height: '260px',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, rgba(251,191,36,0.22) 0%, transparent 70%)',
+                pointerEvents: 'none'
+              }} />
+
+              <div style={{ maxWidth: '680px', position: 'relative', zIndex: 2 }}>
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  backgroundColor: '#FEF3C7',
+                  color: '#92400E',
+                  padding: '0.35rem 0.85rem',
+                  borderRadius: '20px',
+                  fontSize: '0.78rem',
+                  fontWeight: '900',
+                  letterSpacing: '0.5px',
+                  marginBottom: '1rem'
+                }}>
+                  <Sparkles size={14} color="#D97706" />
+                  <span>MEDMARG OFFERS ZONE • COMING SOON</span>
+                </div>
+
+                <h2 style={{ fontSize: '2.2rem', fontWeight: '900', lineHeight: 1.2, margin: 0 }}>
+                  Exclusive Diagnostic Privilege Passes & Cashbacks
+                </h2>
+                <p style={{ color: '#80CBC4', fontSize: '0.96rem', marginTop: '0.75rem', lineHeight: 1.6 }}>
+                  We are crafting Tirupati's most rewarding healthcare membership. Unlock direct pathology subsidies, annual family checkup discounts, and instant CareCoin rewards on every diagnostic test.
+                </p>
+
+                {/* Priority Waitlist / Notify Box */}
+                <div style={{ marginTop: '1.75rem', display: 'flex', gap: '0.85rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  {!offersNotifySubmitted ? (
+                    <button
+                      onClick={() => setOffersNotifySubmitted(true)}
+                      style={{
+                        padding: '0.75rem 1.4rem',
+                        backgroundColor: '#F59E0B',
+                        color: '#0F172A',
+                        border: 'none',
+                        borderRadius: '12px',
+                        fontWeight: '900',
+                        fontSize: '0.9rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        boxShadow: '0 4px 14px rgba(245,158,11,0.35)'
+                      }}
+                    >
+                      <Sparkles size={16} /> Get Early Access / Notify Me
+                    </button>
+                  ) : (
+                    <div style={{
+                      padding: '0.75rem 1.25rem',
+                      backgroundColor: '#D1FAE5',
+                      color: '#065F46',
+                      borderRadius: '12px',
+                      fontWeight: '800',
+                      fontSize: '0.88rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      border: '1.5px solid #34D399'
+                    }}>
+                      <CheckCircle2 size={18} color="#059669" />
+                      <span>✓ You are on the VIP waitlist! We will notify you first.</span>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => setActiveTab('HOME')}
+                    style={{
+                      padding: '0.75rem 1.25rem',
+                      backgroundColor: 'rgba(255,255,255,0.12)',
+                      color: '#FFFFFF',
+                      border: '1px solid rgba(255,255,255,0.25)',
+                      borderRadius: '12px',
+                      fontWeight: '800',
+                      fontSize: '0.88rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Explore Current Home Offers →
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Preview of Upcoming Privileges Grid */}
+            <div>
+              <div style={{ marginBottom: '1rem' }}>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+                  Privileges Coming Soon to Your Offers Zone
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: '#64748B', margin: '0.2rem 0 0 0' }}>
+                  Preview what our healthcare privilege programs will unlock for your family.
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
+                {[
+                  {
+                    icon: '💎',
+                    badge: 'TIER PASS',
+                    title: 'MedMarg Annual Family Pass',
+                    desc: 'Flat 70% discount on 913+ diagnostic tests for up to 4 family members with zero collection charges all year.',
+                    tag: 'Launch: Q4 2026'
+                  },
+                  {
+                    icon: '👵',
+                    badge: 'SENIOR CARE',
+                    title: 'Senior Citizen Quarterly Subsidy',
+                    desc: 'Instant ₹500 discount vouchers on vital Diabetic, Cardiac, and Liver panels every 90 days for 60+ age group.',
+                    tag: 'Auto-Applied'
+                  },
+                  {
+                    icon: '🪙',
+                    badge: 'CARECOINS',
+                    title: '10% Cashback on Phlebotomy Visits',
+                    desc: 'Earn MedMarg CareCoins with every home sample collection. Redeem instantly against pharmacy or upcoming tests.',
+                    tag: '1 Coin = ₹1'
+                  },
+                  {
+                    icon: '⚡',
+                    badge: 'FLASH HOURS',
+                    title: 'Express 60-Min Priority Dispatch',
+                    desc: 'Complimentary priority phlebotomist slots during morning fasting windows (6:00 AM – 9:00 AM).',
+                    tag: 'Zero Wait TAT'
+                  }
+                ].map((item, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '20px',
+                      padding: '1.5rem',
+                      border: '1.5px solid #E2E8F0',
+                      boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      gap: '1rem'
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '1.75rem' }}>{item.icon}</span>
+                        <span style={{ fontSize: '0.68rem', backgroundColor: '#E0F2F1', color: '#006B70', padding: '0.18rem 0.55rem', borderRadius: '6px', fontWeight: '900' }}>
+                          {item.badge}
+                        </span>
+                      </div>
+                      <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#0F172A', marginTop: '0.75rem', lineHeight: 1.3 }}>
+                        {item.title}
+                      </h4>
+                      <p style={{ fontSize: '0.82rem', color: '#64748B', marginTop: '0.35rem', lineHeight: 1.5 }}>
+                        {item.desc}
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F1F5F9', paddingTop: '0.75rem' }}>
+                      <span style={{ fontSize: '0.74rem', color: '#D97706', fontWeight: '800' }}>
+                        {item.tag}
+                      </span>
+                      <span style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: '700' }}>
+                        Coming Soon
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
 
         {activeTab === 'VITALS' && (
