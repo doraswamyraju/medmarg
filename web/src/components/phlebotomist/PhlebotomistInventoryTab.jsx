@@ -3,6 +3,7 @@ import { Package, Plus, AlertTriangle, CheckCircle2, Clock, Send, ShieldCheck, R
 
 export default function PhlebotomistInventoryTab({ 
   inventory = [], 
+  warehouseStock = [],
   indents = [], 
   onRaiseIndent,
   isSubmitting 
@@ -60,12 +61,12 @@ export default function PhlebotomistInventoryTab({
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ backgroundColor: '#E0F2FE', color: '#0369A1', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              <Package size={14} /> FIELD KIT INVENTORY
+              <Package size={14} /> LIVE FLEET INVENTORY
             </span>
-            <span style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: '700' }}>In-Hand Fleet Stock</span>
+            <span style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: '700' }}>In-Hand Kit & Central Store</span>
           </div>
           <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.25rem' }}>
-            Collection Kit Supplies & Indents
+            Collection Kit Supplies & Central Warehouse Sync
           </h3>
         </div>
 
@@ -90,58 +91,98 @@ export default function PhlebotomistInventoryTab({
         </button>
       </div>
 
-      {/* Inventory Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
-        {inventory.map(item => {
-          const isLow = item.stock <= item.minThreshold;
-          return (
-            <div
-              key={item.id}
-              style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: '16px',
-                padding: '1.25rem',
-                border: isLow ? '1.5px solid #F59E0B' : '1px solid #E2E8F0',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between'
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '800' }}>{item.code}</span>
-                  {isLow ? (
-                    <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <AlertTriangle size={12} /> LOW STOCK
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: '0.72rem', backgroundColor: '#D1FAE5', color: '#065F46', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '900' }}>
-                      ✓ OPTIMAL
-                    </span>
-                  )}
+      {/* In-Hand Inventory Grid */}
+      <div>
+        <div style={{ fontSize: '0.88rem', fontWeight: '900', color: '#0F172A', marginBottom: '0.75rem' }}>
+          📦 In-Hand Consumables (Field Phlebotomy Kit)
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
+          {inventory.map(item => {
+            const isLow = item.stock <= item.minThreshold;
+            return (
+              <div
+                key={item.id}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '16px',
+                  padding: '1.25rem',
+                  border: isLow ? '1.5px solid #F59E0B' : '1px solid #E2E8F0',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '800' }}>{item.code}</span>
+                    {isLow ? (
+                      <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <AlertTriangle size={12} /> LOW STOCK
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '0.72rem', backgroundColor: '#D1FAE5', color: '#065F46', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '900' }}>
+                        ✓ OPTIMAL
+                      </span>
+                    )}
+                  </div>
+
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: '900', color: '#0F172A', marginBottom: '0.25rem' }}>
+                    {item.name}
+                  </h4>
                 </div>
 
-                <h4 style={{ fontSize: '1.05rem', fontWeight: '900', color: '#0F172A', marginBottom: '0.25rem' }}>
-                  {item.name}
-                </h4>
-              </div>
-
-              <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '1px solid #F1F5F9', paddingTop: '0.75rem' }}>
-                <div>
-                  <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '700' }}>In Hand</div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: '900', color: isLow ? '#D97706' : '#006B70' }}>
-                    {item.stock} <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748B' }}>{item.unit}</span>
+                <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '1px solid #F1F5F9', paddingTop: '0.75rem' }}>
+                  <div>
+                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '700' }}>In Hand</div>
+                    <div style={{ fontSize: '1.4rem', fontWeight: '900', color: isLow ? '#D97706' : '#006B70' }}>
+                      {item.stock} <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748B' }}>{item.unit}</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#94A3B8', fontWeight: '700' }}>
+                    Threshold: {item.minThreshold} {item.unit}
                   </div>
                 </div>
-                <div style={{ fontSize: '0.72rem', color: '#94A3B8', fontWeight: '700' }}>
-                  Min: {item.minThreshold} {item.unit}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Central Warehouse Available Stock (Live updated by Admin & Store In-Charge) */}
+      {warehouseStock.length > 0 && (
+        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '1.5rem', border: '1.5px solid #006B70', boxShadow: '0 4px 16px rgba(0, 107, 112, 0.04)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.72rem', backgroundColor: '#E0F2F1', color: '#006B70', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: '900' }}>
+                  LIVE STORE IN-CHARGE SYNC
+                </span>
+                <span style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: '700' }}>Central Warehouse Hub</span>
+              </div>
+              <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem' }}>
+                Central Warehouse Stock Levels (Ready for Indents)
+              </h4>
+            </div>
+            <span style={{ fontSize: '0.78rem', color: '#059669', backgroundColor: '#ECFDF5', padding: '0.25rem 0.65rem', borderRadius: '8px', fontWeight: '800' }}>
+              ✓ Live Synced with Admin Store Desk
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+            {warehouseStock.map((whItem, idx) => (
+              <div key={idx} style={{ padding: '0.85rem 1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '800' }}>{whItem.code}</div>
+                <div style={{ fontSize: '0.88rem', fontWeight: '800', color: '#1E293B', marginTop: '0.15rem' }}>{whItem.name}</div>
+                <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '700' }}>Warehouse Available:</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: '900', color: '#006B70' }}>{whItem.stock?.toLocaleString()} <span style={{ fontSize: '0.75rem', fontWeight: '700' }}>{whItem.unit}</span></span>
                 </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Active & Past Indent Requests */}
       <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', padding: '1.5rem', border: '1px solid #E2E8F0', marginTop: '0.5rem' }}>

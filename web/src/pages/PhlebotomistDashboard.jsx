@@ -17,7 +17,9 @@ import {
   Clock,
   ArrowRight,
   Award,
-  Navigation
+  Navigation,
+  User,
+  CreditCard
 } from 'lucide-react';
 
 import PhlebotomistPickupsTab from '../components/phlebotomist/PhlebotomistPickupsTab';
@@ -28,15 +30,19 @@ import PhlebotomistLabHandoverTab from '../components/phlebotomist/PhlebotomistL
 import PhlebotomistTubeScannerModal from '../components/phlebotomist/PhlebotomistTubeScannerModal';
 import AgentLocationPermissionModal from '../components/phlebotomist/AgentLocationPermissionModal';
 import SalariedShiftQuotaTab from '../components/phlebotomist/SalariedShiftQuotaTab';
+import PhlebotomistProfileTab from '../components/phlebotomist/PhlebotomistProfileTab';
+import DoorstepQrPaymentModal from '../components/phlebotomist/DoorstepQrPaymentModal';
 
 import { API_BASE, safeFetch, safeJson } from '../data/apiConfig';
 
 export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', onSwitchRole, onLogout }) {
-  const [activeTab, setActiveTab] = useState('ROSTER'); // 'ROSTER' | 'SHIFT_QUOTA' | 'BROADCAST' | 'INVENTORY' | 'WALLET' | 'LAB_HANDOVER'
+  const [activeTab, setActiveTab] = useState('ROSTER'); // 'ROSTER' | 'SHIFT_QUOTA' | 'BROADCAST' | 'INVENTORY' | 'WALLET' | 'LAB_HANDOVER' | 'PROFILE' | 'PAYMENTS'
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isOnDuty, setIsOnDuty] = useState(true);
   const [completedPickups, setCompletedPickups] = useState(new Set());
   const [activePickupModal, setActivePickupModal] = useState(null);
+  const [activePaymentModalOrder, setActivePaymentModalOrder] = useState(null);
+  const [warehouseStock, setWarehouseStock] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Mandatory First Login Location Permission State
@@ -187,8 +193,10 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
 
       const iRes = await safeFetch(`${API_BASE}/api/v1/agent/inventory`);
       const iData = await safeJson(iRes);
-      if (iData && iData.inventory) {
-        setInventory(iData.inventory);
+      if (iData) {
+        if (iData.inventory) setInventory(iData.inventory);
+        if (iData.warehouseStock) setWarehouseStock(iData.warehouseStock);
+        if (iData.indents) setIndents(iData.indents);
       }
 
       const wRes = await safeFetch(`${API_BASE}/api/v1/agent/wallet`);
@@ -393,14 +401,18 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
   const navigationItems = isSalaried ? [
     { key: 'ROSTER', label: 'Assigned Pickups', icon: Bike, badge: pickups.length },
     { key: 'SHIFT_QUOTA', label: 'Shift & Daily Quota', icon: Award, badge: `${completedPickups.size || 8}/15` },
-    { key: 'INVENTORY', label: 'In-Hand Supplies', icon: Package, badge: `${inventory.length}` },
-    { key: 'LAB_HANDOVER', label: 'NABL Lab Handover', icon: Building2, badge: '2 Labs' }
+    { key: 'INVENTORY', label: 'Live Store & Supplies', icon: Package, badge: `${inventory.length}` },
+    { key: 'PAYMENTS', label: 'Payments Ledger', icon: CreditCard, badge: 'Live UPI' },
+    { key: 'LAB_HANDOVER', label: 'NABL Lab Handover', icon: Building2, badge: '2 Labs' },
+    { key: 'PROFILE', label: 'Profile & Security', icon: User, badge: 'Verified' }
   ] : [
     { key: 'ROSTER', label: 'Claimed Pickups', icon: Bike, badge: pickups.length },
     { key: 'BROADCAST', label: 'Broadcast Overflow', icon: Zap, badge: `${broadcastJobs.length} Live` },
-    { key: 'INVENTORY', label: 'In-Hand Supplies', icon: Package, badge: `${inventory.length}` },
+    { key: 'INVENTORY', label: 'Live Store & Supplies', icon: Package, badge: `${inventory.length}` },
     { key: 'WALLET', label: 'Earnings & Wallet', icon: Wallet, badge: `₹${wallet.availableCashoutBalance?.toLocaleString('en-IN')}` },
-    { key: 'LAB_HANDOVER', label: 'NABL Lab Handover', icon: Building2, badge: '2 Labs' }
+    { key: 'PAYMENTS', label: 'Payments Ledger', icon: CreditCard, badge: 'Live UPI' },
+    { key: 'LAB_HANDOVER', label: 'NABL Lab Handover', icon: Building2, badge: '2 Labs' },
+    { key: 'PROFILE', label: 'Profile & Security', icon: User, badge: 'Verified' }
   ];
 
   return (
@@ -573,9 +585,11 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
                 {activeTab === 'ROSTER' && 'Assigned Doorstep Pickups'}
                 {activeTab === 'SHIFT_QUOTA' && 'Daily Duty Shift & Quota Monitor'}
                 {activeTab === 'BROADCAST' && 'Broadcast Overflow Marketplace'}
-                {activeTab === 'INVENTORY' && 'In-Hand Supplies & Indents'}
+                {activeTab === 'INVENTORY' && 'In-Hand Supplies & Central Store'}
                 {activeTab === 'WALLET' && 'Earnings & Payout Wallet'}
                 {activeTab === 'LAB_HANDOVER' && 'Designated Diagnostic Labs Handover'}
+                {activeTab === 'PAYMENTS' && 'Doorstep Razorpay UPI Collections'}
+                {activeTab === 'PROFILE' && 'Phlebotomist Profile & Security Settings'}
               </h1>
               <span style={{ fontSize: '0.75rem', backgroundColor: '#ECFDF5', color: '#065F46', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '900' }}>
                 {isSalaried ? 'In-House Salaried Fleet' : 'Omnipresent Fleet Desk'}
@@ -648,6 +662,7 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
               onStartTrip={handleStartTrip}
               onArriveDoorstep={handleArriveDoorstep}
               onOpenScanModal={(pk) => setActivePickupModal(pk)} 
+              onOpenPaymentModal={(pk) => setActivePaymentModalOrder(pk)}
             />
           )}
 
@@ -671,6 +686,7 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
           {activeTab === 'INVENTORY' && (
             <PhlebotomistInventoryTab
               inventory={inventory}
+              warehouseStock={warehouseStock}
               indents={indents}
               onRaiseIndent={handleRaiseIndent}
             />
@@ -689,6 +705,13 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
             />
           )}
 
+          {(activeTab === 'PROFILE' || activeTab === 'PAYMENTS') && (
+            <PhlebotomistProfileTab
+              user={user}
+              initialSubSection={activeTab === 'PAYMENTS' ? 'PAYMENTS' : 'PROFILE'}
+            />
+          )}
+
         </main>
 
       </div>
@@ -698,6 +721,16 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
         activePickupModal={activePickupModal} 
         setActivePickupModal={setActivePickupModal} 
         onCompleteCollection={handleCompleteCollection}
+      />
+
+      {/* Instant Doorstep Scan to Pay (Razorpay UPI QR) Modal */}
+      <DoorstepQrPaymentModal
+        order={activePaymentModalOrder}
+        isOpen={!!activePaymentModalOrder}
+        onClose={() => setActivePaymentModalOrder(null)}
+        onPaymentSuccess={(orderId) => {
+          setPickups(prev => prev.map(p => p.id === orderId ? { ...p, paymentStatus: 'PAID_DOORSTEP_QR' } : p));
+        }}
       />
 
       {/* Mandatory First-Login Location Permission Modal */}
