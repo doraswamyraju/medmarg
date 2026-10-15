@@ -173,9 +173,51 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             safeFetch(`${API_BASE}/api/v1/catalog/tests?limit=1000`, {}, 2500).then(r => r.json())
           ]).then(([pkgs, profs, tsts]) => {
             if (pkgs.packages && profs.profiles && tsts.tests) {
+              const localCatalog = getCatalogState();
+
+              // Safely merge profiles without losing tests or custom pricing
+              const mergedProfiles = profs.profiles.map(serverP => {
+                const localP = (localCatalog.profiles || []).find(lp => lp.code === serverP.code || lp.id === serverP.id);
+                const testsList = (serverP.tests && serverP.tests.length > 0)
+                  ? serverP.tests
+                  : (localP?.tests && localP.tests.length > 0 ? localP.tests : []);
+                return {
+                  ...serverP,
+                  tests: testsList,
+                  testCount: testsList.length || serverP.testCount || localP?.testCount || 1,
+                  labPricing: serverP.labPricing || localP?.labPricing,
+                  tierPricing: serverP.tierPricing || localP?.tierPricing
+                };
+              });
+              const serverProfCodes = new Set(profs.profiles.map(p => p.code || p.id));
+              const localOnlyProfiles = (localCatalog.profiles || []).filter(p => !serverProfCodes.has(p.code) && !serverProfCodes.has(p.id));
+              const allProfiles = [...mergedProfiles, ...localOnlyProfiles];
+
+              // Safely merge packages without losing profiles, tests or custom pricing
+              const mergedPackages = pkgs.packages.map(serverPkg => {
+                const localPkg = (localCatalog.packages || []).find(lp => lp.code === serverPkg.code || lp.id === serverPkg.id);
+                const profList = (serverPkg.profiles && serverPkg.profiles.length > 0)
+                  ? serverPkg.profiles
+                  : (localPkg?.profiles && localPkg.profiles.length > 0 ? localPkg.profiles : []);
+                const testList = (serverPkg.tests && serverPkg.tests.length > 0)
+                  ? serverPkg.tests
+                  : (localPkg?.tests && localPkg.tests.length > 0 ? localPkg.tests : []);
+                return {
+                  ...serverPkg,
+                  profiles: profList,
+                  tests: testList,
+                  testCount: profList.length * 8 + testList.length,
+                  labPricing: serverPkg.labPricing || localPkg?.labPricing,
+                  tierPricing: serverPkg.tierPricing || localPkg?.tierPricing
+                };
+              });
+              const serverPkgCodes = new Set(pkgs.packages.map(p => p.code || p.id));
+              const localOnlyPackages = (localCatalog.packages || []).filter(p => !serverPkgCodes.has(p.code) && !serverPkgCodes.has(p.id));
+              const allPackages = [...mergedPackages, ...localOnlyPackages];
+
               const updated = {
-                packages: pkgs.packages,
-                profiles: profs.profiles,
+                packages: allPackages,
+                profiles: allProfiles,
                 tests: tsts.tests
               };
               setCatalog(updated);
@@ -196,9 +238,21 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
       const data = await res.json();
       if (data.success) {
         if (data.tests && data.profiles) {
+          const localCatalog = getCatalogState();
+          const mergedProfiles = data.profiles.map(p => {
+            const localP = (localCatalog.profiles || []).find(lp => lp.code === p.code || lp.id === p.id);
+            const testsList = (p.tests && p.tests.length > 0) ? p.tests : (localP?.tests || []);
+            return {
+              ...p,
+              tests: testsList,
+              testCount: testsList.length || p.testCount || localP?.testCount || 1,
+              labPricing: p.labPricing || localP?.labPricing,
+              tierPricing: p.tierPricing || localP?.tierPricing
+            };
+          });
           const updated = {
             packages: data.packages || catalog.packages,
-            profiles: data.profiles,
+            profiles: mergedProfiles,
             tests: data.tests
           };
           setCatalog(updated);
