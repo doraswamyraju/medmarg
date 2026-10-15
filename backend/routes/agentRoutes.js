@@ -144,4 +144,185 @@ router.post('/wallet/payout', (req, res) => {
     res.json({ success: true, message: 'Payout request received and queued for dispatch.', payout: payoutReceipt });
 });
 
+// LIVE AGENT GPS LOCATION TELEMETRY & TRACKING
+router.post('/location', (req, res) => {
+    const { agentId, agentName, lat, lng, accuracy, address, heading, speed } = req.body;
+
+    if (!lat || !lng) {
+        return res.status(400).json({ error: 'Latitude and Longitude are required for agent tracking.' });
+    }
+
+    const effectiveId = agentId || 'AG-01';
+    const locPayload = {
+        lat: Number(lat),
+        lng: Number(lng),
+        accuracy: Number(accuracy) || 10,
+        address: address || 'Tirupati Live Route',
+        heading: heading || 0,
+        speed: speed || 0,
+        updatedAt: new Date().toISOString()
+    };
+
+    if (!dbStore.agentLocations) dbStore.agentLocations = {};
+    dbStore.agentLocations[effectiveId] = {
+        agentId: effectiveId,
+        agentName: agentName || 'Ramesh Kumar',
+        ...locPayload
+    };
+
+    // Update salariedAgent record if present
+    if (dbStore.salariedAgents) {
+        const ag = dbStore.salariedAgents.find(a => a.id === effectiveId);
+        if (ag) {
+            ag.lastLocation = locPayload;
+            ag.lat = locPayload.lat;
+            ag.lng = locPayload.lng;
+        }
+    }
+
+    // Update live coordinates on any active orders assigned to this agent in EN_ROUTE status
+    if (dbStore.orders) {
+        dbStore.orders.forEach(ord => {
+            if (ord.assignedAgent && ord.assignedAgent.includes(effectiveId) && (ord.status === 'EN_ROUTE' || ord.status === 'ENROUTE' || ord.status === 'ARRIVED')) {
+                ord.phleboCoords = { lat: locPayload.lat, lng: locPayload.lng };
+                ord.lastLocationPing = locPayload.updatedAt;
+            }
+        });
+    }
+
+    saveDbStore();
+
+    res.json({
+        success: true,
+        message: 'Agent GPS location updated successfully.',
+        location: locPayload
+    });
+});
+
+// GET AGENT GPS LOCATION
+router.get('/location/:agentId', (req, res) => {
+    const { agentId } = req.params;
+    const loc = dbStore.agentLocations && dbStore.agentLocations[agentId];
+    if (loc) {
+        return res.json({ success: true, location: loc });
+    }
+    // Default fallback coordinates around Tirupati central
+    res.json({
+        success: true,
+        location: {
+            agentId,
+            lat: 13.6288,
+            lng: 79.4192,
+            accuracy: 15,
+            address: 'Air Bypass Road, Tirupati (Fallback)',
+            updatedAt: new Date().toISOString()
+        }
+    });
+});
+
+// SHIFT PUNCH-IN / PUNCH-OUT
+router.post('/shift', (req, res) => {
+    const { agentId = 'AG-01', agentName = 'Ramesh Kumar', status, lat, lng } = req.body;
+    const isOnDuty = status === 'ON_DUTY';
+
+    if (!dbStore.agentShifts) dbStore.agentShifts = [];
+    const punchRecord = {
+        id: `PUNCH-${Date.now()}`,
+        agentId,
+        agentName,
+        status: isOnDuty ? 'ON_DUTY' : 'OFF_DUTY',
+        timestamp: new Date().toISOString(),
+        coords: (lat && lng) ? { lat: Number(lat), lng: Number(lng) } : null
+    };
+
+    dbStore.agentShifts.unshift(punchRecord);
+
+    if (dbStore.salariedAgents) {
+        const ag = dbStore.salariedAgents.find(a => a.id === agentId);
+        if (ag) {
+            ag.isOnDuty = isOnDuty;
+            ag.lastPunch = punchRecord;
+        }
+    }
+
+    saveDbStore();
+
+    res.json({
+        success: true,
+        isOnDuty,
+        message: isOnDuty ? 'Shift started! You are now active for auto-dispatch.' : 'Shift ended. Marked offline.',
+        record: punchRecord
+    });
+});
+
+// GET SALARIED QUOTA & PERFORMANCE STATS
+router.get('/quota-stats', (req, res) => {
+    const agentId = req.query.agentId || 'AG-01';
+    const agent = (dbStore.salariedAgents || []).find(a => a.id === agentId) || {
+        id: 'AG-01',
+        name: 'Ramesh Kumar',
+        samplesToday: 8,
+        maxDailyQuota: 15,
+        rating: 4.9,
+        zone: 'Tirupati Urban & Bypass (Zone 1)'
+    };
+
+    const completed = (dbStore.orders || []).filter(o => 
+        o.assignedAgent && o.assignedAgent.includes(agentId) && (o.status === 'SAMPLE_COLLECTED' || o.status === 'TRANSFERRED_TO_LAB')
+    ).length;
+
+    res.json({
+        success: true,
+        agentId: agent.id,
+        name: agent.name,
+        samplesToday: agent.samplesToday || completed || 8,
+        maxDailyQuota: agent.maxDailyQuota || 15,
+        quotaRemaining: Math.max(0, (agent.maxDailyQuota || 15) - (agent.samplesToday || completed || 8)),
+        rating: agent.rating || 4.9,
+        zone: agent.zone || 'Tirupati Urban (Zone 1)',
+        onTimeRate: '98%',
+        fastingAccuracy: '100%'
+    });
+});
+
+// NABL LAB SAMPLE BATCH HANDOVER
+router.post('/lab-handover', (req, res) => {
+    const { labId, labName, samplesCount, temp, otp, technicianName } = req.body;
+
+    const manifest = {
+        id: `HND-${Date.now()}`,
+        labId: labId || 'LAB-01',
+        labName: labName || 'MedMarg Central NABL Pathology Lab',
+        samplesCount: Number(samplesCount) || 1,
+        bagTemp: temp || '4.2°C',
+        handoverOtp: otp || '4821',
+        technicianName: technicianName || 'Dr. Srinivasulu MLT',
+        timestamp: new Date().toISOString(),
+        status: 'ACCEPTED_BY_LAB'
+    };
+
+    if (!dbStore.handoverManifests) dbStore.handoverManifests = [];
+    dbStore.handoverManifests.unshift(manifest);
+
+    // Update orders that were collected by agent to IN_LAB_PROCESSING
+    if (dbStore.orders) {
+        dbStore.orders.forEach(ord => {
+            if (ord.status === 'SAMPLE_COLLECTED') {
+                ord.status = 'IN_LAB_PROCESSING';
+                ord.labDestination = manifest.labName;
+                ord.labHandoverAt = manifest.timestamp;
+            }
+        });
+    }
+
+    saveDbStore();
+
+    res.json({
+        success: true,
+        message: `Successfully transferred ${manifest.samplesCount} specimens to ${manifest.labName}.`,
+        manifest
+    });
+});
+
 module.exports = router;
+
