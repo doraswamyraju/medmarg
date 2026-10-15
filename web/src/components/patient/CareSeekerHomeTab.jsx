@@ -35,7 +35,8 @@ import {
   ChevronRight,
   TrendingUp,
   AlertTriangle,
-  Calendar
+  Calendar,
+  ShieldCheck
 } from 'lucide-react';
 import CareSeekerOffersCarousel from './CareSeekerOffersCarousel';
 
