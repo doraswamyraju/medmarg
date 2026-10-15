@@ -221,7 +221,9 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         price: item.price || 499,
         mrp: item.mrp || 999,
         tatHours: item.tatHours || 24,
-        labPricing: item.labPricing || null
+        labPricing: item.labPricing || null,
+        tierPricing: item.tierPricing || null,
+        personsCount: item.personsCount || 1
       }]);
     }
   };
@@ -232,7 +234,8 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
 
   const cartTotal = cart.reduce((sum, item) => {
     const p = getItemPriceForLab(item, selectedLabProvider);
-    return sum + (p.price || item.price || 0);
+    const count = item.personsCount || 1;
+    return sum + ((p.price || item.price || 0) * count);
   }, 0);
 
   const handleOrderWhatsApp = (customText = '') => {

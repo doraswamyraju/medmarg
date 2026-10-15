@@ -52,11 +52,15 @@ export default function CareSeekerCheckoutModal({
   // Calculate order items and total based on selected lab provider
   const orderItems = cart.map(c => {
     const pricing = getItemPriceForLab(c, selectedLabProvider);
+    const count = c.personsCount || 1;
+    const baseP = c.personsCount > 1 && c.price ? c.price : pricing.price;
     return {
       id: c.id || c.code || c.name,
-      name: c.name || c.title,
-      price: pricing.price,
-      mrp: pricing.mrp,
+      name: count > 1 ? `${c.name || c.title} (${count} Persons)` : (c.name || c.title),
+      price: baseP * count,
+      pricePerPerson: baseP,
+      personsCount: count,
+      mrp: (pricing.mrp || Math.round(baseP * 1.6)) * count,
       lab: pricing.labName,
       suggestedLabName: pricing.suggestedLabName,
       isMedmargSuggested: pricing.isMedmargSuggested

@@ -70,7 +70,7 @@ export default function LiveOrdersDispatchTab({
       phone: order.phone || '',
       city: order.city || 'Tirupati',
       address: order.address || '',
-      items: order.items || '',
+      items: Array.isArray(order.items) ? order.items.map(i => i.name || i.title || i).join(', ') : (order.items || ''),
       amount: order.amount || '',
       status: order.status || 'PENDING_DISPATCH',
       assignedAgent: order.assignedAgent || 'Unassigned',
@@ -197,7 +197,9 @@ export default function LiveOrdersDispatchTab({
                       </div>
                     </td>
                     <td style={{ padding: '1rem', color: '#334155' }}>
-                      <div style={{ fontWeight: '700', color: '#0F172A' }}>{ord.items}</div>
+                      <div style={{ fontWeight: '700', color: '#0F172A' }}>
+                        {Array.isArray(ord.items) ? ord.items.map(i => i.name || i.title || i).join(', ') : (ord.items || 'Diagnostic Tests')}
+                      </div>
                       <div style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800', marginTop: '0.15rem' }}>₹{ord.amount}</div>
                     </td>
                     <td style={{ padding: '1rem' }}>

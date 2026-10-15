@@ -422,7 +422,9 @@ export default function CustomersDeskTab() {
                     <div key={ord.id} style={{ backgroundColor: '#F8FAFC', padding: '1rem', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <div style={{ fontWeight: '800', color: '#006B70', fontFamily: 'monospace' }}>{ord.id} • {ord.date}</div>
-                        <div style={{ fontSize: '0.88rem', fontWeight: '700', color: '#0F172A', marginTop: '0.2rem' }}>{ord.items}</div>
+                        <div style={{ fontSize: '0.88rem', fontWeight: '700', color: '#0F172A', marginTop: '0.2rem' }}>
+                          {Array.isArray(ord.items) ? ord.items.map(i => i.name || i.title || i).join(', ') : (ord.items || 'Diagnostic Tests')}
+                        </div>
                         <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.1rem' }}>Lab: {ord.lab}</div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
