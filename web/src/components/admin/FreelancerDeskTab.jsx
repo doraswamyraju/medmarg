@@ -57,7 +57,7 @@ export default function FreelancerDeskTab({
   const [approvingFreelancer, setApprovingFreelancer] = useState(null);
   const [commissionAmount, setCommissionAmount] = useState(300);
   const [commissionType, setCommissionType] = useState('FLAT_PER_ORDER');
-  const [assignedZone, setAssignedZone] = useState('Tirupati Urban (Zone 1)');
+  const [assignedZone, setAssignedZone] = useState('All Zones (Open Broadcast)');
 
   useEffect(() => {
     if (API_BASE) {
@@ -99,7 +99,7 @@ export default function FreelancerDeskTab({
     password: '',
     phone: '',
     city: 'Tirupati',
-    assignedZone: 'Tirupati Urban (Zone 1)',
+    assignedZone: 'All Zones (Open Broadcast)',
     qualification: 'DMLT (Diploma Medical Lab Tech)',
     paramedicalCert: 'AP-PMC-',
     experience: '3 Years',
@@ -202,7 +202,7 @@ export default function FreelancerDeskTab({
     setApprovingFreelancer(fl);
     setCommissionAmount(fl.commission || 300);
     setCommissionType(fl.commissionType || 'FLAT_PER_ORDER');
-    setAssignedZone(fl.assignedZone || 'Tirupati Urban (Zone 1)');
+    setAssignedZone(fl.assignedZone || 'All Zones (Open Broadcast)');
   };
 
   const handleConfirmApproval = async () => {
@@ -319,7 +319,7 @@ export default function FreelancerDeskTab({
       password: '',
       phone: '',
       city: 'Tirupati',
-      assignedZone: 'Tirupati Urban (Zone 1)',
+      assignedZone: 'All Zones (Open Broadcast)',
       qualification: 'DMLT (Diploma Medical Lab Tech)',
       paramedicalCert: 'AP-PMC-',
       experience: '3 Years',
@@ -603,9 +603,15 @@ export default function FreelancerDeskTab({
                           {/* Territory & City */}
                           <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                              <span style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.82rem' }}>
-                                {fl.assignedZone || 'Tirupati Urban (Zone 1)'}
-                              </span>
+                              {(!fl.assignedZone || fl.assignedZone.includes('All Zones')) ? (
+                                <span style={{ fontWeight: '800', color: '#6D28D9', backgroundColor: '#F3E8FF', padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.78rem', width: 'fit-content' }}>
+                                  🌐 All Zones (Broadcast)
+                                </span>
+                              ) : (
+                                <span style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.82rem' }}>
+                                  {fl.assignedZone}
+                                </span>
+                              )}
                               <span style={{ color: '#64748B', fontSize: '0.76rem' }}>
                                 📍 {fl.city || 'Tirupati'}
                               </span>
@@ -1210,6 +1216,24 @@ export default function FreelancerDeskTab({
                 </div>
               </div>
 
+              <div style={{ marginTop: '0.75rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>
+                  Assigned Operating Zone (Optional - Open Broadcast Allowed)
+                </label>
+                <select
+                  value={addForm.assignedZone}
+                  onChange={(e) => setAddForm({ ...addForm, assignedZone: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem', fontWeight: '600' }}
+                >
+                  <option value="All Zones (Open Broadcast)">🌐 All Zones (Open Broadcast / Any Area - Default)</option>
+                  <option value="Tirupati Urban (Zone 1 - Central)">Tirupati Urban (Zone 1 - Central)</option>
+                  <option value="Tirupati Bypass & Outer (Zone 2)">Tirupati Bypass & Outer (Zone 2)</option>
+                  <option value="Chandragiri & Suburbs (Zone 3)">Chandragiri & Suburbs (Zone 3)</option>
+                  <option value="Renigunta Industrial (Zone 4)">Renigunta Industrial (Zone 4)</option>
+                  <option value="Chittoor District Highway (Zone 5)">Chittoor District Highway (Zone 5)</option>
+                </select>
+              </div>
+
               <div style={{ marginTop: '1rem', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                 <button 
                   type="button" 
@@ -1301,12 +1325,13 @@ export default function FreelancerDeskTab({
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Assigned Zone</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Assigned Operating Zone</label>
                   <select
-                    value={editingFreelancer.assignedZone || 'Tirupati Urban (Zone 1)'}
+                    value={editingFreelancer.assignedZone || 'All Zones (Open Broadcast)'}
                     onChange={(e) => setEditingFreelancer({ ...editingFreelancer, assignedZone: e.target.value })}
                     style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
                   >
+                    <option value="All Zones (Open Broadcast)">🌐 All Zones (Open Broadcast - Any Area)</option>
                     <option value="Tirupati Urban (Zone 1 - Central)">Tirupati Urban (Zone 1 - Central)</option>
                     <option value="Tirupati Bypass & Outer (Zone 2)">Tirupati Bypass & Outer (Zone 2)</option>
                     <option value="Chandragiri & Suburbs (Zone 3)">Chandragiri & Suburbs (Zone 3)</option>
@@ -1480,24 +1505,25 @@ export default function FreelancerDeskTab({
                 </div>
               </div>
 
-              {/* Assigned Operating Zone (Admin Controlled) */}
+              {/* Assigned Operating Zone (Admin Controlled - Optional) */}
               <div>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '800', color: '#334155', marginBottom: '0.4rem' }}>
-                  Assign Operating Zone (Admin Enforced):
+                  Assign Operating Zone (Optional - Open Broadcast Allowed):
                 </label>
                 <select
                   value={assignedZone}
                   onChange={(e) => setAssignedZone(e.target.value)}
                   style={{ width: '100%', padding: '0.7rem 0.9rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '0.88rem', fontWeight: '800', color: '#0F172A', backgroundColor: '#FFFFFF' }}
                 >
-                  <option value="Tirupati Urban (Zone 1)">Tirupati Urban (Zone 1 - Central)</option>
+                  <option value="All Zones (Open Broadcast)">🌐 All Zones (Open Broadcast / Any Area - Recommended)</option>
+                  <option value="Tirupati Urban (Zone 1 - Central)">Tirupati Urban (Zone 1 - Central)</option>
                   <option value="Tirupati Bypass & Outer (Zone 2)">Tirupati Bypass & Outer (Zone 2)</option>
                   <option value="Chandragiri & Suburbs (Zone 3)">Chandragiri & Suburbs (Zone 3)</option>
                   <option value="Renigunta Industrial (Zone 4)">Renigunta Industrial (Zone 4)</option>
                   <option value="Chittoor District Highway (Zone 5)">Chittoor District Highway (Zone 5)</option>
                 </select>
                 <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: '0.35rem' }}>
-                  🔒 Freelancer cannot access or alter zones independently. Restricted to broadcasts within this territory.
+                  💡 Not mandatory. Selecting "All Zones (Open Broadcast)" allows this freelancer to receive broadcast requests across all territories.
                 </div>
               </div>
 

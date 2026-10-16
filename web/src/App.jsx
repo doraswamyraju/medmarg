@@ -89,6 +89,10 @@ export default function App() {
         return <StaffDashboard user={currentUser} onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
       
       case 'FREELANCER_AGENT':
+      case 'FREELANCE_AGENT':
+      case 'FREELANCE':
+      case 'FREELANCER':
+      case 'GIG_AGENT':
         return <PhlebotomistDashboard user={currentUser} agentType="FREELANCE" onSwitchRole={handleSwitchRole} onLogout={handleLogout} />;
       
       case 'SALARIED_AGENT':

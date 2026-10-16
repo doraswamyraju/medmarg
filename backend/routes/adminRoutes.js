@@ -48,7 +48,7 @@ router.post('/freelancers', (req, res) => {
         qualification = 'DMLT (Diploma Medical Lab Tech)', 
         paramedicalCert, 
         experience = '3 Years',
-        assignedZone = 'Tirupati Urban (Zone 1)',
+        assignedZone = 'All Zones (Open Broadcast)',
         commission = 300
     } = req.body;
 
@@ -62,7 +62,7 @@ router.post('/freelancers', (req, res) => {
         qualification,
         paramedicalCert: paramedicalCert || `AP-PMC-${Math.floor(10000 + Math.random() * 90000)}`,
         experience,
-        assignedZone,
+        assignedZone: assignedZone || 'All Zones (Open Broadcast)',
         commission: Number(commission) || 300,
         regFeePaid: true,
         feeAmount: dbStore.settings?.freelancerOnboardingFee || 2000,
@@ -84,7 +84,8 @@ router.post('/freelancers', (req, res) => {
         email: newFreelancer.email,
         phone: newFreelancer.phone,
         password: newFreelancer.password,
-        role: 'FREELANCE_AGENT',
+        role: 'FREELANCER_AGENT',
+        agentType: 'FREELANCE',
         organization: 'MedMarg Freelance Phlebotomy Fleet'
     });
 
@@ -102,12 +103,14 @@ router.put('/freelancers/:id', (req, res) => {
 
     // Also update in dbStore.users if email/phone changed
     if (dbStore.users) {
-        const u = dbStore.users.find(usr => usr.id === id || usr.email === fl.email);
+        const u = dbStore.users.find(usr => usr.id === id || usr.email === fl.email || (usr.phone && usr.phone === fl.phone));
         if (u) {
             if (req.body.name) u.name = req.body.name;
             if (req.body.phone) u.phone = req.body.phone;
             if (req.body.email) u.email = req.body.email;
             if (req.body.password) u.password = req.body.password;
+            u.role = 'FREELANCER_AGENT';
+            u.agentType = 'FREELANCE';
         }
     }
 
@@ -143,8 +146,28 @@ router.post('/freelancers/verify', (req, res) => {
             fl.payoutPending = fee;
             fl.commission = Number(commission) || 300;
             fl.commissionType = commissionType || 'FLAT_PER_ORDER';
-            fl.assignedZone = assignedZone || 'Tirupati Urban (Zone 1)';
+            fl.assignedZone = assignedZone || 'All Zones (Open Broadcast)';
             fl.approvedAt = new Date().toISOString();
+
+            // Ensure credentials in users store
+            if (!dbStore.users) dbStore.users = [];
+            let u = dbStore.users.find(usr => usr.id === id || usr.email === fl.email || (usr.phone && usr.phone === fl.phone));
+            if (u) {
+                u.role = 'FREELANCER_AGENT';
+                u.agentType = 'FREELANCE';
+                if (fl.password) u.password = fl.password;
+            } else {
+                dbStore.users.push({
+                    id: fl.id,
+                    name: fl.name,
+                    email: fl.email,
+                    phone: fl.phone,
+                    password: fl.password || 'Medmarg@123',
+                    role: 'FREELANCER_AGENT',
+                    agentType: 'FREELANCE',
+                    organization: 'MedMarg Freelance Phlebotomy Fleet'
+                });
+            }
         }
         saveDbStore();
         return res.json({ success: true, freelancer: fl });

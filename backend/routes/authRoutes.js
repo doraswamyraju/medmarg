@@ -24,15 +24,33 @@ router.post('/login', (req, res) => {
 
     const cleanId = identifier.trim().toLowerCase().replace(/\s+/g, '');
 
-    // Search in registered users store and DEMO_USERS_DB first
-    const allUsers = [...(dbStore.users || []), ...DEMO_USERS_DB];
+    // Search in registered users store, live freelancers store, and DEMO_USERS_DB
+    const dynamicFreelancers = (dbStore.freelancers || []).map(f => ({
+        id: f.id,
+        name: f.name,
+        email: f.email,
+        phone: f.phone,
+        password: f.password,
+        role: 'FREELANCER_AGENT',
+        agentType: 'FREELANCE',
+        organization: 'MedMarg Freelance Phlebotomist Network'
+    }));
+
+    const allUsers = [...(dbStore.users || []), ...dynamicFreelancers, ...DEMO_USERS_DB];
     const foundUser = allUsers.find(u => 
         (u.email && u.email.toLowerCase() === cleanId) || 
-        (u.phone && (u.phone === cleanId || u.phone === cleanId.replace(/\D/g, ''))) ||
+        (u.phone && (u.phone === cleanId || u.phone.replace(/\D/g, '') === cleanId.replace(/\D/g, ''))) ||
+        (u.id && u.id.toLowerCase() === cleanId) ||
         (u.email && cleanId.includes(u.email.split('@')[0]))
     );
 
     if (foundUser) {
+        // Normalize role if freelancer
+        let finalRole = foundUser.role;
+        if (finalRole === 'FREELANCE_AGENT' || finalRole === 'FREELANCE' || finalRole === 'FREELANCER') {
+            finalRole = 'FREELANCER_AGENT';
+        }
+
         return res.json({
             success: true,
             token: `jwt_medmarg_${Date.now()}`,
@@ -42,8 +60,9 @@ router.post('/login', (req, res) => {
                 email: foundUser.email,
                 phone: foundUser.phone,
                 identifier: identifier,
-                role: foundUser.role,
-                organization: foundUser.organization
+                role: finalRole,
+                agentType: 'FREELANCE',
+                organization: foundUser.organization || 'MedMarg Healthcare'
             }
         });
     }
@@ -61,9 +80,9 @@ router.post('/login', (req, res) => {
         detectedRole = 'STAFF';
         name = 'MedMarg Operations Staff';
         organization = 'MedMarg Central Operations Desk';
-    } else if (cleanId.includes('freelance') || cleanId.includes('gig')) {
+    } else if (cleanId.includes('freelance') || cleanId.includes('gig') || cleanId.startsWith('fl') || cleanId.includes('fl-')) {
         detectedRole = 'FREELANCER_AGENT';
-        name = 'Suresh Phlebotomy (Freelancer)';
+        name = 'Freelance Phlebotomist';
         organization = 'MedMarg Freelance Phlebotomist Network';
     } else if (cleanId.includes('salaried') || cleanId.includes('agent') || cleanId.includes('phlebo')) {
         detectedRole = 'SALARIED_AGENT';
