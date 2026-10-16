@@ -88,9 +88,9 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
       role = 'STAFF';
       name = 'MedMarg Operations Staff';
       organization = 'MedMarg Central Operations Desk';
-    } else if (lower.includes('freelance') || lower.includes('gig')) {
+    } else if (lower.includes('freelance') || lower.includes('gig') || lower.startsWith('fl') || lower.includes('fl-')) {
       role = 'FREELANCER_AGENT';
-      name = 'Suresh Phlebotomy (Freelancer)';
+      name = 'Freelance Phlebotomist';
       organization = 'MedMarg Freelance Phlebotomist Network';
     } else if (lower.includes('salaried') || lower.includes('agent') || lower.includes('phlebo')) {
       role = 'SALARIED_AGENT';

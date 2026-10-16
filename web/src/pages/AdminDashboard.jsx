@@ -305,6 +305,8 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     }
   };
 
+  const pendingFreelancerCount = freelancers.filter(f => f.status === 'PENDING_VERIFICATION').length;
+
   // Navigation Items (Single Word Labels)
   const navMenuItems = [
     { key: 'TESTS_MGMT', label: 'Tests', icon: FlaskConical, badge: `${(catalog.tests?.length || 913) + (catalog.profiles?.length || 87)}` },
@@ -312,7 +314,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { key: 'CUSTOMERS', label: 'Customers', icon: Users, badge: 'Care Seekers' },
     { key: 'GPS_RADAR', label: 'Tracking', icon: Navigation, badge: 'Live GPS' },
     { key: 'TERRITORY_MGMT', label: 'Territories', icon: Compass, badge: `${territories.length} Zones` },
-    { key: 'FREELANCERS', label: 'Freelancers', icon: Briefcase, badge: `${freelancers.filter(f => f.status === 'PENDING_VERIFICATION').length} Pending` },
+    { key: 'FREELANCERS', label: 'Freelancers', icon: Briefcase, badge: pendingFreelancerCount > 0 ? `${pendingFreelancerCount} Pending` : null },
     { key: 'SALARIED_FLEET', label: 'Fleet', icon: Truck, badge: `${salariedAgents.length}` },
     { key: 'INVENTORY', label: 'Inventory', icon: Boxes, badge: `${indents.filter(i => i.status === 'PENDING_APPROVAL').length || 1}` },
     { key: 'STAFF', label: 'Staff', icon: UserCog, badge: '5 Active' },
@@ -488,10 +490,16 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                     width: '100%'
                   }}
                 >
-                  <IconComp size={18} color={isActive ? '#FBBF24' : '#64748B'} />
-                  {!sidebarCollapsed && <span style={{ flex: 1 }}>{item.label}</span>}
-                  {!sidebarCollapsed && item.badge !== undefined && (
-                    <span style={{ fontSize: '0.72rem', backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : '#F1F5F9', color: isActive ? '#FFFFFF' : '#475569', padding: '0.15rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
+                  {IconComp && (
+                    <IconComp 
+                      size={18} 
+                      color={isActive ? '#FBBF24' : '#64748B'} 
+                      style={{ flexShrink: 0, minWidth: '18px', minHeight: '18px' }} 
+                    />
+                  )}
+                  {!sidebarCollapsed && <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>}
+                  {!sidebarCollapsed && !!item.badge && (
+                    <span style={{ fontSize: '0.72rem', backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : '#F1F5F9', color: isActive ? '#FFFFFF' : '#475569', padding: '0.15rem 0.45rem', borderRadius: '6px', fontWeight: '800', flexShrink: 0 }}>
                       {item.badge}
                     </span>
                   )}
