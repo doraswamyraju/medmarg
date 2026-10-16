@@ -87,10 +87,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   ]);
 
   // Freelancer Qualification Desk State
-  const [freelancers, setFreelancers] = useState([
-    { id: 'FL-101', name: 'Ankit Sharma', phone: '+91 98765 22114', city: 'Tirupati', qualification: 'DMLT (Diploma Medical Lab Tech)', paramedicalCert: 'AP-PMC-89102', experience: '3 Years', regFeePaid: true, feeAmount: 2000, walletBalance: 2000, status: 'PENDING_VERIFICATION' },
-    { id: 'FL-102', name: 'Sneha Reddy', phone: '+91 98765 33221', city: 'Bangalore', qualification: 'BSc MLT (Bachelor MLT)', paramedicalCert: 'KA-PMC-44109', experience: '5 Years', regFeePaid: true, feeAmount: 2000, walletBalance: 2000, status: 'APPROVED' }
-  ]);
+  const [freelancers, setFreelancers] = useState([]);
 
   // Salaried Agents Quota State
   const [salariedAgents, setSalariedAgents] = useState([
@@ -152,11 +149,11 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
           safeFetch(`${API_BASE}/api/v1/admin/territories`, {}, 2500).then(r => r.json())
         ]);
 
-        if (ordersRes.orders && ordersRes.orders.length > 0) setOrders(ordersRes.orders);
-        if (flRes.freelancers && flRes.freelancers.length > 0) setFreelancers(flRes.freelancers);
-        if (indRes.indents && indRes.indents.length > 0) setIndents(indRes.indents);
-        if (partRes.partners && partRes.partners.length > 0) setPartnerQueue(partRes.partners);
-        if (terrRes.territories && terrRes.territories.length > 0) setTerritories(terrRes.territories);
+        if (ordersRes && Array.isArray(ordersRes.orders)) setOrders(ordersRes.orders);
+        if (flRes && Array.isArray(flRes.freelancers)) setFreelancers(flRes.freelancers);
+        if (indRes && Array.isArray(indRes.indents)) setIndents(indRes.indents);
+        if (partRes && Array.isArray(partRes.partners)) setPartnerQueue(partRes.partners);
+        if (terrRes && Array.isArray(terrRes.territories)) setTerritories(terrRes.territories);
       } catch (err) {}
     }
     loadDbRecords();

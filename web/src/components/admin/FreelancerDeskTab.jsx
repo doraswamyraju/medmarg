@@ -141,54 +141,18 @@ export default function FreelancerDeskTab({
       urgency: 'NORMAL',
       status: 'CLAIMED',
       broadcastTime: '25 mins ago',
-      claimedBy: 'Ankit Sharma (FL-101)'
-    },
-    {
-      id: 'TASK-8899',
-      orderId: 'MM-8919',
-      patientName: 'Radhika Devi',
-      area: 'Air Bypass Rd, Tirupati',
-      tests: 'Thyroid Panel (T3, T4, TSH Ultra-Sensitive)',
-      payoutAmount: 200,
-      urgency: 'COMPLETED',
-      status: 'DELIVERED_TO_LAB',
-      broadcastTime: '2 hours ago',
-      claimedBy: 'Sneha Reddy (FL-102)'
+      claimedBy: 'Doraswamy Raju (FL-502)'
     }
   ]);
 
   // Wallet & Payout Ledger (Sub-Tab 3)
   const [ledgerEntries, setLedgerEntries] = useState([
     {
-      id: 'TX-901',
-      date: 'Today 09:15 AM',
-      freelancerId: 'FL-102',
-      freelancerName: 'Sneha Reddy',
-      orderRef: 'MM-8919',
-      type: 'COLLECTION_COMMISSION',
-      desc: 'Doorstep Collection Commission: Thyroid Profile',
-      amount: 200,
-      status: 'CREDITED_TO_WALLET',
-      payoutMode: 'WALLET_BALANCE'
-    },
-    {
-      id: 'TX-900',
-      date: 'Yesterday 06:40 PM',
-      freelancerId: 'FL-102',
-      freelancerName: 'Sneha Reddy',
-      orderRef: 'PAYOUT-OCT-05',
-      type: 'UPI_PAYOUT_SETTLEMENT',
-      desc: 'Instant UPI Settlement to Sneha Reddy (sneha@oksbi)',
-      amount: -1500,
-      status: 'SETTLED_SUCCESS',
-      payoutMode: 'UPI_INSTANT'
-    },
-    {
       id: 'TX-899',
-      date: 'Yesterday 11:20 AM',
-      freelancerId: 'FL-101',
-      freelancerName: 'Ankit Sharma',
-      orderRef: 'ONBOARD-SEC-101',
+      date: 'Today 11:20 AM',
+      freelancerId: 'FL-502',
+      freelancerName: 'Doraswamy Raju',
+      orderRef: 'ONBOARD-SEC-502',
       type: 'SECURITY_DEPOSIT_CREDIT',
       desc: 'Onboarding Security Deposit Credit upon Paramedical KYC',
       amount: 2000,

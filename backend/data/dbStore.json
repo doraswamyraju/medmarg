@@ -144,30 +144,26 @@
   ],
   "freelancers": [
     {
-      "id": "FL-101",
-      "name": "Ankit Sharma",
-      "phone": "+91 98765 22114",
+      "id": "FL-502",
+      "name": "Doraswamy Raju",
+      "phone": "9848022338",
+      "email": "freelancer@medmarg.com",
       "city": "Tirupati",
+      "assignedZone": "All Zones (Open Broadcast)",
       "qualification": "DMLT (Diploma Medical Lab Tech)",
-      "paramedicalCert": "AP-PMC-89102",
+      "paramedicalCert": "AP-PMC-12345",
       "experience": "3 Years",
       "regFeePaid": true,
       "feeAmount": 2000,
       "walletBalance": 2000,
-      "status": "PENDING_VERIFICATION"
-    },
-    {
-      "id": "FL-102",
-      "name": "Sneha Reddy",
-      "phone": "+91 98765 33221",
-      "city": "Bangalore",
-      "qualification": "BSc MLT (Bachelor MLT)",
-      "paramedicalCert": "KA-PMC-44109",
-      "experience": "5 Years",
-      "regFeePaid": true,
-      "feeAmount": 2000,
-      "walletBalance": 2000,
-      "status": "APPROVED"
+      "commission": 100,
+      "commissionType": "FLAT_PER_ORDER",
+      "status": "APPROVED",
+      "role": "FREELANCER_AGENT",
+      "rating": 4.9,
+      "completedOrders": 0,
+      "earnings": 0,
+      "payoutPending": 2000
     }
   ],
   "salariedAgents": [
