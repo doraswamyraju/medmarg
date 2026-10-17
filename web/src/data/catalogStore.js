@@ -3,7 +3,7 @@
 
 import initialCatalog from './catalogData.json';
 
-const STORAGE_KEY = 'medmarg_catalog_v3';
+const STORAGE_KEY = 'medmarg_catalog_v4';
 
 // Load stored state or fallback to default ingested json
 export function getCatalogState() {
@@ -34,12 +34,15 @@ export function saveCatalogState(state) {
  */
 export function filterCatalogItems(items = [], query = '', fastingFilter = 'ALL', sampleFilter = 'ALL') {
     return items.filter(item => {
-        // Query match
         const q = query.trim().toLowerCase();
+        const aliasStr = Array.isArray(item.aliasNames) 
+            ? item.aliasNames.join(' ') 
+            : (typeof item.aliasNames === 'string' ? item.aliasNames : '');
         const matchesQuery = !q || 
             (item.name && item.name.toLowerCase().includes(q)) ||
             (item.code && item.code.toLowerCase().includes(q)) ||
-            (item.sampleType && item.sampleType.toLowerCase().includes(q));
+            (item.sampleType && item.sampleType.toLowerCase().includes(q)) ||
+            aliasStr.toLowerCase().includes(q);
 
         // Fasting match
         const matchesFasting = fastingFilter === 'ALL' || item.fasting === fastingFilter;

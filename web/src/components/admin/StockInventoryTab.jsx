@@ -399,6 +399,42 @@ export default function StockInventoryTab({
     componentsText: ''
   });
 
+  const [purchaseForm, setPurchaseForm] = useState({
+    poNumber: `PO-MM-${Math.floor(4400 + Math.random() * 100)}`,
+    vendor: 'Becton Dickinson (BD India Pvt Ltd)',
+    invoiceNo: '',
+    batchNo: '',
+    mfgDate: '',
+    expDate: '',
+    itemCode: 'STK-01',
+    quantity: 1000,
+    unitCost: 14,
+    receivedBy: 'Anand Store Lead'
+  });
+
+  const [indentForm, setIndentForm] = useState({
+    id: `IND-${Math.floor(500 + Math.random() * 500)}`,
+    agentName: 'Ramesh Kumar (AG-01)',
+    agentType: 'SALARIED_AGENT',
+    area: 'Tirupati Central',
+    requestedItems: '50x Gold SST Tubes, 20x Purple EDTA Tubes',
+    paymentMode: 'Company Quota Allocation (Free)'
+  });
+
+  const [allocateForm, setAllocateForm] = useState({
+    agentId: 'AG-01',
+    itemCode: 'STK-01',
+    quantity: 50,
+    notes: 'Shift Routine Refill'
+  });
+
+  const [scrapForm, setScrapForm] = useState({
+    itemCode: 'STK-01',
+    batchNo: 'SST-2026-09',
+    quantity: 10,
+    reason: 'Defective Vacuum / Damaged Stopper'
+  });
+
   const handleOpenAddSingle = () => {
     setEditingStockItem(null);
     setStockForm({

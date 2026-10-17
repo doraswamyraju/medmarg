@@ -48,7 +48,8 @@ data class CatalogItem(
     val tagline: String? = null,
     val popular: Boolean? = false,
     val fastingNote: String? = null,
-    val sampleTypes: List<String>? = null
+    val sampleTypes: List<String>? = null,
+    val aliasNames: List<String>? = null
 ) {
     val isPackage: Boolean
         get() = (itemType == "PACKAGE") || id.startsWith("PKG_") || (profiles != null && profiles.isNotEmpty())

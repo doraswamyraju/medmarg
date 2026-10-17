@@ -78,7 +78,8 @@ export default function CatalogManagementTab({
   // Filtered lists (defined before pagination calculation)
   const filteredTests = (catalog?.tests || []).filter(t => {
     const q = (searchTerm || '').toLowerCase();
-    const matchQuery = !q || (t.name && t.name.toLowerCase().includes(q)) || (t.code && t.code.toLowerCase().includes(q));
+    const aliasStr = Array.isArray(t.aliasNames) ? t.aliasNames.join(' ') : (t.aliasNames || '');
+    const matchQuery = !q || (t.name && t.name.toLowerCase().includes(q)) || (t.code && t.code.toLowerCase().includes(q)) || aliasStr.toLowerCase().includes(q);
     const matchFasting = filterFasting === 'ALL' || t.fasting === filterFasting;
     const matchSample = filterSample === 'ALL' || (t.sampleType && t.sampleType.includes(filterSample));
     return matchQuery && matchFasting && matchSample;
@@ -108,6 +109,7 @@ export default function CatalogManagementTab({
   const [testForm, setTestForm] = useState({
     code: '',
     name: '',
+    aliasNames: '',
     sampleType: 'SERUM',
     fasting: 'NO',
     mrp: 499,
@@ -156,6 +158,7 @@ export default function CatalogManagementTab({
     setTestForm({
       code: '',
       name: '',
+      aliasNames: '',
       sampleType: 'SERUM',
       fasting: 'NO',
       mrp: 499,
@@ -173,9 +176,11 @@ export default function CatalogManagementTab({
     setEditingItem(test);
     const labs = getItemLabPricing(test);
     const tiers = getItemTierPricing(test);
+    const aliasStr = Array.isArray(test.aliasNames) ? test.aliasNames.join(', ') : (test.aliasNames || '');
     setTestForm({
       code: test.code || '',
       name: test.name || '',
+      aliasNames: aliasStr,
       sampleType: test.sampleType || 'SERUM',
       fasting: test.fasting || 'NO',
       mrp: test.mrp || 499,
@@ -279,9 +284,11 @@ export default function CatalogManagementTab({
     setEditingItem(null);
     const labs = getItemLabPricing(test);
     const tiers = getItemTierPricing(test);
+    const aliasStr = Array.isArray(test.aliasNames) ? test.aliasNames.join(', ') : (test.aliasNames || '');
     setTestForm({
       code: `${test.code}_COPY`,
       name: `${test.name} (Copy)`,
+      aliasNames: aliasStr,
       sampleType: test.sampleType || 'SERUM',
       fasting: test.fasting || 'NO',
       mrp: test.mrp || 499,
@@ -456,11 +463,16 @@ export default function CatalogManagementTab({
       ? testForm.tierPricing
       : getDefaultTierPricing(baseP, baseM);
 
+    const aliasArray = typeof testForm.aliasNames === 'string'
+      ? testForm.aliasNames.split(',').map(s => s.trim()).filter(Boolean)
+      : (Array.isArray(testForm.aliasNames) ? testForm.aliasNames : []);
+
     const newTest = {
       id: editingItem ? editingItem.id : `TEST_${(catalog.tests?.length || 0) + 1}`,
       serialNo: editingItem ? editingItem.serialNo : (catalog.tests?.length || 0) + 1,
       code: testForm.code.trim().toUpperCase(),
       name: testForm.name.trim(),
+      aliasNames: aliasArray,
       sampleType: testForm.sampleType.trim().toUpperCase(),
       fasting: testForm.fasting.trim().toUpperCase(),
       category: 'Individual Test',
@@ -815,8 +827,7 @@ export default function CatalogManagementTab({
             { key: 'LAB_PRICING', label: 'Rate & Slabs Desk', icon: DollarSign, count: (catalog.tests?.length || 0) + (catalog.profiles?.length || 0) + (catalog.packages?.length || 0) },
             { key: 'TESTS', label: 'Single Tests Master', icon: FlaskConical, count: catalog.tests?.length ?? 0 },
             { key: 'PROFILES', label: 'Diagnostic Profiles', icon: Layers, count: catalog.profiles?.length ?? 0 },
-            { key: 'PACKAGES', label: 'Health Packages', icon: Package, count: catalog.packages?.length ?? 0 },
-            { key: 'SYNC_HUB', label: 'Google Sheets Sync', icon: FileSpreadsheet }
+            { key: 'PACKAGES', label: 'Health Packages', icon: Package, count: catalog.packages?.length ?? 0 }
           ].map(st => {
             const isSel = testsSubTab === st.key;
             const IconC = st.icon;
@@ -1246,8 +1257,17 @@ export default function CatalogManagementTab({
                         #{test.serialNo || '-'} • {test.code}
                       </td>
                       <td style={{ padding: '1rem', fontWeight: '700', color: '#0F172A' }}>
-                        {test.name}
-                        <div style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: '500', marginTop: '0.15rem' }}>
+                        <div>{test.name}</div>
+                        {test.aliasNames && (Array.isArray(test.aliasNames) ? test.aliasNames : test.aliasNames.split(',')).length > 0 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.3rem' }}>
+                            {(Array.isArray(test.aliasNames) ? test.aliasNames : test.aliasNames.split(',')).map((alias, aIdx) => (
+                              <span key={aIdx} style={{ fontSize: '0.68rem', backgroundColor: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '700' }}>
+                                aka: {alias.trim()}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div style={{ fontSize: '0.74rem', color: '#64748B', fontWeight: '500', marginTop: '0.2rem' }}>
                           TAT: {test.tatHours || 24} Hours
                         </div>
                       </td>
@@ -1581,16 +1601,6 @@ export default function CatalogManagementTab({
         </div>
       )}
 
-      {/* 5. GOOGLE SHEETS SYNC HUB */}
-      {testsSubTab === 'SYNC_HUB' && (
-        <div style={{ backgroundColor: '#1E293B', borderRadius: '20px', border: '1.5px solid #006B70', padding: '2rem' }}>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: '900', color: '#FFF' }}>Google Sheets Live Sync Engine</h2>
-          <p style={{ color: '#94A3B8', marginTop: '0.5rem' }}>Connected Sheet ID: 1W37T0qzCZDYoBYPIG5MsWZeBZrict_BfDUx9itGSZp0</p>
-          <button onClick={triggerGoogleSheetsSync} style={{ marginTop: '1.5rem', padding: '0.85rem 1.75rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontWeight: '900', cursor: 'pointer' }}>
-            Trigger Manual Refresh & Sync
-          </button>
-        </div>
-      )}
 
       {/* MODAL 1: ADD / EDIT SINGLE TEST (WITH MULTI-LAB & VOLUME SLABS) */}
       {showCreateTestModal && (
@@ -1671,6 +1681,23 @@ export default function CatalogManagementTab({
                         required
                         style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontWeight: '800', fontSize: '0.88rem' }}
                       />
+                    </div>
+                  </div>
+
+                  {/* Alias Names */}
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: '#475569', fontWeight: '800', display: 'block', marginBottom: '0.2rem' }}>
+                      Alias Names / Alternative Search Terms (Comma-separated)
+                    </label>
+                    <input
+                      type="text"
+                      value={testForm.aliasNames || ''}
+                      onChange={(e) => setTestForm({ ...testForm, aliasNames: e.target.value })}
+                      placeholder="e.g. Complete Hemogram, CBC Test, Full Blood Count, FBC"
+                      style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                    />
+                    <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '0.2rem' }}>
+                      Patients and doctors can search for this test using any of these alternative names.
                     </div>
                   </div>
 

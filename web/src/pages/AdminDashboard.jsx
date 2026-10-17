@@ -813,17 +813,6 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
               Omnipresent Master System
             </span>
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <button
-              onClick={triggerGoogleSheetsSync}
-              disabled={isSyncingSheets}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: isSyncingSheets ? '#94A3B8' : '#006B70', color: '#FFF', padding: '0.55rem 1.1rem', borderRadius: '10px', border: 'none', fontWeight: '800', fontSize: '0.84rem', cursor: isSyncingSheets ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(0,107,112,0.2)' }}
-            >
-              <RefreshCw size={15} className={isSyncingSheets ? 'animate-spin' : ''} />
-              {isSyncingSheets ? 'Syncing with Sheets...' : 'Sync with Google Sheets'}
-            </button>
-          </div>
         </header>
 
         {/* Dynamic Modular Workspace Body */}
