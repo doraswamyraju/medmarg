@@ -101,31 +101,10 @@ export default function MultiLabPricingEditor({
               Multi-Laboratory Price Differentiation Matrix
             </div>
             <div style={{ fontSize: '0.76rem', color: '#15803D', marginTop: '0.1rem' }}>
-              Admin and assigned staff can set individual lab rates, offer prices, and turnaround times per laboratory.
+              Admin and assigned staff can configure, rename, add, or remove certified pathology lab partners.
             </div>
           </div>
         </div>
-
-        <button
-          type="button"
-          onClick={handleAutoPopulate}
-          style={{
-            padding: '0.45rem 0.85rem',
-            backgroundColor: '#006B70',
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '0.78rem',
-            fontWeight: '800',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-            boxShadow: '0 2px 8px rgba(0,107,112,0.2)'
-          }}
-        >
-          <Sparkles size={14} /> Auto-Generate Slabs (from ₹{basePrice})
-        </button>
       </div>
 
       {/* Lab Cards List */}
@@ -190,15 +169,15 @@ export default function MultiLabPricingEditor({
               {/* Card Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                  <span style={{ fontSize: '1.15rem', fontWeight: '900', color: brandColor }}>
-                    {idx + 1}. {lab.labName || (isMedmarg ? 'MedMarg' : isThyrocare ? 'Thyrocare' : isLalpath ? 'Dr. Lal PathLabs' : 'Custom Lab')}
+                  <span style={{ fontSize: '1.1rem', fontWeight: '900', color: brandColor }}>
+                    #{idx + 1} {lab.labName || `Lab Partner #${idx + 1}`}
                   </span>
                   <span style={{ fontSize: '0.7rem', backgroundColor: badgeBg, color: badgeColor, padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '900' }}>
                     {badgeText}
                   </span>
                 </div>
 
-                {isCustom && (
+                {labs.length > 1 && (
                   <button
                     type="button"
                     onClick={() => removeLab(idx)}
@@ -220,57 +199,31 @@ export default function MultiLabPricingEditor({
               </div>
 
               {/* Grid of Inputs */}
-              <div style={{ display: 'grid', gridTemplateColumns: isMedmarg ? '1.4fr 1fr 1fr 0.9fr' : isCustom ? '1.4fr 1fr 1fr 0.9fr' : '1fr 1fr 1fr 0.9fr', gap: '0.75rem', alignItems: 'end' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr 1fr 0.9fr', gap: '0.75rem', alignItems: 'end' }}>
                 
-                {/* Lab Name or Subtitle */}
-                {isMedmarg && (
-                  <div>
-                    <label style={{ fontSize: '0.74rem', color: '#004D40', fontWeight: '800', display: 'block', marginBottom: '0.25rem' }}>
-                      Suggested Processing Hub (Subtext)
-                    </label>
-                    <input
-                      type="text"
-                      value={lab.suggestedLabName || ''}
-                      onChange={(e) => updateLab(idx, 'suggestedLabName', e.target.value)}
-                      placeholder="e.g. Central Regional Partner Hub"
-                      style={{
-                        width: '100%',
-                        padding: '0.55rem 0.75rem',
-                        border: '1.5px solid #006B70',
-                        borderRadius: '8px',
-                        color: '#0F172A',
-                        fontWeight: '700',
-                        fontSize: '0.84rem',
-                        backgroundColor: '#FFFFFF'
-                      }}
-                    />
-                  </div>
-                )}
-
-                {isCustom && (
-                  <div>
-                    <label style={{ fontSize: '0.74rem', color: '#4338CA', fontWeight: '800', display: 'block', marginBottom: '0.25rem' }}>
-                      Partner Lab Brand Name
-                    </label>
-                    <input
-                      type="text"
-                      value={lab.labName || ''}
-                      onChange={(e) => updateLab(idx, 'labName', e.target.value)}
-                      placeholder="e.g. Apollo Diagnostics / Metropolis"
-                      required
-                      style={{
-                        width: '100%',
-                        padding: '0.55rem 0.75rem',
-                        border: '1.5px solid #6366F1',
-                        borderRadius: '8px',
-                        color: '#0F172A',
-                        fontWeight: '800',
-                        fontSize: '0.84rem',
-                        backgroundColor: '#FFFFFF'
-                      }}
-                    />
-                  </div>
-                )}
+                {/* Lab Name (Editable for all labs) */}
+                <div>
+                  <label style={{ fontSize: '0.74rem', color: brandColor, fontWeight: '800', display: 'block', marginBottom: '0.25rem' }}>
+                    Lab Brand Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={lab.labName || ''}
+                    onChange={(e) => updateLab(idx, 'labName', e.target.value)}
+                    placeholder="e.g. MedMarg Processing Lab / Thyrocare / Dr. Lal PathLabs"
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.55rem 0.75rem',
+                      border: `1.5px solid ${cardBorder}`,
+                      borderRadius: '8px',
+                      color: '#0F172A',
+                      fontWeight: '800',
+                      fontSize: '0.84rem',
+                      backgroundColor: '#FFFFFF'
+                    }}
+                  />
+                </div>
 
                 {/* Offer Price */}
                 <div>

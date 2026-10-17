@@ -27,6 +27,7 @@ struct CatalogItem: Identifiable, Codable, Equatable {
     var popular: Bool?
     var fastingNote: String?
     var sampleTypes: [String]?
+    var aliasNames: [String]?
 
     // Computed Helpers
     var isPackage: Bool {
@@ -107,9 +108,9 @@ class CatalogStore: ObservableObject {
     @Published var lastSyncedText: String = "Loaded from Master Store"
 
     // Default backend URL (Local dev or configurable Hostinger VPS)
-    var backendBaseURL: String = "http://localhost:5080"
+    var backendBaseURL: String = "https://medmarg.sriddha.com"
 
-    private let userDefaultsKey = "medmarg_cached_catalog_v2"
+    private let userDefaultsKey = "medmarg_cached_catalog_v3"
 
     init() {
         loadInitialCatalog()
@@ -309,6 +310,7 @@ class CatalogStore: ObservableObject {
                 if let st = item.sampleType, st.lowercased().contains(q) { return true }
                 if let desc = item.description, desc.lowercased().contains(q) { return true }
                 if let cat = item.category, cat.lowercased().contains(q) { return true }
+                if let aliases = item.aliasNames, aliases.contains(where: { $0.lowercased().contains(q) }) { return true }
                 return false
             }()
 

@@ -35,13 +35,18 @@ object CatalogStore {
             if (testsArray != null) {
                 for (i in 0 until testsArray.length()) {
                     val obj = testsArray.getJSONObject(i)
+                    val aliases = mutableListOf<String>()
+                    val aArr = obj.optJSONArray("aliasNames")
+                    if (aArr != null) {
+                        for (k in 0 until aArr.length()) aliases.add(aArr.getString(k))
+                    }
                     testsList.add(
                         CatalogItem(
                             id = obj.optString("id", "test_$i"),
                             serialNo = obj.optInt("serialNo", i + 1),
                             code = obj.optString("code", ""),
                             name = obj.optString("name", "Test"),
-                            sampleType = obj.optString("sampleType", "SERUM"),
+                            sampleType = obj.optString("sampleType", "EDTA WHOLE BLOOD"),
                             fasting = obj.optString("fasting", "NO"),
                             category = obj.optString("category", "General"),
                             mrp = obj.optInt("mrp", 200),
@@ -49,7 +54,8 @@ object CatalogStore {
                             tatHours = obj.optInt("tatHours", 24),
                             description = obj.optString("description", null),
                             active = obj.optBoolean("active", true),
-                            itemType = "TEST"
+                            itemType = "TEST",
+                            aliasNames = aliases
                         )
                     )
                 }
