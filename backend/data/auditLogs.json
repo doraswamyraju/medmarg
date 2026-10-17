@@ -1,0 +1,12 @@
+[
+  {
+    "id": "audit_1792240374538_8p9nc",
+    "timestamp": "2026-10-17T12:32:54.538Z",
+    "user": "System",
+    "role": "Admin",
+    "module": "Backup Engine",
+    "action": "SNAPSHOT_CREATED",
+    "entityCode": "backup_manual_2026-10-17T12-32-54-534Z.json",
+    "details": "MANUAL backup created. Tests: 1, Inventory: 2"
+  }
+]

@@ -8,6 +8,7 @@ import {
   BarChart3, 
   Package,
   Boxes,
+  Database,
   Compass,
   UserCheck,
   Navigation,
@@ -53,6 +54,7 @@ import FinancialsTab from '../components/admin/FinancialsTab';
 import OverviewKpiTab from '../components/admin/OverviewKpiTab';
 import CustomersDeskTab from '../components/admin/CustomersDeskTab';
 import AdminOffersManagerTab from '../components/admin/AdminOffersManagerTab';
+import AuditAndBackupsTab from '../components/admin/AuditAndBackupsTab';
 
 export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   // Navigation State
@@ -331,6 +333,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { key: 'PARTNERS_QUEUE', label: 'Partners', icon: Stethoscope, badge: `${partnerQueue.length}` },
     { key: 'FINANCIALS', label: 'Financials', icon: DollarSign, badge: 'Razorpay' },
     { key: 'OFFERS_MGMT', label: 'Offers Zone', icon: Sparkles, badge: 'Live Promo' },
+    { key: 'AUDIT_BACKUPS', label: 'Audit & Backup', icon: Database, badge: 'Security' },
     { key: 'OVERVIEW', label: 'Overview', icon: BarChart3 }
   ];
 
@@ -937,6 +940,14 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             <AdminOffersManagerTab 
               catalog={catalog} 
               initialSubTab={offersSubTab}
+            />
+          )}
+
+          {/* TAB 13: AUDIT TRAILS & POINT-IN-TIME BACKUPS */}
+          {activeTab === 'AUDIT_BACKUPS' && (
+            <AuditAndBackupsTab 
+              API_BASE={API_BASE}
+              safeFetch={safeFetch}
             />
           )}
 

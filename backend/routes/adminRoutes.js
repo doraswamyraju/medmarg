@@ -815,4 +815,68 @@ router.delete('/extra-usages/:id', (req, res) => {
     res.json({ success: true, message: `Extra usage record ${id} deleted` });
 });
 
+// ==========================================
+// AUDIT TRAILS & DATABASE BACKUPS
+// ==========================================
+const auditStore = require('../models/auditStore');
+
+router.get('/audit-logs', (req, res) => {
+    try {
+        const logs = auditStore.getAuditLogs(300);
+        res.json({ success: true, logs });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+router.get('/backups', (req, res) => {
+    try {
+        const backups = auditStore.listBackups();
+        res.json({ success: true, backups });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+router.post('/backups/create', (req, res) => {
+    try {
+        const { notes = 'Manual snapshot from Admin Panel' } = req.body;
+        const result = auditStore.createSnapshot('MANUAL', notes);
+        if (!result) {
+            return res.status(500).json({ error: 'Failed to create snapshot' });
+        }
+        res.json({ success: true, snapshot: result });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+router.post('/backups/restore/:filename', (req, res) => {
+    try {
+        const { filename } = req.params;
+        const result = auditStore.restoreBackup(filename, req.body.user || 'Admin');
+        if (!result.success) {
+            return res.status(500).json(result);
+        }
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+router.get('/backups/download/:filename', (req, res) => {
+    try {
+        const { filename } = req.params;
+        const path = require('path');
+        const filePath = path.join(auditStore.BACKUPS_DIR, path.basename(filename));
+        if (!require('fs').existsSync(filePath)) {
+            return res.status(404).json({ error: 'Backup file not found' });
+        }
+        res.download(filePath, filename);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;
+

@@ -30,6 +30,10 @@ function saveCatalogData() {
     try {
         catalogState.lastSynced = new Date().toISOString();
         fs.writeFileSync(CATALOG_FILE, JSON.stringify(catalogState, null, 2), 'utf8');
+        try {
+            const auditStore = require('./auditStore');
+            auditStore.createSnapshot('AUTO', 'Catalog updated');
+        } catch (e) {}
     } catch (err) {
         console.error('[CatalogStore] Failed to persist catalogData.json:', err.message);
     }

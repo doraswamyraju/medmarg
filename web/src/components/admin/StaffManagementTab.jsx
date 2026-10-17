@@ -29,131 +29,56 @@ import {
 const INITIAL_STAFF_MEMBERS = [
   {
     id: 'STF-101',
-    name: 'K. Suneetha Devi',
-    role: 'Senior Lab Assistant & Patho-Tech',
-    roleCategory: 'LAB_ASSISTANT',
-    department: 'Central Pathology & Biochemistry Hub',
-    phone: '+91 94401 22334',
-    email: 'suneetha.lab@medmarg.com',
-    branch: 'MedMarg Central Processing Lab (Tirupati)',
-    shift: 'Morning Shift (06:00 AM - 02:00 PM)',
+    name: 'M. Venkat Raman',
+    role: 'Home Collection In-Charge',
+    roleCategory: 'HOME_COLLECTION_INCHARGE',
+    department: 'Home Collection & Fleet Logistics',
+    phone: '+91 98492 88771',
+    email: 'venkat.collection@medmarg.com',
+    branch: 'Tirupati Central Hub',
+    shift: 'General Shift (08:00 AM - 05:00 PM)',
     status: 'ON_DUTY',
-    tasksCompletedToday: 38,
-    accuracyScore: '99.6%',
-    tatAvg: '24 mins',
-    permissions: ['VIEW_LAB_QUEUE', 'PROCESS_SAMPLES', 'INPUT_TEST_VALUES', 'INDENT_REAGENTS']
+    tasksCompletedToday: 28,
+    accuracyScore: '100%',
+    tatAvg: '12 mins',
+    permissions: ['MANAGE_ORDERS', 'MANAGE_INVENTORY', 'PAYMENT_RECON', 'AGENT_ASSIGN_TRACK', 'APPROVE_INDENTS', 'DISPATCH_FLEET_KITS']
   },
   {
     id: 'STF-102',
-    name: 'M. Venkat Raman',
-    role: 'Central Store In-Charge',
-    roleCategory: 'STORE_INCHARGE',
-    department: 'Inventory & Cold-Chain Logistics',
-    phone: '+91 98492 88771',
-    email: 'venkat.store@medmarg.com',
-    branch: 'Central Warehouse (Air Bypass Road)',
-    shift: 'General Shift (09:00 AM - 05:00 PM)',
-    status: 'ON_DUTY',
-    tasksCompletedToday: 14,
-    accuracyScore: '100%',
-    tatAvg: '15 mins',
-    permissions: ['MANAGE_STOCK', 'APPROVE_INDENTS', 'GENERATE_GRN', 'AUDIT_EXPIRY', 'DISPATCH_FLEET_KITS']
-  },
-  {
-    id: 'STF-103',
     name: 'P. Bhavani',
-    role: 'Front Desk Care Coordinator & Receptionist',
+    role: 'Front Desk Receptionist',
     roleCategory: 'RECEPTIONIST',
-    department: 'Care Seeker Support & Front Office',
+    department: 'Care Seeker Desk & Tests Catalog',
     phone: '+91 98765 44112',
-    email: 'bhavani.care@medmarg.com',
-    branch: 'Tirupati Central Reception & Collection Desk',
+    email: 'bhavani.reception@medmarg.com',
+    branch: 'Tirupati Central Reception Desk',
     shift: 'General Shift (08:00 AM - 04:00 PM)',
     status: 'ON_DUTY',
     tasksCompletedToday: 42,
-    accuracyScore: '98.8%',
+    accuracyScore: '99.2%',
     tatAvg: '4 mins',
-    permissions: ['BOOK_APPOINTMENTS', 'CALL_CARE_SEEKERS', 'VIEW_ORDERS', 'GENERATE_INVOICES', 'WHATSAPP_SUPPORT']
-  },
-  {
-    id: 'STF-104',
-    name: 'Dr. A. Madhav Rao (MD)',
-    role: 'Consultant Pathologist & NABL Sign-off',
-    roleCategory: 'PATHOLOGIST',
-    department: 'Clinical Pathology & Quality Assurance',
-    phone: '+91 94405 99881',
-    email: 'dr.madhav@medmarg.com',
-    branch: 'MedMarg Central Processing Lab',
-    shift: 'Consulting Shift (10:00 AM - 06:00 PM)',
-    status: 'ON_DUTY',
-    tasksCompletedToday: 65,
-    accuracyScore: '100%',
-    tatAvg: '12 mins',
-    permissions: ['ALL_ACCESS', 'DIGITAL_SIGN_OFF', 'CRITICAL_PANIC_ALERTS', 'WESTGARD_QC_AUDIT']
-  },
-  {
-    id: 'STF-105',
-    name: 'R. Rajesh',
-    role: 'Live Dispatch & Fleet Supervisor',
-    roleCategory: 'DISPATCH_COORDINATOR',
-    department: 'Fleet Operations & GIS Routing',
-    phone: '+91 98765 11009',
-    email: 'rajesh.fleet@medmarg.com',
-    branch: 'Central Dispatch Command Hub',
-    shift: 'Morning Shift (06:00 AM - 02:00 PM)',
-    status: 'ON_DUTY',
-    tasksCompletedToday: 29,
-    accuracyScore: '99.1%',
-    tatAvg: '8 mins',
-    permissions: ['VIEW_ORDERS', 'REASSIGN_FLEET', 'BROADCAST_FREELANCERS', 'LIVE_RADAR_MONITOR']
+    permissions: ['MANAGE_CATALOG', 'MANAGE_OFFERS', 'BOOK_ORDERS', 'CUSTOMER_QUERIES', 'LABS_REPORTS', 'AGENT_HANDOVERS']
   }
 ];
 
 const ROLE_CATEGORIES = [
   {
-    id: 'LAB_ASSISTANT',
-    name: 'Lab Assistant & Biochemist Tech',
-    icon: '🔬',
-    desc: 'Sample handling, analyzer loading, reagent preparation & test value logging.',
-    memberCount: 3,
-    color: '#006B70',
-    defaultPermissions: ['VIEW_LAB_QUEUE', 'PROCESS_SAMPLES', 'INPUT_TEST_VALUES', 'INDENT_REAGENTS']
-  },
-  {
-    id: 'STORE_INCHARGE',
-    name: 'Store In-Charge & Materials Manager',
-    icon: '📦',
-    desc: 'Stock control, Purchase Orders / GRN, Phlebotomist kit replenishment & expiry auditing.',
+    id: 'HOME_COLLECTION_INCHARGE',
+    name: 'Home Collection In-Charge',
+    icon: '🛵',
+    desc: 'Orders management, inventory & kits management, payment reconciliation, and phlebotomist agent assignment & tracking.',
     memberCount: 2,
-    color: '#D97706',
-    defaultPermissions: ['MANAGE_STOCK', 'APPROVE_INDENTS', 'GENERATE_GRN', 'AUDIT_EXPIRY', 'DISPATCH_FLEET_KITS']
+    color: '#006B70',
+    defaultPermissions: ['MANAGE_ORDERS', 'MANAGE_INVENTORY', 'PAYMENT_RECON', 'AGENT_ASSIGN_TRACK', 'APPROVE_INDENTS', 'DISPATCH_FLEET_KITS']
   },
   {
     id: 'RECEPTIONIST',
-    name: 'Receptionist & Front Desk Coordinator',
+    name: 'Receptionist',
     icon: '🎧',
-    desc: 'Doorstep test booking, patient registration, call handling & test result handovers.',
+    desc: 'Tests/profiles/packages catalog, offers zone promo management, care seeker booking, customer query desk, lab management & report handovers.',
     memberCount: 2,
     color: '#0284C7',
-    defaultPermissions: ['BOOK_APPOINTMENTS', 'CALL_CARE_SEEKERS', 'VIEW_ORDERS', 'GENERATE_INVOICES', 'WHATSAPP_SUPPORT']
-  },
-  {
-    id: 'DISPATCH_COORDINATOR',
-    name: 'Dispatch & Fleet Operations Supervisor',
-    icon: '🚚',
-    desc: 'Monitoring GPS tracking radar, Tier-3 overflow broadcast tasks & reassignments.',
-    memberCount: 1,
-    color: '#7C3AED',
-    defaultPermissions: ['VIEW_ORDERS', 'REASSIGN_FLEET', 'BROADCAST_FREELANCERS', 'LIVE_RADAR_MONITOR']
-  },
-  {
-    id: 'PATHOLOGIST',
-    name: 'Consultant Pathologist (NABL Signer)',
-    icon: '🩺',
-    desc: 'Authorizing lab reports, verifying critical abnormal values & daily QC audits.',
-    memberCount: 1,
-    color: '#059669',
-    defaultPermissions: ['ALL_ACCESS', 'DIGITAL_SIGN_OFF', 'CRITICAL_PANIC_ALERTS', 'WESTGARD_QC_AUDIT']
+    defaultPermissions: ['MANAGE_CATALOG', 'MANAGE_OFFERS', 'BOOK_ORDERS', 'CUSTOMER_QUERIES', 'LABS_REPORTS', 'AGENT_HANDOVERS']
   }
 ];
 
@@ -204,7 +129,7 @@ export default function StaffManagementTab({
     id: `STF-${Math.floor(106 + Math.random() * 90)}`,
     name: '',
     role: 'Senior Lab Assistant & Patho-Tech',
-    roleCategory: 'LAB_ASSISTANT',
+    roleCategory: 'HOME_COLLECTION_INCHARGE',
     department: 'Central Pathology & Biochemistry Hub',
     phone: '',
     email: '',
@@ -261,7 +186,7 @@ export default function StaffManagementTab({
       id: `STF-${Math.floor(106 + Math.random() * 90)}`,
       name: '',
       role: 'Senior Lab Assistant & Patho-Tech',
-      roleCategory: 'LAB_ASSISTANT',
+      roleCategory: 'HOME_COLLECTION_INCHARGE',
       department: 'Central Pathology & Biochemistry Hub',
       phone: '',
       email: '',
@@ -999,7 +924,7 @@ export default function StaffManagementTab({
                 <div>
                   <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '700', color: '#475569', marginBottom: '0.3rem' }}>Role Category</label>
                   <select
-                    value={editingStaff.roleCategory || 'LAB_ASSISTANT'}
+                    value={editingStaff.roleCategory || 'HOME_COLLECTION_INCHARGE'}
                     onChange={(e) => setEditingStaff({ ...editingStaff, roleCategory: e.target.value })}
                     style={{ width: '100%', padding: '0.6rem 0.85rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.85rem' }}
                   >
