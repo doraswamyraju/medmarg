@@ -10,8 +10,16 @@ import {
   Edit3, 
   Trash2, 
   Copy,
-  Package
+  Package,
+  Download,
+  Upload,
+  FileSpreadsheet
 } from 'lucide-react';
+import { 
+  downloadInventorySampleTemplate, 
+  exportInventoryToExcel, 
+  parseInventoryFromExcel 
+} from '../../../utils/excelCatalogHelper';
 
 export default function StockAndKitsSubTab({
   inventoryStock = [],
@@ -21,11 +29,37 @@ export default function StockAndKitsSubTab({
   onDuplicateStock = () => {},
   onDeleteStock = () => {},
   onOpenConfigModal = () => {},
-  onSendMoqAlert = () => {}
+  onSendMoqAlert = () => {},
+  onImportInventory = async () => {}
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
   const [itemTypeFilter, setItemTypeFilter] = useState('ALL');
+  const [isImporting, setIsImporting] = useState(false);
+  const [importNotice, setImportNotice] = useState(null);
+
+  const handleInventoryUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsImporting(true);
+    setImportNotice({ type: 'info', message: 'Reading and validating inventory Excel sheet...' });
+    try {
+      const parsedItems = await parseInventoryFromExcel(file);
+      if (!parsedItems || parsedItems.length === 0) {
+        throw new Error('No valid inventory rows detected in the uploaded file.');
+      }
+      await onImportInventory(parsedItems);
+      setImportNotice({ type: 'success', message: `Successfully imported ${parsedItems.length} single inventory items to database!` });
+      setTimeout(() => setImportNotice(null), 5000);
+    } catch (err) {
+      console.error('Inventory Excel error:', err);
+      setImportNotice({ type: 'error', message: `Import Failed: ${err.message || 'Invalid format'}` });
+      setTimeout(() => setImportNotice(null), 6000);
+    } finally {
+      setIsImporting(false);
+      e.target.value = '';
+    }
+  };
 
   const filteredStock = inventoryStock.filter(stk => {
     const matchSearch = stk.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -77,21 +111,75 @@ export default function StockAndKitsSubTab({
           </select>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.6rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={downloadInventorySampleTemplate}
+            title="Download Sample Format Excel Template for Inventory"
+            style={{ padding: '0.55rem 0.9rem', backgroundColor: '#F8FAFC', color: '#0F172A', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+          >
+            <FileSpreadsheet size={14} color="#059669" /> Sample Format
+          </button>
+
+          <label
+            title="Import Single Items Inventory from Excel / CSV"
+            style={{ padding: '0.55rem 0.9rem', backgroundColor: '#F0FDF4', color: '#166534', border: '1px solid #BBF7D0', borderRadius: '10px', fontWeight: '800', fontSize: '0.8rem', cursor: isImporting ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+          >
+            <Upload size={14} /> {isImporting ? 'Importing...' : 'Import Single Items'}
+            <input
+              type="file"
+              accept=".xlsx, .xls, .csv"
+              onChange={handleInventoryUpload}
+              disabled={isImporting}
+              style={{ display: 'none' }}
+            />
+          </label>
+
+          <button
+            onClick={() => exportInventoryToExcel(inventoryStock)}
+            title="Export Current Single Items Inventory to Excel"
+            style={{ padding: '0.55rem 0.9rem', backgroundColor: '#F0F9FF', color: '#0369A1', border: '1px solid #BAE6FD', borderRadius: '10px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+          >
+            <Download size={14} /> Export Single Items
+          </button>
+
           <button
             onClick={onOpenAddSingle}
-            style={{ padding: '0.55rem 1.1rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem', boxShadow: '0 4px 12px rgba(0,107,112,0.2)' }}
+            style={{ padding: '0.55rem 1rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem', boxShadow: '0 4px 12px rgba(0,107,112,0.2)' }}
           >
             <PlusCircle size={15} /> + Add Single Item
           </button>
           <button
             onClick={onOpenAddKit}
-            style={{ padding: '0.55rem 1.1rem', backgroundColor: '#4F46E5', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem', boxShadow: '0 4px 12px rgba(79,70,229,0.2)' }}
+            style={{ padding: '0.55rem 1rem', backgroundColor: '#4F46E5', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem', boxShadow: '0 4px 12px rgba(79,70,229,0.2)' }}
           >
             <Layers size={15} /> + Create Combo Kit
           </button>
         </div>
       </div>
+
+      {importNotice && (
+        <div style={{
+          padding: '0.85rem 1.25rem',
+          marginBottom: '1rem',
+          borderRadius: '12px',
+          backgroundColor: importNotice.type === 'error' ? '#FEE2E2' : importNotice.type === 'success' ? '#DCFCE7' : '#E0F2FE',
+          color: importNotice.type === 'error' ? '#991B1B' : importNotice.type === 'success' ? '#15803D' : '#075985',
+          fontSize: '0.85rem',
+          fontWeight: '800',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+        }}>
+          <span>{importNotice.message}</span>
+          <button 
+            onClick={() => setImportNotice(null)} 
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '1.1rem', color: 'inherit' }}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       {/* Tabular Format for Inventory Stock & Kits */}
       <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>

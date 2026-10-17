@@ -3,7 +3,8 @@ import { ShoppingBag, Plus, CheckCircle } from 'lucide-react';
 
 export default function PurchasesInwardSubTab({
   purchases = [],
-  onOpenAddPurchase = () => {}
+  onOpenAddPurchase = () => {},
+  onDeletePurchase = () => {}
 }) {
   return (
     <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
@@ -34,7 +35,8 @@ export default function PurchasesInwardSubTab({
             <th style={{ padding: '0.85rem' }}>Batch & Expiry</th>
             <th style={{ padding: '0.85rem' }}>Total Amount</th>
             <th style={{ padding: '0.85rem' }}>Received By</th>
-            <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>QC Status</th>
+            <th style={{ padding: '0.85rem' }}>QC Status</th>
+            <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -62,10 +64,19 @@ export default function PurchasesInwardSubTab({
               <td style={{ padding: '1rem', color: '#475569', fontSize: '0.8rem' }}>
                 {p.receivedBy}
               </td>
-              <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
+              <td style={{ padding: '1rem' }}>
                 <span style={{ fontSize: '0.72rem', padding: '0.25rem 0.6rem', borderRadius: '6px', fontWeight: '800', backgroundColor: '#DCFCE7', color: '#15803D', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
                   <CheckCircle size={12} /> {p.qcStatus}
                 </span>
+              </td>
+              <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
+                <button
+                  onClick={() => onDeletePurchase(p.id)}
+                  title="Delete GRN record"
+                  style={{ padding: '0.35rem 0.55rem', backgroundColor: '#FEE2E2', color: '#991B1B', border: 'none', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
+                >
+                  Delete
+                </button>
               </td>
             </tr>
           ))}

@@ -3,6 +3,8 @@
 
 import initialCatalog from './catalogData.json';
 
+import { API_BASE } from './apiConfig';
+
 const STORAGE_KEY = 'medmarg_catalog_v4';
 
 // Load stored state or fallback to default ingested json
@@ -26,6 +28,22 @@ export function saveCatalogState(state) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (e) {
         console.warn('LocalStorage write error:', e);
+    }
+
+    try {
+        if (state && (state.tests || state.profiles || state.packages)) {
+            fetch(`${API_BASE}/api/v1/catalog/sync-full`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tests: state.tests || [],
+                    profiles: state.profiles || [],
+                    packages: state.packages || []
+                })
+            }).catch(err => console.warn('[CatalogStore] Auto-sync to backend deferred:', err));
+        }
+    } catch (err) {
+        // Safe ignore
     }
 }
 

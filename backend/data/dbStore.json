@@ -14,132 +14,48 @@
       "chronicConditions": "None",
       "allergies": "None",
       "locations": [
-        { "id": "LOC-101", "label": "Home Address", "fullAddress": "Plot 42, Air Bypass Road, Tirupati, AP - 517501", "pincode": "517501", "isPrimary": true }
+        {
+          "id": "LOC-101",
+          "label": "Home Address",
+          "fullAddress": "Plot 42, Air Bypass Road, Tirupati, AP - 517501",
+          "pincode": "517501",
+          "isPrimary": true
+        }
       ],
       "familyMembers": [],
-      "orderHistory": []
-    },
-    {
-      "id": "CUST-1001",
-      "name": "Rahul Sharma",
-      "phone": "+91 98765 43210",
-      "email": "rahul.sharma@gmail.com",
-      "city": "Tirupati",
-      "abhaId": "ABHA-3109-8812",
-      "memberSince": "Jan 2025",
-      "age": 36,
-      "gender": "Male",
-      "bloodGroup": "B+",
-      "chronicConditions": "Type-2 Pre-Diabetic",
-      "allergies": "Dust Mites",
-      "locations": [
-        { "id": "LOC-1", "label": "Home Address", "fullAddress": "Flat 402, Sri Sai Towers, Bairagipatteda, Tirupati", "pincode": "517501", "isPrimary": true },
-        { "id": "LOC-2", "label": "Office Address", "fullAddress": "Floor 2, Tech Park, Renigunta Rd, Tirupati", "pincode": "517506", "isPrimary": false }
-      ],
-      "familyMembers": [
-        { "id": "FAM-1", "name": "Ananya Sharma", "relation": "Spouse", "age": 33, "gender": "Female", "bloodGroup": "B+" },
-        { "id": "FAM-2", "name": "Aarav Sharma", "relation": "Son", "age": 7, "gender": "Male", "bloodGroup": "O+" }
-      ],
       "orderHistory": [
-        { "id": "MM-8921", "date": "Today 07:30 AM", "items": "HbA1c + Complete Blood Count", "amount": 899, "status": "EN_ROUTE", "lab": "MedMarg Central Lab" }
-      ]
-    },
-    {
-      "id": "CUST-1002",
-      "name": "Priya Verma",
-      "phone": "+91 98765 88990",
-      "email": "priya.v@gmail.com",
-      "city": "Tirupati",
-      "abhaId": "ABHA-4410-9920",
-      "memberSince": "Mar 2025",
-      "age": 29,
-      "gender": "Female",
-      "bloodGroup": "O+",
-      "chronicConditions": "Thyroid (Hypothyroidism)",
-      "allergies": "None",
-      "locations": [
-        { "id": "LOC-1", "label": "Home Address", "fullAddress": "House #12, Air Bypass Road, Tirupati", "pincode": "517507", "isPrimary": true }
-      ],
-      "familyMembers": [
-        { "id": "FAM-1", "name": "Vikram Verma", "relation": "Spouse", "age": 32, "gender": "Male", "bloodGroup": "O+" }
-      ],
-      "orderHistory": [
-        { "id": "MM-8922", "date": "Today 08:15 AM", "items": "Master Full Body Profile (87 Biomarkers)", "amount": 1499, "status": "SAMPLE_COLLECTED", "lab": "Apollo Diagnostics Hub" }
-      ]
-    },
-    {
-      "id": "CUST-1003",
-      "name": "Venkatesh R",
-      "phone": "+91 94400 55667",
-      "email": "venkatesh.r@yahoo.com",
-      "city": "Chittoor",
-      "abhaId": "ABHA-1102-4411",
-      "memberSince": "Jun 2025",
-      "age": 52,
-      "gender": "Male",
-      "bloodGroup": "A+",
-      "chronicConditions": "Hypertension & Elevated Triglycerides",
-      "allergies": "Sulfa Drugs",
-      "locations": [
-        { "id": "LOC-1", "label": "Residency Address", "fullAddress": "Door #5-81, Gandhi Road, Chittoor", "pincode": "517001", "isPrimary": true }
-      ],
-      "familyMembers": [
-        { "id": "FAM-1", "name": "Padma R", "relation": "Spouse", "age": 48, "gender": "Female", "bloodGroup": "A+" }
-      ],
-      "orderHistory": [
-        { "id": "MM-8923", "date": "Today 09:00 AM", "items": "Diabetic & Renal Health Check", "amount": 699, "status": "PENDING_DISPATCH", "lab": "Dr. Lal PathLabs" }
+        {
+          "id": "MM-8921",
+          "date": "Today 07:30 AM",
+          "items": "Complete Blood Count (CBC) with ESR",
+          "amount": 299,
+          "status": "EN_ROUTE",
+          "lab": "MedMarg Central Processing Lab"
+        }
       ]
     }
   ],
   "orders": [
     {
       "id": "MM-8921",
-      "patientName": "Rahul Sharma",
-      "phone": "+91 98765 43210",
+      "patientName": "Doraswamy Raju Meesala",
+      "phone": "+91 79979 91101",
       "city": "Tirupati",
-      "address": "Bairagipatteda, Tirupati",
+      "address": "Plot 42, Air Bypass Road, Tirupati, AP - 517501",
       "items": [
-        { "name": "HbA1c Glycated Hemoglobin", "price": 399, "sampleType": "EDTA", "fasting": "NO" },
-        { "name": "Complete Blood Count (CBC)", "price": 500, "sampleType": "EDTA", "fasting": "NO" }
+        {
+          "name": "Complete Blood Count (CBC) with ESR",
+          "price": 299,
+          "sampleType": "EDTA WHOLE BLOOD",
+          "fasting": "NO"
+        }
       ],
-      "amount": 899,
+      "amount": 299,
       "status": "EN_ROUTE",
       "assignedAgent": "Ramesh Kumar (AG-01)",
-      "lab": "MedMarg Central Lab",
+      "lab": "MedMarg Central Processing Lab",
       "otp": "4892",
       "createdAt": "Today 07:30 AM"
-    },
-    {
-      "id": "MM-8922",
-      "patientName": "Priya Verma",
-      "phone": "+91 98765 88990",
-      "city": "Tirupati",
-      "address": "Air Bypass Road, Tirupati",
-      "items": [
-        { "name": "Master Full Body Profile (87 Biomarkers)", "price": 1499, "sampleType": "SERUM, EDTA", "fasting": "YES" }
-      ],
-      "amount": 1499,
-      "status": "SAMPLE_COLLECTED",
-      "assignedAgent": "Suresh Babu (AG-02)",
-      "lab": "Apollo Diagnostics Hub",
-      "otp": "7104",
-      "createdAt": "Today 08:15 AM"
-    },
-    {
-      "id": "MM-8923",
-      "patientName": "Venkatesh R",
-      "phone": "+91 94400 55667",
-      "city": "Chittoor",
-      "address": "Gandhi Road, Chittoor",
-      "items": [
-        { "name": "Diabetic & Renal Health Check", "price": 699, "sampleType": "SERUM", "fasting": "YES" }
-      ],
-      "amount": 699,
-      "status": "PENDING_DISPATCH",
-      "assignedAgent": "Unassigned",
-      "lab": "Dr. Lal PathLabs",
-      "otp": "1938",
-      "createdAt": "Today 09:00 AM"
     }
   ],
   "freelancers": [
@@ -172,19 +88,9 @@
       "name": "Ramesh Kumar",
       "phone": "+91 98765 11223",
       "area": "Air Bypass & Alipiri",
-      "samplesToday": 9,
+      "samplesToday": 1,
       "maxDailyQuota": 15,
       "temp": "4.2°C",
-      "status": "ACTIVE"
-    },
-    {
-      "id": "AG-02",
-      "name": "Suresh Babu",
-      "phone": "+91 98765 44332",
-      "area": "Renigunta Rd & Tiruchanoor",
-      "samplesToday": 7,
-      "maxDailyQuota": 15,
-      "temp": "3.8°C",
       "status": "ACTIVE"
     }
   ],
@@ -213,22 +119,134 @@
       "incharge": "Anand Store Lead (store.tirupati@medmarg.com)",
       "alertSent": false,
       "components": [
-        { "itemCode": "STK-01", "name": "Gold SST Gel Tube (5ml)", "qty": 2 }
+        {
+          "itemCode": "STK-01",
+          "name": "Gold SST Gel Tube (5ml)",
+          "qty": 2
+        }
       ]
     }
   ],
   "indents": [
-    { "id": "IND-501", "agentName": "Ramesh Kumar (AG-01)", "requestedItems": "50x Gold SST Tubes, 20x Purple EDTA Tubes", "status": "PENDING_APPROVAL", "date": "Today 08:30 AM" },
-    { "id": "IND-502", "agentName": "Suresh Babu (AG-02)", "requestedItems": "30x Purple EDTA Tubes, 10x Biohazard Bags", "status": "APPROVED_DISPATCHED", "date": "Yesterday" }
+    {
+      "id": "IND-501",
+      "agentType": "SALARIED_AGENT",
+      "agentName": "Ramesh Kumar (AG-01)",
+      "area": "Air Bypass & Alipiri",
+      "requestedItems": "50x Gold SST Tubes, 20x Purple EDTA Tubes",
+      "status": "PENDING_APPROVAL",
+      "date": "Today 08:30 AM",
+      "paymentMode": "Company Quota Allocation (Free)"
+    }
+  ],
+  "purchases": [
+    {
+      "id": "GRN-2026-881",
+      "poNumber": "PO-MM-4401",
+      "vendor": "Becton Dickinson (BD India Pvt Ltd)",
+      "invoiceNo": "INV-BD-99201",
+      "inwardDate": "Today 09:15 AM",
+      "batchNo": "BD-26G-881",
+      "mfgDate": "2026-01-10",
+      "expDate": "2027-06-30",
+      "itemsCount": 1,
+      "details": "4,500x Gold SST Gel Tubes (5ml)",
+      "totalAmount": 63000,
+      "receivedBy": "Anand Store Lead",
+      "qcStatus": "PASSED_VERIFIED"
+    }
+  ],
+  "scrapLogs": [
+    {
+      "id": "SCR-401",
+      "date": "Today 09:00 AM",
+      "itemCode": "STK-01",
+      "itemName": "Gold SST Gel Tubes (5ml)",
+      "batchNo": "SST-25-112",
+      "quantity": 12,
+      "reason": "Transit Vibration / Broken Vacuum",
+      "lossValue": 168,
+      "loggedBy": "Anand Store Lead",
+      "actionTaken": "Stock Written Off from Central Warehouse"
+    }
+  ],
+  "vendors": [
+    {
+      "code": "VND-01",
+      "name": "Becton Dickinson (BD India Pvt Ltd)",
+      "category": "Vacutainers & Needles",
+      "contactPerson": "Rajesh Mehra",
+      "phone": "+91 98110 55443",
+      "email": "orders.south@bd.com",
+      "gstin": "37AABCB1234F1Z8",
+      "leadTimeDays": 3,
+      "paymentTerms": "Net 30 Days",
+      "rating": "4.9 ★"
+    }
+  ],
+  "agentInventories": [
+    {
+      "agentId": "AG-01",
+      "agentName": "Ramesh Kumar",
+      "agentType": "Salaried Agent",
+      "phone": "+91 98765 11223",
+      "zone": "Zone 1: Tirupati Central",
+      "inHandStock": {
+        "sstTubes": 18,
+        "edtaTubes": 14,
+        "fluorideTubes": 8,
+        "needles21g": 22,
+        "butterfly23g": 3,
+        "swabs": 40,
+        "fullBodyKits": 4,
+        "coldBagTemp": "4.2°C",
+        "barcodeRolls": 1
+      },
+      "lastRefillDate": "Yesterday 09:00 AM",
+      "warning": null
+    }
+  ],
+  "extraUsages": [
+    {
+      "id": "EX-901",
+      "orderId": "MM-8921",
+      "patientName": "Doraswamy Raju Meesala",
+      "agentId": "AG-01",
+      "agentName": "Ramesh Kumar (Salaried)",
+      "agentType": "SALARIED",
+      "reportedAt": "Today 08:50 AM",
+      "itemsUsed": [
+        { "name": "Alcohol Prep Swab", "qty": 1, "unitPrice": 1.5 },
+        { "name": "Gold SST Gel Tube (5ml)", "qty": 1, "unitPrice": 14 }
+      ],
+      "totalValue": 15.5,
+      "phleboReason": "Tube vacuum compromised during initial draw. Backup SST tube used.",
+      "decision": "WAIVED_CLINICAL_BUFFER",
+      "decisionNotes": "Verified clinical buffer waiver.",
+      "decidedBy": "Super Admin"
+    }
   ],
   "partnerQueue": [
-    { "id": "P-101", "name": "Dr. K. Sivasankar", "type": "Doctor / OPD Practice", "city": "Tirupati", "phone": "+91 94400 12345", "email": "dr.siva@gmail.com", "status": "PRE_REGISTERED" },
-    { "id": "P-102", "name": "Sri Diagnostics & Radiology Center", "type": "Radiology / MRI Center", "city": "Tirupati", "phone": "+91 98490 54321", "email": "sridiag@gmail.com", "status": "PRE_REGISTERED" },
-    { "id": "P-103", "name": "Dr. Anita Roy", "type": "Health & Diet Coach", "city": "Bangalore", "phone": "+91 98800 67890", "email": "anita.health@gmail.com", "status": "PRE_REGISTERED" }
+    {
+      "id": "P-101",
+      "name": "Dr. K. Sivasankar",
+      "type": "Doctor / OPD Practice",
+      "city": "Tirupati",
+      "phone": "+91 94400 12345",
+      "email": "dr.siva@gmail.com",
+      "status": "PRE_REGISTERED"
+    }
   ],
   "transactions": [
-    { "id": "TXN-901", "orderId": "MM-8921", "patient": "Rahul Sharma", "mode": "Prepaid (Razorpay)", "amount": 899, "status": "PAID_SUCCESS", "date": "Today 07:30 AM" },
-    { "id": "TXN-902", "orderId": "MM-8922", "patient": "Priya Verma", "mode": "Doorstep UPI QR", "amount": 1499, "status": "PAID_SUCCESS", "date": "Today 08:15 AM" }
+    {
+      "id": "TXN-901",
+      "orderId": "MM-8921",
+      "patient": "Doraswamy Raju Meesala",
+      "mode": "Prepaid (Razorpay)",
+      "amount": 299,
+      "status": "PAID_SUCCESS",
+      "date": "Today 07:30 AM"
+    }
   ],
   "territories": [
     {
@@ -239,105 +257,24 @@
       "primaryAgentName": "Ramesh Kumar",
       "color": "#38BDF8",
       "maxDailyQuota": 15,
-      "activeOrders": 9,
+      "activeOrders": 1,
       "status": "ACTIVE",
       "polygonCoords": "20,20 220,15 200,110 30,100"
-    },
-    {
-      "id": "ZONE-02",
-      "name": "Zone 2: Alipiri, Zoo Park & SVU Campus",
-      "pincodes": ["517502"],
-      "primaryAgentId": "AG-02",
-      "primaryAgentName": "Suresh Babu",
-      "color": "#10B981",
-      "maxDailyQuota": 15,
-      "activeOrders": 7,
-      "status": "ACTIVE",
-      "polygonCoords": "230,15 480,30 450,120 210,110"
-    },
-    {
-      "id": "ZONE-03",
-      "name": "Zone 3: Renigunta Rd & Tiruchanoor",
-      "pincodes": ["517503", "517506"],
-      "primaryAgentId": "AG-03",
-      "primaryAgentName": "Mahesh V",
-      "color": "#F59E0B",
-      "maxDailyQuota": 15,
-      "activeOrders": 4,
-      "status": "ACTIVE",
-      "polygonCoords": "30,115 200,115 180,195 20,185"
-    },
-    {
-      "id": "ZONE-04",
-      "name": "Zone 4: Chandragiri & Outer Suburbs",
-      "pincodes": ["517101"],
-      "primaryAgentId": "FREELANCE_BROADCAST",
-      "primaryAgentName": "Gig Freelancer Broadcast Zone",
-      "color": "#A855F7",
-      "maxDailyQuota": 999,
-      "activeOrders": 2,
-      "status": "ACTIVE",
-      "polygonCoords": "210,125 480,125 460,195 190,195"
     }
   ],
   "offers": [
     {
       "id": "off_1",
-      "title": "⚡ 60-Minute Express Home Phlebotomy",
-      "subtitle": "Flat 60% OFF on Aarogyam Full Body Checkup",
-      "code": "EXPRESS60",
-      "price": "₹1,499",
-      "mrp": "₹3,500",
+      "title": "⚡ Complete Blood Count (CBC) Offer",
+      "subtitle": "Flat 34% OFF on Complete Blood Count (CBC) with ESR",
+      "code": "CBCSAVE",
+      "price": "₹299",
+      "mrp": "₹450",
       "gradient": "linear-gradient(135deg, #004D40 0%, #006B70 100%)",
       "badge": "TOP CHOICE",
       "tagColor": "#FEF3C7",
       "tagText": "#B45309",
-      "packageId": "pkg_aarogyam_13",
-      "active": true,
-      "createdAt": "2026-10-06T00:00:00.000Z"
-    },
-    {
-      "id": "off_2",
-      "title": "👵 Senior Citizen Diabetic & Cardiac Panel",
-      "subtitle": "HbA1c + Fasting Blood Sugar + Lipid Profile",
-      "code": "SENIORCARE",
-      "price": "₹599",
-      "mrp": "₹1,400",
-      "gradient": "linear-gradient(135deg, #1E3A8A 0%, #0284C7 100%)",
-      "badge": "POPULAR",
-      "tagColor": "#E0F2FE",
-      "tagText": "#0369A1",
-      "packageId": "pkg_mm_cardio_diab",
-      "active": true,
-      "createdAt": "2026-10-06T00:00:00.000Z"
-    },
-    {
-      "id": "off_3",
-      "title": "🌸 Complete Women's Vitality & Hormone",
-      "subtitle": "Thyroid (T3/T4/TSH), Iron, Calcium & Vitamins D3/B12",
-      "code": "WOMENHEALTH",
-      "price": "₹999",
-      "mrp": "₹2,200",
-      "gradient": "linear-gradient(135deg, #581C87 0%, #9333EA 100%)",
-      "badge": "SPECIAL",
-      "tagColor": "#F3E8FF",
-      "tagText": "#6B21A8",
-      "packageId": "pkg_mm_women_well",
-      "active": true,
-      "createdAt": "2026-10-06T00:00:00.000Z"
-    },
-    {
-      "id": "off_4",
-      "title": "👨‍👩‍👧 Family & Corporate Wellness Days",
-      "subtitle": "Book for 2+ Members & Get ₹500 MedMarg Wallet Cashback",
-      "code": "FAMILY500",
-      "price": "₹500 Cashback",
-      "mrp": "Free Home Visit",
-      "gradient": "linear-gradient(135deg, #065F46 0%, #059669 100%)",
-      "badge": "CASHBACK",
-      "tagColor": "#D1FAE5",
-      "tagText": "#047857",
-      "packageId": "pkg_mm_master",
+      "packageId": "TEST_CBC",
       "active": true,
       "createdAt": "2026-10-06T00:00:00.000Z"
     }

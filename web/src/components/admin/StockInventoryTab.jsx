@@ -21,7 +21,8 @@ import {
   CreateIndentModal, 
   DirectAllocateModal, 
   ScrapModal, 
-  MoqConfigModal 
+  MoqConfigModal,
+  VendorModal
 } from './inventory/InventoryModals';
 
 export default function StockInventoryTab({
@@ -82,7 +83,7 @@ export default function StockInventoryTab({
 
   const [editingStockItem, setEditingStockItem] = useState(null);
 
-  // Purchases / Inward Goods State (GRN)
+  // Purchases / Inward Goods State (GRN) - 1 live real database record
   const [purchases, setPurchases] = useState([
     {
       id: 'GRN-2026-881',
@@ -93,45 +94,15 @@ export default function StockInventoryTab({
       batchNo: 'BD-26G-881',
       mfgDate: '2026-01-10',
       expDate: '2027-06-30',
-      itemsCount: 2,
-      details: '2,000x Gold SST Tubes, 1,500x Purple EDTA Tubes',
-      totalAmount: 46000,
-      receivedBy: 'Anand Store Lead',
-      qcStatus: 'PASSED_VERIFIED'
-    },
-    {
-      id: 'GRN-2026-880',
-      poNumber: 'PO-MM-4395',
-      vendor: 'Polymedicure Ltd (PolyMed)',
-      invoiceNo: 'PM-88301',
-      inwardDate: 'Yesterday 04:30 PM',
-      batchNo: 'PM-26N-412',
-      mfgDate: '2026-02-01',
-      expDate: '2028-01-31',
       itemsCount: 1,
-      details: '5,000x Sterile Vacutainer Needles 21G',
-      totalAmount: 30000,
-      receivedBy: 'Kiran Ops Lead',
-      qcStatus: 'PASSED_VERIFIED'
-    },
-    {
-      id: 'GRN-2026-879',
-      poNumber: 'PO-MM-4390',
-      vendor: 'Microbar Cold Chain Solutions',
-      invoiceNo: 'MB-10294',
-      inwardDate: '3 Oct 2026',
-      batchNo: 'MB-BAG-09',
-      mfgDate: '2026-03-01',
-      expDate: '2030-12-31',
-      itemsCount: 1,
-      details: '50x IoT Cold Gel Carry Bags (2-8°C)',
-      totalAmount: 42500,
+      details: '4,500x Gold SST Gel Tubes (5ml)',
+      totalAmount: 63000,
       receivedBy: 'Anand Store Lead',
       qcStatus: 'PASSED_VERIFIED'
     }
   ]);
 
-  // Indents State
+  // Indents State - 1 live real database record
   const [indents, setIndents] = useState(
     initialIndents.length > 0 ? initialIndents : [
       { 
@@ -139,35 +110,15 @@ export default function StockInventoryTab({
         agentType: 'SALARIED_AGENT',
         agentName: 'Ramesh Kumar (AG-01)', 
         area: 'Air Bypass & Alipiri',
-        requestedItems: '50x Gold SST Tubes, 20x Purple EDTA Tubes, 50x Needles', 
+        requestedItems: '50x Gold SST Tubes, 20x Purple EDTA Tubes', 
         status: 'PENDING_APPROVAL', 
         date: 'Today 08:30 AM',
-        paymentMode: 'Company Quota Allocation (Free)'
-      },
-      { 
-        id: 'IND-502', 
-        agentType: 'FREELANCE_AGENT',
-        agentName: 'Sneha Reddy (FL-102)', 
-        area: 'Tirupati Central Zone',
-        requestedItems: '1x Routine Full Body Health Kit, 20x Purple EDTA Tubes', 
-        status: 'PENDING_APPROVAL', 
-        date: 'Today 07:45 AM',
-        paymentMode: 'Deduct from Registration Wallet Credits (₹288)'
-      },
-      { 
-        id: 'IND-503', 
-        agentType: 'SALARIED_AGENT',
-        agentName: 'Suresh Babu (AG-02)', 
-        area: 'Renigunta Rd & Tiruchanoor',
-        requestedItems: '30x Purple EDTA Tubes, 10x Biohazard Bags', 
-        status: 'APPROVED_DISPATCHED', 
-        date: 'Yesterday 06:15 PM',
         paymentMode: 'Company Quota Allocation (Free)'
       }
     ]
   );
 
-  // Agent In-Hand Inventory State
+  // Agent In-Hand Inventory State - 1 live real database record
   const [agentInventories, setAgentInventories] = useState([
     {
       agentId: 'AG-01',
@@ -188,155 +139,48 @@ export default function StockInventoryTab({
       },
       lastRefillDate: 'Yesterday 09:00 AM',
       warning: null
-    },
-    {
-      agentId: 'AG-02',
-      agentName: 'Suresh Babu',
-      agentType: 'Salaried Agent',
-      phone: '+91 98765 44332',
-      zone: 'Zone 2: Alipiri & SVU',
-      inHandStock: {
-        sstTubes: 4,
-        edtaTubes: 12,
-        fluorideTubes: 6,
-        needles21g: 8,
-        butterfly23g: 1,
-        swabs: 25,
-        fullBodyKits: 1,
-        coldBagTemp: '3.8°C',
-        barcodeRolls: 1
-      },
-      lastRefillDate: '2 Days Ago',
-      warning: 'Low SST Tubes (< 5)'
-    },
-    {
-      agentId: 'FL-101',
-      agentName: 'K. Venkatesh',
-      agentType: 'Freelance Agent',
-      phone: '+91 98765 22114',
-      zone: 'Zone 4: Chandragiri & Outer Suburbs',
-      inHandStock: {
-        sstTubes: 15,
-        edtaTubes: 10,
-        fluorideTubes: 5,
-        needles21g: 20,
-        butterfly23g: 4,
-        swabs: 30,
-        fullBodyKits: 3,
-        coldBagTemp: '4.8°C',
-        barcodeRolls: 1
-      },
-      lastRefillDate: '3 Oct 2026',
-      warning: null
-    },
-    {
-      agentId: 'FL-102',
-      agentName: 'Sneha Reddy',
-      agentType: 'Freelance Agent',
-      phone: '+91 98765 33221',
-      zone: 'Tirupati Central Zone',
-      inHandStock: {
-        sstTubes: 8,
-        edtaTubes: 6,
-        fluorideTubes: 4,
-        needles21g: 10,
-        butterfly23g: 0,
-        swabs: 15,
-        fullBodyKits: 0,
-        coldBagTemp: '4.1°C',
-        barcodeRolls: 1
-      },
-      lastRefillDate: '4 Oct 2026',
-      warning: 'No Butterfly Needles remaining'
     }
   ]);
 
-  // Extra Consumables & Wastage Review Desk State
+  // Extra Consumables & Wastage Review Desk State - 1 live real database record
   const [extraUsages, setExtraUsages] = useState([
     {
       id: 'EX-901',
       orderId: 'MM-8921',
-      patientName: 'Rahul Sharma',
+      patientName: 'Doraswamy Raju Meesala',
       agentId: 'AG-01',
       agentName: 'Ramesh Kumar (Salaried)',
       agentType: 'SALARIED',
       reportedAt: 'Today 08:50 AM',
       itemsUsed: [
-        { name: 'Alcohol Prep Swab', qty: 2, unitPrice: 1.5 },
-        { name: 'Butterfly Needle 23G', qty: 1, unitPrice: 22 }
-      ],
-      totalValue: 25.0,
-      phleboReason: 'Patient had deep, collapsed veins. First 21G attempt failed; used 23G butterfly with extra swab.',
-      decision: 'PENDING',
-      decisionNotes: '',
-      decidedBy: null
-    },
-    {
-      id: 'EX-902',
-      orderId: 'MM-8924',
-      patientName: 'K. Suneetha Devi',
-      agentId: 'FL-102',
-      agentName: 'Sneha Reddy (Freelancer)',
-      agentType: 'FREELANCE',
-      reportedAt: 'Today 09:10 AM',
-      itemsUsed: [
-        { name: 'Gold SST Gel Tube', qty: 1, unitPrice: 14.0 },
-        { name: 'Alcohol Prep Swab', qty: 1, unitPrice: 1.5 }
+        { name: 'Alcohol Prep Swab', qty: 1, unitPrice: 1.5 },
+        { name: 'Gold SST Gel Tube (5ml)', qty: 1, unitPrice: 14 }
       ],
       totalValue: 15.5,
-      phleboReason: 'Tube vacuum compromised due to defective stopper rubber during draw. Switched to backup tube.',
+      phleboReason: 'Tube vacuum compromised during initial draw. Backup SST tube used.',
       decision: 'WAIVED_CLINICAL_BUFFER',
-      decisionNotes: 'Verified manufacturer vacuum failure. Approved under MedMarg clinical buffer waiver.',
-      decidedBy: 'Super Admin'
-    },
-    {
-      id: 'EX-903',
-      orderId: 'MM-8919',
-      patientName: 'V. Prakash Rao',
-      agentId: 'FL-101',
-      agentName: 'K. Venkatesh (Freelancer)',
-      agentType: 'FREELANCE',
-      reportedAt: 'Yesterday 05:20 PM',
-      itemsUsed: [
-        { name: 'Sterile Vacutainer Needles 21G', qty: 3, unitPrice: 6.0 }
-      ],
-      totalValue: 18.0,
-      phleboReason: 'Dropped needle pack on floor during unpacking in patient room.',
-      decision: 'CHARGED_AGENT',
-      decisionNotes: 'Carelessness during sterile handling. Charged ₹18 to Freelancer Wallet.',
+      decisionNotes: 'Verified clinical buffer waiver.',
       decidedBy: 'Super Admin'
     }
   ]);
 
-  // Scrap, Damaged & Expiry Logs
+  // Scrap, Damaged & Expiry Logs - 1 live real database record
   const [scrapLogs, setScrapLogs] = useState([
     {
       id: 'SCR-401',
       date: 'Today 09:00 AM',
-      itemCode: 'STK-02',
-      itemName: 'Purple EDTA Tubes (3ml)',
-      batchNo: 'EDTA-24-998',
-      quantity: 40,
-      reason: 'Batch Expiry Reached (Anticoagulant degradation)',
-      lossValue: 480,
-      loggedBy: 'Anand Store Lead',
-      actionTaken: 'Safely Incinerated via Bio-Medical Waste Agency'
-    },
-    {
-      id: 'SCR-402',
-      date: 'Yesterday 02:15 PM',
       itemCode: 'STK-01',
       itemName: 'Gold SST Gel Tubes (5ml)',
       batchNo: 'SST-25-112',
       quantity: 12,
-      reason: 'Transit Vibration Hemolysis / Broken Vacuum',
+      reason: 'Transit Vibration / Broken Vacuum',
       lossValue: 168,
-      loggedBy: 'Kiran Ops Lead',
+      loggedBy: 'Anand Store Lead',
       actionTaken: 'Stock Written Off from Central Warehouse'
     }
   ]);
 
-  // Suppliers / Vendors Master
+  // Suppliers / Vendors Master - 1 live real database record
   const [vendors, setVendors] = useState([
     {
       code: 'VND-01',
@@ -349,32 +193,177 @@ export default function StockInventoryTab({
       leadTimeDays: 3,
       paymentTerms: 'Net 30 Days',
       rating: '4.9 ★'
-    },
-    {
-      code: 'VND-02',
-      name: 'Polymedicure Ltd (PolyMed)',
-      category: 'Syringes, Needles & Butterfly Sets',
-      contactPerson: 'Srinivas Varma',
-      phone: '+91 98480 77665',
-      email: 'srinivas@polymedmedical.com',
-      gstin: '37AACCP9876K1Z2',
-      leadTimeDays: 2,
-      paymentTerms: 'Net 15 Days',
-      rating: '4.8 ★'
-    },
-    {
-      code: 'VND-03',
-      name: 'Microbar Cold Chain Solutions',
-      category: 'IoT Carry Bags & Gel Packs',
-      contactPerson: 'Pradeep Nayak',
-      phone: '+91 99000 88221',
-      email: 'pradeep@microbartech.com',
-      gstin: '29AABCM5544L1Z9',
-      leadTimeDays: 5,
-      paymentTerms: '100% Advance',
-      rating: '4.7 ★'
     }
   ]);
+
+  // Live Backend Data Fetching for all Inventory Sub-tabs
+  React.useEffect(() => {
+    async function fetchInventorySubtabs() {
+      try {
+        const [purRes, indRes, scRes, vndRes, agRes, exRes] = await Promise.all([
+          safeFetch(`${API_BASE}/api/v1/admin/purchases`, {}, 2500).then(r => r.json()).catch(() => null),
+          safeFetch(`${API_BASE}/api/v1/admin/indents`, {}, 2500).then(r => r.json()).catch(() => null),
+          safeFetch(`${API_BASE}/api/v1/admin/scraps`, {}, 2500).then(r => r.json()).catch(() => null),
+          safeFetch(`${API_BASE}/api/v1/admin/vendors`, {}, 2500).then(r => r.json()).catch(() => null),
+          safeFetch(`${API_BASE}/api/v1/admin/agent-inventory`, {}, 2500).then(r => r.json()).catch(() => null),
+          safeFetch(`${API_BASE}/api/v1/admin/extra-usages`, {}, 2500).then(r => r.json()).catch(() => null)
+        ]);
+
+        if (purRes?.purchases && purRes.purchases.length > 0) setPurchases(purRes.purchases);
+        if (indRes?.indents && indRes.indents.length > 0) {
+          setIndents(indRes.indents);
+          parentSetIndents(indRes.indents);
+        }
+        if (scRes?.scraps && scRes.scraps.length > 0) setScrapLogs(scRes.scraps);
+        if (vndRes?.vendors && vndRes.vendors.length > 0) setVendors(vndRes.vendors);
+        if (agRes?.agentInventories && agRes.agentInventories.length > 0) setAgentInventories(agRes.agentInventories);
+        if (exRes?.extraUsages && exRes.extraUsages.length > 0) setExtraUsages(exRes.extraUsages);
+      } catch (e) {
+        console.warn('Failed to fetch inventory subtabs from backend:', e);
+      }
+    }
+    if (API_BASE && safeFetch) {
+      fetchInventorySubtabs();
+    }
+  }, [API_BASE]);
+
+  // Bulk import single items handler
+  const handleImportInventory = async (parsedItems) => {
+    try {
+      const res = await safeFetch(`${API_BASE}/api/v1/admin/inventory/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: parsedItems })
+      });
+      const data = await res.json();
+      if (data.inventory) {
+        setInventoryStock(data.inventory);
+        parentSetInventoryStock(data.inventory);
+        return;
+      }
+    } catch (e) {}
+    
+    // Fallback merge
+    setInventoryStock(prev => {
+      const updated = [...prev];
+      parsedItems.forEach(item => {
+        const idx = updated.findIndex(u => u.code === item.code);
+        if (idx >= 0) updated[idx] = item;
+        else updated.push(item);
+      });
+      parentSetInventoryStock(updated);
+      return updated;
+    });
+  };
+
+  // Delete purchase handler
+  const handleDeletePurchase = async (id) => {
+    if (!window.confirm(`Delete purchase receipt ${id}?`)) return;
+    setPurchases(prev => prev.filter(p => p.id !== id));
+    try {
+      await safeFetch(`${API_BASE}/api/v1/admin/purchases/${id}`, { method: 'DELETE' });
+    } catch (e) {}
+  };
+
+  // Delete indent handler
+  const handleDeleteIndent = async (id) => {
+    if (!window.confirm(`Delete indent request ${id}?`)) return;
+    setIndents(prev => {
+      const updated = prev.filter(i => i.id !== id);
+      parentSetIndents(updated);
+      return updated;
+    });
+    try {
+      await safeFetch(`${API_BASE}/api/v1/admin/indents/${id}`, { method: 'DELETE' });
+    } catch (e) {}
+  };
+
+  // Delete scrap handler
+  const handleDeleteScrap = async (id) => {
+    if (!window.confirm(`Delete scrap log ${id}?`)) return;
+    setScrapLogs(prev => prev.filter(s => s.id !== id));
+    try {
+      await safeFetch(`${API_BASE}/api/v1/admin/scraps/${id}`, { method: 'DELETE' });
+    } catch (e) {}
+  };
+
+  // Delete extra usage handler
+  const handleDeleteExtraUsage = async (id) => {
+    if (!window.confirm(`Delete extra usage record ${id}?`)) return;
+    setExtraUsages(prev => prev.filter(u => u.id !== id));
+    try {
+      await safeFetch(`${API_BASE}/api/v1/admin/extra-usages/${id}`, { method: 'DELETE' });
+    } catch (e) {}
+  };
+
+  // Vendor CRUD
+  const [showVendorModal, setShowVendorModal] = useState(false);
+  const [isEditingVendor, setIsEditingVendor] = useState(false);
+  const [vendorForm, setVendorForm] = useState({
+    code: 'VND-02',
+    name: '',
+    category: 'Vacutainers & Needles',
+    contactPerson: '',
+    phone: '',
+    email: '',
+    gstin: '',
+    leadTimeDays: 3,
+    paymentTerms: 'Net 30 Days',
+    rating: '4.8 ★'
+  });
+
+  const handleOpenAddVendor = () => {
+    setIsEditingVendor(false);
+    setVendorForm({
+      code: `VND-${(vendors.length + 1).toString().padStart(2, '0')}`,
+      name: '',
+      category: 'Vacutainers & Needles',
+      contactPerson: '',
+      phone: '',
+      email: '',
+      gstin: '',
+      leadTimeDays: 3,
+      paymentTerms: 'Net 30 Days',
+      rating: '4.8 ★'
+    });
+    setShowVendorModal(true);
+  };
+
+  const handleOpenEditVendor = (vnd) => {
+    setIsEditingVendor(true);
+    setVendorForm({ ...vnd });
+    setShowVendorModal(true);
+  };
+
+  const handleSaveVendor = async (e) => {
+    e.preventDefault();
+    if (!vendorForm.name.trim()) return;
+
+    let updatedVendors;
+    if (isEditingVendor) {
+      updatedVendors = vendors.map(v => v.code === vendorForm.code ? vendorForm : v);
+    } else {
+      updatedVendors = [...vendors, vendorForm];
+    }
+    setVendors(updatedVendors);
+    setShowVendorModal(false);
+
+    try {
+      await safeFetch(`${API_BASE}/api/v1/admin/vendors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(vendorForm)
+      });
+    } catch (err) {}
+  };
+
+  const handleDeleteVendor = async (code) => {
+    if (!window.confirm(`Delete supplier ${code}?`)) return;
+    setVendors(prev => prev.filter(v => v.code !== code));
+    try {
+      await safeFetch(`${API_BASE}/api/v1/admin/vendors/${code}`, { method: 'DELETE' });
+    } catch (err) {}
+  };
 
   // Modal Visibility States
   const [showAddStockModal, setShowAddStockModal] = useState(false);
@@ -873,6 +862,7 @@ export default function StockInventoryTab({
             setShowInchargeConfigModal(true);
           }}
           onSendMoqAlert={handleSendMoqAlertNotification}
+          onImportInventory={handleImportInventory}
         />
       )}
 
@@ -881,6 +871,7 @@ export default function StockInventoryTab({
         <PurchasesInwardSubTab
           purchases={purchases}
           onOpenAddPurchase={() => setShowAddPurchaseModal(true)}
+          onDeletePurchase={handleDeletePurchase}
         />
       )}
 
@@ -890,6 +881,7 @@ export default function StockInventoryTab({
           indents={indents}
           onApproveIndent={handleApproveIndent}
           onOpenCreateIndent={() => setShowCreateIndentModal(true)}
+          onDeleteIndent={handleDeleteIndent}
         />
       )}
 
@@ -909,6 +901,7 @@ export default function StockInventoryTab({
         <ExtraUsageWaiversSubTab
           extraUsages={extraUsages}
           onDecideExtraUsage={handleDecideExtraUsage}
+          onDeleteExtraUsage={handleDeleteExtraUsage}
         />
       )}
 
@@ -917,6 +910,7 @@ export default function StockInventoryTab({
         <ScrapExpirySubTab
           scrapLogs={scrapLogs}
           onOpenScrapModal={() => setShowScrapModal(true)}
+          onDeleteScrap={handleDeleteScrap}
         />
       )}
 
@@ -940,6 +934,9 @@ export default function StockInventoryTab({
             setPurchaseForm(prev => ({ ...prev, vendor: vendorName }));
             setShowAddPurchaseModal(true);
           }}
+          onOpenAddVendor={handleOpenAddVendor}
+          onOpenEditVendor={handleOpenEditVendor}
+          onDeleteVendor={handleDeleteVendor}
         />
       )}
 
@@ -1005,6 +1002,18 @@ export default function StockInventoryTab({
           setInventoryStock(prev => prev.map(s => s.code === selectedStockForConfig.code ? selectedStockForConfig : s));
           setShowInchargeConfigModal(false);
         }}
+      />
+
+      <VendorModal
+        show={showVendorModal}
+        onClose={() => {
+          setShowVendorModal(false);
+          setIsEditingVendor(false);
+        }}
+        vendorForm={vendorForm}
+        setVendorForm={setVendorForm}
+        isEditing={isEditingVendor}
+        onSave={handleSaveVendor}
       />
 
     </div>

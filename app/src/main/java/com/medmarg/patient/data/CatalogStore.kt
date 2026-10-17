@@ -142,60 +142,18 @@ object CatalogStore {
     private fun getDefaultCuratedPackages(): List<CatalogItem> {
         return listOf(
             CatalogItem(
-                id = "PKG_AAROGYAM_1.3",
-                code = "AAROGYAM 1.3",
-                name = "Aarogyam Complete 1.3 (Full Body Checkup)",
-                mrp = 3500,
-                price = 1499,
-                discountPercent = 57,
-                tagline = "104 Biomarkers • Complete Vital Screening",
+                id = "PKG_1",
+                code = "MM_MASTER",
+                name = "MedMarg Master Full Body Checkup (100+ Biomarkers)",
+                mrp = 2499,
+                price = 1199,
+                discountPercent = 52,
+                tagline = "Comprehensive Preventive Health Package covering CBC, Lipid, Liver, Kidney, Thyroid & Vitamins",
                 popular = true,
                 fasting = "YES",
                 itemType = "PACKAGE",
-                testCount = 104,
-                profiles = listOf("LP8", "LFT", "KFT", "THY", "CBC", "DIAB", "VIT")
-            ),
-            CatalogItem(
-                id = "PKG_HIS_WELLNESS",
-                code = "HIS_WELLNESS",
-                name = "His Wellness Comprehensive (Men 20-50+)",
-                mrp = 4000,
-                price = 1699,
-                discountPercent = 58,
-                tagline = "78 Tests • Testosterone, Cardiac, Stamina & LFT",
-                popular = true,
-                fasting = "YES",
-                itemType = "PACKAGE",
-                testCount = 78,
-                profiles = listOf("LP8", "LFT", "KFT", "THY", "TESTO")
-            ),
-            CatalogItem(
-                id = "PKG_HER_WELLNESS",
-                code = "HER_WELLNESS",
-                name = "Her Wellness & Hormone Harmony (Women)",
-                mrp = 4200,
-                price = 1799,
-                discountPercent = 57,
-                tagline = "84 Tests • PCOS, Ultra Thyroid, Ferritin & Calcium",
-                popular = true,
-                fasting = "YES",
-                itemType = "PACKAGE",
-                testCount = 84,
-                profiles = listOf("LP8", "LFT", "KFT", "THY", "PCOS", "FERR")
-            ),
-            CatalogItem(
-                id = "PKG_FAMILY_SHIELD",
-                code = "FAMILY_SHIELD",
-                name = "Family Complete Health Shield (4 Members)",
-                mrp = 9999,
-                price = 4499,
-                discountPercent = 55,
-                tagline = "110+ Tests for 4 Members • Geriatric & Pediatric",
-                popular = true,
-                fasting = "YES",
-                itemType = "PACKAGE",
-                testCount = 110,
-                profiles = listOf("LP8", "LFT", "KFT", "THY", "CBC", "DIAB", "VIT", "SR_CITIZEN")
+                testCount = 100,
+                profiles = listOf("LIPID")
             )
         )
     }

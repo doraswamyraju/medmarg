@@ -587,3 +587,157 @@ export function MoqConfigModal({
     </div>
   );
 }
+
+export function VendorModal({
+  show,
+  onClose,
+  vendorForm,
+  setVendorForm,
+  isEditing = false,
+  onSave
+}) {
+  if (!show) return null;
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+      <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '520px', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
+        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+          <div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+              {isEditing ? 'Edit Supplier / Vendor' : 'Add New Supplier / Vendor'}
+            </h3>
+            <div style={{ fontSize: '0.8rem', color: '#006B70', fontWeight: '700' }}>Vendor Code: {vendorForm?.code}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>
+        </div>
+
+        <form onSubmit={onSave} style={{ padding: '1.5rem', display: 'grid', gap: '0.9rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.75rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Code</label>
+              <input
+                type="text"
+                required
+                value={vendorForm?.code || ''}
+                onChange={(e) => setVendorForm({ ...vendorForm, code: e.target.value.toUpperCase() })}
+                style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '800', fontFamily: 'monospace' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Company / Vendor Name</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Becton Dickinson (BD India)"
+                value={vendorForm?.name || ''}
+                onChange={(e) => setVendorForm({ ...vendorForm, name: e.target.value })}
+                style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '700' }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Supply Category</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Vacutainers & Needles, IoT Carry Bags"
+              value={vendorForm?.category || ''}
+              onChange={(e) => setVendorForm({ ...vendorForm, category: e.target.value })}
+              style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.88rem' }}
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Contact Person</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Rajesh Mehra"
+                value={vendorForm?.contactPerson || ''}
+                onChange={(e) => setVendorForm({ ...vendorForm, contactPerson: e.target.value })}
+                style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Phone Number</label>
+              <input
+                type="text"
+                required
+                placeholder="+91 98110 55443"
+                value={vendorForm?.phone || ''}
+                onChange={(e) => setVendorForm({ ...vendorForm, phone: e.target.value })}
+                style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Email Address</label>
+              <input
+                type="email"
+                required
+                placeholder="orders@bd.com"
+                value={vendorForm?.email || ''}
+                onChange={(e) => setVendorForm({ ...vendorForm, email: e.target.value })}
+                style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>GSTIN</label>
+              <input
+                type="text"
+                placeholder="37AABCB1234F1Z8"
+                value={vendorForm?.gstin || ''}
+                onChange={(e) => setVendorForm({ ...vendorForm, gstin: e.target.value.toUpperCase() })}
+                style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Lead Time (Days)</label>
+              <input
+                type="number"
+                min="1"
+                value={vendorForm?.leadTimeDays ?? 3}
+                onChange={(e) => setVendorForm({ ...vendorForm, leadTimeDays: Number(e.target.value) })}
+                style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Payment Terms</label>
+              <input
+                type="text"
+                placeholder="Net 30 Days"
+                value={vendorForm?.paymentTerms || 'Net 30 Days'}
+                onChange={(e) => setVendorForm({ ...vendorForm, paymentTerms: e.target.value })}
+                style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Rating</label>
+              <input
+                type="text"
+                placeholder="4.9 ★"
+                value={vendorForm?.rating || '4.8 ★'}
+                onChange={(e) => setVendorForm({ ...vendorForm, rating: e.target.value })}
+                style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+            <button type="button" onClick={onClose} style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}>Cancel</button>
+            <button type="submit" style={{ padding: '0.65rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}>
+              {isEditing ? 'Update Supplier' : 'Save Supplier'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

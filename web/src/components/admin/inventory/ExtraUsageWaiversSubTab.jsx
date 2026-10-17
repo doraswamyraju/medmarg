@@ -3,7 +3,8 @@ import { ShieldCheck, DollarSign, CheckCircle } from 'lucide-react';
 
 export default function ExtraUsageWaiversSubTab({
   extraUsages = [],
-  onDecideExtraUsage = () => {}
+  onDecideExtraUsage = () => {},
+  onDeleteExtraUsage = () => {}
 }) {
   return (
     <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
@@ -30,7 +31,7 @@ export default function ExtraUsageWaiversSubTab({
             <th style={{ padding: '0.85rem' }}>Reported Clinical Reason</th>
             <th style={{ padding: '0.85rem' }}>Cost Value</th>
             <th style={{ padding: '0.85rem' }}>Decision Status</th>
-            <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>Admin Action</th>
+            <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>Admin Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -84,24 +85,33 @@ export default function ExtraUsageWaiversSubTab({
                 )}
               </td>
               <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
-                {u.decision === 'PENDING' ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'flex-end' }}>
-                    <button
-                      onClick={() => onDecideExtraUsage(u.id, 'WAIVED_CLINICAL_BUFFER')}
-                      style={{ padding: '0.35rem 0.75rem', backgroundColor: '#059669', color: '#FFF', border: 'none', borderRadius: '6px', fontSize: '0.74rem', fontWeight: '800', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', width: 'max-content' }}
-                    >
-                      <ShieldCheck size={12} /> Approve as Allowed Waste
-                    </button>
-                    <button
-                      onClick={() => onDecideExtraUsage(u.id, 'CHARGED_AGENT')}
-                      style={{ padding: '0.35rem 0.75rem', backgroundColor: '#EF4444', color: '#FFF', border: 'none', borderRadius: '6px', fontSize: '0.74rem', fontWeight: '800', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', width: 'max-content' }}
-                    >
-                      <DollarSign size={12} /> Mark Billable to Agent
-                    </button>
-                  </div>
-                ) : (
-                  <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '700' }}>Reviewed by {u.decidedBy}</span>
-                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'flex-end' }}>
+                  {u.decision === 'PENDING' ? (
+                    <>
+                      <button
+                        onClick={() => onDecideExtraUsage(u.id, 'WAIVED_CLINICAL_BUFFER')}
+                        style={{ padding: '0.35rem 0.75rem', backgroundColor: '#059669', color: '#FFF', border: 'none', borderRadius: '6px', fontSize: '0.74rem', fontWeight: '800', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', width: 'max-content' }}
+                      >
+                        <ShieldCheck size={12} /> Approve as Allowed Waste
+                      </button>
+                      <button
+                        onClick={() => onDecideExtraUsage(u.id, 'CHARGED_AGENT')}
+                        style={{ padding: '0.35rem 0.75rem', backgroundColor: '#EF4444', color: '#FFF', border: 'none', borderRadius: '6px', fontSize: '0.74rem', fontWeight: '800', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', width: 'max-content' }}
+                      >
+                        <DollarSign size={12} /> Mark Billable to Agent
+                      </button>
+                    </>
+                  ) : (
+                    <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '700' }}>Reviewed by {u.decidedBy}</span>
+                  )}
+                  <button
+                    onClick={() => onDeleteExtraUsage(u.id)}
+                    title="Delete Record"
+                    style={{ padding: '0.25rem 0.5rem', backgroundColor: '#FEE2E2', color: '#991B1B', border: 'none', borderRadius: '5px', fontSize: '0.7rem', cursor: 'pointer', width: 'max-content' }}
+                  >
+                    Delete
+                  </button>
+                </div>
               </td>
             </tr>
           ))}

@@ -520,4 +520,299 @@ router.delete('/inventory/:code', (req, res) => {
     res.json({ success: true, message: `Inventory item ${code} deleted successfully.` });
 });
 
+router.post('/inventory/bulk', (req, res) => {
+    const { items, overwrite } = req.body;
+    if (!Array.isArray(items)) {
+        return res.status(400).json({ error: 'Items array is required for bulk import.' });
+    }
+
+    if (!dbStore.inventoryStock || overwrite) {
+        dbStore.inventoryStock = [];
+    }
+
+    items.forEach(newItem => {
+        if (!newItem || !newItem.name) return;
+        const code = (newItem.code || `STK-${Date.now().toString().slice(-4)}`).trim().toUpperCase();
+        const existingIdx = dbStore.inventoryStock.findIndex(i => i.code === code);
+        const itemObj = {
+            code,
+            name: newItem.name.trim(),
+            type: newItem.type === 'KIT' ? 'KIT' : 'SINGLE',
+            category: newItem.category || 'Blood Containers',
+            stock: Number(newItem.stock) || 0,
+            unit: newItem.unit || 'Tubes',
+            reorderLevel: Number(newItem.reorderLevel) || 100,
+            unitCost: Number(newItem.unitCost) || 10,
+            incharge: newItem.incharge || 'Anand Store Lead (store.tirupati@medmarg.com)',
+            alertSent: false,
+            components: Array.isArray(newItem.components) ? newItem.components : []
+        };
+
+        if (existingIdx >= 0) {
+            dbStore.inventoryStock[existingIdx] = { ...dbStore.inventoryStock[existingIdx], ...itemObj };
+        } else {
+            dbStore.inventoryStock.push(itemObj);
+        }
+    });
+
+    saveDbStore();
+    res.json({ success: true, count: dbStore.inventoryStock.length, inventory: dbStore.inventoryStock });
+});
+
+// ==========================================
+// PURCHASES / INWARD GOODS (GRN) CRUD
+// ==========================================
+router.get('/purchases', (req, res) => {
+    res.json({ success: true, purchases: dbStore.purchases || [] });
+});
+
+router.post('/purchases', (req, res) => {
+    if (!dbStore.purchases) dbStore.purchases = [];
+    const newPurchase = {
+        id: req.body.id || `GRN-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
+        poNumber: req.body.poNumber || `PO-MM-${Math.floor(1000 + Math.random() * 9000)}`,
+        vendor: req.body.vendor || 'Becton Dickinson (BD India Pvt Ltd)',
+        invoiceNo: req.body.invoiceNo || `INV-${Date.now().toString().slice(-5)}`,
+        inwardDate: req.body.inwardDate || 'Today ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        batchNo: req.body.batchNo || `BATCH-${Date.now().toString().slice(-4)}`,
+        mfgDate: req.body.mfgDate || '2026-01-01',
+        expDate: req.body.expDate || '2028-01-01',
+        itemsCount: req.body.itemsCount || 1,
+        details: req.body.details || '',
+        totalAmount: Number(req.body.totalAmount) || 0,
+        receivedBy: req.body.receivedBy || 'Anand Store Lead',
+        qcStatus: req.body.qcStatus || 'PASSED_VERIFIED'
+    };
+    dbStore.purchases.unshift(newPurchase);
+    saveDbStore();
+    res.status(201).json({ success: true, purchase: newPurchase });
+});
+
+router.put('/purchases/:id', (req, res) => {
+    const { id } = req.params;
+    if (!dbStore.purchases) dbStore.purchases = [];
+    const item = dbStore.purchases.find(p => p.id === id);
+    if (!item) return res.status(404).json({ error: 'Purchase record not found' });
+    Object.assign(item, req.body);
+    saveDbStore();
+    res.json({ success: true, purchase: item });
+});
+
+router.delete('/purchases/:id', (req, res) => {
+    const { id } = req.params;
+    if (dbStore.purchases) {
+        dbStore.purchases = dbStore.purchases.filter(p => p.id !== id);
+        saveDbStore();
+    }
+    res.json({ success: true, message: `Purchase ${id} deleted` });
+});
+
+// ==========================================
+// AGENT INDENTS CRUD
+// ==========================================
+router.get('/indents', (req, res) => {
+    res.json({ success: true, indents: dbStore.indents || [] });
+});
+
+router.post('/indents', (req, res) => {
+    if (!dbStore.indents) dbStore.indents = [];
+    const newIndent = {
+        id: req.body.id || `IND-${Math.floor(500 + Math.random() * 500)}`,
+        agentType: req.body.agentType || 'SALARIED_AGENT',
+        agentName: req.body.agentName || 'Ramesh Kumar (AG-01)',
+        area: req.body.area || 'Tirupati Central',
+        requestedItems: req.body.requestedItems || '',
+        status: req.body.status || 'PENDING_APPROVAL',
+        date: req.body.date || 'Today ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        paymentMode: req.body.paymentMode || 'Company Quota Allocation (Free)'
+    };
+    dbStore.indents.unshift(newIndent);
+    saveDbStore();
+    res.status(201).json({ success: true, indent: newIndent });
+});
+
+router.put('/indents/:id', (req, res) => {
+    const { id } = req.params;
+    if (!dbStore.indents) dbStore.indents = [];
+    const indent = dbStore.indents.find(i => i.id === id);
+    if (!indent) return res.status(404).json({ error: 'Indent record not found' });
+    Object.assign(indent, req.body);
+    saveDbStore();
+    res.json({ success: true, indent });
+});
+
+router.delete('/indents/:id', (req, res) => {
+    const { id } = req.params;
+    if (dbStore.indents) {
+        dbStore.indents = dbStore.indents.filter(i => i.id !== id);
+        saveDbStore();
+    }
+    res.json({ success: true, message: `Indent ${id} deleted` });
+});
+
+// ==========================================
+// SCRAP, DAMAGED & EXPIRY LOGS CRUD
+// ==========================================
+router.get('/scraps', (req, res) => {
+    res.json({ success: true, scraps: dbStore.scrapLogs || [] });
+});
+
+router.post('/scraps', (req, res) => {
+    if (!dbStore.scrapLogs) dbStore.scrapLogs = [];
+    const newScrap = {
+        id: req.body.id || `SCR-${Math.floor(400 + Math.random() * 500)}`,
+        date: req.body.date || 'Today ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        itemCode: req.body.itemCode || 'STK-01',
+        itemName: req.body.itemName || 'Consumable Item',
+        batchNo: req.body.batchNo || 'BATCH-01',
+        quantity: Number(req.body.quantity) || 1,
+        reason: req.body.reason || 'Damaged / Expiry',
+        lossValue: Number(req.body.lossValue) || 0,
+        loggedBy: req.body.loggedBy || 'Anand Store Lead',
+        actionTaken: req.body.actionTaken || 'Stock Written Off from Central Warehouse'
+    };
+    dbStore.scrapLogs.unshift(newScrap);
+    saveDbStore();
+    res.status(201).json({ success: true, scrap: newScrap });
+});
+
+router.put('/scraps/:id', (req, res) => {
+    const { id } = req.params;
+    if (!dbStore.scrapLogs) dbStore.scrapLogs = [];
+    const scrap = dbStore.scrapLogs.find(s => s.id === id);
+    if (!scrap) return res.status(404).json({ error: 'Scrap record not found' });
+    Object.assign(scrap, req.body);
+    saveDbStore();
+    res.json({ success: true, scrap });
+});
+
+router.delete('/scraps/:id', (req, res) => {
+    const { id } = req.params;
+    if (dbStore.scrapLogs) {
+        dbStore.scrapLogs = dbStore.scrapLogs.filter(s => s.id !== id);
+        saveDbStore();
+    }
+    res.json({ success: true, message: `Scrap record ${id} deleted` });
+});
+
+// ==========================================
+// SUPPLIERS / VENDORS CRUD
+// ==========================================
+router.get('/vendors', (req, res) => {
+    res.json({ success: true, vendors: dbStore.vendors || [] });
+});
+
+router.post('/vendors', (req, res) => {
+    if (!dbStore.vendors) dbStore.vendors = [];
+    const code = (req.body.code || `VND-${(dbStore.vendors.length + 1).toString().padStart(2, '0')}`).toUpperCase();
+    const existing = dbStore.vendors.find(v => v.code === code);
+    const newVendor = {
+        code,
+        name: req.body.name || 'New Supplier',
+        category: req.body.category || 'Vacutainers & Supplies',
+        contactPerson: req.body.contactPerson || 'Store Manager',
+        phone: req.body.phone || '+91 98480 00000',
+        email: req.body.email || 'supplier@medmarg.com',
+        gstin: req.body.gstin || '37AABCB0000A1Z0',
+        leadTimeDays: Number(req.body.leadTimeDays) || 3,
+        paymentTerms: req.body.paymentTerms || 'Net 30 Days',
+        rating: req.body.rating || '4.8 ★'
+    };
+    if (existing) {
+        Object.assign(existing, newVendor);
+    } else {
+        dbStore.vendors.push(newVendor);
+    }
+    saveDbStore();
+    res.status(201).json({ success: true, vendor: newVendor });
+});
+
+router.put('/vendors/:code', (req, res) => {
+    const { code } = req.params;
+    if (!dbStore.vendors) dbStore.vendors = [];
+    const vendor = dbStore.vendors.find(v => v.code === code);
+    if (!vendor) return res.status(404).json({ error: 'Vendor not found' });
+    Object.assign(vendor, req.body);
+    saveDbStore();
+    res.json({ success: true, vendor });
+});
+
+router.delete('/vendors/:code', (req, res) => {
+    const { code } = req.params;
+    if (dbStore.vendors) {
+        dbStore.vendors = dbStore.vendors.filter(v => v.code !== code);
+        saveDbStore();
+    }
+    res.json({ success: true, message: `Vendor ${code} deleted` });
+});
+
+// ==========================================
+// AGENT IN-HAND INVENTORIES CRUD
+// ==========================================
+router.get('/agent-inventory', (req, res) => {
+    res.json({ success: true, agentInventories: dbStore.agentInventories || [] });
+});
+
+router.put('/agent-inventory/:agentId', (req, res) => {
+    const { agentId } = req.params;
+    if (!dbStore.agentInventories) dbStore.agentInventories = [];
+    let ag = dbStore.agentInventories.find(a => a.agentId === agentId);
+    if (!ag) {
+        ag = { agentId, ...req.body };
+        dbStore.agentInventories.push(ag);
+    } else {
+        Object.assign(ag, req.body);
+    }
+    saveDbStore();
+    res.json({ success: true, agentInventory: ag });
+});
+
+// ==========================================
+// EXTRA USAGES & WAIVERS CRUD
+// ==========================================
+router.get('/extra-usages', (req, res) => {
+    res.json({ success: true, extraUsages: dbStore.extraUsages || [] });
+});
+
+router.post('/extra-usages', (req, res) => {
+    if (!dbStore.extraUsages) dbStore.extraUsages = [];
+    const newUsage = {
+        id: req.body.id || `EX-${Math.floor(900 + Math.random() * 100)}`,
+        orderId: req.body.orderId || 'MM-8921',
+        patientName: req.body.patientName || 'Patient',
+        agentId: req.body.agentId || 'AG-01',
+        agentName: req.body.agentName || 'Agent',
+        agentType: req.body.agentType || 'SALARIED',
+        reportedAt: req.body.reportedAt || 'Today ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        itemsUsed: req.body.itemsUsed || [],
+        totalValue: Number(req.body.totalValue) || 0,
+        phleboReason: req.body.phleboReason || 'Clinical draw difficulty',
+        decision: req.body.decision || 'PENDING',
+        decisionNotes: req.body.decisionNotes || '',
+        decidedBy: req.body.decidedBy || null
+    };
+    dbStore.extraUsages.unshift(newUsage);
+    saveDbStore();
+    res.status(201).json({ success: true, extraUsage: newUsage });
+});
+
+router.put('/extra-usages/:id', (req, res) => {
+    const { id } = req.params;
+    if (!dbStore.extraUsages) dbStore.extraUsages = [];
+    const item = dbStore.extraUsages.find(u => u.id === id);
+    if (!item) return res.status(404).json({ error: 'Extra usage record not found' });
+    Object.assign(item, req.body);
+    saveDbStore();
+    res.json({ success: true, extraUsage: item });
+});
+
+router.delete('/extra-usages/:id', (req, res) => {
+    const { id } = req.params;
+    if (dbStore.extraUsages) {
+        dbStore.extraUsages = dbStore.extraUsages.filter(u => u.id !== id);
+        saveDbStore();
+    }
+    res.json({ success: true, message: `Extra usage record ${id} deleted` });
+});
+
 module.exports = router;
