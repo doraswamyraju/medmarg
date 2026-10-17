@@ -41,23 +41,24 @@ export default function StockInventoryTab({
   const subTab = propSubTab !== undefined ? propSubTab : localSubTab;
   const setSubTab = propSetSubTab || setLocalSubTab;
 
-  // Master Stock & Kits State
+  // Master Stock & Kits State - Exactly 1 Single Inventory Item and 1 Pre-Packaged Kit as actual examples
   const [inventoryStock, setInventoryStock] = useState(
     initialStock.length > 0 ? initialStock : [
-      { code: 'STK-01', name: 'Gold SST Gel Tubes (5ml)', type: 'SINGLE', category: 'Blood Containers', stock: 4500, unit: 'Tubes', reorderLevel: 1000, unitCost: 14, incharge: 'Anand Store Lead (store.tirupati@medmarg.com)', alertSent: true },
-      { code: 'STK-02', name: 'Purple EDTA Tubes (3ml)', type: 'SINGLE', category: 'Blood Containers', stock: 3200, unit: 'Tubes', reorderLevel: 800, unitCost: 12, incharge: 'Anand Store Lead (store.tirupati@medmarg.com)', alertSent: false },
-      { code: 'STK-03', name: 'Grey Fluoride Glucose Tubes (2ml)', type: 'SINGLE', category: 'Blood Containers', stock: 2100, unit: 'Tubes', reorderLevel: 500, unitCost: 12, incharge: 'Anand Store Lead (store.tirupati@medmarg.com)', alertSent: false },
-      { code: 'STK-04', name: 'Sterile Vacutainer Needles 21G', type: 'SINGLE', category: 'Phlebotomy Supplies', stock: 5000, unit: 'Needles', reorderLevel: 1200, unitCost: 6, incharge: 'Kiran Ops Lead (kiran.ops@medmarg.com)', alertSent: false },
-      { code: 'STK-05', name: 'Sterile Butterfly Needles 23G', type: 'SINGLE', category: 'Phlebotomy Supplies', stock: 450, unit: 'Needles', reorderLevel: 600, unitCost: 22, incharge: 'Kiran Ops Lead (kiran.ops@medmarg.com)', alertSent: true },
-      { code: 'STK-06', name: 'Alcohol Prep Swabs (70% IPA)', type: 'SINGLE', category: 'Disinfectants & Swabs', stock: 8500, unit: 'Swabs', reorderLevel: 2000, unitCost: 1.5, incharge: 'Anand Store Lead (store.tirupati@medmarg.com)', alertSent: false },
-      { code: 'STK-07', name: 'IoT Cold Gel Carry Bags (2-8°C)', type: 'SINGLE', category: 'Cold Chain Equipment', stock: 150, unit: 'Bags', reorderLevel: 30, unitCost: 850, incharge: 'Anand Store Lead (store.tirupati@medmarg.com)', alertSent: false },
-      { code: 'STK-08', name: 'Biohazard Yellow Bags (Barcoded)', type: 'SINGLE', category: 'Waste Management', stock: 3800, unit: 'Bags', reorderLevel: 1000, unitCost: 4, incharge: 'Anand Store Lead (store.tirupati@medmarg.com)', alertSent: false },
-      { code: 'STK-09', name: 'Thermal Sample Barcode Stickers (Roll of 500)', type: 'SINGLE', category: 'Barcodes & Stationery', stock: 85, unit: 'Rolls', reorderLevel: 20, unitCost: 120, incharge: 'Anand Store Lead (store.tirupati@medmarg.com)', alertSent: false },
-      
-      // Combo Kits (Combination of Single Items)
+      { 
+        code: 'STK-01', 
+        name: 'Gold SST Gel Tubes (5ml)', 
+        type: 'SINGLE', 
+        category: 'Blood Containers', 
+        stock: 4500, 
+        unit: 'Tubes', 
+        reorderLevel: 1000, 
+        unitCost: 14, 
+        incharge: 'Anand Store Lead (store.tirupati@medmarg.com)', 
+        alertSent: false 
+      },
       { 
         code: 'KIT-101', 
-        name: 'Routine Full Body Health Kit', 
+        name: 'Routine Phlebotomy Standard Kit', 
         type: 'KIT', 
         category: 'Pre-Packaged Kits', 
         stock: 350, 
@@ -67,55 +68,19 @@ export default function StockInventoryTab({
         incharge: 'Anand Store Lead (store.tirupati@medmarg.com)',
         alertSent: false,
         components: [
-          { itemCode: 'STK-01', name: 'Gold SST Gel Tube', qty: 1 },
-          { itemCode: 'STK-02', name: 'Purple EDTA Tube', qty: 1 },
-          { itemCode: 'STK-04', name: 'Sterile 21G Needle', qty: 1 },
-          { itemCode: 'STK-06', name: 'Alcohol Swab', qty: 2 },
-          { itemCode: 'STK-08', name: 'Biohazard Bag', qty: 1 }
-        ]
-      },
-      { 
-        code: 'KIT-102', 
-        name: 'Comprehensive Diabetic & Lipid Kit', 
-        type: 'KIT', 
-        category: 'Pre-Packaged Kits', 
-        stock: 220, 
-        unit: 'Kits', 
-        reorderLevel: 80, 
-        unitCost: 62,
-        incharge: 'Anand Store Lead (store.tirupati@medmarg.com)',
-        alertSent: false,
-        components: [
-          { itemCode: 'STK-01', name: 'Gold SST Tube', qty: 1 },
-          { itemCode: 'STK-02', name: 'Purple EDTA Tube', qty: 1 },
-          { itemCode: 'STK-03', name: 'Grey Fluoride Tube', qty: 1 },
-          { itemCode: 'STK-04', name: 'Sterile 21G Needle', qty: 1 },
-          { itemCode: 'STK-06', name: 'Alcohol Swabs', qty: 2 }
-        ]
-      },
-      { 
-        code: 'KIT-103', 
-        name: 'Phlebotomist Monthly Starter Bag Kit', 
-        type: 'KIT', 
-        category: 'Pre-Packaged Kits', 
-        stock: 18, 
-        unit: 'Kits', 
-        reorderLevel: 25, 
-        unitCost: 1850,
-        incharge: 'Kiran Ops Lead (kiran.ops@medmarg.com)',
-        alertSent: true,
-        components: [
-          { itemCode: 'STK-01', name: 'Gold SST Tube', qty: 50 },
-          { itemCode: 'STK-02', name: 'Purple EDTA Tube', qty: 30 },
-          { itemCode: 'STK-03', name: 'Grey Fluoride Tube', qty: 20 },
-          { itemCode: 'STK-04', name: 'Sterile 21G Needles', qty: 100 },
-          { itemCode: 'STK-06', name: 'Alcohol Swabs', qty: 100 },
-          { itemCode: 'STK-07', name: 'IoT Cold Bag', qty: 1 },
-          { itemCode: 'STK-09', name: 'Barcode Roll', qty: 2 }
+          { itemCode: 'STK-01', name: 'Gold SST Gel Tube', qty: 1 }
         ]
       }
     ]
   );
+
+  React.useEffect(() => {
+    if (initialStock && initialStock.length > 0) {
+      setInventoryStock(initialStock);
+    }
+  }, [initialStock]);
+
+  const [editingStockItem, setEditingStockItem] = useState(null);
 
   // Purchases / Inward Goods State (GRN)
   const [purchases, setPurchases] = useState([
@@ -422,7 +387,7 @@ export default function StockInventoryTab({
 
   // Forms
   const [stockForm, setStockForm] = useState({
-    code: `STK-0${inventoryStock.length + 1}`,
+    code: 'STK-02',
     name: '',
     type: 'SINGLE',
     category: 'Blood Containers',
@@ -430,59 +395,149 @@ export default function StockInventoryTab({
     unit: 'Tubes',
     reorderLevel: 300,
     unitCost: 15,
-    incharge: 'Anand Store Lead (store.tirupati@medmarg.com)'
+    incharge: 'Anand Store Lead (store.tirupati@medmarg.com)',
+    componentsText: ''
   });
 
-  const [purchaseForm, setPurchaseForm] = useState({
-    poNumber: `PO-MM-${Math.floor(4400 + Math.random() * 100)}`,
-    vendor: 'Becton Dickinson (BD India Pvt Ltd)',
-    invoiceNo: '',
-    batchNo: '',
-    mfgDate: '',
-    expDate: '',
-    itemCode: 'STK-01',
-    quantity: 1000,
-    unitCost: 14,
-    receivedBy: 'Anand Store Lead'
-  });
+  const handleOpenAddSingle = () => {
+    setEditingStockItem(null);
+    setStockForm({
+      code: `STK-0${inventoryStock.filter(i => i.type === 'SINGLE').length + 1}`,
+      name: '',
+      type: 'SINGLE',
+      category: 'Blood Containers',
+      stock: 1000,
+      unit: 'Tubes',
+      reorderLevel: 300,
+      unitCost: 15,
+      incharge: 'Anand Store Lead (store.tirupati@medmarg.com)',
+      componentsText: ''
+    });
+    setShowAddStockModal(true);
+  };
 
-  const [indentForm, setIndentForm] = useState({
-    id: `IND-${Math.floor(500 + Math.random() * 500)}`,
-    agentName: 'Ramesh Kumar (AG-01)',
-    agentType: 'SALARIED_AGENT',
-    area: 'Tirupati Central',
-    requestedItems: '50x Gold SST Tubes, 20x Purple EDTA Tubes',
-    paymentMode: 'Company Quota Allocation (Free)'
-  });
+  const handleOpenAddKit = () => {
+    setEditingStockItem(null);
+    setStockForm({
+      code: `KIT-${100 + inventoryStock.filter(i => i.type === 'KIT').length + 1}`,
+      name: '',
+      type: 'KIT',
+      category: 'Pre-Packaged Kits',
+      stock: 100,
+      unit: 'Kits',
+      reorderLevel: 25,
+      unitCost: 50,
+      incharge: 'Anand Store Lead (store.tirupati@medmarg.com)',
+      componentsText: 'STK-01 (Qty: 1)'
+    });
+    setShowAddStockModal(true);
+  };
 
-  const [allocateForm, setAllocateForm] = useState({
-    agentId: 'AG-01',
-    itemCode: 'STK-01',
-    quantity: 50,
-    notes: 'Shift Routine Refill'
-  });
+  const handleOpenEditStock = (item) => {
+    setEditingStockItem(item);
+    setStockForm({
+      code: item.code,
+      name: item.name,
+      type: item.type || 'SINGLE',
+      category: item.category || 'Blood Containers',
+      stock: item.stock !== undefined ? item.stock : 100,
+      unit: item.unit || (item.type === 'KIT' ? 'Kits' : 'Tubes'),
+      reorderLevel: item.reorderLevel !== undefined ? item.reorderLevel : 20,
+      unitCost: item.unitCost !== undefined ? item.unitCost : 10,
+      incharge: item.incharge || 'Anand Store Lead (store.tirupati@medmarg.com)',
+      componentsText: item.components && Array.isArray(item.components)
+        ? item.components.map(c => `${c.name || c.itemCode} (Qty: ${c.qty || 1})`).join(', ')
+        : (item.componentsText || '')
+    });
+    setShowAddStockModal(true);
+  };
 
-  const [scrapForm, setScrapForm] = useState({
-    itemCode: 'STK-01',
-    batchNo: 'SST-2026-09',
-    quantity: 10,
-    reason: 'Defective Vacuum / Damaged Stopper'
-  });
+  const handleDuplicateStock = (item) => {
+    setEditingStockItem(null);
+    const newCode = `${item.code}_COPY`;
+    setStockForm({
+      code: newCode,
+      name: `${item.name} (Copy)`,
+      type: item.type || 'SINGLE',
+      category: item.category || 'Blood Containers',
+      stock: item.stock !== undefined ? item.stock : 100,
+      unit: item.unit || (item.type === 'KIT' ? 'Kits' : 'Tubes'),
+      reorderLevel: item.reorderLevel !== undefined ? item.reorderLevel : 20,
+      unitCost: item.unitCost !== undefined ? item.unitCost : 10,
+      incharge: item.incharge || 'Anand Store Lead (store.tirupati@medmarg.com)',
+      componentsText: item.components && Array.isArray(item.components)
+        ? item.components.map(c => `${c.name || c.itemCode} (Qty: ${c.qty || 1})`).join(', ')
+        : (item.componentsText || '')
+    });
+    setShowAddStockModal(true);
+  };
 
-  // Action Handlers
-  const handleSaveNewStock = (e) => {
+  const handleDeleteStock = async (item) => {
+    if (!window.confirm(`Are you sure you want to delete "${item.name}" (${item.code})?`)) return;
+    const updated = inventoryStock.filter(i => i.code !== item.code);
+    setInventoryStock(updated);
+    parentSetInventoryStock(updated);
+    if (API_BASE && safeFetch) {
+      try {
+        await safeFetch(`${API_BASE}/api/v1/admin/inventory/${encodeURIComponent(item.code)}`, {
+          method: 'DELETE'
+        });
+      } catch (err) {
+        console.error('Error deleting inventory item:', err);
+      }
+    }
+  };
+
+  const handleSaveNewStock = async (e) => {
     e.preventDefault();
-    const newItem = {
+    const parsedComponents = stockForm.type === 'KIT' && stockForm.componentsText
+      ? stockForm.componentsText.split(',').map(s => {
+          const match = s.match(/(.*?)\s*\(Qty:\s*(\d+)\)/i);
+          if (match) return { name: match[1].trim(), qty: Number(match[2]) };
+          return { name: s.trim(), qty: 1 };
+        })
+      : (stockForm.components || []);
+
+    const itemToSave = {
       ...stockForm,
-      stock: Number(stockForm.stock) || 1000,
-      reorderLevel: Number(stockForm.reorderLevel) || 300,
-      unitCost: Number(stockForm.unitCost) || 15,
+      stock: Number(stockForm.stock) || 0,
+      reorderLevel: Number(stockForm.reorderLevel) || 0,
+      unitCost: Number(stockForm.unitCost) || 0,
+      components: parsedComponents,
       alertSent: false
     };
-    const updated = [newItem, ...inventoryStock];
+
+    let updated;
+    if (editingStockItem) {
+      updated = inventoryStock.map(i => i.code === editingStockItem.code ? itemToSave : i);
+    } else {
+      updated = [itemToSave, ...inventoryStock.filter(i => i.code !== itemToSave.code)];
+    }
+
     setInventoryStock(updated);
     parentSetInventoryStock(updated);
     setShowAddStockModal(false);
+    setEditingStockItem(null);
+
+    if (API_BASE && safeFetch) {
+      try {
+        if (editingStockItem) {
+          await safeFetch(`${API_BASE}/api/v1/admin/inventory/${encodeURIComponent(editingStockItem.code)}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(itemToSave)
+          });
+        } else {
+          await safeFetch(`${API_BASE}/api/v1/admin/inventory`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(itemToSave)
+          });
+        }
+      } catch (err) {
+        console.error('Error syncing inventory item to backend:', err);
+      }
+    }
   };
 
   const handleSavePurchase = (e) => {
@@ -772,7 +827,11 @@ export default function StockInventoryTab({
       {subTab === 'STOCK_KITS' && (
         <StockAndKitsSubTab
           inventoryStock={inventoryStock}
-          onOpenAddModal={() => setShowAddStockModal(true)}
+          onOpenAddSingle={handleOpenAddSingle}
+          onOpenAddKit={handleOpenAddKit}
+          onOpenEditStock={handleOpenEditStock}
+          onDuplicateStock={handleDuplicateStock}
+          onDeleteStock={handleDeleteStock}
           onOpenConfigModal={(stk) => {
             setSelectedStockForConfig(stk);
             setShowInchargeConfigModal(true);
@@ -853,9 +912,13 @@ export default function StockInventoryTab({
       {/* ========================================================================= */}
       <AddStockModal
         show={showAddStockModal}
-        onClose={() => setShowAddStockModal(false)}
+        onClose={() => {
+          setShowAddStockModal(false);
+          setEditingStockItem(null);
+        }}
         stockForm={stockForm}
         setStockForm={setStockForm}
+        isEditing={Boolean(editingStockItem)}
         onSave={handleSaveNewStock}
       />
 

@@ -3,7 +3,7 @@
 
 import initialCatalog from './catalogData.json';
 
-const STORAGE_KEY = 'medmarg_custom_catalog_v2';
+const STORAGE_KEY = 'medmarg_catalog_v3';
 
 // Load stored state or fallback to default ingested json
 export function getCatalogState() {
