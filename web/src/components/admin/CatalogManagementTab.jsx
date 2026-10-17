@@ -25,6 +25,7 @@ import {
   Square,
   Activity,
   Trash2,
+  Copy,
   TrendingDown
 } from 'lucide-react';
 import { 
@@ -263,14 +264,166 @@ export default function CatalogManagementTab({
         price: 1299,
         tatHours: 24,
         description: '',
-        selectedProfiles: ['APASTS', 'BEAP'],
-        selectedTests: ['AHGLU', 'VITDC', 'SGPT'],
+        selectedProfiles: catalog.profiles?.[0] ? [catalog.profiles[0].code] : [],
+        selectedTests: catalog.tests?.[0] ? [catalog.tests[0].code] : [],
         labPricing: labs,
         tierPricing: tiers
       });
     }
     setActivePackageModalTab('COMPONENTS');
     setShowPackageBuilderModal(true);
+  };
+
+  // DUPLICATE & DELETE HANDLERS
+  const handleDuplicateTest = (test) => {
+    setEditingItem(null);
+    const labs = getItemLabPricing(test);
+    const tiers = getItemTierPricing(test);
+    setTestForm({
+      code: `${test.code}_COPY`,
+      name: `${test.name} (Copy)`,
+      sampleType: test.sampleType || 'SERUM',
+      fasting: test.fasting || 'NO',
+      mrp: test.mrp || 499,
+      price: test.price || 299,
+      tatHours: test.tatHours || 24,
+      description: test.description || '',
+      labPricing: JSON.parse(JSON.stringify(labs)),
+      tierPricing: JSON.parse(JSON.stringify(tiers))
+    });
+    setActiveTestModalTab('DETAILS');
+    setShowCreateTestModal(true);
+  };
+
+  const handleDeleteTest = async (test) => {
+    if (!window.confirm(`Are you sure you want to delete test "${test.name}" (${test.code})? This will permanently remove it from the catalog.`)) {
+      return;
+    }
+
+    const updatedTests = (catalog.tests || []).filter(t => t.id !== test.id && t.code !== test.code);
+    const updatedCatalog = { ...catalog, tests: updatedTests };
+    setCatalog(updatedCatalog);
+    saveCatalogState(updatedCatalog);
+
+    try {
+      if (safeFetch && API_BASE) {
+        await safeFetch(`${API_BASE}/api/v1/catalog/tests/${test.id || test.code}`, {
+          method: 'DELETE'
+        });
+        await safeFetch(`${API_BASE}/api/v1/catalog/sync-full`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tests: updatedTests, profiles: catalog.profiles, packages: catalog.packages })
+        });
+      }
+    } catch (err) {
+      console.warn('Delete test backend error:', err);
+    }
+
+    setSaveToast(`🗑️ Test "${test.name}" deleted successfully.`);
+    setTimeout(() => setSaveToast(null), 3000);
+  };
+
+  const handleDuplicateProfile = (profile) => {
+    setEditingItem(null);
+    const labs = getItemLabPricing(profile);
+    const tiers = getItemTierPricing(profile);
+    setProfileForm({
+      code: `${profile.code}_COPY`,
+      name: `${profile.name} (Copy)`,
+      sampleType: profile.sampleType || 'SERUM',
+      fasting: profile.fasting || 'NO',
+      mrp: profile.mrp || 1499,
+      price: profile.price || 899,
+      tatHours: profile.tatHours || 24,
+      description: profile.description || '',
+      selectedTests: profile.tests ? [...profile.tests] : [],
+      labPricing: JSON.parse(JSON.stringify(labs)),
+      tierPricing: JSON.parse(JSON.stringify(tiers))
+    });
+    setActiveProfileModalTab('DETAILS');
+    setShowCreateProfileModal(true);
+  };
+
+  const handleDeleteProfile = async (profile) => {
+    if (!window.confirm(`Are you sure you want to delete profile "${profile.name}" (${profile.code})? This will permanently remove it from the catalog.`)) {
+      return;
+    }
+
+    const updatedProfiles = (catalog.profiles || []).filter(p => p.id !== profile.id && p.code !== profile.code);
+    const updatedCatalog = { ...catalog, profiles: updatedProfiles };
+    setCatalog(updatedCatalog);
+    saveCatalogState(updatedCatalog);
+
+    try {
+      if (safeFetch && API_BASE) {
+        await safeFetch(`${API_BASE}/api/v1/catalog/profiles/${profile.id || profile.code}`, {
+          method: 'DELETE'
+        });
+        await safeFetch(`${API_BASE}/api/v1/catalog/sync-full`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profiles: updatedProfiles, packages: catalog.packages, tests: catalog.tests })
+        });
+      }
+    } catch (err) {
+      console.warn('Delete profile backend error:', err);
+    }
+
+    setSaveToast(`🗑️ Diagnostic Profile "${profile.name}" deleted successfully.`);
+    setTimeout(() => setSaveToast(null), 3000);
+  };
+
+  const handleDuplicatePackage = (pkg) => {
+    setEditingItem(null);
+    const labs = getItemLabPricing(pkg);
+    const tiers = getItemTierPricing(pkg);
+    setPackageBuilderForm({
+      id: null,
+      name: `${pkg.name} (Copy)`,
+      code: `${pkg.code}_COPY`,
+      tagline: pkg.tagline || '',
+      category: pkg.category || 'Full Body Wellness',
+      mrp: pkg.mrp || 2999,
+      price: pkg.price || 1299,
+      tatHours: pkg.tatHours || 24,
+      description: pkg.description || '',
+      selectedProfiles: pkg.profiles ? [...pkg.profiles] : [],
+      selectedTests: pkg.tests ? [...pkg.tests] : [],
+      labPricing: JSON.parse(JSON.stringify(labs)),
+      tierPricing: JSON.parse(JSON.stringify(tiers))
+    });
+    setActivePackageModalTab('DETAILS');
+    setShowPackageBuilderModal(true);
+  };
+
+  const handleDeletePackage = async (pkg) => {
+    if (!window.confirm(`Are you sure you want to delete health package "${pkg.name}" (${pkg.code})? This will permanently remove it from the catalog.`)) {
+      return;
+    }
+
+    const updatedPackages = (catalog.packages || []).filter(p => p.id !== pkg.id && p.code !== pkg.code);
+    const updatedCatalog = { ...catalog, packages: updatedPackages };
+    setCatalog(updatedCatalog);
+    saveCatalogState(updatedCatalog);
+
+    try {
+      if (safeFetch && API_BASE) {
+        await safeFetch(`${API_BASE}/api/v1/catalog/packages/${pkg.id || pkg.code}`, {
+          method: 'DELETE'
+        });
+        await safeFetch(`${API_BASE}/api/v1/catalog/sync-full`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ packages: updatedPackages, profiles: catalog.profiles, tests: catalog.tests })
+        });
+      }
+    } catch (err) {
+      console.warn('Delete package backend error:', err);
+    }
+
+    setSaveToast(`🗑️ Health Package "${pkg.name}" deleted successfully.`);
+    setTimeout(() => setSaveToast(null), 3000);
   };
 
   const handleOpenLabPricingModal = (item) => {
@@ -633,7 +786,7 @@ export default function CatalogManagementTab({
         <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.25rem', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
           <div style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800', letterSpacing: '0.05em' }}>SINGLE BIOMARKER TESTS</div>
           <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem' }}>
-            {catalog.tests?.length || 913} <span style={{ fontSize: '0.85rem', color: '#059669', fontWeight: '700' }}>Individual</span>
+            {catalog.tests?.length ?? 1} <span style={{ fontSize: '0.85rem', color: '#059669', fontWeight: '700' }}>Individual</span>
           </div>
           <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.2rem' }}>Single tests with multi-lab & people rates</div>
         </div>
@@ -641,7 +794,7 @@ export default function CatalogManagementTab({
         <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.25rem', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
           <div style={{ fontSize: '0.78rem', color: '#D97706', fontWeight: '800', letterSpacing: '0.05em' }}>DIAGNOSTIC PROFILES</div>
           <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem' }}>
-            {catalog.profiles?.length || 87} <span style={{ fontSize: '0.85rem', color: '#D97706', fontWeight: '700' }}>Panels</span>
+            {catalog.profiles?.length ?? 1} <span style={{ fontSize: '0.85rem', color: '#D97706', fontWeight: '700' }}>Panels</span>
           </div>
           <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.2rem' }}>Combinations of single tests</div>
         </div>
@@ -649,7 +802,7 @@ export default function CatalogManagementTab({
         <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', padding: '1.25rem', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
           <div style={{ fontSize: '0.78rem', color: '#7E22CE', fontWeight: '800', letterSpacing: '0.05em' }}>HEALTH PACKAGES</div>
           <div style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem' }}>
-            {catalog.packages?.length || 4} <span style={{ fontSize: '0.85rem', color: '#7E22CE', fontWeight: '700' }}>Promoted</span>
+            {catalog.packages?.length ?? 1} <span style={{ fontSize: '0.85rem', color: '#7E22CE', fontWeight: '700' }}>Promoted</span>
           </div>
           <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.2rem' }}>Combinations of profiles & tests</div>
         </div>
@@ -660,9 +813,9 @@ export default function CatalogManagementTab({
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {[
             { key: 'LAB_PRICING', label: 'Rate & Slabs Desk', icon: DollarSign, count: (catalog.tests?.length || 0) + (catalog.profiles?.length || 0) + (catalog.packages?.length || 0) },
-            { key: 'TESTS', label: 'Single Tests Master', icon: FlaskConical, count: catalog.tests?.length || 913 },
-            { key: 'PROFILES', label: 'Diagnostic Profiles', icon: Layers, count: catalog.profiles?.length || 87 },
-            { key: 'PACKAGES', label: 'Health Packages', icon: Package, count: catalog.packages?.length || 4 },
+            { key: 'TESTS', label: 'Single Tests Master', icon: FlaskConical, count: catalog.tests?.length ?? 0 },
+            { key: 'PROFILES', label: 'Diagnostic Profiles', icon: Layers, count: catalog.profiles?.length ?? 0 },
+            { key: 'PACKAGES', label: 'Health Packages', icon: Package, count: catalog.packages?.length ?? 0 },
             { key: 'SYNC_HUB', label: 'Google Sheets Sync', icon: FileSpreadsheet }
           ].map(st => {
             const isSel = testsSubTab === st.key;
@@ -1143,11 +1296,25 @@ export default function CatalogManagementTab({
                       <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
                           <button 
+                            title="Duplicate Single Test"
+                            onClick={() => handleDuplicateTest(test)}
+                            style={{ padding: '0.4rem 0.65rem', backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#006B70', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '800', fontSize: '0.76rem' }}
+                          >
+                            <Copy size={13} /> Duplicate
+                          </button>
+                          <button 
                             title="Edit Single Test & Multi-Lab Rates"
                             onClick={() => handleOpenEditTest(test)}
                             style={{ padding: '0.4rem 0.65rem', backgroundColor: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0284C7', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '800', fontSize: '0.76rem' }}
                           >
-                            <Edit3 size={14} /> Edit
+                            <Edit3 size={13} /> Edit
+                          </button>
+                          <button 
+                            title="Delete Single Test"
+                            onClick={() => handleDeleteTest(test)}
+                            style={{ padding: '0.4rem 0.55rem', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Trash2 size={13} />
                           </button>
                         </div>
                       </td>
@@ -1251,11 +1418,25 @@ export default function CatalogManagementTab({
                       <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
                           <button 
+                            title="Duplicate Profile"
+                            onClick={() => handleDuplicateProfile(profile)}
+                            style={{ padding: '0.45rem 0.7rem', backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#006B70', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '800', fontSize: '0.78rem' }}
+                          >
+                            <Copy size={13} /> Duplicate
+                          </button>
+                          <button 
                             title="Edit Profile & Included Tests"
                             onClick={() => handleOpenEditProfile(profile)}
                             style={{ padding: '0.45rem 0.75rem', backgroundColor: '#006B70', border: 'none', borderRadius: '8px', color: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: '800', fontSize: '0.78rem' }}
                           >
                             <Edit3 size={14} /> Edit Tests & Rates
+                          </button>
+                          <button 
+                            title="Delete Diagnostic Profile"
+                            onClick={() => handleDeleteProfile(profile)}
+                            style={{ padding: '0.45rem 0.55rem', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </td>
@@ -1269,89 +1450,134 @@ export default function CatalogManagementTab({
         </div>
       )}
 
-      {/* 4. HEALTH PACKAGES TAB (COMBINATIONS OF PROFILES & TESTS) */}
+      {/* 4. HEALTH PACKAGES TAB (COMBINATIONS OF PROFILES & TESTS) - TABULAR FORMAT */}
       {testsSubTab === 'PACKAGES' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.5rem' }}>
-          {(catalog.packages || []).map(pkg => {
-            const labs = getItemLabPricing(pkg);
-            const tiers = getItemTierPricing(pkg);
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+              <thead>
+                <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
+                  <th style={{ padding: '1rem 1.25rem', width: '14%' }}>PACKAGE CODE</th>
+                  <th style={{ padding: '1rem', width: '24%' }}>PACKAGE NAME & TAGLINE</th>
+                  <th style={{ padding: '1rem', width: '20%' }}>INCLUDED PROFILES & TESTS</th>
+                  <th style={{ padding: '1rem', width: '14%' }}>SPECIMEN & FASTING</th>
+                  <th style={{ padding: '1rem', width: '16%' }}>PRICING & SLABS</th>
+                  <th style={{ padding: '1rem 1.25rem', textAlign: 'right', width: '12%' }}>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(catalog.packages || []).map(pkg => {
+                  const labs = getItemLabPricing(pkg);
+                  const tiers = getItemTierPricing(pkg);
+                  const profileList = pkg.profiles || [];
+                  const testList = pkg.tests || [];
 
-            return (
-              <div key={pkg.id} style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1.5px solid #E2E8F0', padding: '1.5rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.55rem', borderRadius: '4px', fontWeight: '800' }}>
-                      {pkg.discountPercent || 50}% OFF • {pkg.category || 'Full Body Wellness'}
-                    </span>
-                    <span style={{ fontSize: '0.75rem', color: '#64748B', fontFamily: 'monospace', fontWeight: '800' }}>
-                      {pkg.code}
-                    </span>
-                  </div>
-
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0F172A', marginTop: '0.5rem', marginBottom: '0.35rem' }}>
-                    {pkg.name}
-                  </h3>
-                  <p style={{ fontSize: '0.84rem', color: '#64748B', margin: 0, lineHeight: 1.4 }}>
-                    {pkg.tagline || pkg.description}
-                  </p>
-
-                  {/* Composition breakdown */}
-                  <div style={{ marginTop: '0.85rem', padding: '0.75rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.78rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '800', color: '#006B70' }}>
-                      <span>🔬 Included Profiles:</span>
-                      <span>{(pkg.profiles?.length ?? 0)} Profiles</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '800', color: '#B45309' }}>
-                      <span>🧪 Standalone Tests:</span>
-                      <span>{(pkg.tests?.length ?? 0)} Tests</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '900', color: '#0F172A', borderTop: '1px solid #E2E8F0', paddingTop: '0.35rem' }}>
-                      <span>Total Diagnostic Biomarkers:</span>
-                      <span style={{ color: '#059669' }}>{pkg.testCount || ((pkg.profiles?.length || 0) * 8 + (pkg.tests?.length || 0)) || 10}+ Parameters</span>
-                    </div>
-                  </div>
-
-                  {/* Multi-Person Volume Slabs preview */}
-                  <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.35rem', flexWrap: 'wrap', fontSize: '0.72rem' }}>
-                    <span style={{ backgroundColor: '#F0FDF4', color: '#006B70', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>
-                      1P: ₹{tiers['1']?.offerPrice || pkg.price}
-                    </span>
-                    <span style={{ backgroundColor: '#F0F9FF', color: '#0284C7', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>
-                      2P: ₹{tiers['2']?.offerPrice}/p
-                    </span>
-                    <span style={{ backgroundColor: '#FFFBEB', color: '#D97706', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>
-                      5P: ₹{tiers['5']?.offerPrice}/p
-                    </span>
-                    <span style={{ backgroundColor: '#FAF5FF', color: '#7E22CE', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>
-                      10+P: ₹{tiers['10']?.offerPrice}/p
-                    </span>
-                  </div>
-                </div>
-
-                <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <span style={{ fontSize: '1.4rem', fontWeight: '900', color: '#006B70' }}>₹{pkg.price}</span>
-                    <span style={{ fontSize: '0.8rem', color: '#94A3B8', textDecoration: 'line-through', marginLeft: '0.4rem' }}>₹{pkg.mrp}</span>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '0.4rem' }}>
-                    <button
-                      onClick={() => handleOpenPackageBuilder(pkg)}
-                      style={{ padding: '0.55rem 0.95rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-                    >
-                      <Edit3 size={14} /> Edit Package
-                    </button>
-                    <button
-                      onClick={() => handleOpenLabPricingModal(pkg)}
-                      style={{ padding: '0.55rem 0.75rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer' }}
-                    >
-                      <Sliders size={14} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                  return (
+                    <tr key={pkg.id || pkg.code} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                      <td style={{ padding: '1rem 1.25rem', verticalAlign: 'middle' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <span style={{ fontFamily: 'monospace', color: '#7E22CE', fontWeight: '900', fontSize: '0.88rem' }}>
+                            {pkg.code}
+                          </span>
+                          <span style={{ fontSize: '0.7rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.12rem 0.45rem', borderRadius: '4px', fontWeight: '800', width: 'fit-content' }}>
+                            {pkg.discountPercent || 50}% OFF • {pkg.category || 'Package'}
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                        <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.92rem' }}>
+                          {pkg.name}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.2rem', lineHeight: 1.3 }}>
+                          {pkg.tagline || pkg.description}
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                          <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                            <span style={{ backgroundColor: '#E0F2FE', color: '#0369A1', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: '800', fontSize: '0.75rem' }}>
+                              🔬 {profileList.length} Profiles
+                            </span>
+                            <span style={{ backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: '800', fontSize: '0.75rem' }}>
+                              🧪 {testList.length} Tests
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: '800' }}>
+                            ✓ {pkg.testCount || (profileList.length * 8 + testList.length)}+ Total Biomarkers
+                          </span>
+                          {(profileList.length > 0 || testList.length > 0) && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', fontSize: '0.7rem', color: '#64748B' }}>
+                              {profileList.map(c => (
+                                <span key={c} style={{ backgroundColor: '#F1F5F9', padding: '0.1rem 0.35rem', borderRadius: '4px', fontFamily: 'monospace' }}>
+                                  {c}
+                                </span>
+                              ))}
+                              {testList.map(c => (
+                                <span key={c} style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '0.1rem 0.35rem', borderRadius: '4px', fontFamily: 'monospace' }}>
+                                  {c}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <span style={{ backgroundColor: '#F1F5F9', padding: '0.15rem 0.45rem', borderRadius: '4px', border: '1px solid #CBD5E1', fontSize: '0.74rem', fontWeight: '700', color: '#334155' }}>
+                            🩸 {Array.isArray(pkg.sampleTypes) ? pkg.sampleTypes.join(', ') : (pkg.sampleTypes || 'SERUM, EDTA')}
+                          </span>
+                          <span style={{ fontSize: '0.72rem', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '800', backgroundColor: pkg.fasting === 'YES' ? '#FEF3C7' : '#DCFCE7', color: pkg.fasting === 'YES' ? '#B45309' : '#15803D' }}>
+                            ⏱ Fasting: {pkg.fasting || 'YES'}
+                          </span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
+                            <span style={{ fontSize: '1.15rem', fontWeight: '900', color: '#006B70' }}>₹{pkg.price}</span>
+                            <span style={{ fontSize: '0.78rem', color: '#94A3B8', textDecoration: 'line-through' }}>₹{pkg.mrp}</span>
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', fontSize: '0.7rem' }}>
+                            <span style={{ backgroundColor: '#F0FDF4', color: '#006B70', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: '800' }}>
+                              1P: ₹{tiers['1']?.offerPrice || pkg.price}
+                            </span>
+                            <span style={{ backgroundColor: '#F0F9FF', color: '#0284C7', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: '800' }}>
+                              2P: ₹{tiers['2']?.offerPrice}/p
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '1rem 1.25rem', textAlign: 'right', verticalAlign: 'middle' }}>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem' }}>
+                          <button 
+                            title="Duplicate Health Package"
+                            onClick={() => handleDuplicatePackage(pkg)}
+                            style={{ padding: '0.45rem 0.7rem', backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#006B70', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '800', fontSize: '0.76rem' }}
+                          >
+                            <Copy size={13} /> Duplicate
+                          </button>
+                          <button 
+                            title="Edit Health Package in Visual Builder"
+                            onClick={() => handleOpenPackageBuilder(pkg)}
+                            style={{ padding: '0.45rem 0.75rem', backgroundColor: '#006B70', border: 'none', borderRadius: '8px', color: '#FFFFFF', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', fontWeight: '800', fontSize: '0.78rem' }}
+                          >
+                            <Edit3 size={13} /> Edit
+                          </button>
+                          <button 
+                            title="Delete Health Package"
+                            onClick={() => handleDeletePackage(pkg)}
+                            style={{ padding: '0.45rem 0.55rem', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

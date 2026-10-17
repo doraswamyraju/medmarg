@@ -458,4 +458,66 @@ router.post('/dispatch/auto', (req, res) => {
     });
 });
 
+// ==========================================
+// INVENTORY STOCK & KITS CRUD ENDPOINTS
+// ==========================================
+router.get('/inventory', (req, res) => {
+    res.json({ success: true, inventory: dbStore.inventoryStock || [] });
+});
+
+router.post('/inventory', (req, res) => {
+    const { code, name, type, category, stock, unit, reorderLevel, unitCost, incharge, components } = req.body;
+    if (!name) {
+        return res.status(400).json({ error: 'Item / Kit Name is required.' });
+    }
+
+    if (!dbStore.inventoryStock) dbStore.inventoryStock = [];
+
+    const itemType = type === 'KIT' ? 'KIT' : 'SINGLE';
+    const itemCode = (code || `${itemType === 'KIT' ? 'KIT' : 'STK'}-${Date.now().toString().slice(-4)}`).trim().toUpperCase();
+    const existingIndex = dbStore.inventoryStock.findIndex(i => i.code === itemCode);
+
+    const item = {
+        code: itemCode,
+        name: name.trim(),
+        type: itemType,
+        category: category || (itemType === 'KIT' ? 'Pre-Packaged Kits' : 'Blood Containers'),
+        stock: Number(stock) || 0,
+        unit: unit || (itemType === 'KIT' ? 'Kits' : 'Units'),
+        reorderLevel: Number(reorderLevel) || 100,
+        unitCost: Number(unitCost) || 0,
+        incharge: incharge || 'Anand Store Lead (store.tirupati@medmarg.com)',
+        alertSent: false,
+        components: Array.isArray(components) ? components : []
+    };
+
+    if (existingIndex >= 0) {
+        dbStore.inventoryStock[existingIndex] = item;
+    } else {
+        dbStore.inventoryStock.unshift(item);
+    }
+
+    saveDbStore();
+    res.status(201).json({ success: true, item, message: existingIndex >= 0 ? 'Inventory item updated successfully.' : 'Inventory item added successfully.' });
+});
+
+router.put('/inventory/:code', (req, res) => {
+    const { code } = req.params;
+    if (!dbStore.inventoryStock) dbStore.inventoryStock = [];
+    const item = dbStore.inventoryStock.find(i => i.code === code);
+    if (!item) return res.status(404).json({ error: 'Inventory item not found.' });
+
+    Object.assign(item, req.body);
+    saveDbStore();
+    res.json({ success: true, item, message: 'Inventory item updated successfully.' });
+});
+
+router.delete('/inventory/:code', (req, res) => {
+    const { code } = req.params;
+    if (!dbStore.inventoryStock) dbStore.inventoryStock = [];
+    dbStore.inventoryStock = dbStore.inventoryStock.filter(i => i.code !== code);
+    saveDbStore();
+    res.json({ success: true, message: `Inventory item ${code} deleted successfully.` });
+});
+
 module.exports = router;

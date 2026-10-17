@@ -189,11 +189,33 @@
     }
   ],
   "inventoryStock": [
-    { "code": "STK-01", "name": "Gold SST Gel Tubes (5ml)", "category": "Blood Containers", "stock": 4500, "unit": "Tubes", "reorderLevel": 1000 },
-    { "code": "STK-02", "name": "Purple EDTA Tubes (3ml)", "category": "Blood Containers", "stock": 3200, "unit": "Tubes", "reorderLevel": 800 },
-    { "code": "STK-03", "name": "Grey Fluoride Glucose Tubes (2ml)", "category": "Blood Containers", "stock": 2100, "unit": "Tubes", "reorderLevel": 500 },
-    { "code": "STK-04", "name": "Sterile Vacutainer Needles 21G", "category": "Phlebotomy Supplies", "stock": 5000, "unit": "Needles", "reorderLevel": 1200 },
-    { "code": "STK-05", "name": "IoT Cold Gel Carry Bags (2-8°C)", "category": "Cold Chain Equipment", "stock": 150, "unit": "Bags", "reorderLevel": 30 }
+    {
+      "code": "STK-01",
+      "name": "Gold SST Gel Tubes (5ml)",
+      "type": "SINGLE",
+      "category": "Blood Containers",
+      "stock": 4500,
+      "unit": "Tubes",
+      "reorderLevel": 1000,
+      "unitCost": 14,
+      "incharge": "Anand Store Lead (store.tirupati@medmarg.com)",
+      "alertSent": false
+    },
+    {
+      "code": "KIT-101",
+      "name": "Standard Phlebotomy Sample Collection Kit",
+      "type": "KIT",
+      "category": "Pre-Packaged Kits",
+      "stock": 350,
+      "unit": "Kits",
+      "reorderLevel": 100,
+      "unitCost": 48,
+      "incharge": "Anand Store Lead (store.tirupati@medmarg.com)",
+      "alertSent": false,
+      "components": [
+        { "itemCode": "STK-01", "name": "Gold SST Gel Tube (5ml)", "qty": 2 }
+      ]
+    }
   ],
   "indents": [
     { "id": "IND-501", "agentName": "Ramesh Kumar (AG-01)", "requestedItems": "50x Gold SST Tubes, 20x Purple EDTA Tubes", "status": "PENDING_APPROVAL", "date": "Today 08:30 AM" },

@@ -1,9 +1,25 @@
 import React, { useState } from 'react';
-import { Search, Boxes, Layers, AlertTriangle, Bell } from 'lucide-react';
+import { 
+  Search, 
+  Boxes, 
+  Layers, 
+  AlertTriangle, 
+  Bell, 
+  PlusCircle, 
+  Plus, 
+  Edit3, 
+  Trash2, 
+  Copy,
+  Package
+} from 'lucide-react';
 
 export default function StockAndKitsSubTab({
   inventoryStock = [],
-  onOpenAddModal = () => {},
+  onOpenAddSingle = () => {},
+  onOpenAddKit = () => {},
+  onOpenEditStock = () => {},
+  onDuplicateStock = () => {},
+  onDeleteStock = () => {},
   onOpenConfigModal = () => {},
   onSendMoqAlert = () => {}
 }) {
@@ -12,7 +28,8 @@ export default function StockAndKitsSubTab({
   const [itemTypeFilter, setItemTypeFilter] = useState('ALL');
 
   const filteredStock = inventoryStock.filter(stk => {
-    const matchSearch = stk.name.toLowerCase().includes(searchTerm.toLowerCase()) || stk.code.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = stk.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        stk.code.toLowerCase().includes(searchTerm.toLowerCase());
     const matchCat = categoryFilter === 'ALL' || stk.category === categoryFilter;
     const matchType = itemTypeFilter === 'ALL' || stk.type === itemTypeFilter;
     return matchSearch && matchCat && matchType;
@@ -20,7 +37,7 @@ export default function StockAndKitsSubTab({
 
   return (
     <div>
-      {/* Search & Filter Bar */}
+      {/* Search & Action Bar */}
       <div style={{ backgroundColor: '#FFFFFF', borderRadius: '16px', border: '1px solid #E2E8F0', padding: '1rem', marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div style={{ display: 'flex', gap: '0.75rem', flex: 1, minWidth: '280px', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
@@ -59,112 +76,163 @@ export default function StockAndKitsSubTab({
             <option value="Barcodes & Stationery">Barcodes & Stationery</option>
           </select>
         </div>
+
+        <div style={{ display: 'flex', gap: '0.6rem' }}>
+          <button
+            onClick={onOpenAddSingle}
+            style={{ padding: '0.55rem 1.1rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem', boxShadow: '0 4px 12px rgba(0,107,112,0.2)' }}
+          >
+            <PlusCircle size={15} /> + Add Single Item
+          </button>
+          <button
+            onClick={onOpenAddKit}
+            style={{ padding: '0.55rem 1.1rem', backgroundColor: '#4F46E5', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem', boxShadow: '0 4px 12px rgba(79,70,229,0.2)' }}
+          >
+            <Layers size={15} /> + Create Combo Kit
+          </button>
+        </div>
       </div>
 
-      {/* Cards Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(290px, 1fr))', gap: '1.2rem' }}>
-        {filteredStock.map(stk => {
-          const isLowStock = stk.stock <= stk.reorderLevel;
-          const isKit = stk.type === 'KIT';
+      {/* Tabular Format for Inventory Stock & Kits */}
+      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
+              <th style={{ padding: '1rem 1.25rem', width: '15%' }}>SKU / CODE</th>
+              <th style={{ padding: '1rem', width: '28%' }}>ITEM / KIT SPECIFICATION</th>
+              <th style={{ padding: '1rem', width: '18%' }}>CURRENT STOCK</th>
+              <th style={{ padding: '1rem', width: '12%' }}>MOQ LEVEL</th>
+              <th style={{ padding: '1rem', width: '11%' }}>EST. COST</th>
+              <th style={{ padding: '1rem 1.25rem', textAlign: 'right', width: '16%' }}>ACTIONS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredStock.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: '#64748B' }}>
+                  No inventory items match your search. Click "+ Add Single Item" or "+ Create Combo Kit" to register stock.
+                </td>
+              </tr>
+            ) : (
+              filteredStock.map(stk => {
+                const isLowStock = stk.stock <= stk.reorderLevel;
+                const isKit = stk.type === 'KIT';
 
-          return (
-            <div 
-              key={stk.code} 
-              style={{ 
-                backgroundColor: '#FFFFFF', 
-                borderRadius: '16px', 
-                border: isLowStock ? '1.5px solid #F59E0B' : '1px solid #E2E8F0', 
-                padding: '1.25rem', 
-                boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between'
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <span style={{ fontSize: '0.72rem', color: '#006B70', fontWeight: '800', fontFamily: 'monospace', backgroundColor: '#F0FDFA', padding: '0.15rem 0.45rem', borderRadius: '6px' }}>
-                      {stk.code}
-                    </span>
-                    {isKit && (
-                      <span style={{ fontSize: '0.68rem', backgroundColor: '#EEF2FF', color: '#4F46E5', fontWeight: '800', padding: '0.15rem 0.45rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                        <Layers size={11} /> COMBO KIT
-                      </span>
-                    )}
-                  </div>
+                return (
+                  <tr key={stk.code} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                    {/* SKU / Code */}
+                    <td style={{ padding: '1rem 1.25rem', verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <span style={{ fontSize: '0.82rem', color: '#006B70', fontWeight: '900', fontFamily: 'monospace', backgroundColor: '#F0FDFA', padding: '0.15rem 0.5rem', borderRadius: '6px', width: 'fit-content' }}>
+                          {stk.code}
+                        </span>
+                        {isKit ? (
+                          <span style={{ fontSize: '0.7rem', backgroundColor: '#EEF2FF', color: '#4F46E5', fontWeight: '800', padding: '0.12rem 0.45rem', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '0.2rem', width: 'fit-content' }}>
+                            <Layers size={11} /> COMBO KIT
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '0.7rem', backgroundColor: '#F1F5F9', color: '#475569', fontWeight: '800', padding: '0.12rem 0.45rem', borderRadius: '4px', width: 'fit-content' }}>
+                            SINGLE ITEM
+                          </span>
+                        )}
+                      </div>
+                    </td>
 
-                  {isLowStock ? (
-                    <span style={{ fontSize: '0.68rem', color: '#B45309', fontWeight: '800', backgroundColor: '#FEF3C7', padding: '0.15rem 0.5rem', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <AlertTriangle size={12} /> BELOW MOQ
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: '0.68rem', color: '#15803D', fontWeight: '800', backgroundColor: '#DCFCE7', padding: '0.15rem 0.5rem', borderRadius: '6px' }}>
-                      IN STOCK
-                    </span>
-                  )}
-                </div>
+                    {/* Name & Specification */}
+                    <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                      <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.92rem' }}>
+                        {stk.name}
+                      </div>
+                      <div style={{ fontSize: '0.76rem', color: '#64748B', marginTop: '0.15rem' }}>
+                        {stk.category} • <span style={{ color: '#004D40' }}>{stk.incharge}</span>
+                      </div>
 
-                <h4 style={{ fontSize: '1rem', fontWeight: '800', color: '#0F172A', marginTop: '0.6rem', marginBottom: '0.15rem' }}>{stk.name}</h4>
-                <div style={{ fontSize: '0.75rem', color: '#64748B' }}>{stk.category}</div>
+                      {/* Kit Components Chip Breakdown */}
+                      {isKit && stk.components && stk.components.length > 0 && (
+                        <div style={{ marginTop: '0.4rem', display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+                          {stk.components.map((c, idx) => (
+                            <span 
+                              key={idx} 
+                              style={{ fontSize: '0.72rem', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '0.1rem 0.4rem', borderRadius: '4px', color: '#334155', display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                            >
+                              <strong style={{ color: '#006B70' }}>{c.qty}x</strong> {c.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </td>
 
-                {isKit && stk.components && (
-                  <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.75rem', backgroundColor: '#F8FAFC', borderRadius: '10px', border: '1px solid #E2E8F0', fontSize: '0.75rem' }}>
-                    <div style={{ fontWeight: '800', color: '#475569', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <Layers size={12} color="#006B70" /> Bundle Contents:
-                    </div>
-                    <ul style={{ margin: 0, paddingLeft: '1.1rem', color: '#334155' }}>
-                      {stk.components.map((c, idx) => (
-                        <li key={idx} style={{ marginBottom: '0.15rem' }}>
-                          <span style={{ fontWeight: '700' }}>{c.qty}x</span> {c.name}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                    {/* Stock Count */}
+                    <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.35rem' }}>
+                        <span style={{ fontSize: '1.25rem', fontWeight: '900', color: isLowStock ? '#D97706' : '#059669' }}>
+                          {stk.stock.toLocaleString()}
+                        </span>
+                        <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700' }}>
+                          {stk.unit || (isKit ? 'Kits' : 'Units')}
+                        </span>
+                      </div>
+                      <div style={{ marginTop: '0.2rem' }}>
+                        {isLowStock ? (
+                          <span style={{ fontSize: '0.68rem', color: '#B45309', fontWeight: '800', backgroundColor: '#FEF3C7', padding: '0.12rem 0.45rem', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                            <AlertTriangle size={11} /> BELOW MOQ
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '0.68rem', color: '#15803D', fontWeight: '800', backgroundColor: '#DCFCE7', padding: '0.12rem 0.45rem', borderRadius: '4px' }}>
+                            IN STOCK
+                          </span>
+                        )}
+                      </div>
+                    </td>
 
-                <div style={{ marginTop: '0.75rem', padding: '0.5rem', backgroundColor: '#F1F5F9', borderRadius: '8px', fontSize: '0.72rem', color: '#475569' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Minimum Order Level (MOQ):</span>
-                    <strong style={{ color: '#0F172A' }}>{stk.reorderLevel} {stk.unit}</strong>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.2rem' }}>
-                    <span>Est. Unit Purchase Cost:</span>
-                    <strong style={{ color: '#006B70' }}>₹{stk.unitCost}</strong>
-                  </div>
-                </div>
-              </div>
+                    {/* MOQ */}
+                    <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                      <div style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0F172A' }}>
+                        {stk.reorderLevel.toLocaleString()}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#94A3B8' }}>{stk.unit}</div>
+                    </td>
 
-              <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', borderTop: '1px solid #F1F5F9', paddingTop: '0.75rem' }}>
-                <div>
-                  <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: '700' }}>AVAILABLE CENTRAL STOCK</div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: '900', color: isLowStock ? '#D97706' : '#059669' }}>
-                    {stk.stock.toLocaleString()} <span style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 'normal' }}>{stk.unit}</span>
-                  </div>
-                </div>
+                    {/* Est. Cost */}
+                    <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                      <div style={{ fontSize: '0.95rem', fontWeight: '900', color: '#006B70' }}>
+                        ₹{stk.unitCost || 0}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: '#94A3B8' }}>per {stk.unit?.slice(0, -1) || 'unit'}</div>
+                    </td>
 
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  {isLowStock && (
-                    <button
-                      onClick={() => onSendMoqAlert(stk)}
-                      title="Trigger Push/Email Alert to Store In-Charge"
-                      style={{ padding: '0.4rem 0.6rem', backgroundColor: stk.alertSent ? '#FEF3C7' : '#F59E0B', color: stk.alertSent ? '#B45309' : '#FFF', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.72rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.25rem' }}
-                    >
-                      <Bell size={13} /> {stk.alertSent ? 'Alert Dispatched' : 'Alert In-Charge'}
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => onOpenConfigModal(stk)}
-                    style={{ padding: '0.4rem 0.6rem', backgroundColor: '#F1F5F9', color: '#334155', border: '1px solid #CBD5E1', borderRadius: '8px', cursor: 'pointer', fontSize: '0.72rem', fontWeight: '700' }}
-                  >
-                    Edit MOQ
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+                    {/* Actions */}
+                    <td style={{ padding: '1rem 1.25rem', textAlign: 'right', verticalAlign: 'middle' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', flexWrap: 'wrap' }}>
+                        <button
+                          title="Duplicate Item / Kit"
+                          onClick={() => onDuplicateStock(stk)}
+                          style={{ padding: '0.4rem 0.65rem', backgroundColor: '#F8FAFC', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#006B70', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '800', fontSize: '0.76rem' }}
+                        >
+                          <Copy size={13} /> Duplicate
+                        </button>
+                        <button
+                          title="Edit Inventory Item"
+                          onClick={() => onOpenEditStock(stk)}
+                          style={{ padding: '0.4rem 0.65rem', backgroundColor: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0284C7', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '800', fontSize: '0.76rem' }}
+                        >
+                          <Edit3 size={13} /> Edit
+                        </button>
+                        <button
+                          title="Delete Inventory SKU"
+                          onClick={() => onDeleteStock(stk)}
+                          style={{ padding: '0.4rem 0.55rem', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', color: '#DC2626', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

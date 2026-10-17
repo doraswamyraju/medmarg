@@ -97,11 +97,33 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
 
   // Inventory Stock & Indents State
   const [inventoryStock, setInventoryStock] = useState([
-    { code: 'STK-01', name: 'Gold SST Gel Tubes (5ml)', category: 'Blood Containers', stock: 4500, unit: 'Tubes', reorderLevel: 1000 },
-    { code: 'STK-02', name: 'Purple EDTA Tubes (3ml)', category: 'Blood Containers', stock: 3200, unit: 'Tubes', reorderLevel: 800 },
-    { code: 'STK-03', name: 'Grey Fluoride Glucose Tubes (2ml)', category: 'Blood Containers', stock: 2100, unit: 'Tubes', reorderLevel: 500 },
-    { code: 'STK-04', name: 'Sterile Vacutainer Needles 21G', category: 'Phlebotomy Supplies', stock: 5000, unit: 'Needles', reorderLevel: 1200 },
-    { code: 'STK-05', name: 'IoT Cold Gel Carry Bags (2-8°C)', category: 'Cold Chain Equipment', stock: 150, unit: 'Bags', reorderLevel: 30 }
+    {
+      code: 'STK-01',
+      name: 'Gold SST Gel Tubes (5ml)',
+      type: 'SINGLE',
+      category: 'Blood Containers',
+      stock: 4500,
+      unit: 'Tubes',
+      reorderLevel: 1000,
+      unitCost: 14,
+      incharge: 'Anand Store Lead (store.tirupati@medmarg.com)',
+      alertSent: false
+    },
+    {
+      code: 'KIT-101',
+      name: 'Standard Phlebotomy Sample Collection Kit',
+      type: 'KIT',
+      category: 'Pre-Packaged Kits',
+      stock: 350,
+      unit: 'Kits',
+      reorderLevel: 100,
+      unitCost: 48,
+      incharge: 'Anand Store Lead (store.tirupati@medmarg.com)',
+      alertSent: false,
+      components: [
+        { itemCode: 'STK-01', name: 'Gold SST Gel Tube (5ml)', qty: 2 }
+      ]
+    }
   ]);
 
   const [indents, setIndents] = useState([
@@ -137,13 +159,14 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { id: 'ZONE-04', name: 'Zone 4: Chandragiri & Outer Suburbs', pincodes: ['517101'], primaryAgentId: 'FREELANCE_BROADCAST', primaryAgentName: 'Gig Freelancer Broadcast Zone', color: '#A855F7', maxDailyQuota: 999, activeOrders: 2, status: 'ACTIVE', polygonCoords: "210,125 480,125 460,195 190,195" }
   ]);
 
-  // Fetch live database records for Orders, Freelancers, Indents, Partners & Territories
+  // Fetch live database records for Orders, Freelancers, Inventory, Indents, Partners & Territories
   useEffect(() => {
     async function loadDbRecords() {
       try {
-        const [ordersRes, flRes, indRes, partRes, terrRes] = await Promise.all([
+        const [ordersRes, flRes, invRes, indRes, partRes, terrRes] = await Promise.all([
           safeFetch(`${API_BASE}/api/v1/admin/orders`, {}, 2500).then(r => r.json()),
           safeFetch(`${API_BASE}/api/v1/admin/freelancers`, {}, 2500).then(r => r.json()),
+          safeFetch(`${API_BASE}/api/v1/admin/inventory`, {}, 2500).then(r => r.json()),
           safeFetch(`${API_BASE}/api/v1/admin/indents`, {}, 2500).then(r => r.json()),
           safeFetch(`${API_BASE}/api/v1/admin/partners`, {}, 2500).then(r => r.json()),
           safeFetch(`${API_BASE}/api/v1/admin/territories`, {}, 2500).then(r => r.json())
@@ -151,6 +174,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
 
         if (ordersRes && Array.isArray(ordersRes.orders)) setOrders(ordersRes.orders);
         if (flRes && Array.isArray(flRes.freelancers)) setFreelancers(flRes.freelancers);
+        if (invRes && Array.isArray(invRes.inventory)) setInventoryStock(invRes.inventory);
         if (indRes && Array.isArray(indRes.indents)) setIndents(indRes.indents);
         if (partRes && Array.isArray(partRes.partners)) setPartnerQueue(partRes.partners);
         if (terrRes && Array.isArray(terrRes.territories)) setTerritories(terrRes.territories);

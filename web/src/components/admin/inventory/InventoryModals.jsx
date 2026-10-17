@@ -6,16 +6,19 @@ export function AddStockModal({
   onClose,
   stockForm,
   setStockForm,
+  isEditing = false,
   onSave
 }) {
   if (!show) return null;
 
   return (
     <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
-      <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '520px', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
+      <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '540px', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
           <div>
-            <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>Add Single Consumable or Combo Kit</h3>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+              {isEditing ? 'Edit Inventory Item / Kit' : 'Add Single Consumable or Combo Kit'}
+            </h3>
             <div style={{ fontSize: '0.8rem', color: '#006B70', fontWeight: '700' }}>Item Code: {stockForm.code}</div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>
@@ -24,16 +27,29 @@ export function AddStockModal({
         <form onSubmit={onSave} style={{ padding: '1.5rem', display: 'grid', gap: '1rem' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Item Code (SKU)</label>
+              <input
+                type="text"
+                required
+                value={stockForm.code}
+                onChange={(e) => setStockForm({ ...stockForm, code: e.target.value.toUpperCase() })}
+                style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem', fontFamily: 'monospace', fontWeight: '800' }}
+              />
+            </div>
+            <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Item Type</label>
               <select
                 value={stockForm.type}
-                onChange={(e) => setStockForm({ ...stockForm, type: e.target.value })}
-                style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                onChange={(e) => setStockForm({ ...stockForm, type: e.target.value, unit: e.target.value === 'KIT' ? 'Kits' : stockForm.unit })}
+                style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem', fontWeight: '700' }}
               >
                 <option value="SINGLE">Single Consumable Item</option>
                 <option value="KIT">Combo Pre-Packaged Kit</option>
               </select>
             </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
               <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Category</label>
               <select
@@ -50,6 +66,17 @@ export function AddStockModal({
                 <option value="Barcodes & Stationery">Barcodes & Stationery</option>
               </select>
             </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Unit of Measure</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Tubes, Needles, Kits, Bags"
+                value={stockForm.unit || 'Units'}
+                onChange={(e) => setStockForm({ ...stockForm, unit: e.target.value })}
+                style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+              />
+            </div>
           </div>
 
           <div>
@@ -57,16 +84,34 @@ export function AddStockModal({
             <input
               type="text"
               required
-              placeholder="e.g. Light Blue Sodium Citrate Tubes 2.7ml"
+              placeholder="e.g. Gold SST Gel Tubes (5ml)"
               value={stockForm.name}
               onChange={(e) => setStockForm({ ...stockForm, name: e.target.value })}
               style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
             />
           </div>
 
+          {stockForm.type === 'KIT' && (
+            <div>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#006B70', marginBottom: '0.35rem' }}>
+                📦 Kit Bundle Components (Comma Separated)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 2x Gold SST Tubes, 1x Purple EDTA Tube, 1x Vacutainer Needle 21G"
+                value={stockForm.componentsText || ''}
+                onChange={(e) => setStockForm({ ...stockForm, componentsText: e.target.value })}
+                style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#F8FAFC', border: '1.5px solid #006B70', borderRadius: '8px', color: '#0F172A', fontSize: '0.85rem' }}
+              />
+              <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '0.25rem' }}>
+                Specify item counts and descriptions bundled inside this phlebotomy kit.
+              </div>
+            </div>
+          )}
+
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Initial Stock</label>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Current Stock</label>
               <input
                 type="number"
                 required
@@ -110,7 +155,9 @@ export function AddStockModal({
 
           <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
             <button type="button" onClick={onClose} style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}>Cancel</button>
-            <button type="submit" style={{ padding: '0.65rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}>Save & Register SKU</button>
+            <button type="submit" style={{ padding: '0.65rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}>
+              {isEditing ? 'Update Inventory SKU' : 'Save & Register SKU'}
+            </button>
           </div>
         </form>
       </div>

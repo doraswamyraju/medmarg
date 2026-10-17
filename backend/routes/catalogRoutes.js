@@ -337,10 +337,26 @@ router.post('/sync-full', (req, res) => {
     });
 });
 
+// DELETE TEST
+router.delete('/tests/:id', (req, res) => {
+    const { id } = req.params;
+    catalogState.tests = catalogState.tests.filter(t => t.id !== id && t.code !== id);
+    saveCatalogData();
+    res.json({ success: true, message: `Test ${id} deleted successfully.` });
+});
+
+// DELETE PROFILE
+router.delete('/profiles/:id', (req, res) => {
+    const { id } = req.params;
+    catalogState.profiles = catalogState.profiles.filter(p => p.id !== id && p.code !== id);
+    saveCatalogData();
+    res.json({ success: true, message: `Profile ${id} deleted successfully.` });
+});
+
 // DELETE PACKAGE
 router.delete('/packages/:id', (req, res) => {
     const { id } = req.params;
-    catalogState.packages = catalogState.packages.filter(p => p.id !== id);
+    catalogState.packages = catalogState.packages.filter(p => p.id !== id && p.code !== id);
     saveCatalogData();
     res.json({ success: true, message: `Package ${id} deleted successfully.` });
 });
