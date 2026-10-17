@@ -4,7 +4,8 @@ import { PackageCheck, Plus, CheckCircle } from 'lucide-react';
 export default function AgentIndentsSubTab({
   indents = [],
   onApproveIndent = () => {},
-  onOpenCreateIndent = () => {}
+  onOpenCreateIndent = () => {},
+  onDeleteIndent = () => {}
 }) {
   return (
     <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
@@ -35,7 +36,7 @@ export default function AgentIndentsSubTab({
             <th style={{ padding: '0.85rem' }}>Cost & Deduction Model</th>
             <th style={{ padding: '0.85rem' }}>Request Date</th>
             <th style={{ padding: '0.85rem' }}>Status</th>
-            <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>Action</th>
+            <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -74,16 +75,25 @@ export default function AgentIndentsSubTab({
                 </span>
               </td>
               <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
-                {ind.status === 'PENDING_APPROVAL' ? (
+                <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                  {ind.status === 'PENDING_APPROVAL' ? (
+                    <button
+                      onClick={() => onApproveIndent(ind)}
+                      style={{ padding: '0.45rem 0.85rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                    >
+                      <CheckCircle size={14} color="#FBBF24" /> Approve & Dispatch
+                    </button>
+                  ) : (
+                    <span style={{ color: '#059669', fontSize: '0.8rem', fontWeight: '800' }}>✓ Handed Over</span>
+                  )}
                   <button
-                    onClick={() => onApproveIndent(ind)}
-                    style={{ padding: '0.45rem 0.9rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                    onClick={() => onDeleteIndent(ind.id)}
+                    title="Delete Indent"
+                    style={{ padding: '0.35rem 0.55rem', backgroundColor: '#FEE2E2', color: '#991B1B', border: 'none', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
                   >
-                    <CheckCircle size={14} color="#FBBF24" /> Approve & Dispatch
+                    Delete
                   </button>
-                ) : (
-                  <span style={{ color: '#059669', fontSize: '0.8rem', fontWeight: '800' }}>✓ Handed Over</span>
-                )}
+                </div>
               </td>
             </tr>
           ))}

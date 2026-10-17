@@ -26,7 +26,9 @@ import {
   Activity,
   Trash2,
   Copy,
-  TrendingDown
+  TrendingDown,
+  Download,
+  Upload
 } from 'lucide-react';
 import { 
   calculateAggregatedSamples, 
@@ -38,6 +40,11 @@ import {
   getItemPriceForPeople,
   DEFAULT_LAB_PROVIDERS
 } from '../../data/catalogStore';
+import { 
+  downloadTestSampleTemplate, 
+  exportTestsToExcel, 
+  parseTestsFromExcel 
+} from '../../utils/excelCatalogHelper';
 import MultiLabPricingEditor from './catalog/MultiLabPricingEditor';
 import MultiPeopleTierPricingEditor from './catalog/MultiPeopleTierPricingEditor';
 import SingleTestsSelector from './catalog/SingleTestsSelector';
@@ -74,6 +81,55 @@ export default function CatalogManagementTab({
   const [activeTestModalTab, setActiveTestModalTab] = useState('DETAILS'); // 'DETAILS' | 'LABS' | 'PEOPLE'
   const [activeProfileModalTab, setActiveProfileModalTab] = useState('DETAILS'); // 'DETAILS' | 'TESTS' | 'LABS' | 'PEOPLE'
   const [activePackageModalTab, setActivePackageModalTab] = useState('COMPONENTS'); // 'COMPONENTS' | 'LABS' | 'PEOPLE'
+
+  // Excel Single Tests Import / Export State
+  const [isImportingTests, setIsImportingTests] = useState(false);
+  const [importNotice, setImportNotice] = useState(null);
+
+  const handleTestFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsImportingTests(true);
+    setImportNotice({ type: 'info', message: 'Reading and validating Excel sheet with clinical specs, multi-lab pricing & volume tiers...' });
+    try {
+      const parsedTests = await parseTestsFromExcel(file);
+      if (!parsedTests || parsedTests.length === 0) {
+        throw new Error('No valid test rows detected in the uploaded file.');
+      }
+
+      const currentTests = [...(catalog.tests || [])];
+      let addedCount = 0;
+      let updatedCount = 0;
+
+      parsedTests.forEach(newTest => {
+        const existingIdx = currentTests.findIndex(t => t.code === newTest.code);
+        if (existingIdx >= 0) {
+          currentTests[existingIdx] = { ...currentTests[existingIdx], ...newTest };
+          updatedCount++;
+        } else {
+          currentTests.push(newTest);
+          addedCount++;
+        }
+      });
+
+      const updatedCatalog = { ...catalog, tests: currentTests };
+      setCatalog(updatedCatalog);
+      saveCatalogState(updatedCatalog);
+
+      setImportNotice({
+        type: 'success',
+        message: `Excel Import Successful: Added ${addedCount} new tests, updated ${updatedCount} existing tests with complete clinical and pricing matrix.`
+      });
+      setTimeout(() => setImportNotice(null), 6000);
+    } catch (err) {
+      console.error('Excel parse error:', err);
+      setImportNotice({ type: 'error', message: `Import Failed: ${err.message || 'Invalid Excel format'}` });
+      setTimeout(() => setImportNotice(null), 7000);
+    } finally {
+      setIsImportingTests(false);
+      e.target.value = '';
+    }
+  };
 
   // Filtered lists (defined before pagination calculation)
   const filteredTests = (catalog?.tests || []).filter(t => {
@@ -859,12 +915,44 @@ export default function CatalogManagementTab({
 
         <div style={{ display: 'flex', gap: '0.6rem' }}>
           {testsSubTab === 'TESTS' && (
-            <button 
-              onClick={handleOpenCreateTest}
-              style={{ padding: '0.6rem 1.2rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 12px rgba(0,107,112,0.2)' }}
-            >
-              <PlusCircle size={16} /> + Add Single Test
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button 
+                onClick={downloadTestSampleTemplate}
+                title="Download Sample Format Excel Template for Single Tests"
+                style={{ padding: '0.6rem 0.95rem', backgroundColor: '#F8FAFC', color: '#0F172A', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+              >
+                <FileSpreadsheet size={15} color="#059669" /> Sample Format
+              </button>
+
+              <label 
+                style={{ padding: '0.6rem 0.95rem', backgroundColor: '#F0FDF4', color: '#166534', border: '1px solid #BBF7D0', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: isImportingTests ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                title="Import Tests from Excel / CSV"
+              >
+                <Upload size={15} /> {isImportingTests ? 'Importing...' : 'Import Excel'}
+                <input 
+                  type="file" 
+                  accept=".xlsx, .xls, .csv" 
+                  onChange={handleTestFileUpload} 
+                  disabled={isImportingTests}
+                  style={{ display: 'none' }} 
+                />
+              </label>
+
+              <button 
+                onClick={() => exportTestsToExcel(catalog.tests || [])}
+                title="Export active single tests to Excel"
+                style={{ padding: '0.6rem 0.95rem', backgroundColor: '#F0F9FF', color: '#0369A1', border: '1px solid #BAE6FD', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+              >
+                <Download size={15} /> Export Tests
+              </button>
+
+              <button 
+                onClick={handleOpenCreateTest}
+                style={{ padding: '0.6rem 1.15rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 12px rgba(0,107,112,0.2)' }}
+              >
+                <PlusCircle size={15} /> + Add Single Test
+              </button>
+            </div>
           )}
           {testsSubTab === 'PROFILES' && (
             <button 
@@ -1177,6 +1265,29 @@ export default function CatalogManagementTab({
       {testsSubTab === 'TESTS' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           
+          {importNotice && (
+            <div style={{
+              padding: '0.85rem 1.25rem',
+              borderRadius: '12px',
+              backgroundColor: importNotice.type === 'error' ? '#FEE2E2' : importNotice.type === 'success' ? '#DCFCE7' : '#E0F2FE',
+              color: importNotice.type === 'error' ? '#991B1B' : importNotice.type === 'success' ? '#15803D' : '#075985',
+              fontSize: '0.86rem',
+              fontWeight: '800',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            }}>
+              <span>{importNotice.message}</span>
+              <button 
+                onClick={() => setImportNotice(null)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '1.1rem', color: 'inherit' }}
+              >
+                ×
+              </button>
+            </div>
+          )}
+
           {/* Top Filter & Search Bar */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div style={{ position: 'relative', flex: 1, minWidth: '260px' }}>

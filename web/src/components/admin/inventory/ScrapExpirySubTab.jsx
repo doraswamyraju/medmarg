@@ -3,7 +3,8 @@ import { Trash2, Plus } from 'lucide-react';
 
 export default function ScrapExpirySubTab({
   scrapLogs = [],
-  onOpenScrapModal = () => {}
+  onOpenScrapModal = () => {},
+  onDeleteScrap = () => {}
 }) {
   return (
     <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
@@ -33,7 +34,8 @@ export default function ScrapExpirySubTab({
             <th style={{ padding: '0.85rem' }}>Quantity Written Off</th>
             <th style={{ padding: '0.85rem' }}>Reason for Scrap</th>
             <th style={{ padding: '0.85rem' }}>Total Financial Loss</th>
-            <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>Disposal Action</th>
+            <th style={{ padding: '0.85rem' }}>Disposal Action</th>
+            <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -56,8 +58,17 @@ export default function ScrapExpirySubTab({
               <td style={{ padding: '1rem', fontWeight: '900', color: '#0F172A' }}>
                 ₹{sc.lossValue.toLocaleString()}
               </td>
-              <td style={{ padding: '1rem 1.25rem', textAlign: 'right', color: '#64748B', fontSize: '0.78rem' }}>
+              <td style={{ padding: '1rem', color: '#64748B', fontSize: '0.78rem' }}>
                 {sc.actionTaken}
+              </td>
+              <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
+                <button
+                  onClick={() => onDeleteScrap(sc.id)}
+                  title="Delete Scrap Record"
+                  style={{ padding: '0.35rem 0.55rem', backgroundColor: '#FEE2E2', color: '#991B1B', border: 'none', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
+                >
+                  Delete
+                </button>
               </td>
             </tr>
           ))}

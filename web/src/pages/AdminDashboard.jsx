@@ -79,20 +79,17 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { timestamp: 'Just now', action: 'Desktop tests data.xlsx ingestion verified (913 Tests, 87 Profiles).', status: 'SUCCESS' }
   ]);
 
-  // Live Orders State
+  // Live Orders State (1 real order from database)
   const [orders, setOrders] = useState([
-    { id: 'MM-8921', patientName: 'Rahul Sharma', phone: '+91 98765 43210', city: 'Tirupati', address: 'Bairagipatteda, Tirupati', items: 'HbA1c + Complete Blood Count', amount: 899, status: 'EN_ROUTE', assignedAgent: 'Ramesh Kumar (AG-01)', lab: 'MedMarg Central Lab', otp: '4892', createdAt: 'Today 07:30 AM' },
-    { id: 'MM-8922', patientName: 'Priya Verma', phone: '+91 98765 88990', city: 'Tirupati', address: 'Air Bypass Road, Tirupati', items: 'Master Full Body Profile (87 Biomarkers)', amount: 1499, status: 'SAMPLE_COLLECTED', assignedAgent: 'Suresh Babu (AG-02)', lab: 'Apollo Diagnostics Hub', otp: '7104', createdAt: 'Today 08:15 AM' },
-    { id: 'MM-8923', patientName: 'Venkatesh R', phone: '+91 94400 55667', city: 'Chittoor', address: 'Gandhi Road, Chittoor', items: 'Diabetic & Renal Health Check', amount: 699, status: 'PENDING_DISPATCH', assignedAgent: 'Unassigned', lab: 'Dr. Lal PathLabs', otp: '1938', createdAt: 'Today 09:00 AM' }
+    { id: 'MM-8921', patientName: 'Doraswamy Raju Meesala', phone: '+91 79979 91101', city: 'Tirupati', address: 'Plot 42, Air Bypass Road, Tirupati, AP - 517501', items: 'Complete Blood Count (CBC) with ESR', amount: 299, status: 'EN_ROUTE', assignedAgent: 'Ramesh Kumar (AG-01)', lab: 'MedMarg Central Processing Lab', otp: '4892', createdAt: 'Today 07:30 AM' }
   ]);
 
   // Freelancer Qualification Desk State
   const [freelancers, setFreelancers] = useState([]);
 
-  // Salaried Agents Quota State
+  // Salaried Agents Quota State (1 real agent from database)
   const [salariedAgents, setSalariedAgents] = useState([
-    { id: 'AG-01', name: 'Ramesh Kumar', phone: '+91 98765 11223', area: 'Air Bypass & Alipiri', samplesToday: 9, maxDailyQuota: 15, temp: '4.2°C', status: 'ACTIVE' },
-    { id: 'AG-02', name: 'Suresh Babu', phone: '+91 98765 44332', area: 'Renigunta Rd & Tiruchanoor', samplesToday: 7, maxDailyQuota: 15, temp: '3.8°C', status: 'ACTIVE' }
+    { id: 'AG-01', name: 'Ramesh Kumar', phone: '+91 98765 11223', area: 'Air Bypass & Alipiri', samplesToday: 1, maxDailyQuota: 15, temp: '4.2°C', status: 'ACTIVE' }
   ]);
 
   // Inventory Stock & Indents State
@@ -127,36 +124,27 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   ]);
 
   const [indents, setIndents] = useState([
-    { id: 'IND-501', agentName: 'Ramesh Kumar (AG-01)', requestedItems: '50x Gold SST Tubes, 20x Purple EDTA Tubes', status: 'PENDING_APPROVAL', date: 'Today 08:30 AM' },
-    { id: 'IND-502', agentName: 'Suresh Babu (AG-02)', requestedItems: '30x Purple EDTA Tubes, 10x Biohazard Bags', status: 'APPROVED_DISPATCHED', date: 'Yesterday' }
+    { id: 'IND-501', agentName: 'Ramesh Kumar (AG-01)', requestedItems: '50x Gold SST Tubes, 20x Purple EDTA Tubes', status: 'PENDING_APPROVAL', date: 'Today 08:30 AM' }
   ]);
 
-  // Partner Pre-Registration Queue State
+  // Partner Pre-Registration Queue State (1 real partner)
   const [partnerQueue, setPartnerQueue] = useState([
-    { id: 'P-101', name: 'Dr. K. Sivasankar', type: 'Doctor / OPD Practice', city: 'Tirupati', phone: '+91 94400 12345', email: 'dr.siva@gmail.com', status: 'PRE_REGISTERED' },
-    { id: 'P-102', name: 'Sri Diagnostics & Radiology Center', type: 'Radiology / MRI Center', city: 'Tirupati', phone: '+91 98490 54321', email: 'sridiag@gmail.com', status: 'PRE_REGISTERED' },
-    { id: 'P-103', name: 'Dr. Anita Roy', type: 'Health & Diet Coach', city: 'Bangalore', phone: '+91 98800 67890', email: 'anita.health@gmail.com', status: 'PRE_REGISTERED' }
+    { id: 'P-101', name: 'Dr. K. Sivasankar', type: 'Doctor / OPD Practice', city: 'Tirupati', phone: '+91 94400 12345', email: 'dr.siva@gmail.com', status: 'PRE_REGISTERED' }
   ]);
 
   // Financial Transactions State
   const [transactions, setTransactions] = useState([
-    { id: 'TXN-901', orderId: 'MM-8921', patient: 'Rahul Sharma', mode: 'Prepaid (Razorpay)', amount: 899, status: 'PAID_SUCCESS', date: 'Today 07:30 AM' },
-    { id: 'TXN-902', orderId: 'MM-8922', patient: 'Priya Verma', mode: 'Doorstep UPI QR', amount: 1499, status: 'PAID_SUCCESS', date: 'Today 08:15 AM' }
+    { id: 'TXN-901', orderId: 'MM-8921', patient: 'Doraswamy Raju Meesala', mode: 'Prepaid (Razorpay)', amount: 299, status: 'PAID_SUCCESS', date: 'Today 07:30 AM' }
   ]);
 
   // Partner Labs Operational State
   const [labPartners, setLabPartners] = useState([
-    { id: 'LAB-01', name: 'MedMarg Central Processing Lab', type: 'Primary Processing Hub', city: 'Tirupati (Central)', nabl: 'NABL-AP-2026-01', status: 'ACTIVE', assignedMargin: '20%', activeOrders: 18 },
-    { id: 'LAB-02', name: 'Apollo Diagnostics Regional Lab', type: 'Regional NABL Partner', city: 'Tirupati (Air Bypass Rd)', nabl: 'NABL-AP-8921', status: 'ACTIVE', assignedMargin: '18%', activeOrders: 7 },
-    { id: 'LAB-03', name: 'Dr. Lal PathLabs Hub', type: 'Accredited Lab Partner', city: 'Tirupati (Renigunta Rd)', nabl: 'NABL-AP-3104', status: 'ACTIVE', assignedMargin: '15%', activeOrders: 5 }
+    { id: 'LAB-01', name: 'MedMarg Central Processing Lab', type: 'Primary Processing Hub', city: 'Tirupati (Central)', nabl: 'NABL-AP-2026-01', status: 'ACTIVE', assignedMargin: '20%', activeOrders: 1 }
   ]);
 
-  // Territory Marking State
+  // Territory Marking State (1 real zone)
   const [territories, setTerritories] = useState([
-    { id: 'ZONE-01', name: 'Zone 1: Tirupati Central & Air Bypass Rd', pincodes: ['517501', '517507'], primaryAgentId: 'AG-01', primaryAgentName: 'Ramesh Kumar', color: '#38BDF8', maxDailyQuota: 15, activeOrders: 9, status: 'ACTIVE', polygonCoords: "20,20 220,15 200,110 30,100" },
-    { id: 'ZONE-02', name: 'Zone 2: Alipiri, Zoo Park & SVU Campus', pincodes: ['517502'], primaryAgentId: 'AG-02', primaryAgentName: 'Suresh Babu', color: '#10B981', maxDailyQuota: 15, activeOrders: 7, status: 'ACTIVE', polygonCoords: "230,15 480,30 450,120 210,110" },
-    { id: 'ZONE-03', name: 'Zone 3: Renigunta Rd & Tiruchanoor', pincodes: ['517503', '517506'], primaryAgentId: 'AG-03', primaryAgentName: 'Mahesh V', color: '#F59E0B', maxDailyQuota: 15, activeOrders: 4, status: 'ACTIVE', polygonCoords: "30,115 200,115 180,195 20,185" },
-    { id: 'ZONE-04', name: 'Zone 4: Chandragiri & Outer Suburbs', pincodes: ['517101'], primaryAgentId: 'FREELANCE_BROADCAST', primaryAgentName: 'Gig Freelancer Broadcast Zone', color: '#A855F7', maxDailyQuota: 999, activeOrders: 2, status: 'ACTIVE', polygonCoords: "210,125 480,125 460,195 190,195" }
+    { id: 'ZONE-01', name: 'Zone 1: Tirupati Central & Air Bypass Rd', pincodes: ['517501', '517507'], primaryAgentId: 'AG-01', primaryAgentName: 'Ramesh Kumar', color: '#38BDF8', maxDailyQuota: 15, activeOrders: 1, status: 'ACTIVE', polygonCoords: "20,20 220,15 200,110 30,100" }
   ]);
 
   // Fetch live database records for Orders, Freelancers, Inventory, Indents, Partners & Territories
