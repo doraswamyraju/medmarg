@@ -104,6 +104,10 @@ function loadDbStore() {
 function saveDbStore() {
     try {
         fs.writeFileSync(DB_STORE_FILE, JSON.stringify(dbStore, null, 2), 'utf8');
+        try {
+            const auditStore = require('./auditStore');
+            auditStore.createSnapshot('AUTO', 'Database store updated');
+        } catch (e) {}
     } catch (err) {
         console.error('[DataStore] Failed to save dbStore.json:', err.message);
     }

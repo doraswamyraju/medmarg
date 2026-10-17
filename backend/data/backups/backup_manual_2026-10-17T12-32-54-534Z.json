@@ -1,0 +1,561 @@
+{
+  "timestamp": "2026-10-17T12:32:54.537Z",
+  "type": "MANUAL",
+  "notes": "Test initial snapshot",
+  "stats": {
+    "testsCount": 1,
+    "profilesCount": 1,
+    "packagesCount": 1,
+    "inventoryCount": 2,
+    "ordersCount": 1
+  },
+  "catalog": {
+    "tests": [
+      {
+        "id": "TEST_1",
+        "serialNo": 1,
+        "code": "CBC",
+        "name": "Complete Blood Count (CBC) with ESR",
+        "aliasNames": [
+          "Complete Hemogram",
+          "CBC Test",
+          "Hemogram with ESR",
+          "Full Blood Count",
+          "FBC"
+        ],
+        "sampleType": "EDTA WHOLE BLOOD",
+        "fasting": "NO",
+        "category": "Individual Test",
+        "mrp": 450,
+        "price": 299,
+        "tatHours": 12,
+        "description": "Complete hemogram evaluating Red Blood Cells, White Blood Cells, Platelets, Hemoglobin, Hematocrit and ESR.",
+        "labPricing": [
+          {
+            "labId": "medmarg",
+            "labName": "MedMarg Central Processing Lab",
+            "price": 299,
+            "mrp": 450,
+            "tatHours": 12,
+            "isMedmargSuggested": true,
+            "suggestedLabName": "MedMarg Processing Lab",
+            "discountPercent": 34
+          },
+          {
+            "labId": "thyrocare",
+            "labName": "Thyrocare Technologies Ltd",
+            "price": 339,
+            "mrp": 499,
+            "tatHours": 24,
+            "isMedmargSuggested": false,
+            "discountPercent": 32
+          },
+          {
+            "labId": "lalpath",
+            "labName": "Dr. Lal PathLabs",
+            "price": 389,
+            "mrp": 550,
+            "tatHours": 24,
+            "isMedmargSuggested": false,
+            "discountPercent": 29
+          }
+        ],
+        "tierPricing": {
+          "1": {
+            "people": 1,
+            "mrp": 450,
+            "offerPrice": 299,
+            "pricePerPerson": 299,
+            "savings": 151
+          },
+          "2": {
+            "people": 2,
+            "mrp": 900,
+            "offerPrice": 498,
+            "pricePerPerson": 249,
+            "savings": 402
+          },
+          "5": {
+            "people": 5,
+            "mrp": 2250,
+            "offerPrice": 1045,
+            "pricePerPerson": 209,
+            "savings": 1205
+          },
+          "10": {
+            "people": 10,
+            "mrp": 4500,
+            "offerPrice": 1590,
+            "pricePerPerson": 159,
+            "savings": 2910
+          }
+        },
+        "active": true
+      }
+    ],
+    "profiles": [
+      {
+        "id": "PROF_1",
+        "serialNo": 1,
+        "code": "LIPID",
+        "name": "Lipid Profile (Complete Heart Risk Panel)",
+        "sampleType": "SERUM",
+        "fasting": "YES",
+        "category": "Diagnostic Profile",
+        "mrp": 999,
+        "price": 599,
+        "tatHours": 24,
+        "description": "Comprehensive cardiac lipid assessment: Total Cholesterol, HDL Good Cholesterol, LDL Bad Cholesterol, Triglycerides, VLDL & TC/HDL Ratio.",
+        "tests": [
+          "CBC"
+        ],
+        "testCount": 7,
+        "labPricing": [
+          {
+            "labId": "medmarg",
+            "labName": "MedMarg Central Processing Lab",
+            "price": 599,
+            "mrp": 999,
+            "tatHours": 24,
+            "isMedmargSuggested": true,
+            "suggestedLabName": "MedMarg Processing Lab",
+            "discountPercent": 40
+          },
+          {
+            "labId": "thyrocare",
+            "labName": "Thyrocare Technologies Ltd",
+            "price": 699,
+            "mrp": 1100,
+            "tatHours": 24,
+            "isMedmargSuggested": false,
+            "discountPercent": 36
+          },
+          {
+            "labId": "lalpath",
+            "labName": "Dr. Lal PathLabs",
+            "price": 799,
+            "mrp": 1250,
+            "tatHours": 24,
+            "isMedmargSuggested": false,
+            "discountPercent": 36
+          }
+        ],
+        "tierPricing": {
+          "1": {
+            "people": 1,
+            "mrp": 999,
+            "offerPrice": 599,
+            "pricePerPerson": 599,
+            "savings": 400
+          },
+          "2": {
+            "people": 2,
+            "mrp": 1998,
+            "offerPrice": 998,
+            "pricePerPerson": 499,
+            "savings": 1000
+          },
+          "5": {
+            "people": 5,
+            "mrp": 4995,
+            "offerPrice": 2145,
+            "pricePerPerson": 429,
+            "savings": 2850
+          },
+          "10": {
+            "people": 10,
+            "mrp": 9990,
+            "offerPrice": 3690,
+            "pricePerPerson": 369,
+            "savings": 6300
+          }
+        },
+        "active": true
+      }
+    ],
+    "packages": [
+      {
+        "id": "PKG_MM_MASTER",
+        "serialNo": 1,
+        "code": "MM_MASTER",
+        "name": "MedMarg Master Health Checkup (Comprehensive)",
+        "tagline": "Complete 85+ Vital Biomarkers & Full Body Evaluation",
+        "category": "Full Body Wellness",
+        "mrp": 3999,
+        "price": 1499,
+        "discountPercent": 62,
+        "fasting": "YES",
+        "fastingNote": "8-10 hours overnight fasting recommended",
+        "sampleTypes": [
+          "SERUM",
+          "EDTA WHOLE BLOOD"
+        ],
+        "tatHours": 24,
+        "popular": true,
+        "profiles": [
+          "LIPID"
+        ],
+        "tests": [
+          "CBC"
+        ],
+        "testCount": 85,
+        "description": "Premier whole body screening covering Cardiac Lipid, Complete Hemogram (CBC), Diabetic screening (HbA1c), Liver, Kidney, Thyroid, and essential vitamins.",
+        "labPricing": [
+          {
+            "labId": "medmarg",
+            "labName": "MedMarg Central Processing Lab",
+            "price": 1499,
+            "mrp": 3999,
+            "tatHours": 24,
+            "isMedmargSuggested": true,
+            "suggestedLabName": "MedMarg Processing Lab",
+            "discountPercent": 62
+          },
+          {
+            "labId": "thyrocare",
+            "labName": "Thyrocare Technologies Ltd",
+            "price": 1699,
+            "mrp": 4200,
+            "tatHours": 24,
+            "isMedmargSuggested": false,
+            "discountPercent": 60
+          },
+          {
+            "labId": "lalpath",
+            "labName": "Dr. Lal PathLabs",
+            "price": 1999,
+            "mrp": 4800,
+            "tatHours": 24,
+            "isMedmargSuggested": false,
+            "discountPercent": 58
+          }
+        ],
+        "tierPricing": {
+          "1": {
+            "people": 1,
+            "mrp": 3999,
+            "offerPrice": 1499,
+            "pricePerPerson": 1499,
+            "savings": 2500
+          },
+          "2": {
+            "people": 2,
+            "mrp": 7998,
+            "offerPrice": 2538,
+            "pricePerPerson": 1269,
+            "savings": 5460
+          },
+          "5": {
+            "people": 5,
+            "mrp": 19995,
+            "offerPrice": 5245,
+            "pricePerPerson": 1049,
+            "savings": 14750
+          },
+          "10": {
+            "people": 10,
+            "mrp": 39990,
+            "offerPrice": 8190,
+            "pricePerPerson": 819,
+            "savings": 31800
+          }
+        },
+        "active": true
+      }
+    ],
+    "lastSynced": "2026-10-17T15:30:00.000Z"
+  },
+  "dbStore": {
+    "customers": [
+      {
+        "id": "CUST-1004",
+        "name": "Doraswamy Raju Meesala",
+        "phone": "+91 79979 91101",
+        "email": "doraswamyraju.ca@gmail.com",
+        "city": "Tirupati",
+        "abhaId": "ABHA-8374-2026",
+        "memberSince": "Oct 2026",
+        "age": 30,
+        "gender": "Male",
+        "bloodGroup": "O+",
+        "chronicConditions": "None",
+        "allergies": "None",
+        "locations": [
+          {
+            "id": "LOC-101",
+            "label": "Home Address",
+            "fullAddress": "Plot 42, Air Bypass Road, Tirupati, AP - 517501",
+            "pincode": "517501",
+            "isPrimary": true
+          }
+        ],
+        "familyMembers": [],
+        "orderHistory": [
+          {
+            "id": "MM-8921",
+            "date": "Today 07:30 AM",
+            "items": "Complete Blood Count (CBC) with ESR",
+            "amount": 299,
+            "status": "EN_ROUTE",
+            "lab": "MedMarg Central Processing Lab"
+          }
+        ]
+      }
+    ],
+    "orders": [
+      {
+        "id": "MM-8921",
+        "patientName": "Doraswamy Raju Meesala",
+        "phone": "+91 79979 91101",
+        "city": "Tirupati",
+        "address": "Plot 42, Air Bypass Road, Tirupati, AP - 517501",
+        "items": [
+          {
+            "name": "Complete Blood Count (CBC) with ESR",
+            "price": 299,
+            "sampleType": "EDTA WHOLE BLOOD",
+            "fasting": "NO"
+          }
+        ],
+        "amount": 299,
+        "status": "EN_ROUTE",
+        "assignedAgent": "Ramesh Kumar (AG-01)",
+        "lab": "MedMarg Central Processing Lab",
+        "otp": "4892",
+        "createdAt": "Today 07:30 AM"
+      }
+    ],
+    "freelancers": [
+      {
+        "id": "FL-502",
+        "name": "Doraswamy Raju",
+        "phone": "9848022338",
+        "email": "freelancer@medmarg.com",
+        "city": "Tirupati",
+        "assignedZone": "All Zones (Open Broadcast)",
+        "qualification": "DMLT (Diploma Medical Lab Tech)",
+        "paramedicalCert": "AP-PMC-12345",
+        "experience": "3 Years",
+        "regFeePaid": true,
+        "feeAmount": 2000,
+        "walletBalance": 2000,
+        "commission": 100,
+        "commissionType": "FLAT_PER_ORDER",
+        "status": "APPROVED",
+        "role": "FREELANCER_AGENT",
+        "rating": 4.9,
+        "completedOrders": 0,
+        "earnings": 0,
+        "payoutPending": 2000
+      }
+    ],
+    "salariedAgents": [
+      {
+        "id": "AG-01",
+        "name": "Ramesh Kumar",
+        "phone": "+91 98765 11223",
+        "area": "Air Bypass & Alipiri",
+        "samplesToday": 1,
+        "maxDailyQuota": 15,
+        "temp": "4.2°C",
+        "status": "ACTIVE"
+      }
+    ],
+    "inventoryStock": [
+      {
+        "code": "STK-01",
+        "name": "Gold SST Gel Tubes (5ml)",
+        "type": "SINGLE",
+        "category": "Blood Containers",
+        "stock": 4500,
+        "unit": "Tubes",
+        "reorderLevel": 1000,
+        "unitCost": 14,
+        "incharge": "Anand Store Lead (store.tirupati@medmarg.com)",
+        "alertSent": false
+      },
+      {
+        "code": "KIT-101",
+        "name": "Standard Phlebotomy Sample Collection Kit",
+        "type": "KIT",
+        "category": "Pre-Packaged Kits",
+        "stock": 350,
+        "unit": "Kits",
+        "reorderLevel": 100,
+        "unitCost": 48,
+        "incharge": "Anand Store Lead (store.tirupati@medmarg.com)",
+        "alertSent": false,
+        "components": [
+          {
+            "itemCode": "STK-01",
+            "name": "Gold SST Gel Tube (5ml)",
+            "qty": 2
+          }
+        ]
+      }
+    ],
+    "indents": [
+      {
+        "id": "IND-501",
+        "agentType": "SALARIED_AGENT",
+        "agentName": "Ramesh Kumar (AG-01)",
+        "area": "Air Bypass & Alipiri",
+        "requestedItems": "50x Gold SST Tubes, 20x Purple EDTA Tubes",
+        "status": "PENDING_APPROVAL",
+        "date": "Today 08:30 AM",
+        "paymentMode": "Company Quota Allocation (Free)"
+      }
+    ],
+    "purchases": [
+      {
+        "id": "GRN-2026-881",
+        "poNumber": "PO-MM-4401",
+        "vendor": "Becton Dickinson (BD India Pvt Ltd)",
+        "invoiceNo": "INV-BD-99201",
+        "inwardDate": "Today 09:15 AM",
+        "batchNo": "BD-26G-881",
+        "mfgDate": "2026-01-10",
+        "expDate": "2027-06-30",
+        "itemsCount": 1,
+        "details": "4,500x Gold SST Gel Tubes (5ml)",
+        "totalAmount": 63000,
+        "receivedBy": "Anand Store Lead",
+        "qcStatus": "PASSED_VERIFIED"
+      }
+    ],
+    "scrapLogs": [
+      {
+        "id": "SCR-401",
+        "date": "Today 09:00 AM",
+        "itemCode": "STK-01",
+        "itemName": "Gold SST Gel Tubes (5ml)",
+        "batchNo": "SST-25-112",
+        "quantity": 12,
+        "reason": "Transit Vibration / Broken Vacuum",
+        "lossValue": 168,
+        "loggedBy": "Anand Store Lead",
+        "actionTaken": "Stock Written Off from Central Warehouse"
+      }
+    ],
+    "vendors": [
+      {
+        "code": "VND-01",
+        "name": "Becton Dickinson (BD India Pvt Ltd)",
+        "category": "Vacutainers & Needles",
+        "contactPerson": "Rajesh Mehra",
+        "phone": "+91 98110 55443",
+        "email": "orders.south@bd.com",
+        "gstin": "37AABCB1234F1Z8",
+        "leadTimeDays": 3,
+        "paymentTerms": "Net 30 Days",
+        "rating": "4.9 ★"
+      }
+    ],
+    "agentInventories": [
+      {
+        "agentId": "AG-01",
+        "agentName": "Ramesh Kumar",
+        "agentType": "Salaried Agent",
+        "phone": "+91 98765 11223",
+        "zone": "Zone 1: Tirupati Central",
+        "inHandStock": {
+          "sstTubes": 18,
+          "edtaTubes": 14,
+          "fluorideTubes": 8,
+          "needles21g": 22,
+          "butterfly23g": 3,
+          "swabs": 40,
+          "fullBodyKits": 4,
+          "coldBagTemp": "4.2°C",
+          "barcodeRolls": 1
+        },
+        "lastRefillDate": "Yesterday 09:00 AM",
+        "warning": null
+      }
+    ],
+    "extraUsages": [
+      {
+        "id": "EX-901",
+        "orderId": "MM-8921",
+        "patientName": "Doraswamy Raju Meesala",
+        "agentId": "AG-01",
+        "agentName": "Ramesh Kumar (Salaried)",
+        "agentType": "SALARIED",
+        "reportedAt": "Today 08:50 AM",
+        "itemsUsed": [
+          {
+            "name": "Alcohol Prep Swab",
+            "qty": 1,
+            "unitPrice": 1.5
+          },
+          {
+            "name": "Gold SST Gel Tube (5ml)",
+            "qty": 1,
+            "unitPrice": 14
+          }
+        ],
+        "totalValue": 15.5,
+        "phleboReason": "Tube vacuum compromised during initial draw. Backup SST tube used.",
+        "decision": "WAIVED_CLINICAL_BUFFER",
+        "decisionNotes": "Verified clinical buffer waiver.",
+        "decidedBy": "Super Admin"
+      }
+    ],
+    "partnerQueue": [
+      {
+        "id": "P-101",
+        "name": "Dr. K. Sivasankar",
+        "type": "Doctor / OPD Practice",
+        "city": "Tirupati",
+        "phone": "+91 94400 12345",
+        "email": "dr.siva@gmail.com",
+        "status": "PRE_REGISTERED"
+      }
+    ],
+    "transactions": [
+      {
+        "id": "TXN-901",
+        "orderId": "MM-8921",
+        "patient": "Doraswamy Raju Meesala",
+        "mode": "Prepaid (Razorpay)",
+        "amount": 299,
+        "status": "PAID_SUCCESS",
+        "date": "Today 07:30 AM"
+      }
+    ],
+    "territories": [
+      {
+        "id": "ZONE-01",
+        "name": "Zone 1: Tirupati Central & Air Bypass Rd",
+        "pincodes": [
+          "517501",
+          "517507"
+        ],
+        "primaryAgentId": "AG-01",
+        "primaryAgentName": "Ramesh Kumar",
+        "color": "#38BDF8",
+        "maxDailyQuota": 15,
+        "activeOrders": 1,
+        "status": "ACTIVE",
+        "polygonCoords": "20,20 220,15 200,110 30,100"
+      }
+    ],
+    "offers": [
+      {
+        "id": "off_1",
+        "title": "⚡ Complete Blood Count (CBC) Offer",
+        "subtitle": "Flat 34% OFF on Complete Blood Count (CBC) with ESR",
+        "code": "CBCSAVE",
+        "price": "₹299",
+        "mrp": "₹450",
+        "gradient": "linear-gradient(135deg, #004D40 0%, #006B70 100%)",
+        "badge": "TOP CHOICE",
+        "tagColor": "#FEF3C7",
+        "tagText": "#B45309",
+        "packageId": "TEST_CBC",
+        "active": true,
+        "createdAt": "2026-10-06T00:00:00.000Z"
+      }
+    ]
+  }
+}
