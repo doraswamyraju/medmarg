@@ -24,12 +24,7 @@ export function getCatalogState() {
 }
 
 export async function saveCatalogState(state) {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (e) {
-        console.warn('LocalStorage write error:', e);
-    }
-
+    // 1. PRIMARY: Always persist to Central Backend Server First
     try {
         if (state && (state.tests || state.profiles || state.packages)) {
             const res = await fetch(`${API_BASE}/api/v1/catalog/sync-full`, {
@@ -41,17 +36,27 @@ export async function saveCatalogState(state) {
                     packages: state.packages || []
                 })
             });
+
             if (!res.ok) {
                 const errText = await res.text().catch(() => '');
-                console.error(`[CatalogStore] sync-full failed: HTTP ${res.status} ${res.statusText}`, errText);
-                return { success: false, error: `HTTP ${res.status}: ${res.statusText}` };
+                console.error(`[CatalogStore] Central backend rejected sync: HTTP ${res.status} ${res.statusText}`, errText);
+                return { success: false, error: `Central server error: HTTP ${res.status} (${res.statusText})` };
             }
+
             const data = await res.json().catch(() => ({}));
+            
+            // 2. Only cache to local browser storage after central database confirms write!
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {
+                console.warn('LocalStorage write warning (exceeded quota):', e);
+            }
+
             return { success: true, stats: data.stats };
         }
     } catch (err) {
-        console.error('[CatalogStore] Auto-sync to backend failed:', err);
-        return { success: false, error: err.message };
+        console.error('[CatalogStore] Central database connection failed:', err);
+        return { success: false, error: `Connection failed: ${err.message}` };
     }
     return { success: true };
 }

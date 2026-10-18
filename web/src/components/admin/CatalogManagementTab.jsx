@@ -113,18 +113,19 @@ export default function CatalogManagementTab({
       });
 
       const updatedCatalog = { ...catalog, tests: currentTests };
-      setCatalog(updatedCatalog);
       const syncResult = await saveCatalogState(updatedCatalog);
 
       if (syncResult && !syncResult.success) {
         setImportNotice({
           type: 'error',
-          message: `Saved locally (${addedCount} added), BUT backend rejected upload: ${syncResult.error}. (Please increase Nginx client_max_body_size to 50M on VPS).`
+          message: `Import Aborted by Central Server: ${syncResult.error}. No local changes were retained.`
         });
       } else {
+        // Only update live React state when confirmed by the Central Server!
+        setCatalog(updatedCatalog);
         setImportNotice({
           type: 'success',
-          message: `Excel Import Successful: Added ${addedCount} new tests, updated ${updatedCount} existing tests and saved to central database!`
+          message: `Excel Import Successful: Central database updated with ${addedCount} added and ${updatedCount} updated tests!`
         });
       }
       setTimeout(() => setImportNotice(null), 8000);
