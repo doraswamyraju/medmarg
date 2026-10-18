@@ -185,85 +185,46 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             safeFetch(`${API_BASE}/api/v1/catalog/tests?limit=2000`, {}, 5000).then(r => r.json())
           ]).then(([pkgs, profs, tsts]) => {
             if (pkgs.packages && profs.profiles && tsts.tests) {
-              const localCatalog = getCatalogState();
-
               const norm = (s) => (s || '').toString().trim().toUpperCase();
 
-              // 1. DEDUPLICATE AND MERGE PROFILES (No duplicates by code)
+              // Clean deduplicated profiles straight from the server
               const profileMap = new Map();
               (profs.profiles || []).forEach(sp => {
                 const key = norm(sp.code);
-                if (key) {
-                  const localP = (localCatalog.profiles || []).find(lp => norm(lp.code) === key);
-                  profileMap.set(key, {
-                    ...sp,
-                    tests: (sp.tests && sp.tests.length > 0) ? sp.tests : (localP?.tests || []),
-                    labPricing: sp.labPricing || localP?.labPricing,
-                    tierPricing: sp.tierPricing || localP?.tierPricing
-                  });
-                }
-              });
-              // Retain local-only profiles ONLY if not in server
-              (localCatalog.profiles || []).forEach(lp => {
-                const key = norm(lp.code);
                 if (key && !profileMap.has(key)) {
-                  profileMap.set(key, lp);
+                  profileMap.set(key, sp);
                 }
               });
-              const allProfiles = Array.from(profileMap.values());
 
-              // 2. DEDUPLICATE AND MERGE PACKAGES
+              // Clean deduplicated packages straight from the server
               const packageMap = new Map();
               (pkgs.packages || []).forEach(sp => {
                 const key = norm(sp.code);
-                if (key) {
-                  const localPkg = (localCatalog.packages || []).find(lp => norm(lp.code) === key);
-                  packageMap.set(key, {
-                    ...sp,
-                    profiles: (sp.profiles && sp.profiles.length > 0) ? sp.profiles : (localPkg?.profiles || []),
-                    tests: (sp.tests && sp.tests.length > 0) ? sp.tests : (localPkg?.tests || []),
-                    labPricing: sp.labPricing || localPkg?.labPricing,
-                    tierPricing: sp.tierPricing || localPkg?.tierPricing
-                  });
-                }
-              });
-              (localCatalog.packages || []).forEach(lp => {
-                const key = norm(lp.code);
                 if (key && !packageMap.has(key)) {
-                  packageMap.set(key, lp);
+                  packageMap.set(key, sp);
                 }
               });
-              const allPackages = Array.from(packageMap.values());
 
-              // 3. DEDUPLICATE AND MERGE TESTS
+              // Clean deduplicated tests straight from the server
               const testMap = new Map();
               (tsts.tests || []).forEach(st => {
                 const key = norm(st.code);
-                if (key) {
-                  const localT = (localCatalog.tests || []).find(lt => norm(lt.code) === key);
-                  testMap.set(key, {
-                    ...st,
-                    labPricing: st.labPricing || localT?.labPricing,
-                    tierPricing: st.tierPricing || localT?.tierPricing
-                  });
-                }
-              });
-              // If local has 900+ tests and server only had 1 test, keep all tests!
-              (localCatalog.tests || []).forEach(lt => {
-                const key = norm(lt.code);
                 if (key && !testMap.has(key)) {
-                  testMap.set(key, lt);
+                  testMap.set(key, st);
                 }
               });
-              const allTests = Array.from(testMap.values());
 
               const updated = {
-                packages: allPackages,
-                profiles: allProfiles,
-                tests: allTests
+                packages: Array.from(packageMap.values()),
+                profiles: Array.from(profileMap.values()),
+                tests: Array.from(testMap.values())
               };
+              
               setCatalog(updated);
-              saveCatalogState(updated);
+              // Update local cache with verified server data only
+              try {
+                localStorage.setItem('medmarg_catalog_v4', JSON.stringify(updated));
+              } catch (e) {}
             }
           }).catch(() => {});
         }
