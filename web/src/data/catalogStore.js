@@ -7,20 +7,16 @@ import { API_BASE } from './apiConfig';
 
 const STORAGE_KEY = 'medmarg_catalog_v4';
 
-// Load stored state or fallback to default ingested json
+const EMPTY_CATALOG = {
+    tests: [],
+    profiles: [],
+    packages: [],
+    lastSynced: null
+};
+
+// Return empty baseline so app immediately renders live server data upon mount
 export function getCatalogState() {
-    try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-            const parsed = JSON.parse(stored);
-            if (parsed.tests && parsed.tests.length > 0) {
-                return parsed;
-            }
-        }
-    } catch (e) {
-        console.warn('LocalStorage read error, fallback to static catalog:', e);
-    }
-    return initialCatalog;
+    return EMPTY_CATALOG;
 }
 
 export async function saveCatalogState(state) {
@@ -44,14 +40,6 @@ export async function saveCatalogState(state) {
             }
 
             const data = await res.json().catch(() => ({}));
-            
-            // 2. Only cache to local browser storage after central database confirms write!
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-            } catch (e) {
-                console.warn('LocalStorage write warning (exceeded quota):', e);
-            }
-
             return { success: true, stats: data.stats };
         }
     } catch (err) {
