@@ -71,8 +71,8 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   const [offersSubTab, setOffersSubTab] = useState('CAROUSEL_BANNERS');
   const [offersExpanded, setOffersExpanded] = useState(false);
 
-  // Master Catalog State
-  const [catalog, setCatalog] = useState(getCatalogState() || initialCatalog);
+  // Master Catalog State (Direct Live Server Mirror, ZERO localStorage)
+  const [catalog, setCatalog] = useState({ tests: [], profiles: [], packages: [] });
 
   // Google Sheets Sync State
   const [isSyncingSheets, setIsSyncingSheets] = useState(false);
@@ -173,63 +173,32 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     loadDbRecords();
   }, []);
 
-  // Fetch live catalog from backend if available
+  // Fetch live catalog from backend on mount (Always Live Central Data)
   useEffect(() => {
-    safeFetch(`${API_BASE}/api/v1/catalog/summary`, {}, 2500)
+    // Purge any stale legacy localStorage on startup
+    try { localStorage.removeItem('medmarg_catalog_v4'); } catch (e) {}
+
+    safeFetch(`${API_BASE}/api/v1/catalog/summary`, {}, 5000)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
           Promise.all([
-            safeFetch(`${API_BASE}/api/v1/catalog/packages`, {}, 2500).then(r => r.json()),
-            safeFetch(`${API_BASE}/api/v1/catalog/profiles`, {}, 2500).then(r => r.json()),
-            safeFetch(`${API_BASE}/api/v1/catalog/tests?limit=2000`, {}, 5000).then(r => r.json())
+            safeFetch(`${API_BASE}/api/v1/catalog/packages`, {}, 5000).then(r => r.json()),
+            safeFetch(`${API_BASE}/api/v1/catalog/profiles`, {}, 5000).then(r => r.json()),
+            safeFetch(`${API_BASE}/api/v1/catalog/tests?limit=5000`, {}, 8000).then(r => r.json())
           ]).then(([pkgs, profs, tsts]) => {
             if (pkgs.packages && profs.profiles && tsts.tests) {
-              const norm = (s) => (s || '').toString().trim().toUpperCase();
-
-              // Clean deduplicated profiles straight from the server
-              const profileMap = new Map();
-              (profs.profiles || []).forEach(sp => {
-                const key = norm(sp.code);
-                if (key && !profileMap.has(key)) {
-                  profileMap.set(key, sp);
-                }
-              });
-
-              // Clean deduplicated packages straight from the server
-              const packageMap = new Map();
-              (pkgs.packages || []).forEach(sp => {
-                const key = norm(sp.code);
-                if (key && !packageMap.has(key)) {
-                  packageMap.set(key, sp);
-                }
-              });
-
-              // Clean deduplicated tests straight from the server
-              const testMap = new Map();
-              (tsts.tests || []).forEach(st => {
-                const key = norm(st.code);
-                if (key && !testMap.has(key)) {
-                  testMap.set(key, st);
-                }
-              });
-
               const updated = {
-                packages: Array.from(packageMap.values()),
-                profiles: Array.from(profileMap.values()),
-                tests: Array.from(testMap.values())
+                packages: pkgs.packages || [],
+                profiles: profs.profiles || [],
+                tests: tsts.tests || []
               };
-              
               setCatalog(updated);
-              // Update local cache with verified server data only
-              try {
-                localStorage.setItem('medmarg_catalog_v4', JSON.stringify(updated));
-              } catch (e) {}
             }
-          }).catch(() => {});
+          }).catch(err => console.error('Failed to load catalog arrays from live API:', err));
         }
       })
-      .catch(() => {});
+      .catch(err => console.error('Failed to fetch summary from live API:', err));
   }, []);
 
   // Manual Trigger Google Sheets Sync
