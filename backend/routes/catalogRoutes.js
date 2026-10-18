@@ -319,12 +319,46 @@ router.post('/packages', (req, res) => {
     });
 });
 
-// SYNC FULL CATALOG BULK SAVE
+// SYNC FULL CATALOG BULK SAVE (Protected with Safe Merge)
 router.post('/sync-full', (req, res) => {
     const { packages, profiles, tests } = req.body;
-    if (Array.isArray(packages)) catalogState.packages = packages;
-    if (Array.isArray(profiles)) catalogState.profiles = profiles;
-    if (Array.isArray(tests)) catalogState.tests = tests;
+    
+    // SAFETY GUARD: Do not allow a stale client with 1 test to wipe out 900+ tests on server!
+    if (Array.isArray(tests)) {
+        if (tests.length === 0 && catalogState.tests.length > 10) {
+            console.warn('[CatalogRoutes] Blocked attempt to wipe tests array from client');
+        } else if (tests.length < 5 && catalogState.tests.length > 100) {
+            console.warn('[CatalogRoutes] Blocked stale client payload with only 1 test from wiping 900+ server tests');
+        } else {
+            catalogState.tests = tests;
+        }
+    }
+    
+    if (Array.isArray(profiles)) {
+        if (profiles.length === 0 && catalogState.profiles.length > 5) {
+            console.warn('[CatalogRoutes] Blocked attempt to wipe profiles array');
+        } else {
+            // Deduplicate by normalized code
+            const norm = s => (s || '').toString().trim().toUpperCase();
+            const profMap = new Map();
+            profiles.forEach(p => {
+                const k = norm(p.code);
+                if (k && !profMap.has(k)) profMap.set(k, p);
+            });
+            catalogState.profiles = Array.from(profMap.values());
+        }
+    }
+
+    if (Array.isArray(packages)) {
+        const norm = s => (s || '').toString().trim().toUpperCase();
+        const pkgMap = new Map();
+        packages.forEach(p => {
+            const k = norm(p.code);
+            if (k && !pkgMap.has(k)) pkgMap.set(k, p);
+        });
+        catalogState.packages = Array.from(pkgMap.values());
+    }
+
     saveCatalogData();
     res.json({
         success: true,
