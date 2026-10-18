@@ -23,7 +23,7 @@ export function getCatalogState() {
     return initialCatalog;
 }
 
-export function saveCatalogState(state) {
+export async function saveCatalogState(state) {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (e) {
@@ -32,7 +32,7 @@ export function saveCatalogState(state) {
 
     try {
         if (state && (state.tests || state.profiles || state.packages)) {
-            fetch(`${API_BASE}/api/v1/catalog/sync-full`, {
+            const res = await fetch(`${API_BASE}/api/v1/catalog/sync-full`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -40,11 +40,20 @@ export function saveCatalogState(state) {
                     profiles: state.profiles || [],
                     packages: state.packages || []
                 })
-            }).catch(err => console.warn('[CatalogStore] Auto-sync to backend deferred:', err));
+            });
+            if (!res.ok) {
+                const errText = await res.text().catch(() => '');
+                console.error(`[CatalogStore] sync-full failed: HTTP ${res.status} ${res.statusText}`, errText);
+                return { success: false, error: `HTTP ${res.status}: ${res.statusText}` };
+            }
+            const data = await res.json().catch(() => ({}));
+            return { success: true, stats: data.stats };
         }
     } catch (err) {
-        // Safe ignore
+        console.error('[CatalogStore] Auto-sync to backend failed:', err);
+        return { success: false, error: err.message };
     }
+    return { success: true };
 }
 
 /**
