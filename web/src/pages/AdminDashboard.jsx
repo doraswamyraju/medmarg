@@ -182,69 +182,80 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
           Promise.all([
             safeFetch(`${API_BASE}/api/v1/catalog/packages`, {}, 2500).then(r => r.json()),
             safeFetch(`${API_BASE}/api/v1/catalog/profiles`, {}, 2500).then(r => r.json()),
-            safeFetch(`${API_BASE}/api/v1/catalog/tests?limit=1000`, {}, 2500).then(r => r.json())
+            safeFetch(`${API_BASE}/api/v1/catalog/tests?limit=2000`, {}, 5000).then(r => r.json())
           ]).then(([pkgs, profs, tsts]) => {
             if (pkgs.packages && profs.profiles && tsts.tests) {
               const localCatalog = getCatalogState();
 
-              // Safely merge profiles without losing tests or custom pricing
-              const mergedProfiles = profs.profiles.map(serverP => {
-                const localP = (localCatalog.profiles || []).find(lp => lp.code === serverP.code || lp.id === serverP.id);
-                const testsList = (serverP.tests && serverP.tests.length > 0)
-                  ? serverP.tests
-                  : (localP?.tests && localP.tests.length > 0 ? localP.tests : []);
-                return {
-                  ...serverP,
-                  tests: testsList,
-                  testCount: testsList.length || serverP.testCount || localP?.testCount || 1,
-                  labPricing: serverP.labPricing || localP?.labPricing,
-                  tierPricing: serverP.tierPricing || localP?.tierPricing
-                };
-              });
-              const serverProfCodes = new Set(profs.profiles.map(p => p.code || p.id));
-              const localOnlyProfiles = (localCatalog.profiles || []).filter(p => !serverProfCodes.has(p.code) && !serverProfCodes.has(p.id));
-              const allProfiles = [...mergedProfiles, ...localOnlyProfiles];
+              const norm = (s) => (s || '').toString().trim().toUpperCase();
 
-              // Safely merge packages without losing profiles, tests or custom pricing
-              const mergedPackages = pkgs.packages.map(serverPkg => {
-                const localPkg = (localCatalog.packages || []).find(lp => lp.code === serverPkg.code || lp.id === serverPkg.id);
-                const profList = (serverPkg.profiles && serverPkg.profiles.length > 0)
-                  ? serverPkg.profiles
-                  : (localPkg?.profiles && localPkg.profiles.length > 0 ? localPkg.profiles : []);
-                const testList = (serverPkg.tests && serverPkg.tests.length > 0)
-                  ? serverPkg.tests
-                  : (localPkg?.tests && localPkg.tests.length > 0 ? localPkg.tests : []);
-                return {
-                  ...serverPkg,
-                  profiles: profList,
-                  tests: testList,
-                  testCount: profList.length * 8 + testList.length,
-                  labPricing: serverPkg.labPricing || localPkg?.labPricing,
-                  tierPricing: serverPkg.tierPricing || localPkg?.tierPricing
-                };
+              // 1. DEDUPLICATE AND MERGE PROFILES (No duplicates by code)
+              const profileMap = new Map();
+              (profs.profiles || []).forEach(sp => {
+                const key = norm(sp.code);
+                if (key) {
+                  const localP = (localCatalog.profiles || []).find(lp => norm(lp.code) === key);
+                  profileMap.set(key, {
+                    ...sp,
+                    tests: (sp.tests && sp.tests.length > 0) ? sp.tests : (localP?.tests || []),
+                    labPricing: sp.labPricing || localP?.labPricing,
+                    tierPricing: sp.tierPricing || localP?.tierPricing
+                  });
+                }
               });
-              const serverPkgCodes = new Set(pkgs.packages.map(p => p.code || p.id));
-              const localOnlyPackages = (localCatalog.packages || []).filter(p => !serverPkgCodes.has(p.code) && !serverPkgCodes.has(p.id));
-              const allPackages = [...mergedPackages, ...localOnlyPackages];
+              // Retain local-only profiles ONLY if not in server
+              (localCatalog.profiles || []).forEach(lp => {
+                const key = norm(lp.code);
+                if (key && !profileMap.has(key)) {
+                  profileMap.set(key, lp);
+                }
+              });
+              const allProfiles = Array.from(profileMap.values());
 
-              // Safely merge tests without losing custom pricing, specimen, tat, or description
-              const mergedTests = tsts.tests.map(serverT => {
-                const localT = (localCatalog.tests || []).find(lt => lt.code === serverT.code || lt.id === serverT.id);
-                return {
-                  ...serverT,
-                  labPricing: serverT.labPricing || localT?.labPricing,
-                  tierPricing: serverT.tierPricing || localT?.tierPricing,
-                  price: localT?.price || serverT.price,
-                  mrp: localT?.mrp || serverT.mrp,
-                  sampleType: localT?.sampleType || serverT.sampleType,
-                  fasting: localT?.fasting || serverT.fasting,
-                  tatHours: localT?.tatHours || serverT.tatHours,
-                  description: localT?.description || serverT.description
-                };
+              // 2. DEDUPLICATE AND MERGE PACKAGES
+              const packageMap = new Map();
+              (pkgs.packages || []).forEach(sp => {
+                const key = norm(sp.code);
+                if (key) {
+                  const localPkg = (localCatalog.packages || []).find(lp => norm(lp.code) === key);
+                  packageMap.set(key, {
+                    ...sp,
+                    profiles: (sp.profiles && sp.profiles.length > 0) ? sp.profiles : (localPkg?.profiles || []),
+                    tests: (sp.tests && sp.tests.length > 0) ? sp.tests : (localPkg?.tests || []),
+                    labPricing: sp.labPricing || localPkg?.labPricing,
+                    tierPricing: sp.tierPricing || localPkg?.tierPricing
+                  });
+                }
               });
-              const serverTestCodes = new Set(tsts.tests.map(t => t.code || t.id));
-              const localOnlyTests = (localCatalog.tests || []).filter(t => !serverTestCodes.has(t.code) && !serverTestCodes.has(t.id));
-              const allTests = [...mergedTests, ...localOnlyTests];
+              (localCatalog.packages || []).forEach(lp => {
+                const key = norm(lp.code);
+                if (key && !packageMap.has(key)) {
+                  packageMap.set(key, lp);
+                }
+              });
+              const allPackages = Array.from(packageMap.values());
+
+              // 3. DEDUPLICATE AND MERGE TESTS
+              const testMap = new Map();
+              (tsts.tests || []).forEach(st => {
+                const key = norm(st.code);
+                if (key) {
+                  const localT = (localCatalog.tests || []).find(lt => norm(lt.code) === key);
+                  testMap.set(key, {
+                    ...st,
+                    labPricing: st.labPricing || localT?.labPricing,
+                    tierPricing: st.tierPricing || localT?.tierPricing
+                  });
+                }
+              });
+              // If local has 900+ tests and server only had 1 test, keep all tests!
+              (localCatalog.tests || []).forEach(lt => {
+                const key = norm(lt.code);
+                if (key && !testMap.has(key)) {
+                  testMap.set(key, lt);
+                }
+              });
+              const allTests = Array.from(testMap.values());
 
               const updated = {
                 packages: allPackages,

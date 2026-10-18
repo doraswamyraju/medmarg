@@ -114,13 +114,20 @@ export default function CatalogManagementTab({
 
       const updatedCatalog = { ...catalog, tests: currentTests };
       setCatalog(updatedCatalog);
-      saveCatalogState(updatedCatalog);
+      const syncResult = await saveCatalogState(updatedCatalog);
 
-      setImportNotice({
-        type: 'success',
-        message: `Excel Import Successful: Added ${addedCount} new tests, updated ${updatedCount} existing tests with complete clinical and pricing matrix.`
-      });
-      setTimeout(() => setImportNotice(null), 6000);
+      if (syncResult && !syncResult.success) {
+        setImportNotice({
+          type: 'error',
+          message: `Saved locally (${addedCount} added), BUT backend rejected upload: ${syncResult.error}. (Please increase Nginx client_max_body_size to 50M on VPS).`
+        });
+      } else {
+        setImportNotice({
+          type: 'success',
+          message: `Excel Import Successful: Added ${addedCount} new tests, updated ${updatedCount} existing tests and saved to central database!`
+        });
+      }
+      setTimeout(() => setImportNotice(null), 8000);
     } catch (err) {
       console.error('Excel parse error:', err);
       setImportNotice({ type: 'error', message: `Import Failed: ${err.message || 'Invalid Excel format'}` });
