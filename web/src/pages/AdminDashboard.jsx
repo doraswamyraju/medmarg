@@ -94,40 +94,9 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
     { id: 'AG-01', name: 'Ramesh Kumar', phone: '+91 98765 11223', area: 'Air Bypass & Alipiri', samplesToday: 1, maxDailyQuota: 15, temp: '4.2°C', status: 'ACTIVE' }
   ]);
 
-  // Inventory Stock & Indents State
-  const [inventoryStock, setInventoryStock] = useState([
-    {
-      code: 'STK-01',
-      name: 'Gold SST Gel Tubes (5ml)',
-      type: 'SINGLE',
-      category: 'Blood Containers',
-      stock: 4500,
-      unit: 'Tubes',
-      reorderLevel: 1000,
-      unitCost: 14,
-      incharge: 'Anand Store Lead (store.tirupati@medmarg.com)',
-      alertSent: false
-    },
-    {
-      code: 'KIT-101',
-      name: 'Standard Phlebotomy Sample Collection Kit',
-      type: 'KIT',
-      category: 'Pre-Packaged Kits',
-      stock: 350,
-      unit: 'Kits',
-      reorderLevel: 100,
-      unitCost: 48,
-      incharge: 'Anand Store Lead (store.tirupati@medmarg.com)',
-      alertSent: false,
-      components: [
-        { itemCode: 'STK-01', name: 'Gold SST Gel Tube (5ml)', qty: 2 }
-      ]
-    }
-  ]);
-
-  const [indents, setIndents] = useState([
-    { id: 'IND-501', agentName: 'Ramesh Kumar (AG-01)', requestedItems: '50x Gold SST Tubes, 20x Purple EDTA Tubes', status: 'PENDING_APPROVAL', date: 'Today 08:30 AM' }
-  ]);
+  // Inventory Stock & Indents State (Live Server Mirror)
+  const [inventoryStock, setInventoryStock] = useState([]);
+  const [indents, setIndents] = useState([]);
 
   // Partner Pre-Registration Queue State (1 real partner)
   const [partnerQueue, setPartnerQueue] = useState([
