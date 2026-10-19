@@ -42,81 +42,28 @@ export default function StockInventoryTab({
   const subTab = propSubTab !== undefined ? propSubTab : localSubTab;
   const setSubTab = propSetSubTab || setLocalSubTab;
 
-  // Master Stock & Kits State - Exactly 1 Single Inventory Item and 1 Pre-Packaged Kit as actual examples
-  const [inventoryStock, setInventoryStock] = useState(
-    initialStock.length > 0 ? initialStock : [
-      { 
-        code: 'STK-01', 
-        name: 'Gold SST Gel Tubes (5ml)', 
-        type: 'SINGLE', 
-        category: 'Blood Containers', 
-        stock: 4500, 
-        unit: 'Tubes', 
-        reorderLevel: 1000, 
-        unitCost: 14, 
-        incharge: 'Anand Store Lead (store.tirupati@medmarg.com)', 
-        alertSent: false 
-      },
-      { 
-        code: 'KIT-101', 
-        name: 'Routine Phlebotomy Standard Kit', 
-        type: 'KIT', 
-        category: 'Pre-Packaged Kits', 
-        stock: 350, 
-        unit: 'Kits', 
-        reorderLevel: 100, 
-        unitCost: 48,
-        incharge: 'Anand Store Lead (store.tirupati@medmarg.com)',
-        alertSent: false,
-        components: [
-          { itemCode: 'STK-01', name: 'Gold SST Gel Tube', qty: 1 }
-        ]
-      }
-    ]
-  );
+  // Master Stock & Kits State (Direct Mirror of Props / Live Server)
+  const [inventoryStock, setInventoryStock] = useState(initialStock || []);
 
   React.useEffect(() => {
-    if (initialStock && initialStock.length > 0) {
+    if (initialStock) {
       setInventoryStock(initialStock);
     }
   }, [initialStock]);
 
   const [editingStockItem, setEditingStockItem] = useState(null);
 
-  // Purchases / Inward Goods State (GRN) - 1 live real database record
-  const [purchases, setPurchases] = useState([
-    {
-      id: 'GRN-2026-881',
-      poNumber: 'PO-MM-4401',
-      vendor: 'Becton Dickinson (BD India Pvt Ltd)',
-      invoiceNo: 'INV-BD-99201',
-      inwardDate: 'Today 09:15 AM',
-      batchNo: 'BD-26G-881',
-      mfgDate: '2026-01-10',
-      expDate: '2027-06-30',
-      itemsCount: 1,
-      details: '4,500x Gold SST Gel Tubes (5ml)',
-      totalAmount: 63000,
-      receivedBy: 'Anand Store Lead',
-      qcStatus: 'PASSED_VERIFIED'
-    }
-  ]);
+  // Purchases / Inward Goods State (GRN)
+  const [purchases, setPurchases] = useState([]);
 
-  // Indents State - 1 live real database record
-  const [indents, setIndents] = useState(
-    initialIndents.length > 0 ? initialIndents : [
-      { 
-        id: 'IND-501', 
-        agentType: 'SALARIED_AGENT',
-        agentName: 'Ramesh Kumar (AG-01)', 
-        area: 'Air Bypass & Alipiri',
-        requestedItems: '50x Gold SST Tubes, 20x Purple EDTA Tubes', 
-        status: 'PENDING_APPROVAL', 
-        date: 'Today 08:30 AM',
-        paymentMode: 'Company Quota Allocation (Free)'
-      }
-    ]
-  );
+  // Indents State
+  const [indents, setIndents] = useState(initialIndents || []);
+
+  React.useEffect(() => {
+    if (initialIndents) {
+      setIndents(initialIndents);
+    }
+  }, [initialIndents]);
 
   // Agent In-Hand Inventory State - 1 live real database record
   const [agentInventories, setAgentInventories] = useState([
@@ -236,24 +183,17 @@ export default function StockInventoryTab({
         body: JSON.stringify({ items: parsedItems })
       });
       const data = await res.json();
-      if (data.inventory) {
+      if (res.ok && data.inventory) {
         setInventoryStock(data.inventory);
         parentSetInventoryStock(data.inventory);
+        alert(`Successfully imported ${parsedItems.length} items to live database.`);
         return;
+      } else {
+        alert(`Server error importing inventory: ${data.error || 'Failed to persist'}`);
       }
-    } catch (e) {}
-    
-    // Fallback merge
-    setInventoryStock(prev => {
-      const updated = [...prev];
-      parsedItems.forEach(item => {
-        const idx = updated.findIndex(u => u.code === item.code);
-        if (idx >= 0) updated[idx] = item;
-        else updated.push(item);
-      });
-      parentSetInventoryStock(updated);
-      return updated;
-    });
+    } catch (e) {
+      alert(`Network error saving inventory to server: ${e.message}`);
+    }
   };
 
   // Delete purchase handler
