@@ -107,58 +107,73 @@ export default function LandingHeroSection({
         
         {/* Left Column: Carousel & Vibrant Search */}
         <div style={{ position: 'relative', zIndex: 102 }}>
-          {/* Active Banner Slide */}
-          <div style={{ transition: 'all 0.3s ease-out' }}>
-            <div style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              gap: '0.45rem', 
-              padding: '0.4rem 0.95rem', 
-              backgroundColor: 'rgba(56, 189, 248, 0.18)', 
-              color: heroBanners[currentSlide].accentColor, 
-              borderRadius: '20px', 
-              fontSize: '0.82rem', 
-              fontWeight: '900', 
-              marginBottom: '1.15rem', 
-              border: `1.5px solid ${heroBanners[currentSlide].accentColor}50`,
-              backdropFilter: 'blur(8px)',
-              boxShadow: `0 4px 16px ${heroBanners[currentSlide].accentColor}25`
-            }}>
-              <Sparkles size={15} /> {heroBanners[currentSlide].tag}
-            </div>
-
-            <h1 style={{ 
-              fontSize: '2.9rem', 
-              fontWeight: '900', 
-              color: '#FFFFFF', 
-              lineHeight: '1.14', 
-              letterSpacing: '-0.025em', 
-              marginBottom: '1rem',
-              textShadow: '0 4px 20px rgba(0,0,0,0.5)'
-            }}>
-              {heroBanners[currentSlide].title}
-            </h1>
-
-            <p style={{ color: '#94A3B8', fontSize: '1.08rem', lineHeight: '1.55', marginBottom: '1.75rem', maxWidth: '600px' }}>
-              {heroBanners[currentSlide].subtitle}
-            </p>
-
-            {/* Price & Savings Pill */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.15rem', marginBottom: '1.85rem' }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.65rem' }}>
-                <span style={{ fontSize: '2.4rem', fontWeight: '900', color: '#FFFFFF', letterSpacing: '-0.02em' }}>{heroBanners[currentSlide].price}</span>
-                <span style={{ fontSize: '1.15rem', color: '#64748B', textDecoration: 'line-through', fontWeight: '700' }}>{heroBanners[currentSlide].mrp}</span>
-              </div>
+          {/* Active Banner Slide with fixed minHeight to prevent layout shifts */}
+          <div style={{ minHeight: '270px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
+            <div>
               <div style={{ 
-                padding: '0.45rem 0.95rem', 
-                backgroundColor: '#10B981', 
-                color: '#FFF', 
-                borderRadius: '12px', 
-                fontSize: '0.86rem', 
-                fontWeight: '900',
-                boxShadow: '0 4px 14px rgba(16,185,129,0.35)'
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '0.45rem', 
+                padding: '0.4rem 0.95rem', 
+                backgroundColor: 'rgba(56, 189, 248, 0.18)', 
+                color: heroBanners[currentSlide].accentColor, 
+                borderRadius: '20px', 
+                fontSize: '0.82rem', 
+                fontWeight: '900', 
+                marginBottom: '1.15rem', 
+                border: `1.5px solid ${heroBanners[currentSlide].accentColor}50`,
+                backdropFilter: 'blur(8px)',
+                boxShadow: `0 4px 16px ${heroBanners[currentSlide].accentColor}25`,
+                transition: 'all 0.3s ease'
               }}>
-                {heroBanners[currentSlide].savings}
+                <Sparkles size={15} /> {heroBanners[currentSlide].tag}
+              </div>
+
+              <h1 style={{ 
+                fontSize: '2.9rem', 
+                fontWeight: '900', 
+                color: '#FFFFFF', 
+                lineHeight: '1.14', 
+                letterSpacing: '-0.025em', 
+                marginBottom: '0.9rem',
+                minHeight: '66px',
+                display: 'flex',
+                alignItems: 'center',
+                textShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                transition: 'opacity 0.25s ease'
+              }}>
+                {heroBanners[currentSlide].title}
+              </h1>
+
+              <p style={{ 
+                color: '#94A3B8', 
+                fontSize: '1.08rem', 
+                lineHeight: '1.55', 
+                marginBottom: '1.5rem', 
+                maxWidth: '600px',
+                minHeight: '52px',
+                transition: 'opacity 0.25s ease'
+              }}>
+                {heroBanners[currentSlide].subtitle}
+              </p>
+
+              {/* Price & Savings Pill */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.15rem', marginBottom: '1.85rem' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.65rem' }}>
+                  <span style={{ fontSize: '2.4rem', fontWeight: '900', color: '#FFFFFF', letterSpacing: '-0.02em' }}>{heroBanners[currentSlide].price}</span>
+                  <span style={{ fontSize: '1.15rem', color: '#64748B', textDecoration: 'line-through', fontWeight: '700' }}>{heroBanners[currentSlide].mrp}</span>
+                </div>
+                <div style={{ 
+                  padding: '0.45rem 0.95rem', 
+                  backgroundColor: '#10B981', 
+                  color: '#FFF', 
+                  borderRadius: '12px', 
+                  fontSize: '0.86rem', 
+                  fontWeight: '900',
+                  boxShadow: '0 4px 14px rgba(16,185,129,0.35)'
+                }}>
+                  {heroBanners[currentSlide].savings}
+                </div>
               </div>
             </div>
           </div>
