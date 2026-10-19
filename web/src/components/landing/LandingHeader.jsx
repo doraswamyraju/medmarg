@@ -48,8 +48,8 @@ export default function LandingHeader({ onNavigateLogin, onOpenAppModal }) {
       {/* Main Navbar */}
       <div style={{ maxWidth: '1360px', margin: '0 auto', padding: '0.85rem 1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem' }}>
         
-        {/* Brand Logo & Location Switcher */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', flexShrink: 0 }}>
+        {/* Brand Logo with Location Switcher Below */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.2rem', flexShrink: 0 }}>
           <div 
             style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} 
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -57,7 +57,7 @@ export default function LandingHeader({ onNavigateLogin, onOpenAppModal }) {
             <img 
               src="/logo.png" 
               alt="MedMarg Diagnostic Network" 
-              style={{ height: '42px', width: 'auto', objectFit: 'contain' }} 
+              style={{ height: '36px', width: 'auto', objectFit: 'contain' }} 
               onError={(e) => {
                 e.target.onerror = null;
                 e.target.style.display = 'none';
@@ -65,28 +65,27 @@ export default function LandingHeader({ onNavigateLogin, onOpenAppModal }) {
             />
           </div>
 
-          {/* Location Selector */}
+          {/* Compact Location Selector below Logo */}
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setShowCityDropdown(!showCityDropdown)}
               style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: '0.4rem', 
-                padding: '0.45rem 0.85rem', 
-                backgroundColor: '#F1F5F9', 
-                border: '1px solid #CBD5E1', 
-                borderRadius: '20px', 
-                fontSize: '0.82rem', 
-                fontWeight: '700', 
-                color: '#334155', 
+                gap: '0.25rem', 
+                padding: '0.15rem 0.5rem', 
+                backgroundColor: 'transparent', 
+                border: 'none', 
+                fontSize: '0.73rem', 
+                fontWeight: '800', 
+                color: '#005F60', 
                 cursor: 'pointer', 
                 whiteSpace: 'nowrap' 
               }}
             >
-              <MapPin size={14} color="#005F60" />
+              <MapPin size={11} color="#005F60" />
               <span>{selectedCity}</span>
-              <ChevronDown size={14} color="#64748B" />
+              <ChevronDown size={11} color="#64748B" />
             </button>
 
             {showCityDropdown && (
@@ -102,7 +101,7 @@ export default function LandingHeader({ onNavigateLogin, onOpenAppModal }) {
                 padding: '0.5rem', 
                 zIndex: 1100 
               }}>
-                <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '800', padding: '0.3rem 0.6rem', borderBottom: '1px solid #F1F5F9' }}>
+                <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: '800', padding: '0.3rem 0.5rem', borderBottom: '1px solid #F1F5F9' }}>
                   ACTIVE SERVICE CITIES
                 </div>
                 {availableCities.map(city => (
@@ -113,12 +112,12 @@ export default function LandingHeader({ onNavigateLogin, onOpenAppModal }) {
                       setShowCityDropdown(false);
                     }}
                     style={{ 
-                      padding: '0.45rem 0.6rem', 
-                      fontSize: '0.82rem', 
+                      padding: '0.4rem 0.5rem', 
+                      fontSize: '0.78rem', 
                       fontWeight: '700', 
                       color: selectedCity === city ? '#005F60' : '#334155', 
                       cursor: 'pointer', 
-                      borderRadius: '8px', 
+                      borderRadius: '6px', 
                       backgroundColor: selectedCity === city ? '#E0F2F1' : 'transparent' 
                     }}
                   >
@@ -175,26 +174,28 @@ export default function LandingHeader({ onNavigateLogin, onOpenAppModal }) {
             <span style={{ fontSize: '0.65rem', backgroundColor: '#FEF3C7', color: '#92400E', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '900' }}>SOON</span>
           </button>
 
+          {/* User Icon Button (No Sign In Text) */}
           <button
             onClick={onNavigateLogin}
+            title="Sign In / Patient Account"
             style={{ 
-              padding: '0.55rem 1.15rem', 
+              width: '42px',
+              height: '42px',
               backgroundColor: '#005F60', 
               color: '#FFF', 
               border: 'none', 
               borderRadius: '12px', 
-              fontSize: '0.85rem', 
-              fontWeight: '800', 
               cursor: 'pointer', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '0.45rem', 
+              justifyContent: 'center',
               boxShadow: '0 4px 14px rgba(0,95,96,0.25)', 
-              transition: 'transform 0.15s',
-              whiteSpace: 'nowrap'
+              transition: 'transform 0.15s, background-color 0.15s' 
             }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#007A7C'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#005F60'}
           >
-            <User size={16} /> <span className="cta-text-full">Sign In / Book</span><span className="cta-text-short">Sign In</span> <ArrowRight size={15} />
+            <User size={19} />
           </button>
 
           {/* Mobile Hamburger Toggle Button */}
@@ -205,7 +206,7 @@ export default function LandingHeader({ onNavigateLogin, onOpenAppModal }) {
               backgroundColor: '#F1F5F9',
               border: '1px solid #CBD5E1',
               borderRadius: '10px',
-              padding: '0.45rem',
+              padding: '0.55rem',
               display: 'none',
               alignItems: 'center',
               justifyContent: 'center',
