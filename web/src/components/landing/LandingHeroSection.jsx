@@ -103,12 +103,12 @@ export default function LandingHeroSection({
         filter: 'blur(40px)'
       }} />
 
-      <div style={{ maxWidth: '1320px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1.25fr 0.75fr', gap: '3.5rem', alignItems: 'center', position: 'relative', zIndex: 101 }}>
+      <div style={{ maxWidth: '1320px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1.25fr 0.75fr', gap: '3.5rem', alignItems: 'start', position: 'relative', zIndex: 101 }}>
         
         {/* Left Column: Carousel & Vibrant Search */}
         <div style={{ position: 'relative', zIndex: 102 }}>
-          {/* Active Banner Slide with fixed minHeight to prevent layout shifts */}
-          <div style={{ minHeight: '270px', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
+          {/* Active Banner Slide with strict fixed height to completely eliminate any height jumping */}
+          <div style={{ height: '260px', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
             <div>
               <div style={{ 
                 display: 'inline-flex', 
@@ -120,7 +120,7 @@ export default function LandingHeroSection({
                 borderRadius: '20px', 
                 fontSize: '0.82rem', 
                 fontWeight: '900', 
-                marginBottom: '1.15rem', 
+                marginBottom: '1rem', 
                 border: `1.5px solid ${heroBanners[currentSlide].accentColor}50`,
                 backdropFilter: 'blur(8px)',
                 boxShadow: `0 4px 16px ${heroBanners[currentSlide].accentColor}25`,
@@ -130,37 +130,40 @@ export default function LandingHeroSection({
               </div>
 
               <h1 style={{ 
-                fontSize: '2.9rem', 
+                fontSize: '2.8rem', 
                 fontWeight: '900', 
                 color: '#FFFFFF', 
                 lineHeight: '1.14', 
                 letterSpacing: '-0.025em', 
-                marginBottom: '0.9rem',
-                minHeight: '66px',
+                marginBottom: '0.8rem',
+                height: '70px',
                 display: 'flex',
                 alignItems: 'center',
                 textShadow: '0 4px 20px rgba(0,0,0,0.5)',
-                transition: 'opacity 0.25s ease'
+                overflow: 'hidden'
               }}>
                 {heroBanners[currentSlide].title}
               </h1>
 
               <p style={{ 
                 color: '#94A3B8', 
-                fontSize: '1.08rem', 
-                lineHeight: '1.55', 
-                marginBottom: '1.5rem', 
+                fontSize: '1.05rem', 
+                lineHeight: '1.5', 
+                marginBottom: '1.25rem', 
                 maxWidth: '600px',
-                minHeight: '52px',
-                transition: 'opacity 0.25s ease'
+                height: '48px',
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical'
               }}>
                 {heroBanners[currentSlide].subtitle}
               </p>
 
               {/* Price & Savings Pill */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.15rem', marginBottom: '1.85rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1.15rem' }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.65rem' }}>
-                  <span style={{ fontSize: '2.4rem', fontWeight: '900', color: '#FFFFFF', letterSpacing: '-0.02em' }}>{heroBanners[currentSlide].price}</span>
+                  <span style={{ fontSize: '2.3rem', fontWeight: '900', color: '#FFFFFF', letterSpacing: '-0.02em' }}>{heroBanners[currentSlide].price}</span>
                   <span style={{ fontSize: '1.15rem', color: '#64748B', textDecoration: 'line-through', fontWeight: '700' }}>{heroBanners[currentSlide].mrp}</span>
                 </div>
                 <div style={{ 
