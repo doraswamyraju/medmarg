@@ -56,69 +56,8 @@ export default function CareSeekerOrdersTab({
   const [activeFilter, setActiveFilter] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'COMPLETED'
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Fallback demo orders if none exist
-  const displayOrders = (orders && orders.length > 0) ? orders : [
-    {
-      id: 'MM-LAB-4054',
-      date: 'Today',
-      slot: '06:30 AM - 07:30 AM (Fasting)',
-      status: 'ENROUTE',
-      eta: '8 Mins',
-      address: 'Plot 42, Air Bypass Road, Tirupati, AP - 517501',
-      totalAmount: 1499,
-      paymentMode: 'PREPAID_UPI',
-      paymentStatus: 'PAID_SUCCESS',
-      handoverOtp: '7644',
-      tempTelemetry: '3.8°C (Optimal Cold-Chain)',
-      phleboName: 'Ajay Kumar',
-      phleboPhone: '+91 98765 11223',
-      phleboRating: '4.8 (320+ collections)',
-      labProvider: 'Thyrocare',
-      items: [
-        { name: 'Thyrocare Aarogyam Full Body Checkup', sampleType: 'SERUM, EDTA', fasting: 'YES', price: 1499 }
-      ]
-    },
-    {
-      id: 'MM-LAB-9842',
-      date: 'Yesterday',
-      slot: '07:30 AM - 08:30 AM',
-      status: 'SAMPLE_COLLECTED',
-      eta: 'In Lab Processing',
-      address: 'Plot 42, Air Bypass Road, Tirupati, AP - 517501',
-      totalAmount: 599,
-      paymentMode: 'DOORSTEP_QR',
-      paymentStatus: 'PAID_DOORSTEP',
-      handoverOtp: '4198',
-      tempTelemetry: '4.1°C',
-      phleboName: 'Ramesh Kumar',
-      phleboPhone: '+91 94401 88921',
-      phleboRating: '4.9 (540+ collections)',
-      labProvider: 'Dr. Lal PathLabs',
-      items: [
-        { name: 'Senior Citizen Diabetic & Cardiac Panel', sampleType: 'SERUM', fasting: 'YES', price: 599 }
-      ]
-    },
-    {
-      id: 'MM-LAB-8102',
-      date: '28 Sep 2026',
-      slot: '08:00 AM - 09:00 AM',
-      status: 'COMPLETED',
-      eta: 'Delivered',
-      address: 'Plot 42, Air Bypass Road, Tirupati, AP - 517501',
-      totalAmount: 299,
-      paymentMode: 'PREPAID_UPI',
-      paymentStatus: 'PAID_SUCCESS',
-      reportReady: true,
-      reportUrl: 'https://medmarg.sriddha.com/reports/sample-cbc-report.pdf',
-      phleboName: 'Suresh Phlebo',
-      phleboPhone: '+91 91234 56789',
-      phleboRating: '5.0 (180+ collections)',
-      labProvider: 'MedMarg Central Hub',
-      items: [
-        { name: 'HbA1c Glycated Hemoglobin', sampleType: 'EDTA', fasting: 'NO', price: 299 }
-      ]
-    }
-  ];
+  // Strictly Live Orders from Server (No Dummy Fallback)
+  const displayOrders = Array.isArray(orders) ? orders : [];
 
 
 

@@ -144,12 +144,92 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
     }
   };
 
-  // Cart State (Array of Base Items)
-  const [cart, setCart] = useState([]);
-
   // Live Orders State (Direct Server Mirror, No Dummy Fallback)
   const [allOrders, setAllOrders] = useState([]);
   const [activeOrder, setActiveOrder] = useState(null);
+
+  // Live Notifications State
+  const [readNotificationIds, setReadNotificationIds] = useState(() => {
+    try {
+      const emailKey = (user?.email || 'patient').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      return JSON.parse(localStorage.getItem(`medmarg_read_notifs_${emailKey}`) || '[]');
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // Persist read notifications
+  useEffect(() => {
+    try {
+      const emailKey = (user?.email || 'patient').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      localStorage.setItem(`medmarg_read_notifs_${emailKey}`, JSON.stringify(readNotificationIds));
+    } catch (e) {}
+  }, [readNotificationIds, user?.email]);
+
+  // Dynamically compute real notifications based strictly on actual orders & patient status
+  const liveNotifications = React.useMemo(() => {
+    const list = [];
+
+    // Notifications from real orders
+    (allOrders || []).forEach(ord => {
+      const isOngoing = ord.status === 'ASSIGNED' || ord.status === 'ENROUTE' || ord.status === 'EN_ROUTE' || ord.status === 'SAMPLE_COLLECTED';
+      const isDelivered = ord.status === 'COMPLETED' || ord.status === 'DELIVERED';
+
+      if (isOngoing) {
+        list.push({
+          id: `order-ongoing-${ord.id}`,
+          category: 'Phlebotomy Enroute',
+          color: '#006B70',
+          title: `Phlebotomist Dispatched for Order #${ord.id}`,
+          message: `${ord.phleboName || 'Certified phlebotomist'} is scheduled. Handover OTP: ${ord.handoverOtp || ord.otp || 'Pending'}.`,
+          time: ord.date || 'Today',
+          action: {
+            label: 'Track Status',
+            handler: () => {
+              setActiveOrder(ord);
+              setActiveTab('TRACK');
+              setShowNotificationsDropdown(false);
+            }
+          }
+        });
+      }
+
+      if (isDelivered) {
+        list.push({
+          id: `order-completed-${ord.id}`,
+          category: 'Report Ready',
+          color: '#15803D',
+          title: `Lab Report Ready for Order #${ord.id}`,
+          message: `Official signed diagnostic report published for ${Array.isArray(ord.items) ? ord.items.map(i => i.name).join(', ') : 'ordered tests'}.`,
+          time: ord.date || 'Recent',
+          action: {
+            label: 'View Vault',
+            handler: () => {
+              setActiveOrder(ord);
+              setActiveTab('REPORTS');
+              setShowNotificationsDropdown(false);
+            }
+          }
+        });
+      }
+    });
+
+    // Vitals alert if smartwatch or manual vitals indicate attention
+    if (customerVitals?.systolic && Number(customerVitals.systolic) >= 140) {
+      list.push({
+        id: 'vitals-alert-bp',
+        category: 'Clinical Wellness Alert',
+        color: '#D97706',
+        title: 'Elevated Systolic Blood Pressure',
+        message: `Latest recording of ${customerVitals.systolic}/${customerVitals.diastolic || 90} mmHg is in the stage 1 hypertension range. Regular cardiac monitoring is suggested.`,
+        time: customerVitals.updatedAt ? new Date(customerVitals.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recent'
+      });
+    }
+
+    return list;
+  }, [allOrders, customerVitals]);
+
+  const unreadNotifications = liveNotifications.filter(n => !readNotificationIds.includes(n.id));
 
   // Sync catalog from backend
   useEffect(() => {
@@ -549,25 +629,27 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
                 title="Notifications, Clinical Reminders & Reports"
               >
                 <Bell size={20} color="#006B70" />
-                <span style={{
-                  position: 'absolute',
-                  top: '-4px',
-                  right: '-4px',
-                  width: '18px',
-                  height: '18px',
-                  backgroundColor: '#EF4444',
-                  color: '#FFFFFF',
-                  borderRadius: '50%',
-                  fontSize: '0.68rem',
-                  fontWeight: '900',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 6px rgba(239,68,68,0.4)',
-                  border: '2px solid #FFFFFF'
-                }}>
-                  3
-                </span>
+                {unreadNotifications.length > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '-4px',
+                    right: '-4px',
+                    width: '18px',
+                    height: '18px',
+                    backgroundColor: '#EF4444',
+                    color: '#FFFFFF',
+                    borderRadius: '50%',
+                    fontSize: '0.68rem',
+                    fontWeight: '900',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 6px rgba(239,68,68,0.4)',
+                    border: '2px solid #FFFFFF'
+                  }}>
+                    {unreadNotifications.length}
+                  </span>
+                )}
               </button>
 
               {/* Notifications Dropdown Drawer */}
@@ -597,11 +679,31 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                       <Bell size={17} color="#FBBF24" />
-                      <span style={{ fontWeight: '900', fontSize: '0.88rem' }}>Health Alerts & Reports</span>
+                      <span style={{ fontWeight: '900', fontSize: '0.88rem' }}>Health Alerts & Orders</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '0.68rem', backgroundColor: 'rgba(251,191,36,0.2)', color: '#FBBF24', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: '900' }}>
-                        3 Unread
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      {unreadNotifications.length > 0 && (
+                        <button
+                          onClick={() => {
+                            const allIds = liveNotifications.map(n => n.id);
+                            setReadNotificationIds(prev => Array.from(new Set([...prev, ...allIds])));
+                          }}
+                          style={{
+                            background: 'rgba(255,255,255,0.12)',
+                            border: '1px solid rgba(255,255,255,0.25)',
+                            color: '#80CBC4',
+                            borderRadius: '8px',
+                            padding: '0.2rem 0.55rem',
+                            fontSize: '0.68rem',
+                            fontWeight: '800',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Mark all as read
+                        </button>
+                      )}
+                      <span style={{ fontSize: '0.68rem', backgroundColor: unreadNotifications.length > 0 ? 'rgba(251,191,36,0.2)' : 'rgba(255,255,255,0.1)', color: unreadNotifications.length > 0 ? '#FBBF24' : '#94A3B8', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: '900' }}>
+                        {unreadNotifications.length} Unread
                       </span>
                       <button
                         onClick={() => setShowNotificationsDropdown(false)}
@@ -623,107 +725,81 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
 
                   {/* Dropdown Body */}
                   <div style={{ maxHeight: '420px', overflowY: 'auto', padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    {/* Clinical Reminders Section */}
-                    <div>
-                      <div style={{ fontSize: '0.72rem', fontWeight: '900', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.45rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <Clock size={13} color="#D97706" /> Clinical Reminders
+                    {liveNotifications.length === 0 ? (
+                      <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#64748B' }}>
+                        <Bell size={32} color="#CBD5E1" style={{ margin: '0 auto 0.5rem' }} />
+                        <div style={{ fontSize: '0.88rem', fontWeight: '800', color: '#1E293B' }}>No New Notifications</div>
+                        <div style={{ fontSize: '0.75rem', marginTop: '0.25rem' }}>You're all caught up! Order status and clinical reports will appear here.</div>
                       </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                        <div style={{
-                          padding: '0.75rem 0.85rem',
-                          backgroundColor: '#FFFBEB',
-                          borderRadius: '12px',
-                          border: '1px solid #FDE68A'
-                        }}>
-                          <div style={{ fontSize: '0.82rem', fontWeight: '900', color: '#92400E' }}>
-                            Fasting Protocol Reminder
-                          </div>
-                          <div style={{ fontSize: '0.74rem', color: '#B45309', marginTop: '0.2rem', lineHeight: 1.35 }}>
-                            Upcoming order includes Fasting Glucose & Lipids. Maintain 8-10h water-only fasting before phlebotomist arrives.
-                          </div>
-                        </div>
-
-                        <div style={{
-                          padding: '0.75rem 0.85rem',
-                          backgroundColor: '#F0FDF4',
-                          borderRadius: '12px',
-                          border: '1px solid #BBF7D0'
-                        }}>
-                          <div style={{ fontSize: '0.82rem', fontWeight: '900', color: '#166534' }}>
-                            Optimal Cold-Chain Guaranteed
-                          </div>
-                          <div style={{ fontSize: '0.74rem', color: '#15803D', marginTop: '0.2rem', lineHeight: 1.35 }}>
-                            Samples transported in IoT digital thermal gel carriers at strictly 2°C - 8°C.
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Verified Lab Reports Section */}
-                    <div style={{ borderTop: '1px solid #F1F5F9', paddingTop: '0.65rem' }}>
-                      <div style={{ fontSize: '0.72rem', fontWeight: '900', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.45rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                        <FileText size={13} color="#006B70" /> Recent Lab Reports
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                        {[
-                          { title: 'Complete Blood Count (CBC)', date: '28 Sep 2026', lab: 'Thyrocare NABL Lab' },
-                          { title: 'Thyroid Profile Total (T3/T4/TSH)', date: '15 Aug 2026', lab: 'Thyrocare NABL Lab' },
-                          { title: 'HbA1c Glycated Hemoglobin', date: '02 Jul 2026', lab: 'MedMarg Hub' }
-                        ].map((rep, rIdx) => (
+                    ) : (
+                      liveNotifications.map((notif) => {
+                        const isUnread = !readNotificationIds.includes(notif.id);
+                        return (
                           <div
-                            key={rIdx}
+                            key={notif.id}
                             style={{
-                              padding: '0.65rem 0.8rem',
-                              backgroundColor: '#F8FAFC',
+                              padding: '0.8rem 0.95rem',
+                              backgroundColor: isUnread ? '#F0FDF4' : '#F8FAFC',
                               borderRadius: '12px',
-                              border: '1px solid #E2E8F0',
+                              border: isUnread ? '1.5px solid #86EFAC' : '1px solid #E2E8F0',
                               display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center'
+                              flexDirection: 'column',
+                              gap: '0.3rem',
+                              transition: 'all 0.15s ease'
                             }}
                           >
-                            <div style={{ flex: 1, minWidth: 0, paddingRight: '0.5rem' }}>
-                              <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {rep.title}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                                <span style={{ fontSize: '0.72rem', fontWeight: '900', color: notif.color || '#006B70', textTransform: 'uppercase' }}>
+                                  {notif.category}
+                                </span>
+                                {isUnread && (
+                                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981' }} />
+                                )}
                               </div>
-                              <div style={{ fontSize: '0.7rem', color: '#64748B', marginTop: '0.1rem' }}>
-                                📅 {rep.date} • {rep.lab}
-                              </div>
+                              <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>{notif.time}</span>
                             </div>
-                            <button
-                              onClick={() => {
-                                alert(`Downloading official PDF for ${rep.title}`);
-                              }}
-                              style={{
-                                padding: '0.32rem 0.6rem',
-                                backgroundColor: '#E0F2F1',
-                                color: '#006B70',
-                                border: 'none',
-                                borderRadius: '8px',
-                                fontSize: '0.74rem',
-                                fontWeight: '800',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.25rem',
-                                flexShrink: 0
-                              }}
-                            >
-                              <Download size={12} /> PDF
-                            </button>
+
+                            <div style={{ fontSize: '0.82rem', fontWeight: '800', color: '#0F172A' }}>
+                              {notif.title}
+                            </div>
+                            <div style={{ fontSize: '0.74rem', color: '#475569', lineHeight: 1.35 }}>
+                              {notif.message}
+                            </div>
+
+                            {notif.action && (
+                              <div style={{ marginTop: '0.35rem', display: 'flex', justifyContent: 'flex-end' }}>
+                                <button
+                                  onClick={() => {
+                                    setReadNotificationIds(prev => Array.from(new Set([...prev, notif.id])));
+                                    notif.action.handler();
+                                  }}
+                                  style={{
+                                    padding: '0.3rem 0.65rem',
+                                    backgroundColor: '#006B70',
+                                    color: '#FFF',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '0.72rem',
+                                    fontWeight: '800',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  {notif.action.label}
+                                </button>
+                              </div>
+                            )}
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                        );
+                      })
+                    )}
                   </div>
 
                   {/* Dropdown Footer Action */}
                   <div style={{ padding: '0.75rem 1rem', backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <button
                       onClick={() => {
-                        setActiveTab('REPORTS');
+                        setActiveTab('ORDERS');
                         setShowNotificationsDropdown(false);
                       }}
                       style={{
@@ -742,7 +818,7 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
                         gap: '0.35rem'
                       }}
                     >
-                      <FolderHeart size={14} /> Open Digital Health Vault →
+                      <PackageCheck size={14} /> View All Diagnostic Orders →
                     </button>
                   </div>
                 </div>

@@ -1517,30 +1517,54 @@ export default function CareSeekerHomeTab({
                   </div>
                   <button
                     onClick={async () => {
-                      try {
-                        const res = await fetch('/api/v1/customer/smart-device', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            email: user?.email,
-                            phone: user?.phone,
-                            action: 'CONNECT',
-                            deviceType: dev.name
-                          })
-                        });
-                        const d = await res.json();
-                        if (d.success) {
-                          onUpdateDossier();
-                          setShowDeviceSyncModal(false);
-                          alert(`${dev.name} connected successfully! Vitals telemetry active.`);
+                      if (dev.name.includes('Bluetooth')) {
+                        // Real Web Bluetooth API check
+                        if (!navigator.bluetooth) {
+                          alert('Web Bluetooth API is not supported in this browser. Please use Chrome on Mac/Android or Edge.');
+                          return;
                         }
-                      } catch (e) {
-                        alert('Connection error: ' + e.message);
+                        try {
+                          const bleDevice = await navigator.bluetooth.requestDevice({
+                            acceptAllDevices: true,
+                            optionalServices: ['heart_rate', 'pulse_oximeter', 'health_thermometer', 'blood_pressure']
+                          });
+                          if (bleDevice) {
+                            const res = await fetch('/api/v1/customer/smart-device', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                email: user?.email,
+                                phone: user?.phone,
+                                action: 'CONNECT',
+                                deviceType: `${dev.name} (${bleDevice.name || 'Paired BLE Device'})`
+                              })
+                            });
+                            const d = await res.json();
+                            if (d.success) {
+                              onUpdateDossier();
+                              setShowDeviceSyncModal(false);
+                              alert(`Bluetooth Device "${bleDevice.name || 'Wireless Monitor'}" paired successfully!`);
+                            }
+                          }
+                        } catch (bleErr) {
+                          if (bleErr.name !== 'NotFoundError') {
+                            alert('Bluetooth pairing canceled or failed: ' + bleErr.message);
+                          }
+                        }
+                      } else {
+                        // Apple Health / Google Health Connect native bridge notice
+                        alert(
+                          `Apple Health & Google Health Connect require iOS / Android native permissions.\n\n` +
+                          `To sync continuous telemetry from Apple Watch or WearOS:\n` +
+                          `1. Install the MedMarg Mobile Companion App (TestFlight / Play Store Beta)\n` +
+                          `2. Or log your latest vital metrics manually via "+ Manual Log Vitals" below.\n\n` +
+                          `Web browsers cannot directly access your phone's HealthKit sandbox without the companion app.`
+                        );
                       }
                     }}
                     style={{ padding: '0.4rem 0.85rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800', cursor: 'pointer' }}
                   >
-                    Connect
+                    {dev.name.includes('Bluetooth') ? 'Scan BLE' : 'Setup Info'}
                   </button>
                 </div>
               ))}

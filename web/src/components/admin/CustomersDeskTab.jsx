@@ -202,15 +202,15 @@ export default function CustomersDeskTab() {
                     </span>
                   </td>
                   <td style={{ padding: '1rem', color: '#334155' }}>
-                    📍 {cust.city} ({cust.locations.length} Saved Address)
+                    📍 {cust.city || 'Tirupati'} ({(cust.locations || []).length} Saved Address)
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#B45309', backgroundColor: '#FEF3C7', padding: '0.2rem 0.55rem', borderRadius: '6px' }}>
-                      👨‍👩‍👧 {cust.familyMembers.length} Members
+                      👨‍👩‍👧 {(cust.familyMembers || []).length} Members
                     </span>
                   </td>
                   <td style={{ padding: '1rem', fontWeight: '900', color: '#059669' }}>
-                    📦 {cust.orderHistory.length} Orders Booked
+                    📦 {(cust.orderHistory || []).length} Orders Booked
                   </td>
                   <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
                     <button
@@ -244,9 +244,9 @@ export default function CustomersDeskTab() {
             <div style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', padding: '0 1.5rem' }}>
               {[
                 { key: 'PERSONAL', label: 'Health Profile' },
-                { key: 'LOCATIONS', label: `Saved Addresses (${selectedCustomer.locations.length})` },
-                { key: 'FAMILY', label: `Family Members (${selectedCustomer.familyMembers.length})` },
-                { key: 'ORDERS', label: `Diagnostic History (${selectedCustomer.orderHistory.length})` }
+                { key: 'LOCATIONS', label: `Saved Addresses (${(selectedCustomer.locations || []).length})` },
+                { key: 'FAMILY', label: `Family Members (${(selectedCustomer.familyMembers || []).length})` },
+                { key: 'ORDERS', label: `Diagnostic History (${(selectedCustomer.orderHistory || []).length})` }
               ].map(t => {
                 const isSel = dossierTab === t.key;
                 return (
@@ -313,7 +313,7 @@ export default function CustomersDeskTab() {
               {/* TAB 2: SAVED LOCATIONS */}
               {dossierTab === 'LOCATIONS' && (
                 <div style={{ display: 'grid', gap: '1rem' }}>
-                  {selectedCustomer.locations.map(loc => (
+                  {(selectedCustomer.locations || []).map(loc => (
                     <div key={loc.id} style={{ backgroundColor: '#F8FAFC', padding: '1rem', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -325,13 +325,16 @@ export default function CustomersDeskTab() {
                       <span style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800', fontFamily: 'monospace' }}>Pincode: {loc.pincode}</span>
                     </div>
                   ))}
+                  {(!selectedCustomer.locations || selectedCustomer.locations.length === 0) && (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#64748B' }}>No saved addresses.</div>
+                  )}
                 </div>
               )}
 
               {/* TAB 3: LINKED FAMILY MEMBERS */}
               {dossierTab === 'FAMILY' && (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-                  {selectedCustomer.familyMembers.map(fam => (
+                  {(selectedCustomer.familyMembers || []).map(fam => (
                     <div key={fam.id} style={{ backgroundColor: '#F8FAFC', padding: '1rem', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
                       <div style={{ fontWeight: '800', color: '#0F172A' }}>{fam.name}</div>
                       <div style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800', marginTop: '0.1rem' }}>{fam.relation}</div>
@@ -340,13 +343,16 @@ export default function CustomersDeskTab() {
                       </div>
                     </div>
                   ))}
+                  {(!selectedCustomer.familyMembers || selectedCustomer.familyMembers.length === 0) && (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#64748B' }}>No linked family members.</div>
+                  )}
                 </div>
               )}
 
               {/* TAB 4: DIAGNOSTIC ORDER HISTORY */}
               {dossierTab === 'ORDERS' && (
                 <div style={{ display: 'grid', gap: '1rem' }}>
-                  {selectedCustomer.orderHistory.map(ord => (
+                  {(selectedCustomer.orderHistory || []).map(ord => (
                     <div key={ord.id} style={{ backgroundColor: '#F8FAFC', padding: '1rem', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <div style={{ fontWeight: '800', color: '#006B70', fontFamily: 'monospace' }}>{ord.id} • {ord.date}</div>
@@ -363,6 +369,9 @@ export default function CustomersDeskTab() {
                       </div>
                     </div>
                   ))}
+                  {(!selectedCustomer.orderHistory || selectedCustomer.orderHistory.length === 0) && (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#64748B' }}>No diagnostic orders placed yet.</div>
+                  )}
                 </div>
               )}
             </div>
