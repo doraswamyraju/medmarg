@@ -910,6 +910,26 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
               setActiveTab('TRACK');
             }}
             handleOrderCall={handleOrderCall}
+            onReorder={(items, ord) => {
+              // Add all items from this order into the cart
+              items.forEach(it => {
+                addToCart({
+                  id: it.code || it.name,
+                  code: it.code || it.name,
+                  name: it.name,
+                  price: it.price || 499,
+                  sampleType: it.sampleType || 'SERUM',
+                  fasting: it.fasting || 'NO'
+                });
+              });
+              setShowCartDrawer(true);
+            }}
+            onOrderUpdated={(updatedOrd) => {
+              setAllOrders(prev => prev.map(o => o.id === updatedOrd.id ? updatedOrd : o));
+              if (activeOrder?.id === updatedOrd.id) {
+                setActiveOrder(updatedOrd);
+              }
+            }}
           />
         )}
 

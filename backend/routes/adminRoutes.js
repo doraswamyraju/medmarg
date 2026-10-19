@@ -878,5 +878,64 @@ router.get('/backups/download/:filename', (req, res) => {
     }
 });
 
+// ADMIN INVOICE CONFIGURATION & TAX PROFILE
+router.get('/invoice-settings', (req, res) => {
+    const settings = dbStore.invoiceSettings || {
+        companyName: 'MedMarg Healthcare & Multi-Lab Logistics Pvt Ltd',
+        gstin: '37AABCM8921F1ZX',
+        pan: 'AABCM8921F',
+        sacCode: '999312', // SAC code for medical & diagnostic testing services
+        gstRatePercent: 0, // Healthcare diagnostic services are exempt or 0% under GST SAC 999312, or 18% if administrative
+        stateName: 'Andhra Pradesh',
+        stateCode: '37',
+        registeredAddress: 'Plot 42, Ground & 1st Floor, Air Bypass Road, Tirupati, Andhra Pradesh - 517501',
+        contactEmail: 'billing@medmarg.com',
+        contactPhone: '+91 91799 79911',
+        authorizedSignatory: 'Authorized Signatory (MedMarg Diagnostics Hub)',
+        invoicePrefix: 'MM-INV-2026-',
+        notes: 'Medical & Diagnostic Pathological Services exempt under Sl. No. 74 of Notification No. 12/2017-Central Tax (Rate).'
+    };
+    res.json({ success: true, settings });
+});
+
+router.post('/invoice-settings', (req, res) => {
+    dbStore.invoiceSettings = {
+        ...(dbStore.invoiceSettings || {}),
+        ...req.body,
+        updatedAt: new Date().toISOString()
+    };
+    saveDbStore();
+    res.json({ success: true, settings: dbStore.invoiceSettings, message: 'GST Invoice settings updated successfully.' });
+});
+
+// RESCHEDULE OR CANCEL ORDER API
+router.post('/orders/:id/reschedule', (req, res) => {
+    const { id } = req.params;
+    const { date, slot, reason } = req.body;
+    const order = (dbStore.orders || []).find(o => o.id === id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    order.date = date || order.date;
+    order.slot = slot || order.slot;
+    order.rescheduleReason = reason || 'Customer requested new time slot';
+    order.rescheduledAt = new Date().toISOString();
+    saveDbStore();
+    res.json({ success: true, order, message: `Order #${id} successfully rescheduled to ${order.date} (${order.slot}).` });
+});
+
+router.post('/orders/:id/cancel', (req, res) => {
+    const { id } = req.params;
+    const { reason = 'Cancelled by Customer' } = req.body;
+    const order = (dbStore.orders || []).find(o => o.id === id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    order.status = 'CANCELLED';
+    order.cancellationReason = reason;
+    order.cancelledAt = new Date().toISOString();
+    saveDbStore();
+    res.json({ success: true, order, message: `Order #${id} has been cancelled.` });
+});
+
 module.exports = router;
+
 
