@@ -18,7 +18,8 @@ import {
   Clock,
   FileText,
   Download,
-  ShieldCheck
+  ShieldCheck,
+  MapPin
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { 
