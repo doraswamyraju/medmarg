@@ -144,6 +144,9 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
     }
   };
 
+  // Cart State (Array of Base Items)
+  const [cart, setCart] = useState([]);
+
   // Live Orders State (Direct Server Mirror, No Dummy Fallback)
   const [allOrders, setAllOrders] = useState([]);
   const [activeOrder, setActiveOrder] = useState(null);
