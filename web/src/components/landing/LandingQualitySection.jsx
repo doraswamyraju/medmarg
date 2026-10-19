@@ -21,7 +21,7 @@ export default function LandingQualitySection() {
         </div>
 
         {/* 2-Column Photo & Feature Showcase */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '2.5rem', marginBottom: '3.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '2.5rem', marginBottom: '3.5rem' }}>
           
           {/* Card 1: Certified Doorstep Phlebotomy */}
           <div 

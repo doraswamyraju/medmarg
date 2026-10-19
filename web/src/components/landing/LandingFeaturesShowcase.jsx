@@ -17,10 +17,10 @@ export default function LandingFeaturesShowcase() {
   return (
     <>
       {/* 🚀 FEATURE SHOWCASE A: LIVE PHLEBOTOMIST MAP TRACKER & IOT COLD-CHAIN TELEMETRY */}
-      <section id="tracker-feature" style={{ padding: '5rem 1.5rem', backgroundColor: '#0F172A', color: '#FFFFFF' }}>
+      <section id="tracker-feature" className="landing-feature-section" style={{ padding: '4.5rem 1.25rem', backgroundColor: '#0F172A', color: '#FFFFFF', overflow: 'hidden' }}>
         <div style={{ maxWidth: '1320px', margin: '0 auto' }}>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '4rem', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '3rem', alignItems: 'center' }}>
             
             {/* Left Column: Deep Feature Explanation */}
             <div>
@@ -145,10 +145,10 @@ export default function LandingFeaturesShowcase() {
       </section>
 
       {/* 📊 FEATURE SHOWCASE B: INTERACTIVE HEALTH VITALS RADAR & TREND CURVES */}
-      <section id="vitals-feature" style={{ padding: '5rem 1.5rem', backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
+      <section id="vitals-feature" className="landing-feature-section" style={{ padding: '4.5rem 1.25rem', backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0', overflow: 'hidden' }}>
         <div style={{ maxWidth: '1320px', margin: '0 auto' }}>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '4rem', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '3rem', alignItems: 'center' }}>
             
             {/* Left Column: Feature Explanation */}
             <div>
@@ -227,7 +227,7 @@ export default function LandingFeaturesShowcase() {
               </div>
 
               {/* Metric Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div style={{ backgroundColor: '#F8FAFC', padding: '1rem', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
                   <div style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '700' }}>
                     {activeVitalTab === 'SUGAR' ? 'FASTING GLUCOSE' : activeVitalTab === 'BP' ? 'BLOOD PRESSURE' : 'TOTAL CHOLESTEROL'}
@@ -277,10 +277,10 @@ export default function LandingFeaturesShowcase() {
       </section>
 
       {/* 📂 FEATURE SHOWCASE C: NABL HEALTH LOCKER & REPORT SYNC */}
-      <section id="locker-feature" style={{ padding: '5rem 1.5rem', backgroundColor: '#FFFFFF' }}>
+      <section id="locker-feature" className="landing-feature-section" style={{ padding: '4.5rem 1.25rem', backgroundColor: '#FFFFFF', overflow: 'hidden' }}>
         <div style={{ maxWidth: '1320px', margin: '0 auto' }}>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '4rem', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '3rem', alignItems: 'center' }}>
             
             {/* Left Column: Locker Preview Box */}
             <div style={{ backgroundColor: '#F8FAFC', borderRadius: '24px', border: '1px solid #E2E8F0', padding: '2rem' }}>
