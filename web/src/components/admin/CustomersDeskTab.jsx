@@ -24,30 +24,8 @@ export default function CustomersDeskTab() {
     allergies: 'Penicillin'
   });
 
-  // Customers Data with dynamic backend sync
-  const [customers, setCustomers] = useState([
-    {
-      id: 'CUST-1004',
-      name: 'Doraswamy Raju Meesala',
-      phone: '+91 83745 42478',
-      email: 'doraswamyraju.ca@gmail.com',
-      city: 'Tirupati',
-      abhaId: 'ABHA-8374-2026',
-      memberSince: 'Oct 2026',
-      age: 30,
-      gender: 'Male',
-      bloodGroup: 'O+',
-      chronicConditions: 'None',
-      allergies: 'None',
-      locations: [
-        { id: 'LOC-101', label: 'Home Address', fullAddress: 'Plot 42, Air Bypass Road, Tirupati, AP - 517501', pincode: '517501', isPrimary: true }
-      ],
-      familyMembers: [],
-      orderHistory: [
-        { id: 'MM-8921', date: 'Today 07:30 AM', items: 'Complete Blood Count (CBC) with ESR', amount: 299, status: 'EN_ROUTE', lab: 'MedMarg Central Processing Lab' }
-      ]
-    }
-  ]);
+  // Customers Data strictly from backend API
+  const [customers, setCustomers] = useState([]);
 
   const fetchCustomers = async () => {
     setIsRefreshing(true);
@@ -202,7 +180,7 @@ export default function CustomersDeskTab() {
                     </span>
                   </td>
                   <td style={{ padding: '1rem', color: '#334155' }}>
-                    📍 {cust.city || 'Tirupati'} ({(cust.locations || []).length} Saved Address)
+                    📍 {cust.city || '—'} ({(cust.locations || []).length} Saved {(cust.locations || []).length === 1 ? 'Address' : 'Addresses'})
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <span style={{ fontSize: '0.78rem', fontWeight: '800', color: '#B45309', backgroundColor: '#FEF3C7', padding: '0.2rem 0.55rem', borderRadius: '6px' }}>
