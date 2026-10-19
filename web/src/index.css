@@ -115,3 +115,85 @@ body {
   background: #CBD5E1;
   border-radius: 4px;
 }
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Scroll Reveal & Hover Effects */
+.landing-reveal-card {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease;
+}
+
+.landing-reveal-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 24px 48px -12px rgba(0, 95, 96, 0.16);
+}
+
+.landing-glow-on-hover {
+  transition: all 0.25s ease;
+}
+
+.landing-glow-on-hover:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 25px -5px rgba(0, 168, 150, 0.4);
+}
+
+.landing-image-zoom {
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.landing-image-container:hover .landing-image-zoom {
+  transform: scale(1.06);
+}
+
+/* 📱 Responsive Mobile Rules for Landing Page */
+.cta-text-short {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  .desktop-only-nav {
+    display: none !important;
+  }
+
+  .mobile-hamburger-btn {
+    display: flex !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .landing-hero-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2.5rem !important;
+  }
+
+  .cta-text-full {
+    display: none !important;
+  }
+
+  .cta-text-short {
+    display: inline !important;
+  }
+
+  /* Make hero headlines scale on phone screens */
+  .landing-hero-grid h1 {
+    font-size: 2.1rem !important;
+    line-height: 1.2 !important;
+  }
+
+  .landing-hero-grid p {
+    font-size: 0.95rem !important;
+  }
+
+  /* Form & card wrappers */
+  .landing-partner-grid {
+    padding: 1.5rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-hero-grid h1 {
+    font-size: 1.75rem !important;
+  }
+}
