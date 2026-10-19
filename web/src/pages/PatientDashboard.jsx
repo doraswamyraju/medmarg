@@ -126,11 +126,12 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
     setShowPhoneModal(false);
   };
 
-  // Saved Addresses State
-  const [savedAddresses, setSavedAddresses] = useState([
-    { id: 'addr_1', label: 'Home', address: 'Plot 42, Air Bypass Road, Tirupati, AP - 517501', isDefault: true, city: 'Tirupati, AP', pincode: '517501' },
-    { id: 'addr_2', label: 'Parents', address: 'Door 12-4/A, Gandhi Road, Tirupati, AP - 517502', isDefault: false, city: 'Tirupati, AP', pincode: '517502' }
-  ]);
+  // Saved Addresses State (Direct Database Mirror)
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [familyMembers, setFamilyMembers] = useState([{ id: 'SELF', name: 'Self', relation: 'Self' }]);
+  const [customerVitals, setCustomerVitals] = useState({});
+  const [smartDeviceStatus, setSmartDeviceStatus] = useState({ connected: false });
+  const [recommendationRules, setRecommendationRules] = useState([]);
 
   // Selected Processing Laboratory (MedMarg, Thyrocare, Lalpath) with persistence
   const [selectedLabProvider, setSelectedLabProvider] = useState(getPreferredLab);
@@ -145,29 +146,9 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
   // Cart State (Array of Base Items)
   const [cart, setCart] = useState([]);
 
-  // Live Orders State
-  const [allOrders, setAllOrders] = useState([
-    {
-      id: 'MM-LAB-9842',
-      date: '31 Aug 2026',
-      slot: '07:30 AM - 08:30 AM',
-      address: 'Plot 42, Air Bypass Road, Tirupati, AP - 517501',
-      phleboName: 'Ramesh Kumar (Certified Phlebotomist)',
-      phleboPhone: '+91 98765 11223',
-      status: 'ENROUTE',
-      eta: '14 Mins',
-      tempTelemetry: '3.8°C (Optimal Cold-Chain)',
-      handoverOtp: '4821',
-      items: [
-        { name: 'MedMarg Master Health Checkup', price: 1499 },
-        { name: 'Thyroid Profile Total (T3/T4/TSH)', price: 299 }
-      ],
-      totalAmount: 1798,
-      paymentStatus: 'PAID'
-    }
-  ]);
-
-  const [activeOrder, setActiveOrder] = useState(allOrders[0]);
+  // Live Orders State (Direct Server Mirror, No Dummy Fallback)
+  const [allOrders, setAllOrders] = useState([]);
+  const [activeOrder, setActiveOrder] = useState(null);
 
   // Sync catalog from backend
   useEffect(() => {
@@ -193,18 +174,57 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
       .catch(() => {});
   }, []);
 
-  // Fetch live orders from backend
+  // Fetch live orders & customer dossier from backend
   useEffect(() => {
+    const userEmail = user?.email || currentUserProfile?.email || '';
+    const userPhone = user?.phone || currentUserProfile?.phone || '';
+
+    // 1. Live Orders
     fetch(`${API_BASE}/api/v1/patient/orders`)
       .then(res => res.json())
       .then(data => {
-        if (data.success && data.orders && data.orders.length > 0) {
+        if (data.success && Array.isArray(data.orders)) {
           setAllOrders(data.orders);
-          setActiveOrder(data.orders[0]);
+          setActiveOrder(data.orders[0] || null);
         }
       })
       .catch(() => {});
-  }, []);
+
+    // 2. Customer Dossier (Locations, Family, Vitals, Rules)
+    const dossierQuery = new URLSearchParams();
+    if (userEmail) dossierQuery.append('email', userEmail);
+    if (userPhone) dossierQuery.append('phone', userPhone);
+
+    fetch(`${API_BASE}/api/v1/customer/dossier?${dossierQuery.toString()}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.customer) {
+          if (Array.isArray(data.customer.locations)) {
+            setSavedAddresses(data.customer.locations.map(loc => ({
+              id: loc.id,
+              label: loc.label || 'Home',
+              address: loc.fullAddress,
+              isDefault: !!loc.isPrimary,
+              city: loc.city || 'Tirupati, AP',
+              pincode: loc.pincode || '517501'
+            })));
+          }
+          if (Array.isArray(data.customer.familyMembers) && data.customer.familyMembers.length > 0) {
+            setFamilyMembers(data.customer.familyMembers);
+          }
+          if (data.customer.vitals) {
+            setCustomerVitals(data.customer.vitals);
+          }
+          if (data.customer.smartDevice) {
+            setSmartDeviceStatus(data.customer.smartDevice);
+          }
+          if (data.smartRecommendationsRules) {
+            setRecommendationRules(data.smartRecommendationsRules);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [user, currentUserProfile]);
 
   // Sync preferred lab across window events
   useEffect(() => {
@@ -465,11 +485,29 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
         {/* Top Header Bar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem', position: 'relative' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '0.75rem', color: '#006B70', backgroundColor: '#E0F2F1', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '800' }}>
-                📍 Serving in Tirupati, AP
-              </span>
-              <span style={{ fontSize: '0.75rem', color: '#059669', backgroundColor: '#D1FAE5', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: '800' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => setShowAddressModal(true)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  fontSize: '0.75rem',
+                  color: '#006B70',
+                  backgroundColor: '#E0F2F1',
+                  border: '1px solid #99F6E4',
+                  padding: '0.25rem 0.65rem',
+                  borderRadius: '20px',
+                  fontWeight: '800',
+                  cursor: 'pointer'
+                }}
+                title="Change delivery location"
+              >
+                <MapPin size={12} color="#006B70" />
+                <span>{savedAddresses.find(a => a.isDefault)?.address?.split(',')[0] || 'Tirupati, AP'}</span>
+                <span style={{ fontSize: '0.68rem', color: '#0F766E' }}>▼ Change</span>
+              </button>
+              <span style={{ fontSize: '0.75rem', color: '#059669', backgroundColor: '#D1FAE5', padding: '0.25rem 0.65rem', borderRadius: '20px', fontWeight: '800' }}>
                 ⚡ 60-Min Phlebotomy Available
               </span>
             </div>
@@ -749,6 +787,36 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
             liveOrdersCount={allOrders.length}
             activeOrder={activeOrder}
             allOrders={allOrders}
+            familyMembers={familyMembers}
+            savedAddresses={savedAddresses}
+            customerVitals={customerVitals}
+            smartDeviceStatus={smartDeviceStatus}
+            recommendationRules={recommendationRules}
+            onUpdateDossier={() => {
+              // Refresh dossier
+              const userEmail = user?.email || currentUserProfile?.email || '';
+              const userPhone = user?.phone || currentUserProfile?.phone || '';
+              const dossierQuery = new URLSearchParams();
+              if (userEmail) dossierQuery.append('email', userEmail);
+              if (userPhone) dossierQuery.append('phone', userPhone);
+              fetch(`${API_BASE}/api/v1/customer/dossier?${dossierQuery.toString()}`)
+                .then(r => r.json())
+                .then(data => {
+                  if (data.customer?.vitals) setCustomerVitals(data.customer.vitals);
+                  if (data.customer?.smartDevice) setSmartDeviceStatus(data.customer.smartDevice);
+                  if (data.customer?.locations) {
+                    setSavedAddresses(data.customer.locations.map(loc => ({
+                      id: loc.id,
+                      label: loc.label || 'Home',
+                      address: loc.fullAddress,
+                      isDefault: !!loc.isPrimary,
+                      city: loc.city || 'Tirupati, AP',
+                      pincode: loc.pincode || '517501'
+                    })));
+                  }
+                  if (data.customer?.familyMembers) setFamilyMembers(data.customer.familyMembers);
+                }).catch(() => {});
+            }}
           />
         )}
 

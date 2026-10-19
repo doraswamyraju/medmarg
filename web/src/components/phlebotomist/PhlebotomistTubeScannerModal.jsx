@@ -31,6 +31,14 @@ export default function PhlebotomistTubeScannerModal({
   const [qrLoading, setQrLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Bedside Patient Vitals Checkup State (Recorded by Phlebo upon sample draw)
+  const [recordVitalsCheckup, setRecordVitalsCheckup] = useState(false);
+  const [phleboBp, setPhleboBp] = useState('120/80');
+  const [phleboPulse, setPhleboPulse] = useState('74');
+  const [phleboSpo2, setPhleboSpo2] = useState('98');
+  const [phleboSugar, setPhleboSugar] = useState('');
+  const [phleboTemp, setPhleboTemp] = useState('98.4');
+
   // Check if prepaid
   const isPrepaid = activePickupModal?.paymentStatus === 'PAID_ONLINE' || 
     activePickupModal?.paymentStatus === 'PAID_DOORSTEP_QR' ||
@@ -110,7 +118,14 @@ export default function PhlebotomistTubeScannerModal({
           arrivalPhoto,
           samplePhotos,
           paymentDone: isPrepaid || paymentDone,
-          sendReviewRequest
+          sendReviewRequest,
+          vitals: recordVitalsCheckup ? {
+            bp: phleboBp,
+            pulse: phleboPulse,
+            spo2: phleboSpo2,
+            sugar: phleboSugar || null,
+            temp: phleboTemp
+          } : null
         });
       }
       setActivePickupModal(null);
@@ -383,6 +398,85 @@ export default function PhlebotomistTubeScannerModal({
                   <Camera size={13} /> + Add Sample Pic
                 </button>
               </div>
+            </div>
+
+            {/* Bedside Patient Vitals Checkup (Free Clinical Value-Add) */}
+            <div style={{ backgroundColor: '#F0FDFA', padding: '1rem', borderRadius: '14px', border: '1.5px solid #99F6E4', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '1rem' }}>🩺</span>
+                  <span style={{ fontSize: '0.84rem', fontWeight: '900', color: '#006B70' }}>
+                    Record Patient Vitals (Doorstep Clinical Checkup)
+                  </span>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer', fontSize: '0.78rem', fontWeight: '800', color: '#0F172A' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={recordVitalsCheckup} 
+                    onChange={(e) => setRecordVitalsCheckup(e.target.checked)} 
+                    style={{ width: '16px', height: '16px', accentColor: '#006B70' }}
+                  />
+                  <span>Record Vitals</span>
+                </label>
+              </div>
+              <div style={{ fontSize: '0.74rem', color: '#64748B', marginBottom: recordVitalsCheckup ? '0.75rem' : '0' }}>
+                Optional: Measure patient's BP, Pulse or SpO₂ during blood draw to automatically sync into their Health Vault and Admin records.
+              </div>
+
+              {recordVitalsCheckup && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.5rem', marginTop: '0.6rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.68rem', fontWeight: '800', color: '#475569', marginBottom: '0.2rem' }}>Blood Pressure (mmHg)</label>
+                    <input 
+                      type="text" 
+                      placeholder="120/80" 
+                      value={phleboBp} 
+                      onChange={(e) => setPhleboBp(e.target.value)}
+                      style={{ width: '100%', padding: '0.4rem 0.5rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.82rem', fontWeight: '700' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.68rem', fontWeight: '800', color: '#475569', marginBottom: '0.2rem' }}>Pulse (BPM)</label>
+                    <input 
+                      type="number" 
+                      placeholder="74" 
+                      value={phleboPulse} 
+                      onChange={(e) => setPhleboPulse(e.target.value)}
+                      style={{ width: '100%', padding: '0.4rem 0.5rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.82rem', fontWeight: '700' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.68rem', fontWeight: '800', color: '#475569', marginBottom: '0.2rem' }}>SpO₂ (%)</label>
+                    <input 
+                      type="number" 
+                      placeholder="98" 
+                      value={phleboSpo2} 
+                      onChange={(e) => setPhleboSpo2(e.target.value)}
+                      style={{ width: '100%', padding: '0.4rem 0.5rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.82rem', fontWeight: '700' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.68rem', fontWeight: '800', color: '#475569', marginBottom: '0.2rem' }}>Sugar (mg/dL)</label>
+                    <input 
+                      type="number" 
+                      placeholder="Fasting / Post" 
+                      value={phleboSugar} 
+                      onChange={(e) => setPhleboSugar(e.target.value)}
+                      style={{ width: '100%', padding: '0.4rem 0.5rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.82rem', fontWeight: '700' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.68rem', fontWeight: '800', color: '#475569', marginBottom: '0.2rem' }}>Temp (°F)</label>
+                    <input 
+                      type="text" 
+                      placeholder="98.4" 
+                      value={phleboTemp} 
+                      onChange={(e) => setPhleboTemp(e.target.value)}
+                      style={{ width: '100%', padding: '0.4rem 0.5rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.82rem', fontWeight: '700' }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <button
