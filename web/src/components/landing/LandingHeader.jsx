@@ -33,13 +33,13 @@ export default function LandingHeader({ onNavigateLogin, onOpenAppModal }) {
     <header style={{ position: 'sticky', top: 0, zIndex: 1000, backgroundColor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', boxShadow: '0 4px 20px -5px rgba(0, 95, 96, 0.08)' }}>
       
       {/* Top Notification Bar */}
-      <div style={{ backgroundColor: '#005F60', color: '#FFFFFF', padding: '0.45rem 2rem', fontSize: '0.8rem', fontWeight: '700', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="top-notification-bar" style={{ backgroundColor: '#005F60', color: '#FFFFFF', padding: '0.45rem 1.5rem', fontSize: '0.8rem', fontWeight: '700', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Sparkles size={14} color="#F59E0B" />
-          <span>MedMarg Diagnostics: 100% NABL Certified | Free Doorstep Sample Pickup</span>
+          <Sparkles size={14} color="#F59E0B" style={{ flexShrink: 0 }} />
+          <span>100% NABL Certified | Free Doorstep Pickup</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.78rem' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#E0F2F1' }}>
+        <div className="top-helpline" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.78rem' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#E0F2F1', whiteSpace: 'nowrap' }}>
             <PhoneCall size={13} color="#F59E0B" /> Helpline: <strong>+91 98765 43210</strong>
           </span>
         </div>

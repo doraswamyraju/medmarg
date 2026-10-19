@@ -163,9 +163,18 @@ html {
 }
 
 @media (max-width: 768px) {
+  .top-notification-bar {
+    padding: 0.35rem 0.75rem !important;
+    font-size: 0.74rem !important;
+  }
+
+  .top-helpline {
+    display: none !important;
+  }
+
   .landing-hero-grid {
     grid-template-columns: 1fr !important;
-    gap: 2.5rem !important;
+    gap: 2rem !important;
   }
 
   .cta-text-full {
@@ -178,22 +187,53 @@ html {
 
   /* Make hero headlines scale on phone screens */
   .landing-hero-grid h1 {
-    font-size: 2.1rem !important;
-    line-height: 1.2 !important;
+    font-size: 1.85rem !important;
+    line-height: 1.25 !important;
   }
 
   .landing-hero-grid p {
-    font-size: 0.95rem !important;
+    font-size: 0.9rem !important;
+  }
+
+  /* Compact Search bar on phones */
+  .landing-search-box {
+    padding: 0.45rem 0.65rem !important;
+  }
+
+  .landing-search-box input {
+    font-size: 0.88rem !important;
+  }
+
+  .landing-search-btn {
+    padding: 0.6rem 0.95rem !important;
+    font-size: 0.82rem !important;
+  }
+
+  .search-btn-text {
+    display: none !important;
   }
 
   /* Form & card wrappers */
   .landing-partner-grid {
     padding: 1.5rem !important;
   }
+
+  .landing-feature-section {
+    padding: 3.5rem 1rem !important;
+  }
+
+  .landing-feature-section h2 {
+    font-size: 1.85rem !important;
+    line-height: 1.25 !important;
+  }
 }
 
 @media (max-width: 480px) {
   .landing-hero-grid h1 {
-    font-size: 1.75rem !important;
+    font-size: 1.6rem !important;
+  }
+
+  .landing-feature-section h2 {
+    font-size: 1.6rem !important;
   }
 }

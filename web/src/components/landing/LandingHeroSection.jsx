@@ -76,21 +76,41 @@ export default function LandingHeroSection({
 
   const [hoveredPill, setHoveredPill] = useState(null);
   const [isCardHovered, setIsCardHovered] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+
+  // Parallax Scroll Tracking
+  useEffect(() => {
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setScrollY(window.scrollY);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <section style={{ 
-      backgroundColor: '#071A17', 
-      backgroundImage: 'linear-gradient(135deg, rgba(7, 26, 23, 0.90) 0%, rgba(10, 38, 34, 0.88) 100%), url("/hero_medical_bg.jpg")',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      backgroundRepeat: 'no-repeat',
-      padding: '4rem 1.5rem 6.5rem', 
-      position: 'relative', 
-      zIndex: 100, 
-      overflow: 'visible',
-      boxShadow: 'inset 0 -20px 40px rgba(0,0,0,0.4)'
-    }}>
-      {/* Decorative Ambient Radial Glow */}
+    <section 
+      className="landing-hero-section"
+      style={{ 
+        backgroundColor: '#071A17', 
+        backgroundImage: 'linear-gradient(135deg, rgba(7, 26, 23, 0.90) 0%, rgba(10, 38, 34, 0.88) 100%), url("/hero_medical_bg.jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: `center calc(50% + ${scrollY * 0.35}px)`,
+        backgroundRepeat: 'no-repeat',
+        padding: '3.5rem 1.25rem 6.5rem', 
+        position: 'relative', 
+        zIndex: 100, 
+        overflow: 'hidden',
+        boxShadow: 'inset 0 -20px 40px rgba(0,0,0,0.4)'
+      }}
+    >
+      {/* Decorative Ambient Radial Glow with Parallax Floating */}
       <div style={{
         position: 'absolute',
         top: '10%',
@@ -98,12 +118,28 @@ export default function LandingHeroSection({
         width: '450px',
         height: '450px',
         borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(0, 191, 165, 0.18) 0%, transparent 70%)',
+        background: 'radial-gradient(circle, rgba(0, 191, 165, 0.22) 0%, transparent 70%)',
         pointerEvents: 'none',
-        filter: 'blur(40px)'
+        filter: 'blur(50px)',
+        transform: `translateY(${scrollY * 0.18}px)`,
+        transition: 'transform 0.1s ease-out'
       }} />
 
-      <div className="landing-hero-grid" style={{ maxWidth: '1320px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '3.5rem', alignItems: 'start', position: 'relative', zIndex: 101 }}>
+      <div style={{
+        position: 'absolute',
+        bottom: '15%',
+        right: '5%',
+        width: '380px',
+        height: '380px',
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%)',
+        pointerEvents: 'none',
+        filter: 'blur(45px)',
+        transform: `translateY(${-scrollY * 0.12}px)`,
+        transition: 'transform 0.1s ease-out'
+      }} />
+
+      <div className="landing-hero-grid" style={{ maxWidth: '1320px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem', alignItems: 'start', position: 'relative', zIndex: 101 }}>
         
         {/* Left Column: Carousel & Vibrant Search */}
         <div style={{ position: 'relative', zIndex: 102, minWidth: 0 }}>
@@ -210,46 +246,51 @@ export default function LandingHeroSection({
           </div>
 
           {/* 🌟 VIBRANT LIVE AUTO-COMPLETE SEARCH BAR */}
-          <div ref={searchContainerRef} style={{ position: 'relative', maxWidth: '640px', zIndex: 103 }}>
-            <div style={{ 
-              backgroundColor: '#FFFFFF', 
-              padding: '0.65rem 0.85rem', 
-              borderRadius: '22px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.75rem', 
-              boxShadow: '0 25px 60px rgba(0,0,0,0.5), 0 0 0 3.5px #005F60', 
-              border: 'none',
-              position: 'relative',
-              zIndex: 104,
-              transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-            }}>
-              <Search size={24} color="#005F60" />
+          <div ref={searchContainerRef} style={{ position: 'relative', maxWidth: '640px', zIndex: 103, width: '100%' }}>
+            <div 
+              className="landing-search-box"
+              style={{ 
+                backgroundColor: '#FFFFFF', 
+                padding: '0.65rem 0.85rem', 
+                borderRadius: '22px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.65rem', 
+                boxShadow: '0 25px 60px rgba(0,0,0,0.5), 0 0 0 3.5px #005F60', 
+                border: 'none',
+                position: 'relative',
+                zIndex: 104,
+                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                flexWrap: 'nowrap'
+              }}
+            >
+              <Search size={22} color="#005F60" style={{ flexShrink: 0 }} />
               <input
                 type="text"
-                placeholder="Type test name (e.g. HbA1c, Thyroid, Lipid, CBC, Liver)..."
+                placeholder="Search tests (HbA1c, Lipid, CBC, Liver)..."
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                   setIsSearchFocused(true);
                 }}
                 onFocus={() => setIsSearchFocused(true)}
-                style={{ flex: 1, border: 'none', outline: 'none', fontSize: '1.02rem', fontWeight: '700', color: '#0F172A', backgroundColor: 'transparent' }}
+                style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', fontSize: '0.96rem', fontWeight: '700', color: '#0F172A', backgroundColor: 'transparent' }}
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px' }}>
+                <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', padding: '4px', flexShrink: 0 }}>
                   <X size={18} />
                 </button>
               )}
               <button 
                 onClick={onNavigateLogin} 
+                className="landing-search-btn"
                 style={{ 
-                  padding: '0.85rem 1.6rem', 
+                  padding: '0.75rem 1.35rem', 
                   backgroundColor: '#005F60', 
                   color: '#FFF', 
                   border: 'none', 
                   borderRadius: '16px', 
-                  fontSize: '0.92rem', 
+                  fontSize: '0.88rem', 
                   fontWeight: '900', 
                   cursor: 'pointer', 
                   display: 'flex', 
@@ -257,6 +298,7 @@ export default function LandingHeroSection({
                   gap: '0.45rem', 
                   boxShadow: '0 6px 20px rgba(0,95,96,0.4)', 
                   whiteSpace: 'nowrap',
+                  flexShrink: 0,
                   transition: 'transform 0.15s ease, background-color 0.15s ease'
                 }}
                 onMouseEnter={e => {
@@ -268,7 +310,7 @@ export default function LandingHeroSection({
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
-                Search & Book <ArrowRight size={16} />
+                <span className="search-btn-text">Search</span> <ArrowRight size={16} />
               </button>
             </div>
 

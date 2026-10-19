@@ -239,7 +239,7 @@ export default function LandingCatalogSection({
 
         {/* 1. HEALTH PACKAGES GRID WITH VIBRANT HOVER LIFT */}
         {catalogViewType === 'PACKAGES' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '2rem' }}>
             {displayedPackages
               .filter(p => !catalogSectionSearch || p.name.toLowerCase().includes(catalogSectionSearch.toLowerCase()))
               .slice(0, 9)
@@ -354,7 +354,7 @@ export default function LandingCatalogSection({
 
         {/* 2. ORGAN PROFILES & PANELS GRID */}
         {catalogViewType === 'PROFILES' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.75rem' }}>
             {allProfiles
               .filter(p => !catalogSectionSearch || p.name.toLowerCase().includes(catalogSectionSearch.toLowerCase()) || p.code?.toLowerCase().includes(catalogSectionSearch.toLowerCase()))
               .slice(0, 12)
@@ -438,7 +438,7 @@ export default function LandingCatalogSection({
 
         {/* 3. INDIVIDUAL TESTS GRID (916+ Tests) WITH HOVER GLOW */}
         {catalogViewType === 'TESTS' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.4rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.4rem' }}>
             {allTests
               .filter(t => !catalogSectionSearch || t.name.toLowerCase().includes(catalogSectionSearch.toLowerCase()) || t.code?.toLowerCase().includes(catalogSectionSearch.toLowerCase()))
               .slice(0, 18)
