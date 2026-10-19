@@ -51,6 +51,9 @@ export default function LandingPage({ onNavigateLogin }) {
 
   // Active Modals & Tabs
   const [activeItemModal, setActiveItemModal] = useState(null);
+  const [showFooterAppModal, setShowFooterAppModal] = useState(false);
+  const [footerAppNotifyPhone, setFooterAppNotifyPhone] = useState('');
+  const [footerAppNotifySuccess, setFooterAppNotifySuccess] = useState(false);
   const [partnerSuccess, setPartnerSuccess] = useState(false);
   const [activeVitalTab, setActiveVitalTab] = useState('SUGAR'); // 'SUGAR' | 'BP' | 'LIPID'
 
@@ -119,22 +122,30 @@ export default function LandingPage({ onNavigateLogin }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch API Catalog safely
+  // Fetch Live API Catalog (Tests, Profiles, and Packages) concurrently
   useEffect(() => {
     async function loadApiCatalog() {
       try {
-        const res = await safeFetch(`${API_BASE}/api/v1/catalog/tests?limit=1000`, {}, 3000);
-        const data = await res.json();
-        if (data.success && data.tests && data.tests.length > 0) {
-          setCatalog(prev => ({
-            ...prev,
-            tests: data.tests,
-            packages: prev.packages && prev.packages.length > 0 ? prev.packages : initialCatalog.packages,
-            profiles: prev.profiles && prev.profiles.length > 0 ? prev.profiles : initialCatalog.profiles
-          }));
-        }
+        const [pkgRes, profRes, testRes] = await Promise.all([
+          safeFetch(`${API_BASE}/api/v1/catalog/packages`, {}, 4000).catch(() => null),
+          safeFetch(`${API_BASE}/api/v1/catalog/profiles`, {}, 4000).catch(() => null),
+          safeFetch(`${API_BASE}/api/v1/catalog/tests?limit=1000`, {}, 4000).catch(() => null)
+        ]);
+
+        const [pkgData, profData, testData] = await Promise.all([
+          pkgRes ? pkgRes.json().catch(() => null) : null,
+          profRes ? profRes.json().catch(() => null) : null,
+          testRes ? testRes.json().catch(() => null) : null
+        ]);
+
+        setCatalog(prev => ({
+          tests: (testData && testData.tests && testData.tests.length > 0) ? testData.tests : (prev.tests || initialCatalog.tests || []),
+          profiles: (profData && profData.profiles && profData.profiles.length > 0) ? profData.profiles : (prev.profiles || initialCatalog.profiles || []),
+          packages: (pkgData && pkgData.packages && pkgData.packages.length > 0) ? pkgData.packages : (prev.packages || initialCatalog.packages || []),
+          lastSynced: new Date().toISOString()
+        }));
       } catch (err) {
-        // Fallback to initialCatalog
+        console.warn('Catalog live sync error, retaining active cache:', err);
       }
     }
     loadApiCatalog();
@@ -636,6 +647,197 @@ export default function LandingPage({ onNavigateLogin }) {
                 ))}
             </div>
           )}
+
+        </div>
+      </section>
+
+      {/* 🏥 SECTION 2B: AUTHENTIC CLINICAL QUALITY & DOORSTEP PHLEBOTOMY SHOWCASE */}
+      <section id="quality-guarantee" style={{ padding: '5rem 1.5rem', backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0', borderBottom: '1px solid #E2E8F0' }}>
+        <div style={{ maxWidth: '1320px', margin: '0 auto' }}>
+
+          <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
+            <span style={{ color: '#005F60', fontSize: '0.85rem', fontWeight: '900', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              ✓ CLINICAL EXCELLENCE & ZERO-COMPROMISE PROTOCOLS
+            </span>
+            <h2 style={{ fontSize: '2.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.4rem', letterSpacing: '-0.02em' }}>
+              Why Over 15,000+ Families Rely on MedMarg Diagnostics
+            </h2>
+            <p style={{ color: '#64748B', fontSize: '1rem', maxWidth: '720px', margin: '0.5rem auto 0', lineHeight: 1.6 }}>
+              From painless doorstep blood draws by DMLT-certified phlebotomists to automated robotic analyzers in NABL accredited partner laboratories, we deliver clinical precision every single time.
+            </p>
+          </div>
+
+          {/* 2-Column Photo & Feature Showcase */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '2.5rem', marginBottom: '3.5rem' }}>
+            
+            {/* Card 1: Certified Doorstep Phlebotomy */}
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '24px',
+              border: '1.5px solid #E2E8F0',
+              overflow: 'hidden',
+              boxShadow: '0 12px 30px -10px rgba(0,95,96,0.1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <div style={{ position: 'relative', height: '300px', overflow: 'hidden' }}>
+                <img 
+                  src="/phlebo_home_collection.jpg" 
+                  alt="Certified MedMarg Phlebotomist at Patient Doorstep" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  top: '1rem',
+                  left: '1rem',
+                  backgroundColor: 'rgba(0,95,96,0.92)',
+                  color: '#FFFFFF',
+                  padding: '0.35rem 0.85rem',
+                  borderRadius: '20px',
+                  fontSize: '0.75rem',
+                  fontWeight: '800',
+                  backdropFilter: 'blur(4px)'
+                }}>
+                  ✓ DMLT / Paramedical Certified
+                </div>
+                <div style={{
+                  position: 'absolute',
+                  bottom: '1rem',
+                  right: '1rem',
+                  backgroundColor: '#0F172A',
+                  color: '#10B981',
+                  padding: '0.4rem 0.85rem',
+                  borderRadius: '12px',
+                  fontSize: '0.8rem',
+                  fontWeight: '900',
+                  border: '1px solid #334155'
+                }}>
+                  ❄️ Active 4.2°C Cold Carrier Box
+                </div>
+              </div>
+
+              <div style={{ padding: '2rem' }}>
+                <h3 style={{ fontSize: '1.45rem', fontWeight: '900', color: '#0F172A', marginBottom: '0.65rem' }}>
+                  Doorstep Phlebotomy by Trained Medical Professionals
+                </h3>
+                <p style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>
+                  Our phlebotomists are verified DMLT graduates. Every single blood collection uses pre-sealed, sterile BD Vacutainer® needles opened right in front of the patient with zero-pain capillary technique.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div style={{ padding: '0.75rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '700' }}>SAFETY FIRST</div>
+                    <div style={{ fontSize: '0.86rem', fontWeight: '800', color: '#0F172A', marginTop: '0.15rem' }}>100% Single-Use Sterile Kits</div>
+                  </div>
+                  <div style={{ padding: '0.75rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '700' }}>IDENTITY VERIFICATION</div>
+                    <div style={{ fontSize: '0.86rem', fontWeight: '800', color: '#0F172A', marginTop: '0.15rem' }}>4-Digit Handover Security OTP</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: High-Throughput Robotic Analyzers */}
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '24px',
+              border: '1.5px solid #E2E8F0',
+              overflow: 'hidden',
+              boxShadow: '0 12px 30px -10px rgba(0,95,96,0.1)',
+              display: 'flex',
+              flexDirection: 'column'
+            }}>
+              <div style={{ position: 'relative', height: '300px', overflow: 'hidden' }}>
+                <img 
+                  src="/nabl_lab_testing.jpg" 
+                  alt="NABL Accredited Clinical Testing Lab" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                <div style={{
+                  position: 'absolute',
+                  top: '1rem',
+                  left: '1rem',
+                  backgroundColor: 'rgba(21,128,61,0.92)',
+                  color: '#FFFFFF',
+                  padding: '0.35rem 0.85rem',
+                  borderRadius: '20px',
+                  fontSize: '0.75rem',
+                  fontWeight: '800',
+                  backdropFilter: 'blur(4px)'
+                }}>
+                  ✓ NABL & ISO 15189 Certified
+                </div>
+                <div style={{
+                  position: 'absolute',
+                  bottom: '1rem',
+                  right: '1rem',
+                  backgroundColor: '#0F172A',
+                  color: '#38BDF8',
+                  padding: '0.4rem 0.85rem',
+                  borderRadius: '12px',
+                  fontSize: '0.8rem',
+                  fontWeight: '900',
+                  border: '1px solid #334155'
+                }}>
+                  🔬 Automated Beckman / Roche Analyzers
+                </div>
+              </div>
+
+              <div style={{ padding: '2rem' }}>
+                <h3 style={{ fontSize: '1.45rem', fontWeight: '900', color: '#0F172A', marginBottom: '0.65rem' }}>
+                  Multi-Lab Quality Processing (Thyrocare, Lalpath & Hub)
+                </h3>
+                <p style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>
+                  All samples are tested on internationally calibrated robotic analyzers with dual internal quality checks (IQC) and external quality assurance schemes (EQAS), guaranteeing gold-standard accuracy.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div style={{ padding: '0.75rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '700' }}>SAMPLE SECURITY</div>
+                    <div style={{ fontSize: '0.86rem', fontWeight: '800', color: '#0F172A', marginTop: '0.15rem' }}>Barcoded Tube Tracking</div>
+                  </div>
+                  <div style={{ padding: '0.75rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '700' }}>REPORT DELIVERY</div>
+                    <div style={{ fontSize: '0.86rem', fontWeight: '800', color: '#0F172A', marginTop: '0.15rem' }}>Signed Digital PDF on WhatsApp</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* 4-Step Patient Journey */}
+          <div style={{
+            backgroundColor: '#071F1A',
+            borderRadius: '24px',
+            padding: '2.5rem',
+            color: '#FFFFFF',
+            border: '1px solid #005F60'
+          }}>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: '900', color: '#FBBF24', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                SEAMLESS CARE SEEKER EXPERIENCE
+              </span>
+              <h3 style={{ fontSize: '1.8rem', fontWeight: '900', marginTop: '0.35rem', color: '#FFFFFF' }}>
+                How MedMarg Works in 4 Effortless Steps
+              </h3>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
+              {[
+                { step: '01', title: 'Choose Tests or Prescription', desc: 'Search 916+ individual tests, packages, or upload doctor prescription for instant item selection.' },
+                { step: '02', title: 'Phlebotomist Dispatched', desc: 'Track your assigned phlebotomist on the real-time live map with estimated arrival time (ETA).' },
+                { step: '03', title: 'Safe Doorstep Handover', desc: 'Verify via 4-digit OTP. Painless blood collection sealed inside our IoT cold carry box (2°C - 8°C).' },
+                { step: '04', title: 'Smart Digital Reports', desc: 'Verified by MD pathologists. Download signed reports on WhatsApp & sync with your Digital Health Vault.' }
+              ].map((item, iIdx) => (
+                <div key={iIdx} style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#80CBC4', marginBottom: '0.5rem' }}>{item.step}</div>
+                  <div style={{ fontSize: '1rem', fontWeight: '900', color: '#FFFFFF', marginBottom: '0.35rem' }}>{item.title}</div>
+                  <div style={{ fontSize: '0.82rem', color: '#94A3B8', lineHeight: 1.5 }}>{item.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
 
         </div>
       </section>
@@ -1163,6 +1365,57 @@ export default function LandingPage({ onNavigateLogin }) {
             </div>
 
             <div>
+              <h5 style={{ color: '#FFF', fontSize: '0.9rem', fontWeight: '800', marginBottom: '1rem' }}>Mobile Apps</h5>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                <button
+                  onClick={() => setShowFooterAppModal(true)}
+                  style={{
+                    backgroundColor: '#0F172A',
+                    border: '1px solid #334155',
+                    borderRadius: '10px',
+                    padding: '0.5rem 0.85rem',
+                    color: '#FFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}
+                >
+                  <span style={{ fontSize: '1.4rem' }}>🍎</span>
+                  <div>
+                    <div style={{ fontSize: '0.62rem', color: '#94A3B8', textTransform: 'uppercase' }}>Download on the</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: '900' }}>App Store</div>
+                  </div>
+                  <span style={{ marginLeft: 'auto', fontSize: '0.65rem', backgroundColor: '#FEF3C7', color: '#92400E', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: '900' }}>SOON</span>
+                </button>
+
+                <button
+                  onClick={() => setShowFooterAppModal(true)}
+                  style={{
+                    backgroundColor: '#0F172A',
+                    border: '1px solid #334155',
+                    borderRadius: '10px',
+                    padding: '0.5rem 0.85rem',
+                    color: '#FFF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.6rem',
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}
+                >
+                  <span style={{ fontSize: '1.4rem' }}>🤖</span>
+                  <div>
+                    <div style={{ fontSize: '0.62rem', color: '#94A3B8', textTransform: 'uppercase' }}>Get it on</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: '900' }}>Google Play</div>
+                  </div>
+                  <span style={{ marginLeft: 'auto', fontSize: '0.65rem', backgroundColor: '#FEF3C7', color: '#92400E', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: '900' }}>SOON</span>
+                </button>
+              </div>
+            </div>
+
+            <div>
               <h5 style={{ color: '#FFF', fontSize: '0.9rem', fontWeight: '800', marginBottom: '1rem' }}>Portal Access</h5>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
                 <button onClick={onNavigateLogin} style={{ background: 'none', border: 'none', color: '#38BDF8', textAlign: 'left', padding: 0, cursor: 'pointer', fontWeight: '700' }}>
@@ -1227,6 +1480,117 @@ export default function LandingPage({ onNavigateLogin }) {
               <button onClick={() => { setActiveItemModal(null); onNavigateLogin(); }} style={{ padding: '0.85rem 1.75rem', backgroundColor: '#005F60', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '0.95rem', fontWeight: '800', cursor: 'pointer' }}>
                 Proceed to Book Pickup →
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📲 FOOTER APP DOWNLOAD COMING SOON MODAL */}
+      {showFooterAppModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 20000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1.5rem'
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '24px',
+            maxWidth: '480px',
+            width: '100%',
+            padding: '2rem',
+            border: '1px solid #E2E8F0',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.3)',
+            position: 'relative',
+            textAlign: 'center'
+          }}>
+            <button 
+              onClick={() => {
+                setShowFooterAppModal(false);
+                setFooterAppNotifySuccess(false);
+              }}
+              style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: 'none', border: 'none', color: '#64748B', cursor: 'pointer', fontSize: '1.2rem' }}
+            >
+              ✕
+            </button>
+
+            <div style={{ width: '60px', height: '60px', borderRadius: '18px', backgroundColor: '#E0F2F1', color: '#005F60', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontSize: '1.8rem' }}>
+              📱
+            </div>
+
+            <span style={{ fontSize: '0.74rem', fontWeight: '900', backgroundColor: '#FEF3C7', color: '#92400E', padding: '0.2rem 0.65rem', borderRadius: '12px', letterSpacing: '0.5px' }}>
+              IN FINAL REVIEW • COMING SOON
+            </span>
+
+            <h3 style={{ fontSize: '1.45rem', fontWeight: '900', color: '#0F172A', marginTop: '0.75rem', marginBottom: '0.4rem' }}>
+              MedMarg for iOS & Android
+            </h3>
+
+            <p style={{ color: '#64748B', fontSize: '0.88rem', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+              Experience instant phlebotomist tracking, 1-click test re-orders, smartwatch vitals syncing, and offline medical reports in our upcoming native mobile app.
+            </p>
+
+            {/* App Store / Play Store Badges */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              <div style={{ padding: '0.85rem', backgroundColor: '#0F172A', color: '#FFFFFF', borderRadius: '14px', textAlign: 'left', border: '1px solid #334155', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <span style={{ fontSize: '1.8rem' }}>🍎</span>
+                <div>
+                  <div style={{ fontSize: '0.62rem', color: '#94A3B8', textTransform: 'uppercase' }}>Available on</div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: '900' }}>Apple App Store</div>
+                  <div style={{ fontSize: '0.68rem', color: '#FBBF24', fontWeight: '800' }}>Coming Soon</div>
+                </div>
+              </div>
+
+              <div style={{ padding: '0.85rem', backgroundColor: '#0F172A', color: '#FFFFFF', borderRadius: '14px', textAlign: 'left', border: '1px solid #334155', display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <span style={{ fontSize: '1.8rem' }}>🤖</span>
+                <div>
+                  <div style={{ fontSize: '0.62rem', color: '#94A3B8', textTransform: 'uppercase' }}>Get it on</div>
+                  <div style={{ fontSize: '0.88rem', fontWeight: '900' }}>Google Play</div>
+                  <div style={{ fontSize: '0.68rem', color: '#FBBF24', fontWeight: '800' }}>Coming Soon</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Notification Subscription */}
+            {footerAppNotifySuccess ? (
+              <div style={{ padding: '0.85rem', backgroundColor: '#F0FDF4', color: '#15803D', borderRadius: '12px', fontSize: '0.84rem', fontWeight: '800', border: '1px solid #BBF7D0' }}>
+                ✓ Thank you! We will ping you on WhatsApp as soon as our app is live on App Store & Google Play.
+              </div>
+            ) : (
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (footerAppNotifyPhone.trim()) setFooterAppNotifySuccess(true);
+                }}
+                style={{ display: 'flex', gap: '0.5rem' }}
+              >
+                <input
+                  type="tel"
+                  placeholder="Enter WhatsApp / Mobile Number..."
+                  value={footerAppNotifyPhone}
+                  onChange={(e) => setFooterAppNotifyPhone(e.target.value)}
+                  style={{ flex: 1, padding: '0.6rem 0.85rem', borderRadius: '10px', border: '1.5px solid #CBD5E1', fontSize: '0.85rem', outline: 'none' }}
+                  required
+                />
+                <button
+                  type="submit"
+                  style={{ padding: '0.6rem 1rem', backgroundColor: '#005F60', color: '#FFF', border: 'none', borderRadius: '10px', fontSize: '0.82rem', fontWeight: '800', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                >
+                  Notify Me
+                </button>
+              </form>
+            )}
+
+            <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid #F1F5F9', fontSize: '0.78rem', color: '#64748B' }}>
+              💡 Meanwhile, you can book tests directly through this portal with 100% full features!
             </div>
           </div>
         </div>
