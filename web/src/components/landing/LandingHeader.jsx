@@ -32,76 +32,57 @@ export default function LandingHeader({ onNavigateLogin, onOpenAppModal }) {
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 1000, backgroundColor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', boxShadow: '0 4px 20px -5px rgba(0, 95, 96, 0.08)' }}>
       
-      {/* Top Notification Bar */}
-      <div className="top-notification-bar" style={{ backgroundColor: '#005F60', color: '#FFFFFF', padding: '0.45rem 1.5rem', fontSize: '0.8rem', fontWeight: '700', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+      {/* Top Notification Bar with Location Selector */}
+      <div className="top-notification-bar" style={{ backgroundColor: '#005F60', color: '#FFFFFF', padding: '0.45rem 1.75rem', fontSize: '0.8rem', fontWeight: '700', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Sparkles size={14} color="#F59E0B" style={{ flexShrink: 0 }} />
           <span>100% NABL Certified | Free Doorstep Pickup</span>
         </div>
-        <div className="top-helpline" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.78rem' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#E0F2F1', whiteSpace: 'nowrap' }}>
-            <PhoneCall size={13} color="#F59E0B" /> Helpline: <strong>+91 98765 43210</strong>
-          </span>
-        </div>
-      </div>
 
-      {/* Main Navbar */}
-      <div style={{ maxWidth: '1360px', margin: '0 auto', padding: '0.85rem 1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem' }}>
-        
-        {/* Brand Logo with Location Switcher Below */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.2rem', flexShrink: 0 }}>
-          <div 
-            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} 
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          >
-            <img 
-              src="/logo.png" 
-              alt="MedMarg Diagnostic Network" 
-              style={{ height: '36px', width: 'auto', objectFit: 'contain' }} 
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.style.display = 'none';
-              }}
-            />
-          </div>
-
-          {/* Compact Location Selector below Logo */}
+        {/* Right side of Top Bar: City Location Pill & Helpline */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', fontSize: '0.78rem' }}>
+          
+          {/* Location Selector in Top Green Bar */}
           <div style={{ position: 'relative' }}>
             <button
               onClick={() => setShowCityDropdown(!showCityDropdown)}
               style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: '0.25rem', 
-                padding: '0.15rem 0.5rem', 
-                backgroundColor: 'transparent', 
-                border: 'none', 
-                fontSize: '0.73rem', 
+                gap: '0.35rem', 
+                padding: '0.2rem 0.65rem', 
+                backgroundColor: 'rgba(255, 255, 255, 0.15)', 
+                border: '1px solid rgba(255, 255, 255, 0.25)', 
+                borderRadius: '14px', 
+                fontSize: '0.74rem', 
                 fontWeight: '800', 
-                color: '#005F60', 
+                color: '#FFFFFF', 
                 cursor: 'pointer', 
-                whiteSpace: 'nowrap' 
+                whiteSpace: 'nowrap',
+                transition: 'background-color 0.15s ease'
               }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.25)'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)'}
             >
-              <MapPin size={11} color="#005F60" />
+              <MapPin size={12} color="#F59E0B" />
               <span>{selectedCity}</span>
-              <ChevronDown size={11} color="#64748B" />
+              <ChevronDown size={12} color="#E0F2F1" />
             </button>
 
             {showCityDropdown && (
               <div style={{ 
                 position: 'absolute', 
-                top: '115%', 
-                left: 0, 
-                backgroundColor: '#FFF', 
+                top: '125%', 
+                right: 0, 
+                backgroundColor: '#FFFFFF', 
                 border: '1px solid #E2E8F0', 
                 borderRadius: '12px', 
-                boxShadow: '0 10px 25px rgba(0,0,0,0.15)', 
+                boxShadow: '0 12px 28px rgba(0,0,0,0.2)', 
                 width: '180px', 
                 padding: '0.5rem', 
-                zIndex: 1100 
+                zIndex: 2000 
               }}>
-                <div style={{ fontSize: '0.7rem', color: '#64748B', fontWeight: '800', padding: '0.3rem 0.5rem', borderBottom: '1px solid #F1F5F9' }}>
+                <div style={{ fontSize: '0.68rem', color: '#64748B', fontWeight: '800', padding: '0.3rem 0.5rem', borderBottom: '1px solid #F1F5F9' }}>
                   ACTIVE SERVICE CITIES
                 </div>
                 {availableCities.map(city => (
@@ -112,13 +93,14 @@ export default function LandingHeader({ onNavigateLogin, onOpenAppModal }) {
                       setShowCityDropdown(false);
                     }}
                     style={{ 
-                      padding: '0.4rem 0.5rem', 
+                      padding: '0.45rem 0.55rem', 
                       fontSize: '0.78rem', 
                       fontWeight: '700', 
                       color: selectedCity === city ? '#005F60' : '#334155', 
                       cursor: 'pointer', 
                       borderRadius: '6px', 
-                      backgroundColor: selectedCity === city ? '#E0F2F1' : 'transparent' 
+                      backgroundColor: selectedCity === city ? '#E0F2F1' : 'transparent',
+                      transition: 'background-color 0.15s'
                     }}
                   >
                     {city}
@@ -126,6 +108,34 @@ export default function LandingHeader({ onNavigateLogin, onOpenAppModal }) {
                 ))}
               </div>
             )}
+          </div>
+
+          <div className="top-helpline">
+            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#E0F2F1', whiteSpace: 'nowrap' }}>
+              <PhoneCall size={13} color="#F59E0B" /> Helpline: <strong>+91 98765 43210</strong>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Navbar */}
+      <div style={{ maxWidth: '1360px', margin: '0 auto', padding: '0.85rem 1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1.5rem' }}>
+        
+        {/* Brand Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+          <div 
+            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }} 
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          >
+            <img 
+              src="/logo.png" 
+              alt="MedMarg Diagnostic Network" 
+              style={{ height: '42px', width: 'auto', objectFit: 'contain' }} 
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.style.display = 'none';
+              }}
+            />
           </div>
         </div>
 
