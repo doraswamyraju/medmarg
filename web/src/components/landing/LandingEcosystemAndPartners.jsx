@@ -34,35 +34,44 @@ export default function LandingEcosystemAndPartners({
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
             
-            <div style={{ padding: '1.75rem', backgroundColor: '#FFF', borderRadius: '20px', border: '1px solid #E2E8F0', textAlign: 'center' }}>
-              <Stethoscope size={36} color="#005F60" style={{ margin: '0 auto 1rem' }} />
-              <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#005F60', marginBottom: '0.25rem' }}>COMING SOON</div>
-              <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#0F172A' }}>In-Clinic & Video Doctors</h4>
-              <p style={{ color: '#64748B', fontSize: '0.82rem', marginTop: '0.4rem' }}>Book OPD consultations and e-prescriptions with verified medical specialists.</p>
-            </div>
-
-            <div style={{ padding: '1.75rem', backgroundColor: '#FFF', borderRadius: '20px', border: '1px solid #E2E8F0', textAlign: 'center' }}>
-              <Building2 size={36} color="#005F60" style={{ margin: '0 auto 1rem' }} />
-              <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#005F60', marginBottom: '0.25rem' }}>COMING SOON</div>
-              <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#0F172A' }}>Partner Scan & MRI Centers</h4>
-              <p style={{ color: '#64748B', fontSize: '0.82rem', marginTop: '0.4rem' }}>Schedule diagnostic CT scans, Ultrasound, and X-Rays at accredited radiology centers.</p>
-            </div>
-
-            <div style={{ padding: '1.75rem', backgroundColor: '#FFF', borderRadius: '20px', border: '1px solid #E2E8F0', textAlign: 'center' }}>
-              <Pill size={36} color="#005F60" style={{ margin: '0 auto 1rem' }} />
-              <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#005F60', marginBottom: '0.25rem' }}>COMING SOON</div>
-              <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#0F172A' }}>Doorstep Pharmacy Delivery</h4>
-              <p style={{ color: '#64748B', fontSize: '0.82rem', marginTop: '0.4rem' }}>Upload prescription to order verified genuine pharmaceuticals with doorstep courier delivery.</p>
-            </div>
-
-            <div style={{ padding: '1.75rem', backgroundColor: '#FFF', borderRadius: '20px', border: '1px solid #E2E8F0', textAlign: 'center' }}>
-              <div style={{ width: '36px', height: '36px', margin: '0 auto 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem' }}>🥗</div>
-              <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#005F60', marginBottom: '0.25rem' }}>COMING SOON</div>
-              <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#0F172A' }}>Dietitians & Health Coaches</h4>
-              <p style={{ color: '#64748B', fontSize: '0.82rem', marginTop: '0.4rem' }}>Personalized lifestyle, diet, and diabetic reversal plans based on your lab biomarker radar.</p>
-            </div>
+            {[
+              { icon: <Stethoscope size={36} color="#005F60" />, title: 'In-Clinic & Video Doctors', desc: 'Book OPD consultations and e-prescriptions with verified medical specialists.' },
+              { icon: <Building2 size={36} color="#005F60" />, title: 'Partner Scan & MRI Centers', desc: 'Schedule diagnostic CT scans, Ultrasound, and X-Rays at accredited radiology centers.' },
+              { icon: <Pill size={36} color="#005F60" />, title: 'Doorstep Pharmacy Delivery', desc: 'Upload prescription to order verified genuine pharmaceuticals with doorstep courier delivery.' },
+              { icon: <div style={{ fontSize: '2rem' }}>🥗</div>, title: 'Dietitians & Health Coaches', desc: 'Personalized lifestyle, diet, and diabetic reversal plans based on your lab biomarker radar.' }
+            ].map((portal, idx) => (
+              <div 
+                key={idx} 
+                style={{ 
+                  padding: '1.85rem', 
+                  backgroundColor: '#FFF', 
+                  borderRadius: '22px', 
+                  border: '1.5px solid #E2E8F0', 
+                  textAlign: 'center',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.03)',
+                  transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.transform = 'translateY(-6px)';
+                  e.currentTarget.style.borderColor = '#14B8A6';
+                  e.currentTarget.style.boxShadow = '0 18px 40px -10px rgba(0,95,96,0.18)';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.borderColor = '#E2E8F0';
+                  e.currentTarget.style.boxShadow = '0 4px 14px rgba(0,0,0,0.03)';
+                }}
+              >
+                <div style={{ margin: '0 auto 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {portal.icon}
+                </div>
+                <div style={{ fontSize: '0.74rem', fontWeight: '900', color: '#005F60', letterSpacing: '0.08em', marginBottom: '0.35rem' }}>COMING SOON</div>
+                <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A' }}>{portal.title}</h4>
+                <p style={{ color: '#64748B', fontSize: '0.84rem', marginTop: '0.45rem', lineHeight: 1.5 }}>{portal.desc}</p>
+              </div>
+            ))}
 
           </div>
 
@@ -73,7 +82,7 @@ export default function LandingEcosystemAndPartners({
       <section id="partner" style={{ padding: '5rem 1.5rem', backgroundColor: '#071F1A', color: '#FFFFFF' }}>
         <div style={{ maxWidth: '1320px', margin: '0 auto' }}>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '3rem', alignItems: 'center', backgroundColor: '#0F172A', padding: '3rem', borderRadius: '28px', border: '1.5px solid #005F60' }}>
+          <div className="landing-partner-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '3rem', alignItems: 'center', backgroundColor: '#0F172A', padding: '3rem', borderRadius: '28px', border: '1.5px solid #005F60', boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
             <div>
               <div style={{ display: 'inline-block', padding: '0.35rem 0.85rem', backgroundColor: 'rgba(0,95,96,0.3)', color: '#80CBC4', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '800', marginBottom: '0.85rem' }}>
                 FOR HEALTHCARE PROVIDERS

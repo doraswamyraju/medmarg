@@ -10,12 +10,15 @@ import {
   User,
   PhoneCall,
   Navigation,
-  FolderHeart
+  FolderHeart,
+  Menu,
+  X
 } from 'lucide-react';
 
 export default function LandingHeader({ onNavigateLogin, onOpenAppModal }) {
   const [selectedCity, setSelectedCity] = useState('Tirupati, AP');
   const [showCityDropdown, setShowCityDropdown] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const availableCities = [
     'Tirupati, AP',
@@ -127,8 +130,8 @@ export default function LandingHeader({ onNavigateLogin, onOpenAppModal }) {
           </div>
         </div>
 
-        {/* Navigation Items */}
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '1.35rem', fontWeight: '800', fontSize: '0.86rem', color: '#334155', whiteSpace: 'nowrap' }}>
+        {/* Navigation Items (Desktop) */}
+        <nav className="desktop-only-nav" style={{ display: 'flex', alignItems: 'center', gap: '1.35rem', fontWeight: '800', fontSize: '0.86rem', color: '#334155', whiteSpace: 'nowrap' }}>
           <a href="#catalog" style={{ textDecoration: 'none', color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <FlaskConical size={15} color="#005F60" /> Tests & Packages
           </a>
@@ -150,6 +153,7 @@ export default function LandingHeader({ onNavigateLogin, onOpenAppModal }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
           <button
             onClick={onOpenAppModal}
+            className="desktop-only-nav"
             style={{
               padding: '0.48rem 0.85rem',
               backgroundColor: '#F1F5F9',
@@ -174,26 +178,119 @@ export default function LandingHeader({ onNavigateLogin, onOpenAppModal }) {
           <button
             onClick={onNavigateLogin}
             style={{ 
-              padding: '0.6rem 1.35rem', 
+              padding: '0.55rem 1.15rem', 
               backgroundColor: '#005F60', 
               color: '#FFF', 
               border: 'none', 
               borderRadius: '12px', 
-              fontSize: '0.88rem', 
+              fontSize: '0.85rem', 
               fontWeight: '800', 
               cursor: 'pointer', 
               display: 'flex', 
               alignItems: 'center', 
               gap: '0.45rem', 
               boxShadow: '0 4px 14px rgba(0,95,96,0.25)', 
-              transition: 'transform 0.15s' 
+              transition: 'transform 0.15s',
+              whiteSpace: 'nowrap'
             }}
           >
-            <User size={16} /> Sign In / Book Now <ArrowRight size={15} />
+            <User size={16} /> <span className="cta-text-full">Sign In / Book</span><span className="cta-text-short">Sign In</span> <ArrowRight size={15} />
+          </button>
+
+          {/* Mobile Hamburger Toggle Button */}
+          <button
+            className="mobile-hamburger-btn"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            style={{
+              backgroundColor: '#F1F5F9',
+              border: '1px solid #CBD5E1',
+              borderRadius: '10px',
+              padding: '0.45rem',
+              display: 'none',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#0F172A'
+            }}
+          >
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
 
       </div>
+
+      {/* Mobile Slide-Down Drawer */}
+      {mobileMenuOpen && (
+        <div style={{
+          backgroundColor: '#FFFFFF',
+          borderTop: '1px solid #E2E8F0',
+          padding: '1.25rem 1.5rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+          boxShadow: '0 15px 30px rgba(0,0,0,0.1)'
+        }}>
+          <a 
+            href="#catalog" 
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ textDecoration: 'none', color: '#0F172A', fontWeight: '800', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}
+          >
+            <FlaskConical size={18} color="#005F60" /> Tests & Health Packages
+          </a>
+          <a 
+            href="#quality-guarantee" 
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ textDecoration: 'none', color: '#0F172A', fontWeight: '800', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}
+          >
+            <ShieldCheck size={18} color="#005F60" /> Clinical Quality & Safety
+          </a>
+          <a 
+            href="#tracker-feature" 
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ textDecoration: 'none', color: '#0F172A', fontWeight: '800', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}
+          >
+            <Navigation size={18} color="#005F60" /> Live GPS Fleet Tracker
+          </a>
+          <a 
+            href="#vitals-feature" 
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ textDecoration: 'none', color: '#0F172A', fontWeight: '800', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}
+          >
+            <Activity size={18} color="#005F60" /> Patient Vitals Radar
+          </a>
+          <a 
+            href="#locker-feature" 
+            onClick={() => setMobileMenuOpen(false)}
+            style={{ textDecoration: 'none', color: '#0F172A', fontWeight: '800', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.65rem' }}
+          >
+            <FolderHeart size={18} color="#005F60" /> NABL Digital Vault
+          </a>
+          
+          <button
+            onClick={() => {
+              setMobileMenuOpen(false);
+              onOpenAppModal();
+            }}
+            style={{
+              padding: '0.65rem 1rem',
+              backgroundColor: '#F8FAFC',
+              border: '1.5px solid #CBD5E1',
+              borderRadius: '12px',
+              fontWeight: '900',
+              fontSize: '0.88rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              cursor: 'pointer',
+              color: '#0F172A',
+              marginTop: '0.5rem'
+            }}
+          >
+            📱 Get Mobile App <span style={{ fontSize: '0.7rem', backgroundColor: '#FEF3C7', color: '#92400E', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>COMING SOON</span>
+          </button>
+        </div>
+      )}
     </header>
   );
 }

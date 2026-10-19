@@ -103,10 +103,10 @@ export default function LandingHeroSection({
         filter: 'blur(40px)'
       }} />
 
-      <div style={{ maxWidth: '1320px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1.25fr 0.75fr', gap: '3.5rem', alignItems: 'start', position: 'relative', zIndex: 101 }}>
+      <div className="landing-hero-grid" style={{ maxWidth: '1320px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '3.5rem', alignItems: 'start', position: 'relative', zIndex: 101 }}>
         
         {/* Left Column: Carousel & Vibrant Search */}
-        <div style={{ position: 'relative', zIndex: 102 }}>
+        <div style={{ position: 'relative', zIndex: 102, minWidth: 0 }}>
           {/* Banner Slides Carousel with CSS Grid Stack:
               By stacking all slides in the same grid cell (grid-area: 1/1), 
               the container naturally sizes to accommodate any title without cutting off text, 

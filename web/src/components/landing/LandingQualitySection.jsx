@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function LandingQualitySection() {
+  const [hoveredCard, setHoveredCard] = useState(null);
+  const [hoveredStep, setHoveredStep] = useState(null);
+
   return (
-    <section id="quality-guarantee" style={{ padding: '5rem 1.5rem', backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0', borderBottom: '1px solid #E2E8F0' }}>
+    <section id="quality-guarantee" style={{ padding: '5.5rem 1.5rem', backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0', borderBottom: '1px solid #E2E8F0' }}>
       <div style={{ maxWidth: '1320px', margin: '0 auto' }}>
 
         <div style={{ textAlign: 'center', marginBottom: '3.5rem' }}>
@@ -21,19 +24,29 @@ export default function LandingQualitySection() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '2.5rem', marginBottom: '3.5rem' }}>
           
           {/* Card 1: Certified Doorstep Phlebotomy */}
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '24px',
-            border: '1.5px solid #E2E8F0',
-            overflow: 'hidden',
-            boxShadow: '0 12px 30px -10px rgba(0,95,96,0.1)',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <div style={{ position: 'relative', height: '300px', overflow: 'hidden' }}>
+          <div 
+            onMouseEnter={() => setHoveredCard('phlebo')}
+            onMouseLeave={() => setHoveredCard(null)}
+            className="landing-image-container"
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '24px',
+              border: hoveredCard === 'phlebo' ? '1.5px solid #00A896' : '1.5px solid #E2E8F0',
+              overflow: 'hidden',
+              boxShadow: hoveredCard === 'phlebo' 
+                ? '0 25px 60px -12px rgba(0, 95, 96, 0.22), 0 0 25px rgba(0, 168, 150, 0.12)' 
+                : '0 12px 30px -10px rgba(0,95,96,0.1)',
+              display: 'flex',
+              flexDirection: 'column',
+              transform: hoveredCard === 'phlebo' ? 'translateY(-8px)' : 'translateY(0)',
+              transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+          >
+            <div style={{ position: 'relative', height: '310px', overflow: 'hidden' }}>
               <img 
                 src="/phlebo_home_collection.jpg" 
                 alt="Certified MedMarg Phlebotomist at Patient Doorstep" 
+                className="landing-image-zoom"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
               <div style={{
@@ -88,19 +101,29 @@ export default function LandingQualitySection() {
           </div>
 
           {/* Card 2: High-Throughput Robotic Analyzers */}
-          <div style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '24px',
-            border: '1.5px solid #E2E8F0',
-            overflow: 'hidden',
-            boxShadow: '0 12px 30px -10px rgba(0,95,96,0.1)',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            <div style={{ position: 'relative', height: '300px', overflow: 'hidden' }}>
+          <div 
+            onMouseEnter={() => setHoveredCard('lab')}
+            onMouseLeave={() => setHoveredCard(null)}
+            className="landing-image-container"
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '24px',
+              border: hoveredCard === 'lab' ? '1.5px solid #0284C7' : '1.5px solid #E2E8F0',
+              overflow: 'hidden',
+              boxShadow: hoveredCard === 'lab' 
+                ? '0 25px 60px -12px rgba(2, 132, 199, 0.22), 0 0 25px rgba(56, 189, 248, 0.12)' 
+                : '0 12px 30px -10px rgba(0,95,96,0.1)',
+              display: 'flex',
+              flexDirection: 'column',
+              transform: hoveredCard === 'lab' ? 'translateY(-8px)' : 'translateY(0)',
+              transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)'
+            }}
+          >
+            <div style={{ position: 'relative', height: '310px', overflow: 'hidden' }}>
               <img 
                 src="/nabl_lab_testing.jpg" 
                 alt="NABL Accredited Clinical Testing Lab" 
+                className="landing-image-zoom"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
               <div style={{
@@ -134,7 +157,7 @@ export default function LandingQualitySection() {
             </div>
 
             <div style={{ padding: '2rem' }}>
-              <h3 style={{ fontSize: '1.45rem', fontWeight: '900', color: '#0F172A', marginBottom: '0.65rem' }}>
+              <h3 style={{ fontSize: '1.45rem', fontWeight: '900', color: hoveredCard === 'lab' ? '#0284C7' : '#0F172A', marginBottom: '0.65rem', transition: 'color 0.2s ease' }}>
                 Multi-Lab Quality Processing (Thyrocare, Lalpath & Hub)
               </h3>
               <p style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.6, marginBottom: '1.25rem' }}>
@@ -156,7 +179,7 @@ export default function LandingQualitySection() {
 
         </div>
 
-        {/* 4-Step Patient Journey */}
+        {/* 4-Step Patient Journey with Interactive Hover */}
         <div style={{
           backgroundColor: '#071F1A',
           borderRadius: '24px',
@@ -179,13 +202,30 @@ export default function LandingQualitySection() {
               { step: '02', title: 'Phlebotomist Dispatched', desc: 'Track your assigned phlebotomist on the real-time live map with estimated arrival time (ETA).' },
               { step: '03', title: 'Safe Doorstep Handover', desc: 'Verify via 4-digit OTP. Painless blood collection sealed inside our IoT cold carry box (2°C - 8°C).' },
               { step: '04', title: 'Smart Digital Reports', desc: 'Verified by MD pathologists. Download signed reports on WhatsApp & sync with your Digital Health Vault.' }
-            ].map((item, iIdx) => (
-              <div key={iIdx} style={{ backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '16px', padding: '1.5rem', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#80CBC4', marginBottom: '0.5rem' }}>{item.step}</div>
-                <div style={{ fontSize: '1rem', fontWeight: '900', color: '#FFFFFF', marginBottom: '0.35rem' }}>{item.title}</div>
-                <div style={{ fontSize: '0.82rem', color: '#94A3B8', lineHeight: 1.5 }}>{item.desc}</div>
-              </div>
-            ))}
+            ].map((item, iIdx) => {
+              const isHovered = hoveredStep === item.step;
+              return (
+                <div 
+                  key={iIdx} 
+                  onMouseEnter={() => setHoveredStep(item.step)}
+                  onMouseLeave={() => setHoveredStep(null)}
+                  style={{ 
+                    backgroundColor: isHovered ? 'rgba(0, 168, 150, 0.15)' : 'rgba(255,255,255,0.05)', 
+                    borderRadius: '16px', 
+                    padding: '1.5rem', 
+                    border: isHovered ? '1px solid #14B8A6' : '1px solid rgba(255,255,255,0.1)',
+                    transform: isHovered ? 'translateY(-5px)' : 'translateY(0)',
+                    boxShadow: isHovered ? '0 12px 25px rgba(0,0,0,0.4)' : 'none',
+                    transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                    cursor: 'default'
+                  }}
+                >
+                  <div style={{ fontSize: '1.6rem', fontWeight: '900', color: isHovered ? '#2DD4BF' : '#80CBC4', marginBottom: '0.5rem', transition: 'color 0.2s' }}>{item.step}</div>
+                  <div style={{ fontSize: '1rem', fontWeight: '900', color: '#FFFFFF', marginBottom: '0.35rem' }}>{item.title}</div>
+                  <div style={{ fontSize: '0.82rem', color: '#94A3B8', lineHeight: 1.5 }}>{item.desc}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
