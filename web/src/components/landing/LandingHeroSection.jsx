@@ -107,78 +107,86 @@ export default function LandingHeroSection({
         
         {/* Left Column: Carousel & Vibrant Search */}
         <div style={{ position: 'relative', zIndex: 102 }}>
-          {/* Active Banner Slide with strict fixed height to completely eliminate any height jumping */}
-          <div style={{ height: '260px', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
-            <div>
-              <div style={{ 
-                display: 'inline-flex', 
-                alignItems: 'center', 
-                gap: '0.45rem', 
-                padding: '0.4rem 0.95rem', 
-                backgroundColor: 'rgba(56, 189, 248, 0.18)', 
-                color: heroBanners[currentSlide].accentColor, 
-                borderRadius: '20px', 
-                fontSize: '0.82rem', 
-                fontWeight: '900', 
-                marginBottom: '1rem', 
-                border: `1.5px solid ${heroBanners[currentSlide].accentColor}50`,
-                backdropFilter: 'blur(8px)',
-                boxShadow: `0 4px 16px ${heroBanners[currentSlide].accentColor}25`,
-                transition: 'all 0.3s ease'
-              }}>
-                <Sparkles size={15} /> {heroBanners[currentSlide].tag}
-              </div>
+          {/* Banner Slides Carousel with CSS Grid Stack:
+              By stacking all slides in the same grid cell (grid-area: 1/1), 
+              the container naturally sizes to accommodate any title without cutting off text, 
+              and switching slides NEVER causes any height jump or layout shift! */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gridTemplateRows: '1fr', marginBottom: '1.25rem' }}>
+            {heroBanners.map((banner, index) => {
+              const isActive = index === currentSlide;
+              return (
+                <div 
+                  key={banner.id} 
+                  style={{ 
+                    gridArea: '1 / 1', 
+                    opacity: isActive ? 1 : 0, 
+                    pointerEvents: isActive ? 'auto' : 'none',
+                    transform: isActive ? 'translateY(0)' : 'translateY(6px)',
+                    transition: 'opacity 0.35s ease, transform 0.35s ease',
+                    visibility: isActive ? 'visible' : 'hidden'
+                  }}
+                >
+                  <div style={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '0.45rem', 
+                    padding: '0.4rem 0.95rem', 
+                    backgroundColor: 'rgba(56, 189, 248, 0.18)', 
+                    color: banner.accentColor, 
+                    borderRadius: '20px', 
+                    fontSize: '0.82rem', 
+                    fontWeight: '900', 
+                    marginBottom: '1rem', 
+                    border: `1.5px solid ${banner.accentColor}50`,
+                    backdropFilter: 'blur(8px)',
+                    boxShadow: `0 4px 16px ${banner.accentColor}25`
+                  }}>
+                    <Sparkles size={15} /> {banner.tag}
+                  </div>
 
-              <h1 style={{ 
-                fontSize: '2.8rem', 
-                fontWeight: '900', 
-                color: '#FFFFFF', 
-                lineHeight: '1.14', 
-                letterSpacing: '-0.025em', 
-                marginBottom: '0.8rem',
-                height: '70px',
-                display: 'flex',
-                alignItems: 'center',
-                textShadow: '0 4px 20px rgba(0,0,0,0.5)',
-                overflow: 'hidden'
-              }}>
-                {heroBanners[currentSlide].title}
-              </h1>
+                  <h1 style={{ 
+                    fontSize: '2.75rem', 
+                    fontWeight: '900', 
+                    color: '#FFFFFF', 
+                    lineHeight: '1.18', 
+                    letterSpacing: '-0.02em', 
+                    marginBottom: '0.85rem',
+                    textShadow: '0 4px 20px rgba(0,0,0,0.5)'
+                  }}>
+                    {banner.title}
+                  </h1>
 
-              <p style={{ 
-                color: '#94A3B8', 
-                fontSize: '1.05rem', 
-                lineHeight: '1.5', 
-                marginBottom: '1.25rem', 
-                maxWidth: '600px',
-                height: '48px',
-                overflow: 'hidden',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical'
-              }}>
-                {heroBanners[currentSlide].subtitle}
-              </p>
+                  <p style={{ 
+                    color: '#94A3B8', 
+                    fontSize: '1.05rem', 
+                    lineHeight: '1.55', 
+                    marginBottom: '1.4rem', 
+                    maxWidth: '620px'
+                  }}>
+                    {banner.subtitle}
+                  </p>
 
-              {/* Price & Savings Pill */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1.15rem' }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.65rem' }}>
-                  <span style={{ fontSize: '2.3rem', fontWeight: '900', color: '#FFFFFF', letterSpacing: '-0.02em' }}>{heroBanners[currentSlide].price}</span>
-                  <span style={{ fontSize: '1.15rem', color: '#64748B', textDecoration: 'line-through', fontWeight: '700' }}>{heroBanners[currentSlide].mrp}</span>
+                  {/* Price & Savings Pill */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.15rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.65rem' }}>
+                      <span style={{ fontSize: '2.4rem', fontWeight: '900', color: '#FFFFFF', letterSpacing: '-0.02em' }}>{banner.price}</span>
+                      <span style={{ fontSize: '1.15rem', color: '#64748B', textDecoration: 'line-through', fontWeight: '700' }}>{banner.mrp}</span>
+                    </div>
+                    <div style={{ 
+                      padding: '0.45rem 0.95rem', 
+                      backgroundColor: '#10B981', 
+                      color: '#FFF', 
+                      borderRadius: '12px', 
+                      fontSize: '0.86rem', 
+                      fontWeight: '900',
+                      boxShadow: '0 4px 14px rgba(16,185,129,0.35)'
+                    }}>
+                      {banner.savings}
+                    </div>
+                  </div>
                 </div>
-                <div style={{ 
-                  padding: '0.45rem 0.95rem', 
-                  backgroundColor: '#10B981', 
-                  color: '#FFF', 
-                  borderRadius: '12px', 
-                  fontSize: '0.86rem', 
-                  fontWeight: '900',
-                  boxShadow: '0 4px 14px rgba(16,185,129,0.35)'
-                }}>
-                  {heroBanners[currentSlide].savings}
-                </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
 
           {/* Slider Navigation Dots */}
