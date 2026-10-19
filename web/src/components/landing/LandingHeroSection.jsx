@@ -84,7 +84,7 @@ export default function LandingHeroSection({
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       backgroundRepeat: 'no-repeat',
-      padding: '4rem 1.5rem 5rem', 
+      padding: '4rem 1.5rem 6.5rem', 
       position: 'relative', 
       zIndex: 100, 
       overflow: 'visible',
@@ -462,6 +462,32 @@ export default function LandingHeroSection({
           </div>
         </div>
 
+      </div>
+
+      {/* 🌊 Organic Curved Bottom Wave Divider */}
+      <div style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        width: '100%',
+        overflow: 'hidden',
+        lineHeight: 0,
+        transform: 'translateY(1px)',
+        zIndex: 105,
+        pointerEvents: 'none'
+      }}>
+        <svg 
+          viewBox="0 0 1440 96" 
+          fill="none" 
+          xmlns="http://www.w3.org/2000/svg"
+          preserveAspectRatio="none"
+          style={{ width: '100%', height: '56px', display: 'block' }}
+        >
+          <path 
+            d="M0,32 C240,85 480,96 720,70 C960,44 1200,68 1440,32 L1440,96 L0,96 Z" 
+            fill="#FFFFFF"
+          />
+        </svg>
       </div>
     </section>
   );
