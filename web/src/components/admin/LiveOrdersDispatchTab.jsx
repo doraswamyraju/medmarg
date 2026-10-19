@@ -200,7 +200,14 @@ export default function LiveOrdersDispatchTab({
                       <div style={{ fontWeight: '700', color: '#0F172A' }}>
                         {Array.isArray(ord.items) ? ord.items.map(i => i.name || i.title || i).join(', ') : (ord.items || 'Diagnostic Tests')}
                       </div>
-                      <div style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800', marginTop: '0.15rem' }}>₹{ord.amount}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.15rem' }}>
+                        <span style={{ fontSize: '0.78rem', color: '#006B70', fontWeight: '800' }}>₹{ord.amount}</span>
+                        {ord.phleboVitals && (
+                          <span style={{ fontSize: '0.68rem', backgroundColor: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '800' }} title={`Recorded by ${ord.phleboVitals.phleboName}: BP ${ord.phleboVitals.bp || 'N/A'}, Pulse ${ord.phleboVitals.pulse || 'N/A'} bpm, SpO2 ${ord.phleboVitals.spo2 || 'N/A'}%`}>
+                            🩺 Vitals: BP {ord.phleboVitals.bp || '--'} | Pulse {ord.phleboVitals.pulse || '--'}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td style={{ padding: '1rem' }}>
                       <div style={{ color: ord.assignedAgent === 'Unassigned' ? '#DC2626' : '#B45309', fontWeight: '700', fontSize: '0.85rem' }}>

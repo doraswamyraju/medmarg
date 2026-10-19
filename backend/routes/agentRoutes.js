@@ -10,7 +10,7 @@ router.get('/roster', (req, res) => {
 
 // SAMPLE PICKUP & STATUS UPDATE (DOORSTEP VISIT & DIGITAL EXECUTION)
 router.post('/pickup/update', (req, res) => {
-    const { orderId, status, barcode, arrivalPhoto, samplePhotos, paymentCollected, paymentMode, sendReviewRequest, notes } = req.body;
+    const { orderId, status, barcode, arrivalPhoto, samplePhotos, paymentCollected, paymentMode, sendReviewRequest, notes, vitals } = req.body;
     const order = (dbStore.orders || []).find(o => o.id === orderId);
     if (order) {
         if (status) order.status = status;
@@ -29,6 +29,49 @@ router.post('/pickup/update', (req, res) => {
             }
         }
         if (notes) order.agentNotes = notes;
+
+        // Bedside Vitals Checkup by Phlebotomist
+        if (vitals && (vitals.bp || vitals.pulse || vitals.spo2 || vitals.sugar || vitals.temp)) {
+            order.phleboVitals = {
+                recordedAt: new Date().toISOString(),
+                phleboName: order.assignedAgent || order.phleboName || 'Certified Phlebotomist',
+                bp: vitals.bp || null, // e.g. "120/80" or { systolic: 120, diastolic: 80 }
+                pulse: vitals.pulse || null,
+                spo2: vitals.spo2 || null,
+                sugar: vitals.sugar || null,
+                temp: vitals.temp || null,
+                notes: vitals.notes || ''
+            };
+
+            // Mirror into customer profile if exists
+            const custPhone = (order.phone || order.patientPhone || '').replace(/[^0-9]/g, '');
+            if (dbStore.customers && custPhone) {
+                const cust = dbStore.customers.find(c => c.phone && c.phone.replace(/[^0-9]/g, '').endsWith(custPhone.slice(-10)));
+                if (cust) {
+                    if (!cust.vitals) cust.vitals = {};
+                    if (!cust.vitals.SELF) cust.vitals.SELF = { history: [] };
+                    const entry = {
+                        id: `VIT-PHLEBO-${Date.now()}`,
+                        recordedAt: new Date().toISOString(),
+                        source: 'PHLEBOTOMIST_VISIT',
+                        phleboOrderId: order.id,
+                        phleboName: order.assignedAgent || order.phleboName,
+                        bp: typeof vitals.bp === 'string' ? { 
+                            systolic: parseInt(vitals.bp.split('/')[0]) || 120, 
+                            diastolic: parseInt(vitals.bp.split('/')[1]) || 80 
+                        } : vitals.bp,
+                        pulse: vitals.pulse ? parseInt(vitals.pulse) : null,
+                        spo2: vitals.spo2 ? parseInt(vitals.spo2) : null,
+                        sugar: vitals.sugar ? { fbs: parseInt(vitals.sugar) } : null,
+                        temp: vitals.temp || null
+                    };
+                    cust.vitals.SELF.latest = entry;
+                    if (!cust.vitals.SELF.history) cust.vitals.SELF.history = [];
+                    cust.vitals.SELF.history.unshift(entry);
+                }
+            }
+        }
+
         order.lastUpdated = new Date().toISOString();
         saveDbStore();
         return res.json({ success: true, order });

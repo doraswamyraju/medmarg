@@ -318,7 +318,8 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
         arrivalPhoto: details.arrivalPhoto,
         samplePhotos: details.samplePhotos,
         paymentCollected: details.paymentDone,
-        sendReviewRequest: details.sendReviewRequest
+        sendReviewRequest: details.sendReviewRequest,
+        vitals: details.vitals || null
       })
     }).catch(() => {});
   };

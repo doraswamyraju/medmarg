@@ -53,11 +53,42 @@ export default function CareSeekerHomeTab({
   catalog = {},
   liveOrdersCount = 0,
   activeOrder = null,
-  allOrders = []
+  allOrders = [],
+  familyMembers = [{ id: 'SELF', name: 'Self', relation: 'Self' }],
+  savedAddresses = [],
+  customerVitals = {},
+  smartDeviceStatus = { connected: false },
+  recommendationRules = [],
+  onUpdateDossier = () => {}
 }) {
   const [homeSearchQuery, setHomeSearchQuery] = useState('');
   const [activeSearchScope, setActiveSearchScope] = useState('TESTS'); // 'TESTS' | 'DOCTORS' | 'MEDICINES'
   const [activeSnapshotTab, setActiveSnapshotTab] = useState('Vitals'); // 'Vitals' | 'Activity' | 'Sleep' | 'Weight & BMI' | 'Trends'
+  const [selectedMemberId, setSelectedMemberId] = useState('SELF');
+  const [showAddVitalModal, setShowAddVitalModal] = useState(false);
+  const [showDeviceSyncModal, setShowDeviceSyncModal] = useState(false);
+
+  // Manual vital entry form states
+  const [manualBp, setManualBp] = useState('120/80');
+  const [manualSugar, setManualSugar] = useState('');
+  const [manualPulse, setManualPulse] = useState('72');
+  const [manualSpo2, setManualSpo2] = useState('98');
+  const [manualWeight, setManualWeight] = useState('68');
+  const [isSavingVital, setIsSavingVital] = useState(false);
+  const [allReportsList, setAllReportsList] = useState([]);
+
+  // Fetch live reports
+  React.useEffect(() => {
+    fetch('/api/v1/patient/reports')
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && Array.isArray(d.reports)) {
+          setAllReportsList(d.reports);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const searchInputRef = useRef(null);
 
   // Active Ongoing Order Data: ONLY IF THE ORDER IS ACTIVE
@@ -652,7 +683,7 @@ export default function CareSeekerHomeTab({
           </div>
         )}
 
-        {/* HEALTH SNAPSHOT (ALWAYS SINGLE ROW WITH AUTO-SCROLL) */}
+        {/* HEALTH SNAPSHOT (LIVE DEVICE & USER VITALS MIRROR) */}
         <div style={{
           flex: ongoingOrder ? '1 1 500px' : '1 1 100%',
           minWidth: 0,
@@ -669,21 +700,41 @@ export default function CareSeekerHomeTab({
           {/* Header Row */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
-                My Health Snapshot
-              </h3>
-              <p style={{ fontSize: '0.76rem', color: '#64748B', margin: '0.15rem 0 0 0' }}>
-                Last updated: 12 Oct 2026, 8:45 AM
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+                  My Health Snapshot
+                </h3>
+                {smartDeviceStatus?.connected ? (
+                  <span style={{ fontSize: '0.7rem', backgroundColor: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: '800' }}>
+                    ⌚ {smartDeviceStatus.deviceType || 'Smart Device Connected'}
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '0.7rem', backgroundColor: '#F1F5F9', color: '#64748B', border: '1px solid #CBD5E1', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: '800' }}>
+                    No Smartwatch Linked
+                  </span>
+                )}
+              </div>
+              <p style={{ fontSize: '0.76rem', color: '#64748B', margin: '0.2rem 0 0 0' }}>
+                {customerVitals[selectedMemberId]?.latest ? (
+                  <>
+                    Last updated: {new Date(customerVitals[selectedMemberId].latest.recordedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} • 
+                    <span style={{ fontWeight: '800', color: customerVitals[selectedMemberId].latest.source === 'PHLEBOTOMIST_VISIT' ? '#047857' : '#006B70', marginLeft: '0.25rem' }}>
+                      {customerVitals[selectedMemberId].latest.source === 'PHLEBOTOMIST_VISIT' ? `🩺 Recorded during Phlebo Visit by ${customerVitals[selectedMemberId].latest.phleboName || 'Ajay Kumar'}` : (customerVitals[selectedMemberId].latest.source === 'DEVICE' ? '⌚ Live Device Telemetry' : '✍️ Manual Entry')}
+                    </span>
+                  </>
+                ) : (
+                  'No biometric data logged yet for this member.'
+                )}
               </p>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <button
-                onClick={() => alert('Apple Health Sync: Connected to HealthKit sandbox.')}
+                onClick={() => setShowDeviceSyncModal(true)}
                 style={{
-                  backgroundColor: '#FFF1F2',
-                  color: '#BE123C',
-                  border: '1px solid #FECDD3',
+                  backgroundColor: smartDeviceStatus?.connected ? '#F0FDF4' : '#FFF1F2',
+                  color: smartDeviceStatus?.connected ? '#15803D' : '#BE123C',
+                  border: smartDeviceStatus?.connected ? '1px solid #BBF7D0' : '1px solid #FECDD3',
                   padding: '0.35rem 0.75rem',
                   borderRadius: '20px',
                   fontSize: '0.74rem',
@@ -694,7 +745,7 @@ export default function CareSeekerHomeTab({
                   cursor: 'pointer'
                 }}
               >
-                ❤️ Sync with Apple Health
+                {smartDeviceStatus?.connected ? '✓ Apple Health / Google Fit Linked' : '❤️ Connect Smartwatch / Apple Health'}
               </button>
 
               <button
@@ -716,372 +767,213 @@ export default function CareSeekerHomeTab({
             </div>
           </div>
 
-          {/* Sub-tabs Row */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-              {['Vitals', 'Activity', 'Sleep', 'Weight & BMI', 'Trends'].map(tab => {
-                const isSelected = activeSnapshotTab === tab;
+          {/* Family Member Switcher Bar */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.6rem', borderBottom: '1px solid #F1F5F9', paddingBottom: '0.6rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: '800', color: '#64748B' }}>Member:</span>
+              {familyMembers.map(mem => {
+                const isSelected = selectedMemberId === mem.id;
                 return (
                   <button
-                    key={tab}
-                    onClick={() => setActiveSnapshotTab(tab)}
+                    key={mem.id}
+                    onClick={() => setSelectedMemberId(mem.id)}
                     style={{
-                      padding: '0.32rem 0.75rem',
-                      borderRadius: '10px',
-                      border: 'none',
-                      backgroundColor: isSelected ? '#006B70' : '#F1F5F9',
-                      color: isSelected ? '#FFFFFF' : '#475569',
-                      fontWeight: '800',
+                      padding: '0.28rem 0.75rem',
+                      borderRadius: '16px',
+                      border: isSelected ? '1.5px solid #006B70' : '1px solid #CBD5E1',
+                      backgroundColor: isSelected ? '#E0F2F1' : '#FFFFFF',
+                      color: isSelected ? '#006B70' : '#475569',
+                      fontWeight: isSelected ? '900' : '700',
                       fontSize: '0.76rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease'
+                      cursor: 'pointer'
                     }}
                   >
-                    {tab}
+                    👤 {mem.name} ({mem.relation || 'Self'})
                   </button>
                 );
               })}
             </div>
 
             <button
-              onClick={() => setActiveTab('VITALS')}
+              onClick={() => setShowAddVitalModal(true)}
               style={{
                 padding: '0.32rem 0.7rem',
                 borderRadius: '8px',
-                border: '1.5px solid #CBD5E1',
-                backgroundColor: '#FFFFFF',
-                color: '#006B70',
+                border: '1.5px solid #006B70',
+                backgroundColor: '#006B70',
+                color: '#FFFFFF',
                 fontWeight: '800',
                 fontSize: '0.76rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.3rem',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(0,107,112,0.15)'
               }}
             >
-              <Plus size={13} /> Add Reading
+              <Plus size={13} /> + Manual Log Vitals
             </button>
           </div>
 
-          {/* 6 Biometric Cards IN A SINGLE ROW WITH HORIZONTAL AUTO-SCROLL */}
-          <div style={{
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'stretch',
-            gap: '0.75rem',
-            overflowX: 'auto',
-            overflowY: 'hidden',
-            paddingBottom: '0.4rem',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-            WebkitOverflowScrolling: 'touch'
-          }}>
-            {/* 1. Blood Pressure */}
+          {/* Biometric Display: Show live readings OR Empty State Prompt */}
+          {customerVitals[selectedMemberId]?.latest ? (
             <div style={{
-              flex: '0 0 170px',
-              minWidth: '165px',
-              maxWidth: '180px',
-              backgroundColor: '#FFFFFF',
-              borderRadius: '16px',
-              padding: '0.85rem',
-              border: '1.5px solid #FFE4E6',
-              boxShadow: '0 2px 8px rgba(225,29,72,0.04)',
               display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: '0.45rem'
+              flexDirection: 'row',
+              alignItems: 'stretch',
+              gap: '0.75rem',
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              paddingBottom: '0.4rem',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch'
             }}>
-              <div>
-                {/* Target Achieved Meter Line */}
-                <div style={{ marginBottom: '0.45rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', fontWeight: '800', marginBottom: '0.2rem' }}>
-                    <span style={{ color: '#64748B' }}>Target Met</span>
-                    <span style={{ color: '#059669', fontWeight: '900' }}>96%</span>
+              {/* 1. Blood Pressure */}
+              <div style={{ flex: '0 0 170px', minWidth: '165px', maxWidth: '180px', backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '0.85rem', border: '1.5px solid #FFE4E6', boxShadow: '0 2px 8px rgba(225,29,72,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.45rem' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#E11D48', fontSize: '0.74rem', fontWeight: '800' }}>
+                    <Heart size={14} /> Blood Pressure
                   </div>
-                  <div style={{ width: '100%', height: '4px', backgroundColor: '#F1F5F9', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: '96%', height: '100%', background: 'linear-gradient(90deg, #10B981 0%, #059669 100%)', borderRadius: '4px' }} />
+                  <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
+                    {customerVitals[selectedMemberId].latest.bp ? (
+                      typeof customerVitals[selectedMemberId].latest.bp === 'string' 
+                        ? customerVitals[selectedMemberId].latest.bp 
+                        : `${customerVitals[selectedMemberId].latest.bp.systolic}/${customerVitals[selectedMemberId].latest.bp.diastolic}`
+                    ) : '--/--'}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
+                    <span style={{ fontSize: '0.68rem', color: '#64748B' }}>mmHg</span>
+                    <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: &lt;120/80</span>
                   </div>
                 </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#E11D48', fontSize: '0.74rem', fontWeight: '800' }}>
-                  <Heart size={14} /> Blood Pressure
-                </div>
-                <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
-                  120/80
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
-                  <span style={{ fontSize: '0.68rem', color: '#64748B' }}>mmHg</span>
-                  <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: &lt;120/80</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
+                  <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
+                    {customerVitals[selectedMemberId].latest.bp?.systolic > 130 ? 'Stage 1 HTN' : 'Optimal'}
+                  </span>
+                  <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>Live</span>
                 </div>
               </div>
 
-              <svg viewBox="0 0 100 24" style={{ width: '100%', height: '20px' }}>
-                <path d="M 0 18 Q 20 12 40 16 T 70 8 T 100 12" fill="none" stroke="#10B981" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
+              {/* 2. Blood Sugar */}
+              <div style={{ flex: '0 0 170px', minWidth: '165px', maxWidth: '180px', backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '0.85rem', border: '1.5px solid #E0F2FE', boxShadow: '0 2px 8px rgba(2,132,199,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.45rem' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#0284C7', fontSize: '0.74rem', fontWeight: '800' }}>
+                    <Droplets size={14} /> Blood Sugar
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
+                    {customerVitals[selectedMemberId].latest.sugar?.fbs || customerVitals[selectedMemberId].latest.sugar || '--'}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
+                    <span style={{ fontSize: '0.68rem', color: '#64748B' }}>mg/dL (Fast)</span>
+                    <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: 70-99</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
+                  <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
+                    {(customerVitals[selectedMemberId].latest.sugar?.fbs || 90) > 100 ? 'Elevated' : 'Normal'}
+                  </span>
+                  <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>Live</span>
+                </div>
+              </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
-                <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
-                  Normal
-                </span>
-                <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>2d ago</span>
+              {/* 3. Heart Rate */}
+              <div style={{ flex: '0 0 170px', minWidth: '165px', maxWidth: '180px', backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '0.85rem', border: '1.5px solid #FFEDD5', boxShadow: '0 2px 8px rgba(234,88,12,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.45rem' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#EA580C', fontSize: '0.74rem', fontWeight: '800' }}>
+                    <Activity size={14} /> Heart Rate
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
+                    {customerVitals[selectedMemberId].latest.pulse || '--'}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
+                    <span style={{ fontSize: '0.68rem', color: '#64748B' }}>bpm</span>
+                    <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: 60-100</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
+                  <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
+                    Normal
+                  </span>
+                  <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>Live</span>
+                </div>
+              </div>
+
+              {/* 4. SpO2 */}
+              <div style={{ flex: '0 0 170px', minWidth: '165px', maxWidth: '180px', backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '0.85rem', border: '1.5px solid #CCFBF1', boxShadow: '0 2px 8px rgba(13,148,136,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.45rem' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#0D9488', fontSize: '0.74rem', fontWeight: '800' }}>
+                    <Wind size={14} /> SpO₂
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
+                    {customerVitals[selectedMemberId].latest.spo2 || '--'}%
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
+                    <span style={{ fontSize: '0.68rem', color: '#64748B' }}>%</span>
+                    <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: ≥95%</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
+                  <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
+                    Optimal
+                  </span>
+                  <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>Live</span>
+                </div>
+              </div>
+
+              {/* 5. Weight */}
+              <div style={{ flex: '0 0 170px', minWidth: '165px', maxWidth: '180px', backgroundColor: '#FFFFFF', borderRadius: '16px', padding: '0.85rem', border: '1.5px solid #DCFCE7', boxShadow: '0 2px 8px rgba(22,163,74,0.04)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '0.45rem' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#16A34A', fontSize: '0.74rem', fontWeight: '800' }}>
+                    <Scale size={14} /> Weight
+                  </div>
+                  <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
+                    {customerVitals[selectedMemberId].latest.weight || '--'}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
+                    <span style={{ fontSize: '0.68rem', color: '#64748B' }}>kg</span>
+                    <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: Healthy</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
+                  <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
+                    Logged
+                  </span>
+                  <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>Live</span>
+                </div>
               </div>
             </div>
-
-            {/* 2. Blood Sugar (Fasting) */}
+          ) : (
             <div style={{
-              flex: '0 0 170px',
-              minWidth: '165px',
-              maxWidth: '180px',
-              backgroundColor: '#FFFFFF',
+              backgroundColor: '#F8FAFC',
               borderRadius: '16px',
-              padding: '0.85rem',
-              border: '1.5px solid #E0F2FE',
-              boxShadow: '0 2px 8px rgba(2,132,199,0.04)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: '0.45rem'
+              padding: '1.5rem',
+              border: '1.5px dashed #CBD5E1',
+              textAlign: 'center'
             }}>
-              <div>
-                {/* Target Achieved Meter Line */}
-                <div style={{ marginBottom: '0.45rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', fontWeight: '800', marginBottom: '0.2rem' }}>
-                    <span style={{ color: '#64748B' }}>Target Met</span>
-                    <span style={{ color: '#0284C7', fontWeight: '900' }}>92%</span>
-                  </div>
-                  <div style={{ width: '100%', height: '4px', backgroundColor: '#F1F5F9', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: '92%', height: '100%', background: 'linear-gradient(90deg, #38BDF8 0%, #0284C7 100%)', borderRadius: '4px' }} />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#0284C7', fontSize: '0.74rem', fontWeight: '800' }}>
-                  <Droplets size={14} /> Blood Sugar
-                </div>
-                <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
-                  92
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
-                  <span style={{ fontSize: '0.68rem', color: '#64748B' }}>mg/dL (Fast)</span>
-                  <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: 70-99</span>
-                </div>
+              <div style={{ fontSize: '1.6rem', marginBottom: '0.3rem' }}>⌚🩺</div>
+              <div style={{ fontSize: '0.96rem', fontWeight: '900', color: '#0F172A' }}>
+                No Biometrics Recorded Yet for {familyMembers.find(m => m.id === selectedMemberId)?.name || 'Patient'}
               </div>
-
-              <svg viewBox="0 0 100 24" style={{ width: '100%', height: '20px' }}>
-                <path d="M 0 20 Q 30 16 55 18 T 85 10 T 100 8" fill="none" stroke="#0284C7" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
-                <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
-                  Normal
-                </span>
-                <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>Yesterday</span>
+              <p style={{ fontSize: '0.78rem', color: '#64748B', maxWidth: '440px', margin: '0.25rem auto 1rem' }}>
+                Connect a smartwatch (Apple Health / Google Fit) or manually enter Blood Pressure, Sugar, Pulse, and SpO₂ to receive clinical wellness insights.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setShowAddVitalModal(true)}
+                  style={{ padding: '0.55rem 1.1rem', backgroundColor: '#006B70', color: '#FFFFFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                >
+                  <Plus size={14} /> + Enter First Vitals Reading
+                </button>
+                <button
+                  onClick={() => setShowDeviceSyncModal(true)}
+                  style={{ padding: '0.55rem 1.1rem', backgroundColor: '#FFFFFF', color: '#006B70', border: '1.5px solid #006B70', borderRadius: '10px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                >
+                  ❤️ Link Smart Health App
+                </button>
               </div>
             </div>
-
-            {/* 3. Heart Rate */}
-            <div style={{
-              flex: '0 0 170px',
-              minWidth: '165px',
-              maxWidth: '180px',
-              backgroundColor: '#FFFFFF',
-              borderRadius: '16px',
-              padding: '0.85rem',
-              border: '1.5px solid #FFEDD5',
-              boxShadow: '0 2px 8px rgba(234,88,12,0.04)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: '0.45rem'
-            }}>
-              <div>
-                {/* Target Achieved Meter Line */}
-                <div style={{ marginBottom: '0.45rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', fontWeight: '800', marginBottom: '0.2rem' }}>
-                    <span style={{ color: '#64748B' }}>Target Met</span>
-                    <span style={{ color: '#EA580C', fontWeight: '900' }}>95%</span>
-                  </div>
-                  <div style={{ width: '100%', height: '4px', backgroundColor: '#F1F5F9', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: '95%', height: '100%', background: 'linear-gradient(90deg, #FB923C 0%, #EA580C 100%)', borderRadius: '4px' }} />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#EA580C', fontSize: '0.74rem', fontWeight: '800' }}>
-                  <Activity size={14} /> Heart Rate
-                </div>
-                <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
-                  76
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
-                  <span style={{ fontSize: '0.68rem', color: '#64748B' }}>bpm</span>
-                  <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: 60-100</span>
-                </div>
-              </div>
-
-              <svg viewBox="0 0 100 24" style={{ width: '100%', height: '20px' }}>
-                <path d="M 0 18 Q 25 15 50 16 T 75 8 T 100 9" fill="none" stroke="#EA580C" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
-                <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
-                  Normal
-                </span>
-                <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>2d ago</span>
-              </div>
-            </div>
-
-            {/* 4. Weight */}
-            <div style={{
-              flex: '0 0 170px',
-              minWidth: '165px',
-              maxWidth: '180px',
-              backgroundColor: '#FFFFFF',
-              borderRadius: '16px',
-              padding: '0.85rem',
-              border: '1.5px solid #DCFCE7',
-              boxShadow: '0 2px 8px rgba(22,163,74,0.04)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: '0.45rem'
-            }}>
-              <div>
-                {/* Target Achieved Meter Line */}
-                <div style={{ marginBottom: '0.45rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', fontWeight: '800', marginBottom: '0.2rem' }}>
-                    <span style={{ color: '#64748B' }}>Target Met</span>
-                    <span style={{ color: '#16A34A', fontWeight: '900' }}>88%</span>
-                  </div>
-                  <div style={{ width: '100%', height: '4px', backgroundColor: '#F1F5F9', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: '88%', height: '100%', background: 'linear-gradient(90deg, #4ADE80 0%, #16A34A 100%)', borderRadius: '4px' }} />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#16A34A', fontSize: '0.74rem', fontWeight: '800' }}>
-                  <Scale size={14} /> Weight
-                </div>
-                <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
-                  72
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
-                  <span style={{ fontSize: '0.68rem', color: '#64748B' }}>kg</span>
-                  <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: 70 kg</span>
-                </div>
-              </div>
-
-              <svg viewBox="0 0 100 24" style={{ width: '100%', height: '20px' }}>
-                <path d="M 0 18 Q 30 14 60 17 T 90 9 T 100 7" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
-                <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
-                  ↓ 1.5 kg
-                </span>
-                <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>3d ago</span>
-              </div>
-            </div>
-
-            {/* 5. BMI */}
-            <div style={{
-              flex: '0 0 170px',
-              minWidth: '165px',
-              maxWidth: '180px',
-              backgroundColor: '#FFFFFF',
-              borderRadius: '16px',
-              padding: '0.85rem',
-              border: '1.5px solid #F3E8FF',
-              boxShadow: '0 2px 8px rgba(147,51,234,0.04)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: '0.45rem'
-            }}>
-              <div>
-                {/* Target Achieved Meter Line */}
-                <div style={{ marginBottom: '0.45rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', fontWeight: '800', marginBottom: '0.2rem' }}>
-                    <span style={{ color: '#64748B' }}>Target Met</span>
-                    <span style={{ color: '#9333EA', fontWeight: '900' }}>94%</span>
-                  </div>
-                  <div style={{ width: '100%', height: '4px', backgroundColor: '#F1F5F9', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: '94%', height: '100%', background: 'linear-gradient(90deg, #C084FC 0%, #9333EA 100%)', borderRadius: '4px' }} />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#9333EA', fontSize: '0.74rem', fontWeight: '800' }}>
-                  <Sparkles size={14} /> BMI
-                </div>
-                <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
-                  23.4
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
-                  <span style={{ fontSize: '0.68rem', color: '#64748B' }}>kg/m²</span>
-                  <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: 18.5-24.9</span>
-                </div>
-              </div>
-
-              <svg viewBox="0 0 100 24" style={{ width: '100%', height: '20px' }}>
-                <path d="M 0 18 Q 30 16 60 14 T 85 9 T 100 6" fill="none" stroke="#9333EA" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
-                <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
-                  Optimal
-                </span>
-                <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>3d ago</span>
-              </div>
-            </div>
-
-            {/* 6. SpO2 */}
-            <div style={{
-              flex: '0 0 170px',
-              minWidth: '165px',
-              maxWidth: '180px',
-              backgroundColor: '#FFFFFF',
-              borderRadius: '16px',
-              padding: '0.85rem',
-              border: '1.5px solid #CCFBF1',
-              boxShadow: '0 2px 8px rgba(13,148,136,0.04)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              gap: '0.45rem'
-            }}>
-              <div>
-                {/* Target Achieved Meter Line */}
-                <div style={{ marginBottom: '0.45rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.68rem', fontWeight: '800', marginBottom: '0.2rem' }}>
-                    <span style={{ color: '#64748B' }}>Target Met</span>
-                    <span style={{ color: '#0D9488', fontWeight: '900' }}>98%</span>
-                  </div>
-                  <div style={{ width: '100%', height: '4px', backgroundColor: '#F1F5F9', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: '98%', height: '100%', background: 'linear-gradient(90deg, #2DD4BF 0%, #0D9488 100%)', borderRadius: '4px' }} />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#0D9488', fontSize: '0.74rem', fontWeight: '800' }}>
-                  <Wind size={14} /> SpO₂
-                </div>
-                <div style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0F172A', marginTop: '0.2rem', lineHeight: 1.1 }}>
-                  98
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '0.15rem' }}>
-                  <span style={{ fontSize: '0.68rem', color: '#64748B' }}>%</span>
-                  <span style={{ fontSize: '0.65rem', color: '#006B70', fontWeight: '700' }}>Goal: ≥95%</span>
-                </div>
-              </div>
-
-              <svg viewBox="0 0 100 24" style={{ width: '100%', height: '20px' }}>
-                <path d="M 0 19 Q 30 15 65 17 T 90 10 T 100 8" fill="none" stroke="#0D9488" strokeWidth="2.5" strokeLinecap="round" />
-              </svg>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #F8FAFC', paddingTop: '0.35rem' }}>
-                <span style={{ fontSize: '0.68rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.12rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
-                  Normal
-                </span>
-                <span style={{ fontSize: '0.66rem', color: '#94A3B8' }}>3d ago</span>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -1294,7 +1186,7 @@ export default function CareSeekerHomeTab({
       {/* 6. RECENT LAB REPORTS & CLINICAL INSIGHTS (AT BOTTOM OF HOME) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginTop: '0.5rem' }}>
         
-        {/* Recent Reports Card */}
+        {/* Recent Reports Card (Live Database Mirror) */}
         <div style={{
           backgroundColor: '#FFFFFF',
           borderRadius: '24px',
@@ -1322,51 +1214,63 @@ export default function CareSeekerHomeTab({
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-              {[
-                { title: 'Complete Blood Count (CBC)', date: '28 Sep 2026', lab: 'Thyrocare NABL Lab', status: 'Verified' },
-                { title: 'Thyroid Profile Total (T3/T4/TSH)', date: '15 Aug 2026', lab: 'Thyrocare NABL Lab', status: 'Verified' },
-                { title: 'HbA1c Glycated Hemoglobin', date: '02 Jul 2026', lab: 'MedMarg Processing Hub', status: 'Verified' }
-              ].map((rep, rIdx) => (
-                <div
-                  key={rIdx}
-                  style={{
-                    padding: '0.85rem 1rem',
-                    backgroundColor: '#F8FAFC',
-                    borderRadius: '14px',
-                    border: '1px solid #E2E8F0',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                >
-                  <div>
-                    <div style={{ fontSize: '0.9rem', fontWeight: '800', color: '#0F172A' }}>{rep.title}</div>
-                    <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: '0.15rem' }}>
-                      📅 {rep.date} • {rep.lab}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setActiveTab('REPORTS')}
+            {/* Live Reports Rendered or Graceful Empty State */}
+            {allReportsList && allReportsList.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {allReportsList.slice(0, 3).map((rep, rIdx) => (
+                  <div
+                    key={rIdx}
                     style={{
-                      padding: '0.4rem 0.75rem',
-                      backgroundColor: '#E0F2F1',
-                      color: '#006B70',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '0.78rem',
-                      fontWeight: '800',
-                      cursor: 'pointer',
+                      padding: '0.85rem 1rem',
+                      backgroundColor: rIdx === 0 ? '#ECFDF5' : '#F8FAFC',
+                      borderRadius: '14px',
+                      border: rIdx === 0 ? '1.5px solid #A7F3D0' : '1px solid #E2E8F0',
                       display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.3rem'
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
                     }}
                   >
-                    <Download size={13} /> PDF
-                  </button>
-                </div>
-              ))}
-            </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <div style={{ fontSize: '0.9rem', fontWeight: '800', color: '#0F172A' }}>{rep.title}</div>
+                        {rIdx === 0 && (
+                          <span style={{ fontSize: '0.65rem', backgroundColor: '#059669', color: '#FFF', padding: '0.1rem 0.45rem', borderRadius: '4px', fontWeight: '900' }}>
+                            LATEST REPORT
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: '0.15rem' }}>
+                        📅 {rep.date} • {rep.lab}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('REPORTS')}
+                      style={{
+                        padding: '0.4rem 0.75rem',
+                        backgroundColor: '#006B70',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '0.78rem',
+                        fontWeight: '800',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.3rem'
+                      }}
+                    >
+                      <Download size={13} /> PDF
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ padding: '1.75rem 1rem', textAlign: 'center', backgroundColor: '#F8FAFC', borderRadius: '14px', border: '1px dashed #CBD5E1' }}>
+                <div style={{ fontSize: '1.4rem', marginBottom: '0.2rem' }}>📁</div>
+                <div style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0F172A' }}>No Reports in Vault Yet</div>
+                <div style={{ fontSize: '0.76rem', color: '#64748B', marginTop: '0.2rem' }}>Your verified pathology test reports will appear here automatically once lab processing is complete.</div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1391,6 +1295,69 @@ export default function CareSeekerHomeTab({
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {/* Dynamic Smart Recommendations Triggered by Vitals */}
+              {customerVitals[selectedMemberId]?.latest && (
+                (() => {
+                  const latest = customerVitals[selectedMemberId].latest;
+                  const triggeredRecs = [];
+                  const fbs = latest.sugar?.fbs || parseInt(latest.sugar) || 0;
+                  const sys = latest.bp?.systolic || (typeof latest.bp === 'string' ? parseInt(latest.bp.split('/')[0]) : 0);
+                  const spo2 = latest.spo2 ? parseInt(latest.spo2) : 98;
+
+                  if (fbs > 105) {
+                    triggeredRecs.push({
+                      title: 'Recommended: HbA1c Glycated Hemoglobin Test',
+                      reason: `Fasting blood glucose was logged at ${fbs} mg/dL (Above 100 mg/dL optimal limit).`,
+                      code: 'T-HBA1C-01',
+                      tag: 'CLINICAL ALERT'
+                    });
+                  }
+                  if (sys > 132) {
+                    triggeredRecs.push({
+                      title: 'Recommended: Lipid Profile & Serum Creatinine',
+                      reason: `Systolic BP was logged at ${sys} mmHg (Stage 1 HTN range).`,
+                      code: 'P-CARD-01',
+                      tag: 'CARDIAC CHECK'
+                    });
+                  }
+                  if (spo2 < 95 && spo2 > 0) {
+                    triggeredRecs.push({
+                      title: 'Recommended: Complete Hemogram (CBC) with Differential',
+                      reason: `SpO2 recorded at ${spo2}% (Below 95% threshold).`,
+                      code: 'T-CBC-01',
+                      tag: 'PULMONARY TRIAGE'
+                    });
+                  }
+
+                  if (triggeredRecs.length === 0) return null;
+
+                  return triggeredRecs.map((rec, recIdx) => (
+                    <div key={recIdx} style={{ padding: '0.85rem 1rem', backgroundColor: '#FEF2F2', borderRadius: '14px', border: '1.5px solid #FECACA', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontSize: '0.66rem', backgroundColor: '#EF4444', color: '#FFF', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '900' }}>
+                          {rec.tag}
+                        </span>
+                        <div style={{ fontSize: '0.88rem', fontWeight: '900', color: '#991B1B', marginTop: '0.2rem' }}>
+                          {rec.title}
+                        </div>
+                        <div style={{ fontSize: '0.74rem', color: '#7F1D1D', marginTop: '0.15rem' }}>
+                          {rec.reason}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setActiveTab('TESTS');
+                          setCatalogSubTab('ALL');
+                        }}
+                        style={{ padding: '0.35rem 0.75rem', backgroundColor: '#DC2626', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '800', cursor: 'pointer', whiteSpace: 'nowrap', marginLeft: '0.5rem' }}
+                      >
+                        Book Test →
+                      </button>
+                    </div>
+                  ));
+                })()
+              )}
+
               <div style={{
                 padding: '0.85rem 1rem',
                 backgroundColor: '#FFFBEB',
@@ -1435,6 +1402,156 @@ export default function CareSeekerHomeTab({
         </div>
 
       </div>
+
+      {/* MODAL 1: MANUAL VITALS LOG ENTRY */}
+      {showAddVitalModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '460px', borderRadius: '24px', border: '1.5px solid #006B70', padding: '1.75rem', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+                  Log Biometric Vitals
+                </h3>
+                <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.2rem' }}>
+                  Member: <strong>{familyMembers.find(m => m.id === selectedMemberId)?.name || 'Self'}</strong>
+                </div>
+              </div>
+              <button onClick={() => setShowAddVitalModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', color: '#94A3B8', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              setIsSavingVital(true);
+              try {
+                const res = await fetch('/api/v1/customer/vitals', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    email: user?.email,
+                    phone: user?.phone,
+                    memberId: selectedMemberId,
+                    source: 'MANUAL',
+                    vitals: {
+                      bp: manualBp,
+                      sugar: manualSugar ? parseInt(manualSugar) : null,
+                      pulse: manualPulse ? parseInt(manualPulse) : null,
+                      spo2: manualSpo2 ? parseInt(manualSpo2) : null,
+                      weight: manualWeight ? parseFloat(manualWeight) : null
+                    }
+                  })
+                });
+                const d = await res.json();
+                if (d.success) {
+                  onUpdateDossier();
+                  setShowAddVitalModal(false);
+                }
+              } catch (err) {
+                alert('Failed to save vitals: ' + err.message);
+              } finally {
+                setIsSavingVital(false);
+              }
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>Blood Pressure (mmHg)</label>
+                  <input type="text" value={manualBp} onChange={e => setManualBp(e.target.value)} placeholder="120/80" style={{ width: '100%', padding: '0.55rem', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '0.88rem', fontWeight: '700' }} required />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>Heart Rate (Pulse BPM)</label>
+                  <input type="number" value={manualPulse} onChange={e => setManualPulse(e.target.value)} placeholder="72" style={{ width: '100%', padding: '0.55rem', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '0.88rem', fontWeight: '700' }} required />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>Fasting Blood Sugar (mg/dL)</label>
+                  <input type="number" value={manualSugar} onChange={e => setManualSugar(e.target.value)} placeholder="92" style={{ width: '100%', padding: '0.55rem', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '0.88rem', fontWeight: '700' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>SpO₂ Level (%)</label>
+                  <input type="number" value={manualSpo2} onChange={e => setManualSpo2(e.target.value)} placeholder="98" style={{ width: '100%', padding: '0.55rem', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '0.88rem', fontWeight: '700' }} required />
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: '800', color: '#475569', marginBottom: '0.25rem' }}>Body Weight (kg)</label>
+                  <input type="number" step="0.1" value={manualWeight} onChange={e => setManualWeight(e.target.value)} placeholder="68.5" style={{ width: '100%', padding: '0.55rem', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '0.88rem', fontWeight: '700' }} />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setShowAddVitalModal(false)} style={{ padding: '0.6rem 1rem', backgroundColor: '#F1F5F9', color: '#475569', border: 'none', borderRadius: '10px', fontWeight: '800', cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" disabled={isSavingVital} style={{ padding: '0.6rem 1.25rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer' }}>
+                  {isSavingVital ? 'Saving to Database...' : 'Save Reading'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 2: SMARTWATCH SYNC MODAL */}
+      {showDeviceSyncModal && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '480px', borderRadius: '24px', border: '1.5px solid #006B70', padding: '1.75rem', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+                  Connect Smart Health Watch
+                </h3>
+                <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.2rem' }}>
+                  Apple HealthKit, Google Health Connect & Bluetooth Wearables
+                </div>
+              </div>
+              <button onClick={() => setShowDeviceSyncModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', color: '#94A3B8', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              {[
+                { name: 'Apple Health (iOS / Apple Watch)', icon: '🍎', desc: 'Sync Heart Rate, SpO2, Resting Pulse & Sleep' },
+                { name: 'Google Health Connect / Fit (Android)', icon: '🤖', desc: 'Sync Samsung Galaxy Watch, Fitbit & Wear OS' },
+                { name: 'Direct Bluetooth Smart Oximeter / BP Cuff', icon: '📶', desc: 'BLE Web Bluetooth Wireless Sync' }
+              ].map((dev, dIdx) => (
+                <div key={dIdx} style={{ padding: '0.85rem 1rem', borderRadius: '14px', border: '1px solid #CBD5E1', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                    <span style={{ fontSize: '1.5rem' }}>{dev.icon}</span>
+                    <div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: '900', color: '#0F172A' }}>{dev.name}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{dev.desc}</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch('/api/v1/customer/smart-device', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            email: user?.email,
+                            phone: user?.phone,
+                            action: 'CONNECT',
+                            deviceType: dev.name
+                          })
+                        });
+                        const d = await res.json();
+                        if (d.success) {
+                          onUpdateDossier();
+                          setShowDeviceSyncModal(false);
+                          alert(`${dev.name} connected successfully! Vitals telemetry active.`);
+                        }
+                      } catch (e) {
+                        alert('Connection error: ' + e.message);
+                      }
+                    }}
+                    style={{ padding: '0.4rem 0.85rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800', cursor: 'pointer' }}
+                  >
+                    Connect
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowDeviceSyncModal(false)} style={{ padding: '0.55rem 1rem', backgroundColor: '#F1F5F9', color: '#475569', border: 'none', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer' }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
