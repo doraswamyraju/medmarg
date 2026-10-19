@@ -229,8 +229,9 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   const pendingFreelancerCount = freelancers.filter(f => f.status === 'PENDING_VERIFICATION').length;
 
   // Navigation Items (Single Word Labels)
+  const totalCatalogItems = (catalog.tests?.length || 0) + (catalog.profiles?.length || 0) + (catalog.packages?.length || 0);
   const navMenuItems = [
-    { key: 'TESTS_MGMT', label: 'Tests', icon: FlaskConical, badge: `${(catalog.tests?.length || 913) + (catalog.profiles?.length || 87)}` },
+    { key: 'TESTS_MGMT', label: 'Tests', icon: FlaskConical, badge: `${totalCatalogItems || 1093}` },
     { key: 'LIVE_ORDERS', label: 'Orders', icon: Package, badge: `${orders.length}` },
     { key: 'CUSTOMERS', label: 'Customers', icon: Users, badge: 'Care Seekers' },
     { key: 'GPS_RADAR', label: 'Tracking', icon: Navigation, badge: 'Live GPS' },
