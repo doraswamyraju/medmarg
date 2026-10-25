@@ -194,6 +194,7 @@ export default function CatalogManagementTab({
     tatHours: 24,
     description: '',
     selectedTests: [],
+    manualTests: [],
     labPricing: [],
     tierPricing: null
   });
@@ -207,6 +208,7 @@ export default function CatalogManagementTab({
     price: 1299,
     selectedProfiles: ['APASTS', 'BEAP'],
     selectedTests: ['AHGLU', 'VITDC', 'SGPT'],
+    manualTests: [],
     tatHours: 24,
     description: '',
     labPricing: [],
@@ -216,11 +218,8 @@ export default function CatalogManagementTab({
   const [showPkgManualTestModal, setShowPkgManualTestModal] = useState(false);
   const [pkgManualTestForm, setPkgManualTestForm] = useState({
     name: '',
-    code: '',
     sampleType: 'SERUM',
-    fasting: 'NO',
-    price: 299,
-    mrp: 499
+    fasting: 'NO'
   });
 
   // OPEN HANDLERS
@@ -302,6 +301,7 @@ export default function CatalogManagementTab({
       tatHours: profile.tatHours || 24,
       description: profile.description || '',
       selectedTests: profile.tests || [],
+      manualTests: profile.manualTests || [],
       labPricing: JSON.parse(JSON.stringify(labs)),
       tierPricing: JSON.parse(JSON.stringify(tiers))
     });
@@ -326,6 +326,7 @@ export default function CatalogManagementTab({
         description: pkg.description || '',
         selectedProfiles: pkg.profiles || [],
         selectedTests: pkg.tests || [],
+        manualTests: pkg.manualTests || [],
         labPricing: JSON.parse(JSON.stringify(labs)),
         tierPricing: JSON.parse(JSON.stringify(tiers))
       });
@@ -344,6 +345,7 @@ export default function CatalogManagementTab({
         description: '',
         selectedProfiles: catalog.profiles?.[0] ? [catalog.profiles[0].code] : [],
         selectedTests: catalog.tests?.[0] ? [catalog.tests[0].code] : [],
+        manualTests: [],
         labPricing: labs,
         tierPricing: tiers
       });
@@ -607,12 +609,22 @@ export default function CatalogManagementTab({
       : getDefaultTierPricing(baseP, baseM);
 
     const selectedTests = profileForm.selectedTests || [];
-    const derivedSamples = selectedTests.length > 0 
-      ? calculateAggregatedSamples([], selectedTests, [], catalog.tests).join(', ')
-      : (profileForm.sampleType || 'SERUM');
+    const manualTests = profileForm.manualTests || [];
+    
+    // Aggregated samples from catalog tests + manual tests
+    let derivedSamplesList = selectedTests.length > 0 
+      ? calculateAggregatedSamples([], selectedTests, [], catalog.tests)
+      : (profileForm.sampleType ? [profileForm.sampleType] : ['SERUM']);
+    manualTests.forEach(m => {
+      if (m.sampleType && !derivedSamplesList.includes(m.sampleType)) {
+        derivedSamplesList.push(m.sampleType);
+      }
+    });
+    const derivedSamples = derivedSamplesList.join(', ');
 
-    const derivedFasting = selectedTests.length > 0 
-      ? (calculateFastingRequirement([], selectedTests, [], catalog.tests) ? 'YES' : 'NO')
+    const derivedFasting = (selectedTests.length > 0 && calculateFastingRequirement([], selectedTests, [], catalog.tests)) ||
+      manualTests.some(m => m.fasting === 'YES')
+      ? 'YES'
       : (profileForm.fasting || 'NO');
 
     const newProfile = {
@@ -628,7 +640,8 @@ export default function CatalogManagementTab({
       tatHours: tat,
       description: profileForm.description || `Diagnostic profile panel for ${profileForm.name}.`,
       tests: selectedTests,
-      testCount: selectedTests.length || 1,
+      manualTests: manualTests,
+      testCount: selectedTests.length + manualTests.length,
       labPricing: effectiveLabs,
       tierPricing: effectiveTiers,
       active: true
@@ -676,6 +689,7 @@ export default function CatalogManagementTab({
 
     const selectedProfiles = packageBuilderForm.selectedProfiles || [];
     const selectedTests = packageBuilderForm.selectedTests || [];
+    const manualTests = packageBuilderForm.manualTests || [];
 
     const sampleTypes = calculateAggregatedSamples(
       selectedProfiles,
@@ -683,13 +697,18 @@ export default function CatalogManagementTab({
       catalog.profiles,
       catalog.tests
     );
+    manualTests.forEach(m => {
+      if (m.sampleType && !sampleTypes.includes(m.sampleType)) {
+        sampleTypes.push(m.sampleType);
+      }
+    });
 
     const requiresFasting = calculateFastingRequirement(
       selectedProfiles,
       selectedTests,
       catalog.profiles,
       catalog.tests
-    );
+    ) || manualTests.some(m => m.fasting === 'YES');
 
     const effectiveLabs = (packageBuilderForm.labPricing && packageBuilderForm.labPricing.length > 0)
       ? packageBuilderForm.labPricing
@@ -715,8 +734,9 @@ export default function CatalogManagementTab({
       popular: true,
       profiles: selectedProfiles,
       tests: selectedTests,
-      testCount: (selectedProfiles.length * 8) + selectedTests.length,
-      description: packageBuilderForm.description || `Comprehensive package composed of ${selectedProfiles.length} profiles and ${selectedTests.length} tests.`,
+      manualTests: manualTests,
+      testCount: (selectedProfiles.length * 8) + selectedTests.length + manualTests.length,
+      description: packageBuilderForm.description || `Comprehensive package composed of ${selectedProfiles.length} profiles and ${selectedTests.length + manualTests.length} tests.`,
       labPricing: effectiveLabs,
       tierPricing: effectiveTiers
     };
@@ -2080,19 +2100,21 @@ export default function CatalogManagementTab({
                 <SingleTestsSelector
                   allTests={catalog.tests || []}
                   selectedTestCodes={profileForm.selectedTests || []}
+                  manualTests={profileForm.manualTests || []}
                   onChange={(newCodes) => setProfileForm(prev => ({ ...prev, selectedTests: newCodes }))}
-                  onAddNewTest={(newTest) => {
-                    const updated = [newTest, ...(catalog.tests || [])];
-                    const newCat = { ...catalog, tests: updated };
-                    setCatalog(newCat);
-                    saveCatalogState(newCat);
-                    safeFetch(`${API_BASE}/api/v1/catalog/tests`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(newTest)
-                    }).catch(console.warn);
-                    setSaveToast(`Biomarker "${newTest.name}" added to Tests catalog!`);
+                  onAddManualTest={(manualItem) => {
+                    setProfileForm(prev => ({
+                      ...prev,
+                      manualTests: [...(prev.manualTests || []), manualItem]
+                    }));
+                    setSaveToast(`Added "${manualItem.name}" to this profile's test composition.`);
                     setTimeout(() => setSaveToast(null), 3000);
+                  }}
+                  onRemoveManualTest={(indexToRemove) => {
+                    setProfileForm(prev => ({
+                      ...prev,
+                      manualTests: (prev.manualTests || []).filter((_, i) => i !== indexToRemove)
+                    }));
                   }}
                   onAutoCalculateProfile={(info) => {
                     setProfileForm(prev => ({
@@ -2240,7 +2262,13 @@ export default function CatalogManagementTab({
                             <button type="button" onClick={() => setPackageBuilderForm(prev => ({ ...prev, selectedTests: (prev.selectedTests || []).filter(c => c !== code) }))} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', padding: 0, fontWeight: '900' }}>✕</button>
                           </span>
                         ))}
-                        {(packageBuilderForm.selectedProfiles || []).length === 0 && (packageBuilderForm.selectedTests || []).length === 0 && (
+                        {(packageBuilderForm.manualTests || []).map((m, idx) => (
+                          <span key={`pkg_manual_${idx}`} style={{ fontSize: '0.72rem', backgroundColor: '#854D0E', color: '#FEF08A', border: '1px solid #CA8A04', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }} title="Internal test for this package only">
+                            📝 {m.name} ({m.sampleType || 'SERUM'})
+                            <button type="button" onClick={() => setPackageBuilderForm(prev => ({ ...prev, manualTests: (prev.manualTests || []).filter((_, i) => i !== idx) }))} style={{ background: 'none', border: 'none', color: '#FEF08A', cursor: 'pointer', padding: 0, fontWeight: '900' }}>✕</button>
+                          </span>
+                        ))}
+                        {(packageBuilderForm.selectedProfiles || []).length === 0 && (packageBuilderForm.selectedTests || []).length === 0 && (packageBuilderForm.manualTests || []).length === 0 && (
                           <span style={{ fontSize: '0.78rem', color: '#94A3B8', fontStyle: 'italic' }}>No profiles or tests selected yet. Select items below.</span>
                         )}
                       </div>
@@ -2494,27 +2522,14 @@ export default function CatalogManagementTab({
                   onChange={(e) => {
                     const name = e.target.value;
                     const autoCode = name.toUpperCase().replace(/[^A-Z0-9]/g, '_').slice(0, 10);
-                    setPkgManualTestForm(prev => ({ ...prev, name, code: prev.code ? prev.code : autoCode }));
+                    setPkgManualTestForm(prev => ({ ...prev, name: e.target.value }));
                   }}
                   required
                   style={{ width: '100%', padding: '0.65rem', border: '1.5px solid #CBD5E1', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '700', color: '#0F172A' }}
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
-                    Test Code *
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. DDIMER"
-                    value={pkgManualTestForm.code}
-                    onChange={(e) => setPkgManualTestForm({ ...pkgManualTestForm, code: e.target.value.toUpperCase().replace(/\s+/g, '_') })}
-                    required
-                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.86rem', fontFamily: 'monospace', fontWeight: '800', color: '#006B70' }}
-                  />
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.65rem' }}>
                 <div>
                   <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
                     Vacutainer Tube
@@ -2533,9 +2548,6 @@ export default function CatalogManagementTab({
                     <option value="STOOL">STOOL SAMPLE</option>
                   </select>
                 </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.65rem' }}>
                 <div>
                   <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
                     Fasting Required?
@@ -2548,28 +2560,6 @@ export default function CatalogManagementTab({
                     <option value="NO">NO</option>
                     <option value="YES">YES</option>
                   </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#006B70', display: 'block', marginBottom: '0.2rem' }}>
-                    Base Price (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={pkgManualTestForm.price}
-                    onChange={(e) => setPkgManualTestForm({ ...pkgManualTestForm, price: Number(e.target.value) || 0 })}
-                    style={{ width: '100%', padding: '0.65rem', border: '1.5px solid #006B70', borderRadius: '8px', fontSize: '0.86rem', fontWeight: '800', color: '#006B70' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#64748B', display: 'block', marginBottom: '0.2rem' }}>
-                    Market MRP (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={pkgManualTestForm.mrp}
-                    onChange={(e) => setPkgManualTestForm({ ...pkgManualTestForm, mrp: Number(e.target.value) || 0 })}
-                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.86rem', color: '#64748B' }}
-                  />
                 </div>
               </div>
 
@@ -2588,45 +2578,25 @@ export default function CatalogManagementTab({
                       alert('Please enter test name');
                       return;
                     }
-                    const code = pkgManualTestForm.code.trim() || `TEST_${Date.now().toString().slice(-4)}`;
-                    const newTestObj = {
-                      id: `TEST_CUSTOM_${Date.now()}`,
-                      code,
+                    const manualItem = {
                       name: pkgManualTestForm.name.trim(),
-                      sampleType: pkgManualTestForm.sampleType,
-                      fasting: pkgManualTestForm.fasting,
-                      price: Number(pkgManualTestForm.price) || 299,
-                      mrp: Number(pkgManualTestForm.mrp) || 499,
-                      category: 'Biomarker Test',
-                      active: true
+                      sampleType: pkgManualTestForm.sampleType || 'SERUM',
+                      fasting: pkgManualTestForm.fasting || 'NO'
                     };
 
-                    const updatedTests = [newTestObj, ...(catalog.tests || [])];
-                    const updatedCatalog = { ...catalog, tests: updatedTests };
-                    setCatalog(updatedCatalog);
-                    saveCatalogState(updatedCatalog);
+                    setPackageBuilderForm(prev => ({
+                      ...prev,
+                      manualTests: [...(prev.manualTests || []), manualItem]
+                    }));
 
-                    safeFetch(`${API_BASE}/api/v1/catalog/tests`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify(newTestObj)
-                    }).catch(console.warn);
-
-                    setPackageBuilderForm(prev => {
-                      const cur = prev.selectedTests || [];
-                      return {
-                        ...prev,
-                        selectedTests: cur.includes(code) ? cur : [...cur, code]
-                      };
-                    });
-
+                    setPkgManualTestForm({ name: '', sampleType: 'SERUM', fasting: 'NO' });
                     setShowPkgManualTestModal(false);
-                    setSaveToast(`Biomarker "${newTestObj.name}" created and added to package!`);
+                    setSaveToast(`Added test "${manualItem.name}" to package composition.`);
                     setTimeout(() => setSaveToast(null), 3000);
                   }}
                   style={{ padding: '0.6rem 1.3rem', backgroundColor: '#006B70', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer' }}
                 >
-                  Add & Include In Package
+                  Add Test to Package
                 </button>
               </div>
             </div>

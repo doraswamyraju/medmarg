@@ -20,9 +20,11 @@ import { calculateAggregatedSamples, calculateFastingRequirement } from '../../.
 export default function SingleTestsSelector({
   allTests = [],
   selectedTestCodes = [],
+  manualTests = [],
   onChange = () => {},
-  onAutoCalculateProfile = null,
-  onAddNewTest = null
+  onAddManualTest = null,
+  onRemoveManualTest = null,
+  onAutoCalculateProfile = null
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sampleFilter, setSampleFilter] = useState('ALL');
@@ -30,11 +32,8 @@ export default function SingleTestsSelector({
   const [showAddCustomModal, setShowAddCustomModal] = useState(false);
   const [customTestForm, setCustomTestForm] = useState({
     name: '',
-    code: '',
     sampleType: 'SERUM',
-    fasting: 'NO',
-    price: 299,
-    mrp: 499
+    fasting: 'NO'
   });
 
   // Filter available tests
@@ -59,15 +58,22 @@ export default function SingleTestsSelector({
     return (allTests || []).filter(t => set.has(t.code) || set.has(t.id));
   }, [allTests, selectedTestCodes]);
 
-  // Aggregate clinical metrics
+  // Combined manual + catalog sample requirements
   const aggregatedSamples = useMemo(() => {
     const list = calculateAggregatedSamples([], selectedTestCodes, [], allTests);
+    (manualTests || []).forEach(m => {
+      if (m.sampleType && !list.includes(m.sampleType)) {
+        list.push(m.sampleType);
+      }
+    });
     return list.join(', ');
-  }, [selectedTestCodes, allTests]);
+  }, [selectedTestCodes, allTests, manualTests]);
 
   const requiresFasting = useMemo(() => {
-    return calculateFastingRequirement([], selectedTestCodes, [], allTests);
-  }, [selectedTestCodes, allTests]);
+    const hasCatFasting = calculateFastingRequirement([], selectedTestCodes, [], allTests);
+    const hasManualFasting = (manualTests || []).some(m => m.fasting === 'YES');
+    return hasCatFasting || hasManualFasting;
+  }, [selectedTestCodes, allTests, manualTests]);
 
   // Price calculations from sum of tests
   const individualTestsSum = useMemo(() => {
@@ -221,7 +227,47 @@ export default function SingleTestsSelector({
             </span>
           ))}
 
-          {selectedTestsList.length === 0 && (
+          {/* Manually Added Internal-Only Tests (Not in master single tests database) */}
+          {(manualTests || []).map((m, idx) => (
+            <span
+              key={`manual_${idx}_${m.name}`}
+              style={{
+                fontSize: '0.76rem',
+                backgroundColor: '#854D0E',
+                color: '#FEF08A',
+                border: '1px solid #CA8A04',
+                padding: '0.25rem 0.6rem',
+                borderRadius: '8px',
+                fontWeight: '800',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+              title="Manual test component for this profile only (not bookable alone)"
+            >
+              📝 {m.name} ({m.sampleType || 'SERUM'})
+              {onRemoveManualTest && (
+                <button
+                  type="button"
+                  onClick={() => onRemoveManualTest(idx)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#FEF08A',
+                    cursor: 'pointer',
+                    padding: 0,
+                    fontSize: '0.85rem',
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </span>
+          ))}
+
+          {selectedTestsList.length === 0 && (manualTests || []).length === 0 && (
             <div style={{ fontSize: '0.8rem', color: '#94A3B8', fontStyle: 'italic', padding: '0.4rem' }}>
               No single tests selected yet. Search and check tests below to compose this profile panel.
             </div>
@@ -449,18 +495,21 @@ export default function SingleTestsSelector({
         )}
       </div>
 
-      {/* Manual Test Dialog Modal */}
+      {/* Manual Test Dialog Modal (Internal Sub-Test for this Profile only) */}
       {showAddCustomModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 10000, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', maxWidth: '520px', width: '100%', padding: '1.75rem', border: '1px solid #CBD5E1', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', maxWidth: '480px', width: '100%', padding: '1.75rem', border: '1px solid #CBD5E1', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem' }}>
               <div>
                 <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '900' }}>
-                  NEW BIOMARKER
+                  INTERNAL TEST COMPONENT
                 </span>
                 <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', margin: '0.2rem 0 0 0' }}>
-                  Add Test Name Manually
+                  Add Custom Test Name
                 </h4>
+                <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '0.2rem' }}>
+                  This test will only be included inside this profile and won't appear as a standalone test.
+                </div>
               </div>
               <button
                 type="button"
@@ -478,32 +527,15 @@ export default function SingleTestsSelector({
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. AMYLASE ENZYME or CA-125"
+                  placeholder="e.g. Free T3, Amylase, or Specific Antigen"
                   value={customTestForm.name}
-                  onChange={(e) => {
-                    const name = e.target.value;
-                    const autoCode = name.toUpperCase().replace(/[^A-Z0-9]/g, '_').slice(0, 10);
-                    setCustomTestForm(prev => ({ ...prev, name, code: prev.code ? prev.code : autoCode }));
-                  }}
+                  onChange={(e) => setCustomTestForm(prev => ({ ...prev, name: e.target.value }))}
                   required
                   style={{ width: '100%', padding: '0.65rem', border: '1.5px solid #CBD5E1', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '700', color: '#0F172A' }}
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                <div>
-                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
-                    Test Code *
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. AMYL"
-                    value={customTestForm.code}
-                    onChange={(e) => setCustomTestForm({ ...customTestForm, code: e.target.value.toUpperCase().replace(/\s+/g, '_') })}
-                    required
-                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.86rem', fontFamily: 'monospace', fontWeight: '800', color: '#006B70' }}
-                  />
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.65rem' }}>
                 <div>
                   <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
                     Vacutainer Tube
@@ -522,9 +554,6 @@ export default function SingleTestsSelector({
                     <option value="STOOL">STOOL SAMPLE</option>
                   </select>
                 </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.65rem' }}>
                 <div>
                   <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
                     Fasting Required?
@@ -537,28 +566,6 @@ export default function SingleTestsSelector({
                     <option value="NO">NO</option>
                     <option value="YES">YES</option>
                   </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#006B70', display: 'block', marginBottom: '0.2rem' }}>
-                    Base Price (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={customTestForm.price}
-                    onChange={(e) => setCustomTestForm({ ...customTestForm, price: Number(e.target.value) || 0 })}
-                    style={{ width: '100%', padding: '0.65rem', border: '1.5px solid #006B70', borderRadius: '8px', fontSize: '0.86rem', fontWeight: '800', color: '#006B70' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#64748B', display: 'block', marginBottom: '0.2rem' }}>
-                    Market MRP (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={customTestForm.mrp}
-                    onChange={(e) => setCustomTestForm({ ...customTestForm, mrp: Number(e.target.value) || 0 })}
-                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.86rem', color: '#64748B' }}
-                  />
                 </div>
               </div>
 
@@ -577,28 +584,21 @@ export default function SingleTestsSelector({
                       alert('Please enter test name');
                       return;
                     }
-                    const code = customTestForm.code.trim() || `TEST_${Date.now().toString().slice(-4)}`;
-                    const newTestObj = {
-                      id: `TEST_CUSTOM_${Date.now()}`,
-                      code,
+                    const manualItem = {
                       name: customTestForm.name.trim(),
-                      sampleType: customTestForm.sampleType,
-                      fasting: customTestForm.fasting,
-                      price: Number(customTestForm.price) || 299,
-                      mrp: Number(customTestForm.mrp) || 499,
-                      category: 'Biomarker Test',
-                      active: true
+                      sampleType: customTestForm.sampleType || 'SERUM',
+                      fasting: customTestForm.fasting || 'NO'
                     };
 
-                    if (onAddNewTest) {
-                      onAddNewTest(newTestObj);
+                    if (onAddManualTest) {
+                      onAddManualTest(manualItem);
                     }
-                    toggleTest(code);
+                    setCustomTestForm({ name: '', sampleType: 'SERUM', fasting: 'NO' });
                     setShowAddCustomModal(false);
                   }}
                   style={{ padding: '0.6rem 1.3rem', backgroundColor: '#006B70', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer' }}
                 >
-                  Add & Include In Profile
+                  Add Test to Profile
                 </button>
               </div>
             </div>
