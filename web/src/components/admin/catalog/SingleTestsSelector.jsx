@@ -21,11 +21,21 @@ export default function SingleTestsSelector({
   allTests = [],
   selectedTestCodes = [],
   onChange = () => {},
-  onAutoCalculateProfile = null
+  onAutoCalculateProfile = null,
+  onAddNewTest = null
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [sampleFilter, setSampleFilter] = useState('ALL');
   const [fastingFilter, setFastingFilter] = useState('ALL');
+  const [showAddCustomModal, setShowAddCustomModal] = useState(false);
+  const [customTestForm, setCustomTestForm] = useState({
+    name: '',
+    code: '',
+    sampleType: 'SERUM',
+    fasting: 'NO',
+    price: 299,
+    mrp: 499
+  });
 
   // Filter available tests
   const filteredTests = useMemo(() => {
@@ -288,6 +298,39 @@ export default function SingleTestsSelector({
             </button>
           ))}
         </div>
+
+        {/* Manual Test Addition Action */}
+        <button
+          type="button"
+          onClick={() => {
+            const derivedCode = searchTerm.trim() ? searchTerm.trim().toUpperCase().replace(/[^A-Z0-9]/g, '_').slice(0, 10) : `TEST_${Date.now().toString().slice(-4)}`;
+            setCustomTestForm({
+              name: searchTerm.trim() || '',
+              code: derivedCode,
+              sampleType: sampleFilter !== 'ALL' ? sampleFilter : 'SERUM',
+              fasting: fastingFilter !== 'ALL' ? fastingFilter : 'NO',
+              price: 299,
+              mrp: 499
+            });
+            setShowAddCustomModal(true);
+          }}
+          style={{
+            padding: '0.45rem 0.85rem',
+            backgroundColor: '#FEF3C7',
+            border: '1.5px solid #F59E0B',
+            color: '#B45309',
+            borderRadius: '8px',
+            fontSize: '0.78rem',
+            fontWeight: '900',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.35rem',
+            marginLeft: 'auto'
+          }}
+        >
+          <Plus size={15} /> + Add Missing Test Manually
+        </button>
       </div>
 
       {/* 3. Scrollable List of Available Tests */}
@@ -372,10 +415,196 @@ export default function SingleTestsSelector({
 
         {filteredTests.length === 0 && (
           <div style={{ padding: '2rem', textAlign: 'center', color: '#64748B', fontSize: '0.88rem' }}>
-            No tests found matching "{searchTerm}". Try clearing your filters.
+            No tests found matching "{searchTerm}".
+            <div style={{ marginTop: '0.75rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  const derivedCode = searchTerm.trim() ? searchTerm.trim().toUpperCase().replace(/[^A-Z0-9]/g, '_').slice(0, 10) : `TEST_${Date.now().toString().slice(-4)}`;
+                  setCustomTestForm({
+                    name: searchTerm.trim() || '',
+                    code: derivedCode,
+                    sampleType: sampleFilter !== 'ALL' ? sampleFilter : 'SERUM',
+                    fasting: fastingFilter !== 'ALL' ? fastingFilter : 'NO',
+                    price: 299,
+                    mrp: 499
+                  });
+                  setShowAddCustomModal(true);
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#006B70',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  fontSize: '0.82rem'
+                }}
+              >
+                + Add "{searchTerm || 'New Test'}" as a New Test
+              </button>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Manual Test Dialog Modal */}
+      {showAddCustomModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', maxWidth: '520px', width: '100%', padding: '1.75rem', border: '1px solid #CBD5E1', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem' }}>
+              <div>
+                <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '900' }}>
+                  NEW BIOMARKER
+                </span>
+                <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', margin: '0.2rem 0 0 0' }}>
+                  Add Test Name Manually
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddCustomModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.2rem', color: '#64748B', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div>
+                <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
+                  Test Full Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. AMYLASE ENZYME or CA-125"
+                  value={customTestForm.name}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    const autoCode = name.toUpperCase().replace(/[^A-Z0-9]/g, '_').slice(0, 10);
+                    setCustomTestForm(prev => ({ ...prev, name, code: prev.code ? prev.code : autoCode }));
+                  }}
+                  required
+                  style={{ width: '100%', padding: '0.65rem', border: '1.5px solid #CBD5E1', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '700', color: '#0F172A' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
+                    Test Code *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. AMYL"
+                    value={customTestForm.code}
+                    onChange={(e) => setCustomTestForm({ ...customTestForm, code: e.target.value.toUpperCase().replace(/\s+/g, '_') })}
+                    required
+                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.86rem', fontFamily: 'monospace', fontWeight: '800', color: '#006B70' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
+                    Vacutainer Tube
+                  </label>
+                  <select
+                    value={customTestForm.sampleType}
+                    onChange={(e) => setCustomTestForm({ ...customTestForm, sampleType: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.86rem', fontWeight: '700', color: '#0F172A' }}
+                  >
+                    <option value="SERUM">SERUM (Yellow/Red)</option>
+                    <option value="EDTA">EDTA WHOLE BLOOD (Purple)</option>
+                    <option value="FLUORIDE">FLUORIDE PLASMA (Grey)</option>
+                    <option value="CITRATE">SODIUM CITRATE (Blue)</option>
+                    <option value="HEPARIN">SODIUM HEPARIN (Green)</option>
+                    <option value="URINE">URINE SAMPLE</option>
+                    <option value="STOOL">STOOL SAMPLE</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.65rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
+                    Fasting Required?
+                  </label>
+                  <select
+                    value={customTestForm.fasting}
+                    onChange={(e) => setCustomTestForm({ ...customTestForm, fasting: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.86rem', fontWeight: '700' }}
+                  >
+                    <option value="NO">NO</option>
+                    <option value="YES">YES</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#006B70', display: 'block', marginBottom: '0.2rem' }}>
+                    Base Price (₹)
+                  </label>
+                  <input
+                    type="number"
+                    value={customTestForm.price}
+                    onChange={(e) => setCustomTestForm({ ...customTestForm, price: Number(e.target.value) || 0 })}
+                    style={{ width: '100%', padding: '0.65rem', border: '1.5px solid #006B70', borderRadius: '8px', fontSize: '0.86rem', fontWeight: '800', color: '#006B70' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#64748B', display: 'block', marginBottom: '0.2rem' }}>
+                    Market MRP (₹)
+                  </label>
+                  <input
+                    type="number"
+                    value={customTestForm.mrp}
+                    onChange={(e) => setCustomTestForm({ ...customTestForm, mrp: Number(e.target.value) || 0 })}
+                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.86rem', color: '#64748B' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem', borderTop: '1px solid #E2E8F0', paddingTop: '0.85rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddCustomModal(false)}
+                  style={{ padding: '0.6rem 1.1rem', backgroundColor: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '8px', fontWeight: '700', fontSize: '0.84rem', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!customTestForm.name.trim()) {
+                      alert('Please enter test name');
+                      return;
+                    }
+                    const code = customTestForm.code.trim() || `TEST_${Date.now().toString().slice(-4)}`;
+                    const newTestObj = {
+                      id: `TEST_CUSTOM_${Date.now()}`,
+                      code,
+                      name: customTestForm.name.trim(),
+                      sampleType: customTestForm.sampleType,
+                      fasting: customTestForm.fasting,
+                      price: Number(customTestForm.price) || 299,
+                      mrp: Number(customTestForm.mrp) || 499,
+                      category: 'Biomarker Test',
+                      active: true
+                    };
+
+                    if (onAddNewTest) {
+                      onAddNewTest(newTestObj);
+                    }
+                    toggleTest(code);
+                    setShowAddCustomModal(false);
+                  }}
+                  style={{ padding: '0.6rem 1.3rem', backgroundColor: '#006B70', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer' }}
+                >
+                  Add & Include In Profile
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

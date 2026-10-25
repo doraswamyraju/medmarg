@@ -213,6 +213,15 @@ export default function CatalogManagementTab({
     tierPricing: null
   });
   const [builderSearch, setBuilderSearch] = useState('');
+  const [showPkgManualTestModal, setShowPkgManualTestModal] = useState(false);
+  const [pkgManualTestForm, setPkgManualTestForm] = useState({
+    name: '',
+    code: '',
+    sampleType: 'SERUM',
+    fasting: 'NO',
+    price: 299,
+    mrp: 499
+  });
 
   // OPEN HANDLERS
   const handleOpenCreateTest = () => {
@@ -2072,6 +2081,19 @@ export default function CatalogManagementTab({
                   allTests={catalog.tests || []}
                   selectedTestCodes={profileForm.selectedTests || []}
                   onChange={(newCodes) => setProfileForm(prev => ({ ...prev, selectedTests: newCodes }))}
+                  onAddNewTest={(newTest) => {
+                    const updated = [newTest, ...(catalog.tests || [])];
+                    const newCat = { ...catalog, tests: updated };
+                    setCatalog(newCat);
+                    saveCatalogState(newCat);
+                    safeFetch(`${API_BASE}/api/v1/catalog/tests`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(newTest)
+                    }).catch(console.warn);
+                    setSaveToast(`Biomarker "${newTest.name}" added to Tests catalog!`);
+                    setTimeout(() => setSaveToast(null), 3000);
+                  }}
                   onAutoCalculateProfile={(info) => {
                     setProfileForm(prev => ({
                       ...prev,
@@ -2258,8 +2280,35 @@ export default function CatalogManagementTab({
 
                     {/* Single Tests List */}
                     <div>
-                      <div style={{ fontSize: '0.78rem', color: '#B45309', fontWeight: '800', marginBottom: '0.35rem', display: 'flex', justifyContent: 'space-between' }}>
+                      <div style={{ fontSize: '0.78rem', color: '#B45309', fontWeight: '800', marginBottom: '0.35rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>🧪 INDIVIDUAL TESTS ({catalog.tests?.length || 913})</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const derivedCode = builderSearch.trim() ? builderSearch.trim().toUpperCase().replace(/[^A-Z0-9]/g, '_').slice(0, 10) : `TEST_${Date.now().toString().slice(-4)}`;
+                            setPkgManualTestForm({
+                              name: builderSearch.trim() || '',
+                              code: derivedCode,
+                              sampleType: 'SERUM',
+                              fasting: 'NO',
+                              price: 299,
+                              mrp: 499
+                            });
+                            setShowPkgManualTestModal(true);
+                          }}
+                          style={{
+                            padding: '0.2rem 0.5rem',
+                            backgroundColor: '#FEF3C7',
+                            border: '1px solid #F59E0B',
+                            color: '#B45309',
+                            borderRadius: '5px',
+                            fontSize: '0.72rem',
+                            fontWeight: '900',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          + Add Test Manually
+                        </button>
                       </div>
                       <div style={{ maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.35rem', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '0.5rem', backgroundColor: '#FFFFFF' }}>
                         {(catalog.tests || []).filter(t => !builderSearch || t.name.toLowerCase().includes(builderSearch.toLowerCase()) || t.code.toLowerCase().includes(builderSearch.toLowerCase())).slice(0, 50).map(t => {
@@ -2407,6 +2456,180 @@ export default function CatalogManagementTab({
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: MANUAL TEST ADDITION FOR PACKAGE BUILDER */}
+      {showPkgManualTestModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', maxWidth: '520px', width: '100%', padding: '1.75rem', border: '1px solid #CBD5E1', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem' }}>
+              <div>
+                <span style={{ fontSize: '0.72rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '900' }}>
+                  PACKAGE BUILDER
+                </span>
+                <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A', margin: '0.2rem 0 0 0' }}>
+                  Add Test Name Manually
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPkgManualTestModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '1.2rem', color: '#64748B', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              <div>
+                <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
+                  Test Full Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. AMYLASE or D-DIMER"
+                  value={pkgManualTestForm.name}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    const autoCode = name.toUpperCase().replace(/[^A-Z0-9]/g, '_').slice(0, 10);
+                    setPkgManualTestForm(prev => ({ ...prev, name, code: prev.code ? prev.code : autoCode }));
+                  }}
+                  required
+                  style={{ width: '100%', padding: '0.65rem', border: '1.5px solid #CBD5E1', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '700', color: '#0F172A' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
+                    Test Code *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. DDIMER"
+                    value={pkgManualTestForm.code}
+                    onChange={(e) => setPkgManualTestForm({ ...pkgManualTestForm, code: e.target.value.toUpperCase().replace(/\s+/g, '_') })}
+                    required
+                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.86rem', fontFamily: 'monospace', fontWeight: '800', color: '#006B70' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
+                    Vacutainer Tube
+                  </label>
+                  <select
+                    value={pkgManualTestForm.sampleType}
+                    onChange={(e) => setPkgManualTestForm({ ...pkgManualTestForm, sampleType: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.86rem', fontWeight: '700', color: '#0F172A' }}
+                  >
+                    <option value="SERUM">SERUM (Yellow/Red)</option>
+                    <option value="EDTA">EDTA WHOLE BLOOD (Purple)</option>
+                    <option value="FLUORIDE">FLUORIDE PLASMA (Grey)</option>
+                    <option value="CITRATE">SODIUM CITRATE (Blue)</option>
+                    <option value="HEPARIN">SODIUM HEPARIN (Green)</option>
+                    <option value="URINE">URINE SAMPLE</option>
+                    <option value="STOOL">STOOL SAMPLE</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.65rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#475569', display: 'block', marginBottom: '0.2rem' }}>
+                    Fasting Required?
+                  </label>
+                  <select
+                    value={pkgManualTestForm.fasting}
+                    onChange={(e) => setPkgManualTestForm({ ...pkgManualTestForm, fasting: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.86rem', fontWeight: '700' }}
+                  >
+                    <option value="NO">NO</option>
+                    <option value="YES">YES</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#006B70', display: 'block', marginBottom: '0.2rem' }}>
+                    Base Price (₹)
+                  </label>
+                  <input
+                    type="number"
+                    value={pkgManualTestForm.price}
+                    onChange={(e) => setPkgManualTestForm({ ...pkgManualTestForm, price: Number(e.target.value) || 0 })}
+                    style={{ width: '100%', padding: '0.65rem', border: '1.5px solid #006B70', borderRadius: '8px', fontSize: '0.86rem', fontWeight: '800', color: '#006B70' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.76rem', fontWeight: '800', color: '#64748B', display: 'block', marginBottom: '0.2rem' }}>
+                    Market MRP (₹)
+                  </label>
+                  <input
+                    type="number"
+                    value={pkgManualTestForm.mrp}
+                    onChange={(e) => setPkgManualTestForm({ ...pkgManualTestForm, mrp: Number(e.target.value) || 0 })}
+                    style={{ width: '100%', padding: '0.65rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.86rem', color: '#64748B' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem', borderTop: '1px solid #E2E8F0', paddingTop: '0.85rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowPkgManualTestModal(false)}
+                  style={{ padding: '0.6rem 1.1rem', backgroundColor: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '8px', fontWeight: '700', fontSize: '0.84rem', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!pkgManualTestForm.name.trim()) {
+                      alert('Please enter test name');
+                      return;
+                    }
+                    const code = pkgManualTestForm.code.trim() || `TEST_${Date.now().toString().slice(-4)}`;
+                    const newTestObj = {
+                      id: `TEST_CUSTOM_${Date.now()}`,
+                      code,
+                      name: pkgManualTestForm.name.trim(),
+                      sampleType: pkgManualTestForm.sampleType,
+                      fasting: pkgManualTestForm.fasting,
+                      price: Number(pkgManualTestForm.price) || 299,
+                      mrp: Number(pkgManualTestForm.mrp) || 499,
+                      category: 'Biomarker Test',
+                      active: true
+                    };
+
+                    const updatedTests = [newTestObj, ...(catalog.tests || [])];
+                    const updatedCatalog = { ...catalog, tests: updatedTests };
+                    setCatalog(updatedCatalog);
+                    saveCatalogState(updatedCatalog);
+
+                    safeFetch(`${API_BASE}/api/v1/catalog/tests`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(newTestObj)
+                    }).catch(console.warn);
+
+                    setPackageBuilderForm(prev => {
+                      const cur = prev.selectedTests || [];
+                      return {
+                        ...prev,
+                        selectedTests: cur.includes(code) ? cur : [...cur, code]
+                      };
+                    });
+
+                    setShowPkgManualTestModal(false);
+                    setSaveToast(`Biomarker "${newTestObj.name}" created and added to package!`);
+                    setTimeout(() => setSaveToast(null), 3000);
+                  }}
+                  style={{ padding: '0.6rem 1.3rem', backgroundColor: '#006B70', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontWeight: '900', fontSize: '0.84rem', cursor: 'pointer' }}
+                >
+                  Add & Include In Package
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
