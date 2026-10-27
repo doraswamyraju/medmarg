@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { PlusCircle, Edit3, UserCheck, MapPin, Phone, Building2, CheckCircle, X } from 'lucide-react';
+import CreateManualOrderModal from './orders/CreateManualOrderModal';
 
 export default function LiveOrdersDispatchTab({
   orders = [],
   setOrders = () => {},
   salariedAgents = [],
-  labPartners = []
+  labPartners = [],
+  catalog = { tests: [], profiles: [], packages: [] }
 }) {
   // Modal states
   const [reassigningOrder, setReassigningOrder] = useState(null);
@@ -26,19 +28,6 @@ export default function LiveOrdersDispatchTab({
   });
 
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [createForm, setCreateForm] = useState({
-    id: `MM-${Math.floor(1000 + Math.random() * 9000)}`,
-    patientName: '',
-    phone: '',
-    city: 'Tirupati',
-    address: '',
-    items: 'HbA1c + Complete Blood Count',
-    amount: '899',
-    status: 'PENDING_DISPATCH',
-    assignedAgent: 'Unassigned',
-    lab: labPartners[0]?.name || 'MedMarg Central Processing Lab',
-    otp: Math.floor(1000 + Math.random() * 9000).toString()
-  });
 
   // Open Reassign Modal
   const handleOpenReassign = (order) => {
@@ -96,30 +85,7 @@ export default function LiveOrdersDispatchTab({
     setEditingOrder(null);
   };
 
-  // Submit Create Order
-  const handleCreateOrder = (e) => {
-    e.preventDefault();
-    const newOrd = {
-      ...createForm,
-      amount: Number(createForm.amount) || 899,
-      createdAt: `Today ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-    };
-    setOrders(prev => [newOrd, ...prev]);
-    setShowCreateModal(false);
-    setCreateForm({
-      id: `MM-${Math.floor(1000 + Math.random() * 9000)}`,
-      patientName: '',
-      phone: '',
-      city: 'Tirupati',
-      address: '',
-      items: 'HbA1c + Complete Blood Count',
-      amount: '899',
-      status: 'PENDING_DISPATCH',
-      assignedAgent: 'Unassigned',
-      lab: labPartners[0]?.name || 'MedMarg Central Processing Lab',
-      otp: Math.floor(1000 + Math.random() * 9000).toString()
-    });
-  };
+
 
   const getStatusBadgeStyle = (status) => {
     switch (status) {
@@ -459,128 +425,17 @@ export default function LiveOrdersDispatchTab({
         </div>
       )}
 
-      {/* MODAL 3: CREATE TEST ORDER MODAL */}
-      {showCreateModal && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
-          <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '580px', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
-              <div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0F172A' }}>Create Manual Test Order</h3>
-                <div style={{ fontSize: '0.8rem', color: '#006B70', fontWeight: '700' }}>Order ID: {createForm.id}</div>
-              </div>
-              <button onClick={() => setShowCreateModal(false)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>
-            </div>
-
-            <form onSubmit={handleCreateOrder} style={{ padding: '1.5rem', display: 'grid', gap: '1rem' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Patient Name</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Ramesh Reddy"
-                    value={createForm.patientName}
-                    onChange={(e) => setCreateForm({ ...createForm, patientName: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Phone Number</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="+91 98765 43210"
-                    value={createForm.phone}
-                    onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Doorstep Address & Landmark</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Flat 302, Royal Towers, Air Bypass Rd, Tirupati"
-                  value={createForm.address}
-                  onChange={(e) => setCreateForm({ ...createForm, address: e.target.value })}
-                  style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Test Package / Individual Tests</label>
-                  <input
-                    type="text"
-                    required
-                    value={createForm.items}
-                    onChange={(e) => setCreateForm({ ...createForm, items: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Amount (₹)</label>
-                  <input
-                    type="number"
-                    required
-                    value={createForm.amount}
-                    onChange={(e) => setCreateForm({ ...createForm, amount: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Assign Agent</label>
-                  <select
-                    value={createForm.assignedAgent}
-                    onChange={(e) => setCreateForm({ ...createForm, assignedAgent: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
-                  >
-                    <option value="Unassigned">Unassigned (Auto-Dispatch)</option>
-                    {salariedAgents.map(ag => (
-                      <option key={ag.id} value={`${ag.name} (${ag.id})`}>{ag.name} ({ag.id})</option>
-                    ))}
-                    <option value="🚀 FCM Freelancer Broadcast Network">🚀 FCM Freelancer Broadcast Network</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>Processing Lab</label>
-                  <select
-                    value={createForm.lab}
-                    onChange={(e) => setCreateForm({ ...createForm, lab: e.target.value })}
-                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
-                  >
-                    {labPartners.map(l => (
-                      <option key={l.id} value={l.name}>{l.name}</option>
-                    ))}
-                    <option value="MedMarg Central Processing Lab">MedMarg Central Processing Lab</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ marginTop: '1rem', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                <button 
-                  type="button" 
-                  onClick={() => setShowCreateModal(false)} 
-                  style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  style={{ padding: '0.65rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}
-                >
-                  Create Live Order
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* MODAL 3: STANDALONE MANUAL TEST ORDER MODULE */}
+      <CreateManualOrderModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        catalog={catalog}
+        salariedAgents={salariedAgents}
+        labPartners={labPartners}
+        onOrderCreated={(newOrder) => {
+          setOrders(prev => [newOrder, ...prev]);
+        }}
+      />
     </div>
   );
 }
