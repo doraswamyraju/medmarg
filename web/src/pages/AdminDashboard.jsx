@@ -33,7 +33,12 @@ import {
   Activity,
   Clock,
   HeartHandshake,
-  Briefcase
+  Briefcase,
+  Plus,
+  X as CloseIcon,
+  UserPlus,
+  Building,
+  UserCheck as UserCheckIcon
 } from 'lucide-react';
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState, saveCatalogState } from '../data/catalogStore';
@@ -42,6 +47,7 @@ import { API_BASE, safeFetch } from '../data/apiConfig';
 // Role-Specific Modular Feature Subcomponents (src/components/admin/)
 import CatalogManagementTab from '../components/admin/CatalogManagementTab';
 import LiveOrdersDispatchTab from '../components/admin/LiveOrdersDispatchTab';
+import CreateManualOrderModal from '../components/admin/orders/CreateManualOrderModal';
 import RealTimeFleetGpsTab from '../components/admin/RealTimeFleetGpsTab';
 import TerritoryManagementTab from '../components/admin/TerritoryManagementTab';
 import FreelancerDeskTab from '../components/admin/FreelancerDeskTab';
@@ -117,6 +123,10 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
   const [territories, setTerritories] = useState([
     { id: 'ZONE-01', name: 'Zone 1: Tirupati Central & Air Bypass Rd', pincodes: ['517501', '517507'], primaryAgentId: 'AG-01', primaryAgentName: 'Ramesh Kumar', color: '#38BDF8', maxDailyQuota: 15, activeOrders: 1, status: 'ACTIVE', polygonCoords: "20,20 220,15 200,110 30,100" }
   ]);
+
+  // Floating Quick Action Hub State (FAB)
+  const [showQuickFabMenu, setShowQuickFabMenu] = useState(false);
+  const [showManualOrderModal, setShowManualOrderModal] = useState(false);
 
   // Fetch live database records for Orders, Freelancers, Inventory, Indents, Partners & Territories
   useEffect(() => {
@@ -865,6 +875,345 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
 
         </main>
       </div>
+
+      {/* =========================================================================
+          FLOATING QUICK ACTION HUB (FAB) - OMNIPRESENT ACTION BUTTON
+          Enables rapid manual order booking & future onboarding of agents/partners/staff
+          ========================================================================= */}
+      
+      {/* Backdrop for Quick Action speed-dial */}
+      {showQuickFabMenu && (
+        <div 
+          onClick={() => setShowQuickFabMenu(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.45)',
+            backdropFilter: 'blur(3px)',
+            zIndex: 9998,
+            transition: 'opacity 0.2s ease-in-out'
+          }}
+        />
+      )}
+
+      {/* Floating Speed-Dial Menu & Main Plus Button */}
+      <div 
+        style={{
+          position: 'fixed',
+          bottom: '28px',
+          right: '28px',
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-end',
+          gap: '12px'
+        }}
+      >
+        {/* Speed-dial options container */}
+        {showQuickFabMenu && (
+          <div 
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              alignItems: 'flex-end',
+              animation: 'fadeInUp 0.18s ease-out'
+            }}
+          >
+            {/* Action 1: Create Manual Diagnostic Order */}
+            <button
+              onClick={() => {
+                setShowQuickFabMenu(false);
+                setShowManualOrderModal(true);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '10px 16px',
+                backgroundColor: '#FFFFFF',
+                color: '#0F172A',
+                border: '1px solid #CBD5E1',
+                borderRadius: '50px',
+                boxShadow: '0 10px 25px -5px rgba(0, 107, 112, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                cursor: 'pointer',
+                fontWeight: '800',
+                fontSize: '0.86rem',
+                transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#006B70';
+                e.currentTarget.style.color = '#FFFFFF';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#FFFFFF';
+                e.currentTarget.style.color = '#0F172A';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(0, 107, 112, 0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#006B70'
+              }}>
+                <ShoppingBag size={18} />
+              </div>
+              <span>Create Manual Order</span>
+              <span style={{ fontSize: '0.68rem', backgroundColor: '#ECFDF5', color: '#059669', padding: '2px 8px', borderRadius: '12px', fontWeight: '900', border: '1px solid #A7F3D0' }}>
+                LIVE
+              </span>
+            </button>
+
+            {/* Action 2: Onboard Employee / Staff */}
+            <button
+              onClick={() => {
+                setShowQuickFabMenu(false);
+                setActiveTab('STAFF');
+                setStaffSubTab('NEW_STAFF');
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '9px 15px',
+                backgroundColor: '#FFFFFF',
+                color: '#334155',
+                border: '1px solid #E2E8F0',
+                borderRadius: '50px',
+                boxShadow: '0 6px 16px rgba(0, 0, 0, 0.08)',
+                cursor: 'pointer',
+                fontWeight: '700',
+                fontSize: '0.84rem',
+                transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#FFFFFF';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <div style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                backgroundColor: '#EFF6FF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#2563EB'
+              }}>
+                <UserPlus size={16} />
+              </div>
+              <span>Onboard Staff / Employee</span>
+              <span style={{ fontSize: '0.65rem', backgroundColor: '#F1F5F9', color: '#64748B', padding: '2px 7px', borderRadius: '10px', fontWeight: '800' }}>
+                STAFF DESK
+              </span>
+            </button>
+
+            {/* Action 3: Onboard Phlebotomist / Collection Agent */}
+            <button
+              onClick={() => {
+                setShowQuickFabMenu(false);
+                setActiveTab('FREELANCERS');
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '9px 15px',
+                backgroundColor: '#FFFFFF',
+                color: '#334155',
+                border: '1px solid #E2E8F0',
+                borderRadius: '50px',
+                boxShadow: '0 6px 16px rgba(0, 0, 0, 0.08)',
+                cursor: 'pointer',
+                fontWeight: '700',
+                fontSize: '0.84rem',
+                transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#FFFFFF';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <div style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                backgroundColor: '#F0FDF4',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#16A34A'
+              }}>
+                <Truck size={16} />
+              </div>
+              <span>Onboard Collection Agent</span>
+              <span style={{ fontSize: '0.65rem', backgroundColor: '#F1F5F9', color: '#64748B', padding: '2px 7px', borderRadius: '10px', fontWeight: '800' }}>
+                FLEET DESK
+              </span>
+            </button>
+
+            {/* Action 4: Register Diagnostic Lab / Clinic Partner */}
+            <button
+              onClick={() => {
+                setShowQuickFabMenu(false);
+                setActiveTab('PARTNERS_QUEUE');
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '9px 15px',
+                backgroundColor: '#FFFFFF',
+                color: '#334155',
+                border: '1px solid #E2E8F0',
+                borderRadius: '50px',
+                boxShadow: '0 6px 16px rgba(0, 0, 0, 0.08)',
+                cursor: 'pointer',
+                fontWeight: '700',
+                fontSize: '0.84rem',
+                transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#FFFFFF';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <div style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                backgroundColor: '#FAF5FF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#9333EA'
+              }}>
+                <Building size={16} />
+              </div>
+              <span>Register Lab / Partner</span>
+              <span style={{ fontSize: '0.65rem', backgroundColor: '#F1F5F9', color: '#64748B', padding: '2px 7px', borderRadius: '10px', fontWeight: '800' }}>
+                PARTNERS
+              </span>
+            </button>
+
+            {/* Action 5: Register Customer / Patient */}
+            <button
+              onClick={() => {
+                setShowQuickFabMenu(false);
+                setActiveTab('CUSTOMERS');
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '9px 15px',
+                backgroundColor: '#FFFFFF',
+                color: '#334155',
+                border: '1px solid #E2E8F0',
+                borderRadius: '50px',
+                boxShadow: '0 6px 16px rgba(0, 0, 0, 0.08)',
+                cursor: 'pointer',
+                fontWeight: '700',
+                fontSize: '0.84rem',
+                transition: 'all 0.15s ease',
+                whiteSpace: 'nowrap'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#FFFFFF';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <div style={{
+                width: '30px',
+                height: '30px',
+                borderRadius: '50%',
+                backgroundColor: '#FFF7ED',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#EA580C'
+              }}>
+                <UserCheckIcon size={16} />
+              </div>
+              <span>Register Customer</span>
+              <span style={{ fontSize: '0.65rem', backgroundColor: '#F1F5F9', color: '#64748B', padding: '2px 7px', borderRadius: '10px', fontWeight: '800' }}>
+                PATIENTS
+              </span>
+            </button>
+          </div>
+        )}
+
+        {/* Primary Floating Action Plus Button */}
+        <button
+          onClick={() => setShowQuickFabMenu(prev => !prev)}
+          title={showQuickFabMenu ? "Close menu" : "Quick Actions / Create Order / Onboarding"}
+          style={{
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            backgroundColor: '#006B70',
+            color: '#FFFFFF',
+            border: 'none',
+            boxShadow: '0 10px 25px -3px rgba(0, 107, 112, 0.45), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+            transform: showQuickFabMenu ? 'rotate(45deg)' : 'rotate(0deg)',
+            outline: 'none'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#005256';
+            e.currentTarget.style.transform = showQuickFabMenu ? 'rotate(45deg) scale(1.06)' : 'scale(1.06)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#006B70';
+            e.currentTarget.style.transform = showQuickFabMenu ? 'rotate(45deg)' : 'rotate(0deg)';
+          }}
+        >
+          <Plus size={28} strokeWidth={2.7} />
+        </button>
+      </div>
+
+      {/* Standalone Create Manual Order Modal triggered by FAB */}
+      <CreateManualOrderModal
+        isOpen={showManualOrderModal}
+        onClose={() => setShowManualOrderModal(false)}
+        catalog={catalog}
+        salariedAgents={salariedAgents}
+        labPartners={labPartners}
+        onOrderCreated={(newOrder) => {
+          setOrders(prev => [newOrder, ...prev]);
+        }}
+      />
     </div>
   );
 }
