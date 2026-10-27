@@ -65,29 +65,21 @@ export default function StockInventoryTab({
     }
   }, [initialIndents]);
 
-  // Agent In-Hand Inventory State - 1 live real database record
-  const [agentInventories, setAgentInventories] = useState([
-    {
-      agentId: 'AG-01',
-      agentName: 'Ramesh Kumar',
-      agentType: 'Salaried Agent',
-      phone: '+91 98765 11223',
-      zone: 'Zone 1: Tirupati Central',
-      inHandStock: {
-        sstTubes: 18,
-        edtaTubes: 14,
-        fluorideTubes: 8,
-        needles21g: 22,
-        butterfly23g: 3,
-        swabs: 40,
-        fullBodyKits: 4,
-        coldBagTemp: '4.2°C',
-        barcodeRolls: 1
-      },
-      lastRefillDate: 'Yesterday 09:00 AM',
-      warning: null
+  // Agent In-Hand Inventory State - Live from backend
+  const [agentInventories, setAgentInventories] = useState([]);
+
+  React.useEffect(() => {
+    if (API_BASE && safeFetch) {
+      safeFetch(`${API_BASE}/api/v1/admin/agent-inventory`)
+        .then(r => r.json())
+        .then(data => {
+          if (data && Array.isArray(data.agentInventories)) {
+            setAgentInventories(data.agentInventories);
+          }
+        })
+        .catch(() => {});
     }
-  ]);
+  }, [API_BASE, safeFetch]);
 
   // Extra Consumables & Wastage Review Desk State - 1 live real database record
   const [extraUsages, setExtraUsages] = useState([
