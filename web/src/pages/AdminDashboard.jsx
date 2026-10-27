@@ -739,6 +739,7 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
               setOrders={setOrders}
               salariedAgents={salariedAgents}
               labPartners={labPartners}
+              catalog={catalog}
             />
           )}
 
