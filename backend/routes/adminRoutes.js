@@ -827,7 +827,69 @@ router.delete('/vendors/:code', (req, res) => {
 // AGENT IN-HAND INVENTORIES CRUD & DIRECT ALLOCATION
 // ==========================================
 router.get('/agent-inventory', (req, res) => {
-    res.json({ success: true, agentInventories: dbStore.agentInventories || [] });
+    if (!dbStore.agentInventory) dbStore.agentInventory = {};
+
+    // Combine salaried agents and approved freelancers
+    const salaried = (dbStore.salariedAgents || []).map(a => ({
+        agentId: a.id,
+        agentName: a.name,
+        agentType: 'Salaried Fleet',
+        phone: a.phone || '+91 98765 11223',
+        zone: a.area || 'Zone 1: Tirupati Central',
+        coldBagTemp: a.temp || '4.2°C',
+        status: a.status || 'ACTIVE',
+        items: dbStore.agentInventory[a.id] || []
+    }));
+
+    const freelancers = (dbStore.freelancers || []).filter(f => f.status === 'APPROVED').map(f => ({
+        agentId: f.id,
+        agentName: f.name,
+        agentType: 'Gig Freelancer',
+        phone: f.phone || '+91 98480 22338',
+        zone: f.assignedZone || 'All Zones (Open Broadcast)',
+        coldBagTemp: '4.5°C',
+        status: f.status,
+        items: dbStore.agentInventory[f.id] || []
+    }));
+
+    const combinedAgents = [...salaried, ...freelancers];
+    res.json({ success: true, agentInventories: combinedAgents });
+});
+
+// RETURN STOCK FROM AGENT BAG BACK TO CENTRAL WAREHOUSE
+router.post('/agent-inventory/return', (req, res) => {
+    const { agentId, itemCode, quantity } = req.body;
+    const returnQty = Number(quantity);
+    if (!agentId || !itemCode || returnQty <= 0) {
+        return res.status(400).json({ error: 'Valid agentId, itemCode, and positive quantity required.' });
+    }
+
+    if (!dbStore.agentInventory) dbStore.agentInventory = {};
+    if (!dbStore.agentInventory[agentId]) dbStore.agentInventory[agentId] = [];
+
+    const itemInBag = dbStore.agentInventory[agentId].find(i => i.code === itemCode);
+    if (!itemInBag || itemInBag.stock < returnQty) {
+        return res.status(400).json({ error: `Agent only has ${itemInBag ? itemInBag.stock : 0} of this item in hand.` });
+    }
+
+    // Deduct from agent bag
+    itemInBag.stock -= returnQty;
+    dbStore.agentInventory[agentId] = dbStore.agentInventory[agentId].filter(i => i.stock > 0);
+
+    // Credit back to central warehouse
+    if (!dbStore.inventoryStock) dbStore.inventoryStock = [];
+    const whItem = dbStore.inventoryStock.find(i => i.code === itemCode);
+    if (whItem) {
+        whItem.stock += returnQty;
+    }
+
+    saveDbStore();
+    res.json({ 
+        success: true, 
+        message: `Returned ${returnQty} units of ${itemCode} back to Central Warehouse.`,
+        agentBag: dbStore.agentInventory[agentId],
+        warehouseStock: whItem ? whItem.stock : 0
+    });
 });
 
 router.put('/agent-inventory/:agentId', (req, res) => {
