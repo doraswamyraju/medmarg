@@ -139,27 +139,11 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
     }
   ]);
 
-  // Inventory State
-  const [inventory, setInventory] = useState([
-    { id: 'INV-01', name: 'Vacutainer Gold SST (Serum Gel)', code: 'TUBE-SST', stock: 18, unit: 'Tubes', minThreshold: 10 },
-    { id: 'INV-02', name: 'Vacutainer Purple (EDTA Whole Blood)', code: 'TUBE-EDTA', stock: 24, unit: 'Tubes', minThreshold: 10 },
-    { id: 'INV-03', name: 'Vacutainer Grey (Fluoride Sugar)', code: 'TUBE-FLR', stock: 6, unit: 'Tubes', minThreshold: 10 },
-    { id: 'INV-04', name: 'Vacutainer Light Blue (Citrate)', code: 'TUBE-CIT', stock: 8, unit: 'Tubes', minThreshold: 5 },
-    { id: 'INV-05', name: 'Sterile Safety Syringes 5ml', code: 'SYR-5ML', stock: 30, unit: 'Units', minThreshold: 15 },
-    { id: 'INV-06', name: 'Barcode Thermal Label Rolls', code: 'LBL-ROLL', stock: 2, unit: 'Rolls', minThreshold: 2 },
-    { id: 'INV-07', name: 'Biohazard Seal Bags (A4)', code: 'BIO-BAG', stock: 40, unit: 'Bags', minThreshold: 20 },
-    { id: 'INV-08', name: 'Cold-Chain Ice Gel Freeze Packs', code: 'ICE-GEL', stock: 4, unit: 'Packs', minThreshold: 2 }
-  ]);
+  // Inventory State (Strictly live from server allocation - no client-side mock items)
+  const [inventory, setInventory] = useState([]);
 
   // Indents State
-  const [indents, setIndents] = useState([
-    {
-      id: 'IND-8012',
-      status: 'APPROVED_DISPATCHED',
-      requestedAt: '2026-10-08T10:30:00.000Z',
-      items: [{ item: 'Vacutainer Gold SST', quantity: 20 }, { item: 'Vacutainer Purple EDTA', quantity: 20 }]
-    }
-  ]);
+  const [indents, setIndents] = useState([]);
 
   // Wallet State
   const [wallet, setWallet] = useState({
