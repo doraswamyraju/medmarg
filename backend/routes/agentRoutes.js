@@ -211,18 +211,36 @@ const DEFAULT_AGENT_INVENTORY = [
 ];
 
 // AGENT CONSUMABLES INVENTORY (LIVE SYNCED WITH ADMIN & STORE IN-CHARGE)
+// STRICT AUDIT RULE: Agent only holds consumables explicitly allotted from Central Warehouse!
 router.get('/inventory', (req, res) => {
     const agentId = req.query.agentId || 'AG-01';
 
     if (!dbStore.agentInventory) dbStore.agentInventory = {};
+    
+    // Check if agent has an explicit allocated record, or look in dbStore.agentInventories
     if (!dbStore.agentInventory[agentId]) {
-        dbStore.agentInventory[agentId] = JSON.parse(JSON.stringify(DEFAULT_AGENT_INVENTORY));
+        const adminAgentRecord = (dbStore.agentInventories || []).find(a => a.agentId === agentId);
+        if (adminAgentRecord && adminAgentRecord.inHandStock) {
+            // Map admin format to agent item list
+            const mapped = [];
+            const ih = adminAgentRecord.inHandStock;
+            if (ih.sstTubes) mapped.push({ id: 'INV-SST', name: 'Vacutainer Gold SST (Serum Gel)', code: 'TUBE-SST', stock: ih.sstTubes, unit: 'Tubes', minThreshold: 5 });
+            if (ih.edtaTubes) mapped.push({ id: 'INV-EDTA', name: 'Vacutainer Purple (EDTA Whole Blood)', code: 'TUBE-EDTA', stock: ih.edtaTubes, unit: 'Tubes', minThreshold: 5 });
+            if (ih.fluorideTubes) mapped.push({ id: 'INV-FLR', name: 'Vacutainer Grey (Fluoride Sugar)', code: 'TUBE-FLR', stock: ih.fluorideTubes, unit: 'Tubes', minThreshold: 5 });
+            if (ih.needles21g) mapped.push({ id: 'INV-SYR', name: 'Sterile Safety Syringes 5ml', code: 'SYR-5ML', stock: ih.needles21g, unit: 'Units', minThreshold: 10 });
+            if (ih.barcodeRolls) mapped.push({ id: 'INV-LBL', name: 'Barcode Thermal Label Rolls', code: 'LBL-ROLL', stock: ih.barcodeRolls, unit: 'Rolls', minThreshold: 1 });
+            if (ih.fullBodyKits) mapped.push({ id: 'INV-KIT', name: 'Standard Phlebotomy Sample Collection Kit', code: 'KIT-101', stock: ih.fullBodyKits, unit: 'Kits', minThreshold: 2 });
+            dbStore.agentInventory[agentId] = mapped;
+        } else {
+            // New agent or freelance agent with 0 allotted stock
+            dbStore.agentInventory[agentId] = [];
+        }
         saveDbStore();
     }
 
-    const inHandInventory = dbStore.agentInventory[agentId];
+    const inHandInventory = dbStore.agentInventory[agentId] || [];
     const warehouseStock = dbStore.inventoryStock || [];
-    const agentIndents = (dbStore.indents || []).filter(i => !i.agentId || i.agentId === agentId || i.agentName?.includes(agentId));
+    const agentIndents = (dbStore.indents || []).filter(i => !i.agentId || i.agentId === agentId || (i.agentName && i.agentName.includes(agentId)));
 
     res.json({
         success: true,
@@ -251,6 +269,131 @@ router.post('/indent', (req, res) => {
     dbStore.indents.unshift(newIndent);
     saveDbStore();
     res.status(201).json({ success: true, message: 'Stock replenishment indent submitted to Admin Store Desk.', indent: newIndent });
+});
+
+// ACCEPT & ADD DISPATCHED INDENT TO IN-HAND BAG
+router.post('/indent/accept', (req, res) => {
+    const { indentId, agentId = 'AG-01' } = req.body;
+    const indent = (dbStore.indents || []).find(i => i.id === indentId);
+    if (!indent) return res.status(404).json({ error: 'Indent not found' });
+    if (indent.status !== 'APPROVED_DISPATCHED') {
+        return res.status(400).json({ error: 'Indent is not ready for pickup/handover yet.' });
+    }
+
+    if (!dbStore.agentInventory) dbStore.agentInventory = {};
+    if (!dbStore.agentInventory[agentId]) dbStore.agentInventory[agentId] = [];
+
+    // Credit each item to agent inventory
+    (indent.items || []).forEach(it => {
+        const itemName = it.item || it.name;
+        const itemQty = Number(it.quantity || it.qty) || 1;
+        const existing = dbStore.agentInventory[agentId].find(i => 
+            (i.name && i.name.toLowerCase() === itemName.toLowerCase()) || 
+            (it.code && i.code === it.code)
+        );
+        if (existing) {
+            existing.stock = (existing.stock || 0) + itemQty;
+        } else {
+            dbStore.agentInventory[agentId].push({
+                id: `INV-${Date.now().toString().slice(-4)}`,
+                name: itemName,
+                code: it.code || `SKU-${Date.now().toString().slice(-4)}`,
+                stock: itemQty,
+                unit: it.unit || 'Units',
+                minThreshold: 5
+            });
+        }
+    });
+
+    indent.status = 'DELIVERED_RECEIVED';
+    indent.receivedAt = new Date().toISOString();
+    saveDbStore();
+
+    res.json({
+        success: true,
+        message: 'Supplies successfully received and credited to your in-hand bag!',
+        inventory: dbStore.agentInventory[agentId],
+        indent
+    });
+});
+
+// ==========================================
+// BARCODE MANAGEMENT: GENERATE & RECORD BARCODES
+// ==========================================
+router.post('/barcode/generate', (req, res) => {
+    const { orderId, tubeCode, prefix = 'MM' } = req.body;
+    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
+    const barcode = `${prefix}-${tubeCode ? tubeCode.replace(/[^A-Z0-9]/g, '').slice(0, 4) : 'TUBE'}-${randomSuffix}`;
+    
+    if (!dbStore.barcodes) dbStore.barcodes = [];
+    const barcodeEntry = {
+        barcode,
+        orderId: orderId || null,
+        tubeCode: tubeCode || 'SAMPLE',
+        generatedAt: new Date().toISOString(),
+        status: 'GENERATED'
+    };
+    dbStore.barcodes.unshift(barcodeEntry);
+    saveDbStore();
+
+    res.json({
+        success: true,
+        barcode,
+        barcodeEntry
+    });
+});
+
+router.post('/barcode/record', (req, res) => {
+    const { barcode, orderId, tubeType, phleboId = 'AG-01', notes = '' } = req.body;
+    if (!barcode) return res.status(400).json({ error: 'Barcode string is required' });
+
+    if (!dbStore.barcodes) dbStore.barcodes = [];
+    const existing = dbStore.barcodes.find(b => b.barcode === barcode);
+
+    const record = {
+        barcode: barcode.trim().toUpperCase(),
+        orderId: orderId || 'STANDALONE_SAMPLE',
+        tubeType: tubeType || 'Vacutainer',
+        scannedBy: phleboId,
+        scannedAt: new Date().toISOString(),
+        notes,
+        status: 'AFFIXED_TO_SPECIMEN'
+    };
+
+    if (existing) {
+        Object.assign(existing, record);
+    } else {
+        dbStore.barcodes.unshift(record);
+    }
+
+    // If orderId is provided, attach barcode to order record
+    if (orderId && dbStore.orders) {
+        const order = dbStore.orders.find(o => o.id === orderId);
+        if (order) {
+            if (!order.barcodes) order.barcodes = [];
+            if (!order.barcodes.includes(record.barcode)) {
+                order.barcodes.push(record.barcode);
+            }
+            order.primaryBarcode = record.barcode;
+        }
+    }
+
+    saveDbStore();
+    res.json({
+        success: true,
+        message: `Barcode ${record.barcode} successfully recorded for specimen.`,
+        record
+    });
+});
+
+router.get('/barcode/verify/:barcode', (req, res) => {
+    const { barcode } = req.params;
+    const clean = (barcode || '').trim().toUpperCase();
+    const entry = (dbStore.barcodes || []).find(b => b.barcode === clean);
+    if (!entry) {
+        return res.status(404).json({ success: false, found: false, message: 'Barcode not found in registry.' });
+    }
+    res.json({ success: true, found: true, barcode: entry });
 });
 
 // AGENT PROFILE MANAGEMENT & GET DETAILS

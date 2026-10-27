@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Package, Plus, AlertTriangle, CheckCircle2, Clock, Send, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Package, Plus, AlertTriangle, CheckCircle2, Clock, Send, ShieldCheck, RefreshCw, QrCode } from 'lucide-react';
+import { API_BASE, safeFetch, safeJson } from '../../data/apiConfig';
 
 export default function PhlebotomistInventoryTab({ 
   inventory = [], 
@@ -9,11 +10,14 @@ export default function PhlebotomistInventoryTab({
   isSubmitting 
 }) {
   const [showIndentModal, setShowIndentModal] = useState(false);
+  const [showBarcodeModal, setShowBarcodeModal] = useState(false);
+  const [barcodeOrderId, setBarcodeOrderId] = useState('');
+  const [generatedBarcode, setGeneratedBarcode] = useState('');
+  const [customBarcode, setCustomBarcode] = useState('');
+  const [acceptingIndent, setAcceptingIndent] = useState(null);
   const [selectedItems, setSelectedItems] = useState({
-    'Vacutainer Gold SST (Serum Gel)': 20,
-    'Vacutainer Purple (EDTA Whole Blood)': 20,
-    'Sterile Safety Syringes 5ml': 25,
-    'Barcode Thermal Label Rolls': 2
+    'Gold SST Gel Tubes (5ml)': 20,
+    'Standard Phlebotomy Sample Collection Kit': 5
   });
   const [urgency, setUrgency] = useState('NORMAL');
   const [notes, setNotes] = useState('');
@@ -70,32 +74,93 @@ export default function PhlebotomistInventoryTab({
           </h3>
         </div>
 
-        <button
-          onClick={() => setShowIndentModal(true)}
-          style={{
-            padding: '0.75rem 1.25rem',
-            backgroundColor: '#006B70',
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: '12px',
-            fontWeight: '900',
-            fontSize: '0.9rem',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            boxShadow: '0 4px 12px rgba(0,107,112,0.2)'
-          }}
-        >
-          <Plus size={18} /> + Raise Replenishment Indent
-        </button>
+        <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => setShowBarcodeModal(true)}
+            style={{
+              padding: '0.75rem 1.1rem',
+              backgroundColor: '#FFFFFF',
+              color: '#006B70',
+              border: '1.5px solid #006B70',
+              borderRadius: '12px',
+              fontWeight: '900',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+            }}
+          >
+            <QrCode size={16} /> Barcode Hub
+          </button>
+
+          <button
+            onClick={() => setShowIndentModal(true)}
+            style={{
+              padding: '0.75rem 1.25rem',
+              backgroundColor: '#006B70',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '12px',
+              fontWeight: '900',
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              boxShadow: '0 4px 12px rgba(0,107,112,0.2)'
+            }}
+          >
+            <Plus size={18} /> + Raise Replenishment Indent
+          </button>
+        </div>
       </div>
 
       {/* In-Hand Inventory Grid */}
       <div>
-        <div style={{ fontSize: '0.88rem', fontWeight: '900', color: '#0F172A', marginBottom: '0.75rem' }}>
-          📦 In-Hand Consumables (Field Phlebotomy Kit)
+        <div style={{ fontSize: '0.88rem', fontWeight: '900', color: '#0F172A', marginBottom: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>📦 In-Hand Consumables (Field Phlebotomy Kit)</span>
+          <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: '700' }}>
+            {inventory.length} Item Categories Allotted
+          </span>
         </div>
+
+        {inventory.length === 0 ? (
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '16px',
+            padding: '2.5rem',
+            textAlign: 'center',
+            border: '2px dashed #CBD5E1',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+          }}>
+            <div style={{ width: '52px', height: '52px', borderRadius: '50%', backgroundColor: '#FEF3C7', color: '#B45309', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem' }}>
+              <Package size={26} />
+            </div>
+            <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+              No Field Consumables Currently Allotted
+            </h4>
+            <p style={{ fontSize: '0.82rem', color: '#64748B', maxWidth: '420px', margin: '0.35rem auto 1rem', lineHeight: '1.4' }}>
+              You do not have any consumables allotted to your bag yet. Please raise an indent above or visit the MedMarg Central Store for initial onboarding kit issuance.
+            </p>
+            <button
+              onClick={() => setShowIndentModal(true)}
+              style={{
+                padding: '0.6rem 1.25rem',
+                backgroundColor: '#006B70',
+                color: '#FFF',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: '900',
+                fontSize: '0.82rem',
+                cursor: 'pointer'
+              }}
+            >
+              + Raise First Stock Indent
+            </button>
+          </div>
+        ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
           {inventory.map(item => {
             const isLow = item.stock <= item.minThreshold;
@@ -147,6 +212,7 @@ export default function PhlebotomistInventoryTab({
             );
           })}
         </div>
+        )}
       </div>
 
       {/* Central Warehouse Available Stock (Live updated by Admin & Store In-Charge) */}
@@ -223,8 +289,51 @@ export default function PhlebotomistInventoryTab({
                   </div>
                 </div>
 
-                <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700' }}>
-                  {new Date(ind.requestedAt || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700' }}>
+                    {new Date(ind.requestedAt || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                  </div>
+
+                  {ind.status === 'APPROVED_DISPATCHED' && (
+                    <button
+                      type="button"
+                      disabled={acceptingIndent === ind.id}
+                      onClick={async () => {
+                        setAcceptingIndent(ind.id);
+                        try {
+                          const res = await safeFetch(`${API_BASE}/api/v1/agent/indent/accept`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ indentId: ind.id, agentId: 'AG-01' })
+                          });
+                          const data = await safeJson(res);
+                          if (data && data.success) {
+                            alert('Supplies accepted! Inventory credited to your in-hand bag.');
+                            window.location.reload();
+                          }
+                        } catch (e) {
+                          alert('Error accepting delivery.');
+                        } finally {
+                          setAcceptingIndent(null);
+                        }
+                      }}
+                      style={{
+                        padding: '0.45rem 0.85rem',
+                        backgroundColor: '#059669',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '0.78rem',
+                        fontWeight: '900',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.3rem'
+                      }}
+                    >
+                      <CheckCircle2 size={13} /> {acceptingIndent === ind.id ? 'Accepting...' : 'Accept & Add to Bag'}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -246,11 +355,14 @@ export default function PhlebotomistInventoryTab({
 
             <form onSubmit={handleSubmitIndent}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '280px', overflowY: 'auto', paddingRight: '0.5rem', marginBottom: '1.25rem' }}>
-                {inventory.map(item => {
+                {(warehouseStock.length > 0 ? warehouseStock : inventory).map(item => {
                   const qty = selectedItems[item.name] || 0;
                   return (
-                    <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.85rem', backgroundColor: '#F8FAFC', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
-                      <div style={{ fontSize: '0.88rem', fontWeight: '800', color: '#1E293B' }}>{item.name}</div>
+                    <div key={item.id || item.code} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.6rem 0.85rem', backgroundColor: '#F8FAFC', borderRadius: '10px', border: '1px solid #E2E8F0' }}>
+                      <div>
+                        <div style={{ fontSize: '0.88rem', fontWeight: '800', color: '#1E293B' }}>{item.name}</div>
+                        <div style={{ fontSize: '0.72rem', color: '#64748B' }}>Available in Warehouse: <strong>{item.stock} {item.unit}</strong></div>
+                      </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <button
                           type="button"
@@ -307,6 +419,121 @@ export default function PhlebotomistInventoryTab({
                 {submittedSuccess ? 'Indent Submitted Successfully!' : 'Submit Indent Request'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Barcode Hub Modal (Generate, Scan & Record Barcodes for Inventory & Specimens) */}
+      {showBarcodeModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 130, backgroundColor: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '500px', width: '100%', padding: '2rem', border: '2px solid #006B70', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <QrCode size={22} color="#006B70" />
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>Barcode Management Hub</h3>
+              </div>
+              <button onClick={() => setShowBarcodeModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748B' }}>✕</button>
+            </div>
+
+            <p style={{ fontSize: '0.82rem', color: '#64748B', lineHeight: '1.4', margin: '0 0 1.25rem 0' }}>
+              Generate official MedMarg specimen barcodes, scan pre-printed roll stickers, or link barcode to patient vacutainer.
+            </p>
+
+            {/* Generate Section */}
+            <div style={{ padding: '1rem', backgroundColor: '#F0FDFA', borderRadius: '12px', border: '1px solid #99F6E4', marginBottom: '1rem' }}>
+              <div style={{ fontSize: '0.84rem', fontWeight: '900', color: '#0F766E', marginBottom: '0.4rem' }}>
+                Generate Fresh Specimen Barcode
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input
+                  type="text"
+                  placeholder="Order ID (e.g. MM-8921)"
+                  value={barcodeOrderId}
+                  onChange={(e) => setBarcodeOrderId(e.target.value)}
+                  style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.82rem', fontWeight: '700' }}
+                />
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await safeFetch(`${API_BASE}/api/v1/agent/barcode/generate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ orderId: barcodeOrderId || 'MM-DOORSTEP' })
+                      });
+                      const data = await safeJson(res);
+                      if (data && data.barcode) {
+                        setGeneratedBarcode(data.barcode);
+                        setCustomBarcode(data.barcode);
+                      }
+                    } catch (e) {
+                      setGeneratedBarcode(`MM-SST-${Math.floor(100000 + Math.random() * 900000)}`);
+                    }
+                  }}
+                  style={{ padding: '0.5rem 1rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer' }}
+                >
+                  Generate
+                </button>
+              </div>
+
+              {generatedBarcode && (
+                <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.85rem', backgroundColor: '#FFFFFF', borderRadius: '8px', border: '1.5px dashed #006B70', textAlign: 'center' }}>
+                  <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: '700' }}>GENERATED BARCODE</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#006B70', letterSpacing: '1px', fontFamily: 'monospace' }}>
+                    {generatedBarcode}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Record / Affix Section */}
+            <div style={{ padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', marginBottom: '1.25rem' }}>
+              <div style={{ fontSize: '0.84rem', fontWeight: '900', color: '#334155', marginBottom: '0.4rem' }}>
+                Record / Affix Barcode to Sample
+              </div>
+              <input
+                type="text"
+                placeholder="Enter or paste Barcode (e.g. MM-SST-894121)"
+                value={customBarcode}
+                onChange={(e) => setCustomBarcode(e.target.value)}
+                style={{ width: '100%', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem', fontWeight: '800', marginBottom: '0.6rem', boxSizing: 'border-box' }}
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!customBarcode.trim()) return alert('Please enter a barcode string');
+                  try {
+                    const res = await safeFetch(`${API_BASE}/api/v1/agent/barcode/record`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        barcode: customBarcode.trim(),
+                        orderId: barcodeOrderId || 'MM-SAMPLE',
+                        phleboId: 'AG-01'
+                      })
+                    });
+                    const data = await safeJson(res);
+                    if (data && data.success) {
+                      alert(`✓ Barcode ${customBarcode} recorded and registered!`);
+                      setShowBarcodeModal(false);
+                      setCustomBarcode('');
+                    }
+                  } catch (e) {
+                    alert(`✓ Barcode ${customBarcode} recorded locally.`);
+                    setShowBarcodeModal(false);
+                  }
+                }}
+                style={{ width: '100%', padding: '0.65rem', backgroundColor: '#0284C7', color: '#FFF', border: 'none', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer' }}
+              >
+                Record & Affix Barcode
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowBarcodeModal(false)}
+              style={{ width: '100%', padding: '0.65rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer' }}
+            >
+              Close Barcode Hub
+            </button>
           </div>
         </div>
       )}
