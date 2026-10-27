@@ -6,6 +6,8 @@ export default function PhlebotomistInventoryTab({
   inventory = [], 
   warehouseStock = [],
   indents = [], 
+  agentId = 'AG-01',
+  onRefresh,
   onRaiseIndent,
   isSubmitting 
 }) {
@@ -304,12 +306,13 @@ export default function PhlebotomistInventoryTab({
                           const res = await safeFetch(`${API_BASE}/api/v1/agent/indent/accept`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ indentId: ind.id, agentId: 'AG-01' })
+                            body: JSON.stringify({ indentId: ind.id, agentId })
                           });
                           const data = await safeJson(res);
                           if (data && data.success) {
                             alert('Supplies accepted! Inventory credited to your in-hand bag.');
-                            window.location.reload();
+                            if (onRefresh) onRefresh();
+                            else window.location.reload();
                           }
                         } catch (e) {
                           alert('Error accepting delivery.');

@@ -175,7 +175,8 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
         setBroadcastJobs(bData.jobs);
       }
 
-      const iRes = await safeFetch(`${API_BASE}/api/v1/agent/inventory`);
+      const agentId = user?.id || 'AG-01';
+      const iRes = await safeFetch(`${API_BASE}/api/v1/agent/inventory?agentId=${encodeURIComponent(agentId)}`);
       const iData = await safeJson(iRes);
       if (iData) {
         if (iData.inventory) setInventory(iData.inventory);
@@ -838,6 +839,8 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
               inventory={inventory}
               warehouseStock={warehouseStock}
               indents={indents}
+              agentId={user?.id || 'AG-01'}
+              onRefresh={refreshAgentData}
               onRaiseIndent={handleRaiseIndent}
             />
           )}
