@@ -13,7 +13,8 @@ import {
   Package,
   Download,
   Upload,
-  FileSpreadsheet
+  FileSpreadsheet,
+  QrCode
 } from 'lucide-react';
 import { 
   downloadInventorySampleTemplate, 
@@ -30,7 +31,9 @@ export default function StockAndKitsSubTab({
   onDeleteStock = () => {},
   onOpenConfigModal = () => {},
   onSendMoqAlert = () => {},
-  onImportInventory = async () => {}
+  onImportInventory = async () => {},
+  onGenerateBarcode = () => {},
+  onOpenAssembleKit = () => {}
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('ALL');
@@ -292,6 +295,22 @@ export default function StockAndKitsSubTab({
                     {/* Actions */}
                     <td style={{ padding: '1rem 1.25rem', textAlign: 'right', verticalAlign: 'middle' }}>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.4rem', flexWrap: 'wrap' }}>
+                        <button
+                          title="Generate Barcode / Thermal Sticker Label"
+                          onClick={() => onGenerateBarcode(stk)}
+                          style={{ padding: '0.4rem 0.65rem', backgroundColor: '#F0FDFA', border: '1px solid #99F6E4', borderRadius: '8px', color: '#0F766E', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '800', fontSize: '0.76rem' }}
+                        >
+                          <QrCode size={13} /> Barcode
+                        </button>
+                        {isKit && (
+                          <button
+                            title="Pack / Assemble Combo Kits"
+                            onClick={() => onOpenAssembleKit(stk)}
+                            style={{ padding: '0.4rem 0.65rem', backgroundColor: '#EEF2FF', border: '1px solid #C7D2FE', borderRadius: '8px', color: '#4338CA', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem', fontWeight: '800', fontSize: '0.76rem' }}
+                          >
+                            <Layers size={13} /> Assemble
+                          </button>
+                        )}
                         <button
                           title="Duplicate Item / Kit"
                           onClick={() => onDuplicateStock(stk)}

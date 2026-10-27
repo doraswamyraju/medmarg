@@ -582,6 +582,49 @@ router.post('/inventory/bulk', (req, res) => {
     res.json({ success: true, count: dbStore.inventoryStock.length, inventory: dbStore.inventoryStock });
 });
 
+// ASSEMBLE / PACK COMBO KITS (Deduct Single Components -> Increase Kit Stock)
+router.post('/inventory/assemble-kit', (req, res) => {
+    const { kitCode, quantity = 1 } = req.body;
+    const packQty = Number(quantity);
+    if (!kitCode || packQty <= 0) {
+        return res.status(400).json({ error: 'Valid kit code and quantity are required.' });
+    }
+
+    if (!dbStore.inventoryStock) dbStore.inventoryStock = [];
+    const kit = dbStore.inventoryStock.find(i => i.code === kitCode && i.type === 'KIT');
+    if (!kit) return res.status(404).json({ error: `Combo kit ${kitCode} not found.` });
+
+    const components = kit.components || [];
+    if (components.length === 0) {
+        return res.status(400).json({ error: 'Kit has no component recipe configured.' });
+    }
+
+    // Check stock for all components
+    for (const c of components) {
+        const item = dbStore.inventoryStock.find(i => i.code === c.itemCode || (i.name && i.name.toLowerCase() === c.name.toLowerCase()));
+        const needed = (c.qty || 1) * packQty;
+        if (!item || item.stock < needed) {
+            return res.status(400).json({ 
+                error: `Insufficient stock for component "${c.name}". Needs ${needed}, available: ${item ? item.stock : 0}` 
+            });
+        }
+    }
+
+    // Deduct components
+    components.forEach(c => {
+        const item = dbStore.inventoryStock.find(i => i.code === c.itemCode || (i.name && i.name.toLowerCase() === c.name.toLowerCase()));
+        if (item) {
+            item.stock = Math.max(0, item.stock - ((c.qty || 1) * packQty));
+        }
+    });
+
+    // Credit Kit
+    kit.stock = (kit.stock || 0) + packQty;
+    saveDbStore();
+
+    res.json({ success: true, message: `Successfully assembled ${packQty}x ${kit.name}`, inventory: dbStore.inventoryStock });
+});
+
 // ==========================================
 // PURCHASES / INWARD GOODS (GRN) CRUD
 // ==========================================
@@ -607,8 +650,19 @@ router.post('/purchases', (req, res) => {
         qcStatus: req.body.qcStatus || 'PASSED_VERIFIED'
     };
     dbStore.purchases.unshift(newPurchase);
+
+    // Auto-increment warehouse stock if itemCode and quantity provided
+    if (req.body.itemCode && req.body.quantity) {
+        if (!dbStore.inventoryStock) dbStore.inventoryStock = [];
+        const stockItem = dbStore.inventoryStock.find(i => i.code === req.body.itemCode);
+        if (stockItem) {
+            stockItem.stock += Number(req.body.quantity);
+            if (req.body.unitCost) stockItem.unitCost = Number(req.body.unitCost);
+        }
+    }
+
     saveDbStore();
-    res.status(201).json({ success: true, purchase: newPurchase });
+    res.status(201).json({ success: true, purchase: newPurchase, inventory: dbStore.inventoryStock });
 });
 
 router.put('/purchases/:id', (req, res) => {

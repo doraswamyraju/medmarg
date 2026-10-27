@@ -757,6 +757,50 @@ export default function PhlebotomistPickupsTab({
                 Your In-Hand Field Kit Inventory (Review & Adjust):
               </div>
 
+              {inventory.length === 0 ? (
+                <div style={{
+                  padding: '1.25rem',
+                  backgroundColor: '#FFFBEB',
+                  borderRadius: '12px',
+                  border: '1.5px solid #FCD34D',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <div style={{ color: '#D97706', fontWeight: '900', fontSize: '0.92rem' }}>
+                    ⚠️ In-Hand Bag Empty (0 Supplies Allotted)
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: '#78350F', margin: 0, maxWidth: '380px', lineHeight: 1.35 }}>
+                    You do not have any consumables allotted in your field kit to fulfill this order yet.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssignKitModal(null);
+                      if (onNavigateToIndent) onNavigateToIndent();
+                    }}
+                    style={{
+                      marginTop: '0.35rem',
+                      padding: '0.55rem 1.1rem',
+                      backgroundColor: '#006B70',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: '900',
+                      fontSize: '0.82rem',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      boxShadow: '0 2px 6px rgba(0,107,112,0.2)'
+                    }}
+                  >
+                    ⚡ Raise Replenishment Indent Now
+                  </button>
+                </div>
+              ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                 {inventory.map((inv) => {
                   const requiredMatch = assignKitModal.requiredKit.find(r => {
@@ -882,6 +926,7 @@ export default function PhlebotomistPickupsTab({
                   );
                 })}
               </div>
+              )}
             </div>
 
             {/* Modal Footer */}
