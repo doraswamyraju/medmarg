@@ -1023,3 +1023,151 @@ export function AssembleKitModal({
   );
 }
 
+// -------------------------------------------------------------
+// 10. Return Stock from Agent Bag to Warehouse Modal
+// -------------------------------------------------------------
+export function ReturnStockModal({
+  show,
+  onClose,
+  agent,
+  inventoryStock = [],
+  onConfirmReturn
+}) {
+  const [selectedItemCode, setSelectedItemCode] = useState('');
+  const [returnQty, setReturnQty] = useState(1);
+  const [returnReason, setReturnReason] = useState('Unused Surplus / Shift End');
+
+  useEffect(() => {
+    if (agent && Array.isArray(agent.items) && agent.items.length > 0) {
+      setSelectedItemCode(agent.items[0].itemCode);
+      setReturnQty(Math.min(1, agent.items[0].quantity || 1));
+    }
+  }, [agent]);
+
+  if (!show || !agent) return null;
+
+  const agentItems = Array.isArray(agent.items) ? agent.items : [];
+  const currentItem = agentItems.find(i => i.itemCode === selectedItemCode) || agentItems[0];
+  const maxAvailable = currentItem ? (currentItem.quantity || 0) : 0;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!currentItem) return;
+    if (returnQty <= 0 || returnQty > maxAvailable) {
+      alert(`Invalid quantity. Agent has ${maxAvailable} in hand.`);
+      return;
+    }
+    onConfirmReturn({
+      agentId: agent.agentId,
+      itemCode: currentItem.itemCode,
+      quantity: Number(returnQty),
+      reason: returnReason
+    });
+  };
+
+  return (
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15,23,42,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem', backdropFilter: 'blur(3px)' }}>
+      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', width: '100%', maxWidth: '520px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+        <div style={{ padding: '1.25rem 1.5rem', backgroundColor: '#006B70', color: '#FFF', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              ↩️ Return Stock to Warehouse
+            </h3>
+            <div style={{ fontSize: '0.78rem', opacity: 0.9, marginTop: '0.15rem' }}>
+              Phlebotomist: <strong>{agent.agentName}</strong> ({agent.agentId})
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#FFF', cursor: 'pointer', fontSize: '1.2rem' }}>×</button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {agentItems.length === 0 ? (
+            <div style={{ padding: '1.5rem', textAlign: 'center', backgroundColor: '#F8FAFC', borderRadius: '12px', border: '1px solid #E2E8F0', color: '#64748B' }}>
+              <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>🎒</div>
+              <div style={{ fontWeight: '800', color: '#0F172A' }}>Agent Bag is Currently Empty</div>
+              <div style={{ fontSize: '0.8rem', marginTop: '0.2rem' }}>There are no allocated consumables in this phlebotomist's in-hand inventory to return.</div>
+            </div>
+          ) : (
+            <>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>
+                  Select Item to Return
+                </label>
+                <select
+                  value={selectedItemCode}
+                  onChange={(e) => {
+                    setSelectedItemCode(e.target.value);
+                    const itm = agentItems.find(i => i.itemCode === e.target.value);
+                    if (itm) setReturnQty(Math.min(1, itm.quantity));
+                  }}
+                  style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                >
+                  {agentItems.map(i => (
+                    <option key={i.itemCode} value={i.itemCode}>
+                      {i.name || i.itemCode} (In Hand: {i.quantity})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>
+                    Return Quantity (Max: {maxAvailable})
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={maxAvailable}
+                    value={returnQty}
+                    onChange={(e) => setReturnQty(Math.max(1, Math.min(maxAvailable, Number(e.target.value))))}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#006B70', fontSize: '0.95rem', fontWeight: '900' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#475569', marginBottom: '0.35rem' }}>
+                    Reason for Return
+                  </label>
+                  <select
+                    value={returnReason}
+                    onChange={(e) => setReturnReason(e.target.value)}
+                    style={{ width: '100%', padding: '0.65rem 0.9rem', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '8px', color: '#0F172A', fontSize: '0.88rem' }}
+                  >
+                    <option value="Unused Surplus / Shift End">Unused Surplus / Shift End</option>
+                    <option value="Near Expiry Batch Swap">Near Expiry Batch Swap</option>
+                    <option value="Damaged / Compromised Seal">Damaged / Compromised Seal</option>
+                    <option value="Resigned / Territory Handover">Resigned / Territory Handover</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ padding: '0.85rem', backgroundColor: '#F0FDFA', borderRadius: '10px', border: '1px solid #99F6E4', fontSize: '0.8rem', color: '#0f766e' }}>
+                ℹ️ Returning this consumable will deduct <strong>{returnQty} units</strong> from {agent.agentName}'s in-hand bag balance and credit them back into Central Warehouse inventory instantly.
+              </div>
+            </>
+          )}
+
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              Cancel
+            </button>
+            {agentItems.length > 0 && (
+              <button
+                type="submit"
+                style={{ padding: '0.65rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem', boxShadow: '0 4px 12px rgba(0,107,112,0.25)' }}
+              >
+                ✓ Confirm Return to Warehouse
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+

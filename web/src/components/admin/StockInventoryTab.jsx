@@ -24,7 +24,8 @@ import {
   MoqConfigModal,
   VendorModal,
   BarcodeLabelModal,
-  AssembleKitModal
+  AssembleKitModal,
+  ReturnStockModal
 } from './inventory/InventoryModals';
 
 export default function StockInventoryTab({
@@ -641,12 +642,24 @@ export default function StockInventoryTab({
                          allocateForm.itemCode === 'STK-02' ? 'edtaTubes' : 
                          allocateForm.itemCode === 'STK-03' ? 'fluorideTubes' : 
                          allocateForm.itemCode === 'KIT-101' ? 'fullBodyKits' : 'needles21g';
+        const existingItems = Array.isArray(ag.items) ? [...ag.items] : [];
+        const existingIdx = existingItems.findIndex(i => i.itemCode === allocateForm.itemCode);
+        const itemInfo = inventoryStock.find(s => s.code === allocateForm.itemCode);
+        if (existingIdx >= 0) {
+          existingItems[existingIdx] = {
+            ...existingItems[existingIdx],
+            quantity: (existingItems[existingIdx].quantity || 0) + qty
+          };
+        } else {
+          existingItems.push({
+            itemCode: allocateForm.itemCode,
+            name: itemInfo ? itemInfo.name : allocateForm.itemCode,
+            quantity: qty
+          });
+        }
         return {
           ...ag,
-          inHandStock: {
-            ...ag.inHandStock,
-            [stockKey]: (ag.inHandStock[stockKey] || 0) + qty
-          },
+          items: existingItems,
           lastRefillDate: 'Just Now',
           warning: null
         };
@@ -671,6 +684,59 @@ export default function StockInventoryTab({
         });
       } catch (err) {
         console.warn('Backend allocation sync error:', err);
+      }
+    }
+  };
+
+  // Return Stock from Agent to Warehouse Desk
+  const [returnStockAgent, setReturnStockAgent] = useState(null);
+
+  const handleReturnStock = async ({ agentId, itemCode, quantity, reason }) => {
+    // 1. Increment Warehouse Stock
+    const updatedStock = inventoryStock.map(s => {
+      if (s.code === itemCode) {
+        return { ...s, stock: (s.stock || 0) + quantity };
+      }
+      return s;
+    });
+    setInventoryStock(updatedStock);
+    parentSetInventoryStock(updatedStock);
+
+    // 2. Decrement Agent Bag items
+    setAgentInventories(prev => prev.map(ag => {
+      if (ag.agentId === agentId) {
+        const curItems = Array.isArray(ag.items) ? [...ag.items] : [];
+        const itmIdx = curItems.findIndex(i => i.itemCode === itemCode);
+        if (itmIdx >= 0) {
+          const newQty = (curItems[itmIdx].quantity || 0) - quantity;
+          if (newQty <= 0) {
+            curItems.splice(itmIdx, 1);
+          } else {
+            curItems[itmIdx] = { ...curItems[itmIdx], quantity: newQty };
+          }
+        }
+        return { ...ag, items: curItems };
+      }
+      return ag;
+    }));
+
+    setReturnStockAgent(null);
+
+    // 3. Call backend API
+    if (API_BASE && safeFetch) {
+      try {
+        const res = await safeFetch(`${API_BASE}/api/v1/admin/agent-inventory/return`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agentId, itemCode, quantity, reason })
+        });
+        const data = await safeJson(res);
+        if (data && data.inventory) {
+          setInventoryStock(data.inventory);
+          parentSetInventoryStock(data.inventory);
+        }
+      } catch (err) {
+        console.warn('Backend return stock sync error:', err);
       }
     }
   };
@@ -963,6 +1029,7 @@ export default function StockInventoryTab({
             if (agentId) setAllocateForm(prev => ({ ...prev, agentId }));
             setShowDirectAllocateModal(true);
           }}
+          onOpenReturnStock={(ag) => setReturnStockAgent(ag)}
         />
       )}
 
@@ -1098,6 +1165,14 @@ export default function StockInventoryTab({
         kitItem={assembleKitItem}
         inventoryStock={inventoryStock}
         onAssemble={handleAssembleKit}
+      />
+
+      <ReturnStockModal
+        show={Boolean(returnStockAgent)}
+        onClose={() => setReturnStockAgent(null)}
+        agent={returnStockAgent}
+        inventoryStock={inventoryStock}
+        onConfirmReturn={handleReturnStock}
       />
 
     </div>

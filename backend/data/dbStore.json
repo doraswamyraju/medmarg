@@ -192,17 +192,17 @@
       "phone": "+91 98765 11223",
       "zone": "Zone 1: Tirupati Central",
       "inHandStock": {
-        "sstTubes": 18,
-        "edtaTubes": 14,
-        "fluorideTubes": 8,
-        "needles21g": 22,
-        "butterfly23g": 3,
-        "swabs": 40,
-        "fullBodyKits": 4,
+        "sstTubes": 0,
+        "edtaTubes": 0,
+        "fluorideTubes": 0,
+        "needles21g": 0,
+        "butterfly23g": 0,
+        "swabs": 0,
+        "fullBodyKits": 0,
         "coldBagTemp": "4.2°C",
-        "barcodeRolls": 1
+        "barcodeRolls": 0
       },
-      "lastRefillDate": "Yesterday 09:00 AM",
+      "lastRefillDate": null,
       "warning": null
     }
   ],
