@@ -289,6 +289,168 @@ router.post('/reset-password', (req, res) => {
     });
 });
 
+// PUBLIC FREELANCER AGENT SIGNUP ENDPOINT
+router.post('/signup-freelancer', (req, res) => {
+    const { 
+        name, 
+        email, 
+        phone, 
+        password, 
+        city, 
+        experience, 
+        vehicleType, 
+        hasColdBag, 
+        qualification, 
+        aadhaarNo, 
+        panNo 
+    } = req.body;
+
+    if (!name || (!email && !phone)) {
+        return res.status(400).json({ error: 'Name, and Email or Mobile Number are required.' });
+    }
+
+    const cleanEmail = email ? email.trim().toLowerCase() : `${(phone || 'agent').replace(/[^0-9]/g, '')}@medmarg.com`;
+    const cleanPhone = phone ? phone.trim().replace(/[^0-9]/g, '') : '';
+
+    if (!dbStore.freelancers) dbStore.freelancers = [];
+    if (!dbStore.users) dbStore.users = [];
+
+    // Check duplicate
+    const existing = dbStore.freelancers.find(f => 
+        (f.email && f.email.toLowerCase() === cleanEmail) || 
+        (f.phone && cleanPhone && f.phone.replace(/[^0-9]/g, '') === cleanPhone)
+    );
+
+    if (existing) {
+        return res.status(409).json({ error: 'A phlebotomist account with this email or mobile number already exists. Please sign in.' });
+    }
+
+    const newId = `FL-${String(100 + dbStore.freelancers.length + 1)}`;
+    const newFreelancer = {
+        id: newId,
+        name: name.trim(),
+        email: cleanEmail,
+        phone: cleanPhone || '9876543210',
+        password: password || 'MedMarg@2026',
+        city: city || 'Tirupati',
+        experience: experience || '2+ Years',
+        vehicleType: vehicleType || 'Two Wheeler',
+        hasColdBag: Boolean(hasColdBag),
+        qualification: qualification || 'DMLT / BSc MLT',
+        aadhaarNo: aadhaarNo || '',
+        panNo: panNo || '',
+        rating: '5.0 ★',
+        completedTrips: 0,
+        kycStatus: 'VERIFIED',
+        onboardingFeePaid: true,
+        feeAmount: dbStore.settings?.freelancerOnboardingFee || 2000,
+        walletBalance: dbStore.settings?.freelancerOnboardingFee || 2000,
+        joinedDate: `Today ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+        status: 'AVAILABLE',
+        activePincodes: ['517501', '517502', '517507']
+    };
+
+    dbStore.freelancers.unshift(newFreelancer);
+
+    // Save to users store for instant credential login
+    const newUserRecord = {
+        id: newFreelancer.id,
+        name: newFreelancer.name,
+        email: newFreelancer.email,
+        phone: newFreelancer.phone,
+        password: newFreelancer.password,
+        role: 'FREELANCER_AGENT',
+        agentType: 'FREELANCE',
+        organization: 'MedMarg Freelance Phlebotomy Fleet'
+    };
+    dbStore.users.push(newUserRecord);
+
+    // Audit Log
+    if (!dbStore.auditLogs) dbStore.auditLogs = [];
+    dbStore.auditLogs.unshift({
+        id: `AUD-${Date.now()}`,
+        action: 'FREELANCER_SELF_SIGNUP',
+        user: newFreelancer.name,
+        details: `Self-registered as freelance phlebotomist ID ${newId}`,
+        timestamp: new Date().toISOString()
+    });
+
+    saveDbStore();
+
+    return res.status(201).json({
+        success: true,
+        message: 'Freelance Phlebotomist account registered successfully! You can now log in.',
+        user: newUserRecord,
+        freelancer: newFreelancer
+    });
+});
+
+// PUBLIC PARTNER PRE-REGISTRATION / SIGNUP ENDPOINT
+router.post('/signup-partner', (req, res) => {
+    const { 
+        name, 
+        category, 
+        type, 
+        contactPerson, 
+        phone, 
+        email, 
+        city, 
+        specialty, 
+        experience, 
+        licenseNumber, 
+        address,
+        notes 
+    } = req.body;
+
+    if (!name || (!phone && !email)) {
+        return res.status(400).json({ error: 'Organization/Doctor Name and Contact Phone/Email are required.' });
+    }
+
+    if (!dbStore.partnerQueue) dbStore.partnerQueue = [];
+
+    const newPartner = {
+        id: `P-${Math.floor(100 + Math.random() * 900)}`,
+        name: name.trim(),
+        category: category || 'DOCTORS_OPD',
+        type: type || 'Doctor / OPD Practice',
+        contactPerson: contactPerson || name.trim(),
+        city: city || 'Tirupati',
+        phone: phone ? phone.trim() : '',
+        email: email ? email.trim().toLowerCase() : '',
+        specialty: specialty || 'General Healthcare & Diagnostics Referral',
+        experience: experience || 'Established',
+        licenseNumber: licenseNumber || '',
+        address: address || '',
+        notes: notes || '',
+        status: 'PRE_REGISTERED',
+        assignedMargin: '20%',
+        referredPatientsCount: 0,
+        commissionEarned: '₹0',
+        appliedDate: `Today ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+        createdAt: new Date().toISOString()
+    };
+
+    dbStore.partnerQueue.unshift(newPartner);
+
+    // Audit Log
+    if (!dbStore.auditLogs) dbStore.auditLogs = [];
+    dbStore.auditLogs.unshift({
+        id: `AUD-${Date.now()}`,
+        action: 'PARTNER_PRE_REGISTERED',
+        user: newPartner.name,
+        details: `Healthcare partner inquiry registered: ${newPartner.name} (${newPartner.category})`,
+        timestamp: new Date().toISOString()
+    });
+
+    saveDbStore();
+
+    return res.status(201).json({
+        success: true,
+        message: 'Partnership pre-registration submitted successfully! MedMarg Partner Operations will review within 24 hours.',
+        partner: newPartner
+    });
+});
+
 module.exports = {
     authRouter: router,
     DEMO_USERS_DB

@@ -9,6 +9,8 @@ import PharmacyDashboard from './pages/PharmacyDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import StaffDashboard from './pages/StaffDashboard';
 import PhlebotomistDashboard from './pages/PhlebotomistDashboard';
+import FreelanceSignupPage from './pages/FreelanceSignupPage';
+import PartnerSignupPage from './pages/PartnerSignupPage';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
@@ -29,12 +31,21 @@ export default function App() {
     }
   });
   const [currentView, setCurrentView] = useState(() => {
-    return window.location.pathname.includes('/login') ? 'LOGIN' : 'LANDING';
+    const p = window.location.pathname.toLowerCase();
+    if (p.includes('/signup-freelance') || p.includes('/join-phlebo')) return 'FREELANCER_SIGNUP';
+    if (p.includes('/signup-partner') || p.includes('/partner-register')) return 'PARTNER_SIGNUP';
+    if (p.includes('/login')) return 'LOGIN';
+    return 'LANDING';
   });
 
   useEffect(() => {
     const handlePopState = () => {
-      if (window.location.pathname.includes('/login')) {
+      const p = window.location.pathname.toLowerCase();
+      if (p.includes('/signup-freelance') || p.includes('/join-phlebo')) {
+        setCurrentView('FREELANCER_SIGNUP');
+      } else if (p.includes('/signup-partner') || p.includes('/partner-register')) {
+        setCurrentView('PARTNER_SIGNUP');
+      } else if (p.includes('/login')) {
         if (!currentUser) setCurrentView('LOGIN');
       } else if (!currentUser) {
         setCurrentView('LANDING');
@@ -52,6 +63,16 @@ export default function App() {
   const navigateToHome = () => {
     window.history.pushState({}, '', '/');
     setCurrentView('LANDING');
+  };
+
+  const navigateToFreelancerSignup = () => {
+    window.history.pushState({}, '', '/signup-freelancer');
+    setCurrentView('FREELANCER_SIGNUP');
+  };
+
+  const navigateToPartnerSignup = () => {
+    window.history.pushState({}, '', '/signup-partner');
+    setCurrentView('PARTNER_SIGNUP');
   };
 
   const handleLoginSuccess = (userProfile) => {
@@ -119,11 +140,44 @@ export default function App() {
     }
   }
 
-  // 2. If at /login or view is LOGIN, render the Login Module
-  if (currentView === 'LOGIN' || window.location.pathname.includes('/login')) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} onBackToHome={navigateToHome} />;
+  // 2. Freelancer Agent Signup
+  if (currentView === 'FREELANCER_SIGNUP') {
+    return (
+      <FreelanceSignupPage 
+        onNavigateLogin={navigateToLogin} 
+        onNavigateHome={navigateToHome} 
+      />
+    );
   }
 
-  // 3. Otherwise, render the complete MedMarg Landing Page
-  return <LandingPage onNavigateLogin={navigateToLogin} />;
+  // 3. Healthcare Partner Pre-Registration
+  if (currentView === 'PARTNER_SIGNUP') {
+    return (
+      <PartnerSignupPage 
+        onNavigateLogin={navigateToLogin} 
+        onNavigateHome={navigateToHome} 
+      />
+    );
+  }
+
+  // 4. If at /login or view is LOGIN, render the Login Module
+  if (currentView === 'LOGIN' || window.location.pathname.includes('/login')) {
+    return (
+      <LoginPage 
+        onLoginSuccess={handleLoginSuccess} 
+        onBackToHome={navigateToHome}
+        onNavigateFreelancerSignup={navigateToFreelancerSignup}
+        onNavigatePartnerSignup={navigateToPartnerSignup}
+      />
+    );
+  }
+
+  // 5. Otherwise, render the complete MedMarg Landing Page
+  return (
+    <LandingPage 
+      onNavigateLogin={navigateToLogin} 
+      onNavigateFreelancerSignup={navigateToFreelancerSignup}
+      onNavigatePartnerSignup={navigateToPartnerSignup}
+    />
+  );
 }
