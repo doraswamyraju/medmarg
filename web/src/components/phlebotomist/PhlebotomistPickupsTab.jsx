@@ -35,6 +35,8 @@ export default function PhlebotomistPickupsTab({
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'ASSIGNED' | 'EN_ROUTE' | 'ARRIVED' | 'DONE'
   const [shortageModal, setShortageModal] = useState(null); // Shortage alert modal state
+  const [assignKitModal, setAssignKitModal] = useState(null); // Modal to view agent inventory and assign kit
+  const [selectedKitItems, setSelectedKitItems] = useState({}); // Custom selections per item in modal
 
   // Enforce Rule: Accepts ONE order at a time
   const activeTripOrder = pickups.find(p => p.status === 'EN_ROUTE' || p.status === 'ARRIVED');
@@ -59,41 +61,65 @@ export default function PhlebotomistPickupsTab({
     return list;
   };
 
-  // Assess & Assign Kit from In-Hand Inventory
-  const handleAssignKit = async (pk) => {
+  // Open interactive Inventory Assessment & Assignment Modal
+  const handleOpenAssignKitModal = (pk) => {
     const requiredKit = getRequiredKit(pk);
-    const shortages = [];
-
+    // Initialize selected counts matching required items
+    const initialSelections = {};
     requiredKit.forEach(req => {
-      const stockItem = inventory.find(i => 
+      const match = inventory.find(i => 
         (req.code && i.code === req.code) || 
         (req.name && i.name.toLowerCase().includes(req.name.toLowerCase()))
       );
-      if (!stockItem || stockItem.stock < req.qty) {
+      if (match) {
+        initialSelections[match.id] = req.qty;
+      }
+    });
+    setSelectedKitItems(initialSelections);
+    setAssignKitModal({ order: pk, requiredKit });
+  };
+
+  // Confirm Assignment from Modal
+  const handleConfirmKitAssignment = () => {
+    if (!assignKitModal) return;
+    const { order: pk, requiredKit } = assignKitModal;
+
+    // Check for shortages against what is selected
+    const shortages = [];
+    requiredKit.forEach(req => {
+      const match = inventory.find(i => 
+        (req.code && i.code === req.code) || 
+        (req.name && i.name.toLowerCase().includes(req.name.toLowerCase()))
+      );
+      const selectedQty = match ? (selectedKitItems[match.id] || 0) : 0;
+      if (selectedQty < req.qty) {
         shortages.push({
           name: req.name,
           needed: req.qty,
-          inHand: stockItem ? stockItem.stock : 0
+          inHand: match ? match.stock : 0,
+          selected: selectedQty
         });
       }
     });
 
     if (shortages.length > 0) {
+      setAssignKitModal(null);
       setShortageModal({ order: pk, shortages });
       return;
     }
 
-    // Deduct from in-hand stock
+    // Deduct assigned items from agent's inventory
     if (setInventory) {
       setInventory(prev => prev.map(inv => {
-        const match = requiredKit.find(r => r.code === inv.code || inv.name.toLowerCase().includes(r.name.toLowerCase()));
-        if (match) {
-          return { ...inv, stock: Math.max(0, inv.stock - match.qty) };
+        const deducted = selectedKitItems[inv.id] || 0;
+        if (deducted > 0) {
+          return { ...inv, stock: Math.max(0, inv.stock - deducted) };
         }
         return inv;
       }));
     }
 
+    // Mark kit assigned on the pickup
     if (setPickups) {
       setPickups(prev => prev.map(p => p.id === pk.id ? { ...p, kitAssigned: true } : p));
     }
@@ -104,9 +130,14 @@ export default function PhlebotomistPickupsTab({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         orderId: pk.id,
-        kitItems: requiredKit
+        kitItems: Object.entries(selectedKitItems).map(([id, qty]) => {
+          const inv = inventory.find(i => i.id === id);
+          return { id, name: inv?.name, code: inv?.code, qty };
+        })
       })
     }).catch(() => {});
+
+    setAssignKitModal(null);
   };
 
   // Filtered List
@@ -361,7 +392,7 @@ export default function PhlebotomistPickupsTab({
                       </span>
                     ) : (
                       <button
-                        onClick={() => handleAssignKit(pk)}
+                        onClick={() => handleOpenAssignKitModal(pk)}
                         style={{
                           background: 'none',
                           border: 'none',
@@ -450,7 +481,7 @@ export default function PhlebotomistPickupsTab({
                             </button>
                           ) : !kitAssigned ? (
                             <button
-                              onClick={() => handleAssignKit(pk)}
+                              onClick={() => handleOpenAssignKitModal(pk)}
                               style={{
                                 width: '100%',
                                 padding: '0.55rem',
@@ -565,6 +596,288 @@ export default function PhlebotomistPickupsTab({
           })
         )}
       </div>
+
+      {/* ========================================================================= */}
+      {/* INTERACTIVE ASSESS & ASSIGN INVENTORY MODAL                             */}
+      {/* ========================================================================= */}
+      {assignKitModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 150,
+          backgroundColor: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: '1.25rem'
+        }}>
+          <div style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '22px',
+            maxWidth: '560px',
+            width: '100%',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.25)',
+            border: '1.5px solid #CCFBF1'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid #E2E8F0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              backgroundColor: '#F0FDFA'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  backgroundColor: '#006B70',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Package size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+                    Assess & Assign Field Kit
+                  </h3>
+                  <div style={{ fontSize: '0.75rem', color: '#0F766E', fontWeight: '700' }}>
+                    Order #{assignKitModal.order.id} • {assignKitModal.order.patientName}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setAssignKitModal(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#64748B',
+                  cursor: 'pointer',
+                  padding: '0.35rem',
+                  fontSize: '1.2rem',
+                  lineHeight: 1
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body: In-Hand Inventory List */}
+            <div style={{ padding: '1.25rem 1.5rem', overflowY: 'auto', flex: 1 }}>
+              <div style={{ marginBottom: '1rem' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: '800', color: '#334155', marginBottom: '0.25rem' }}>
+                  Required Diagnostic Consumables for this Order:
+                </div>
+                <div style={{
+                  padding: '0.65rem 0.85rem',
+                  backgroundColor: '#F8FAFC',
+                  borderRadius: '10px',
+                  border: '1px solid #E2E8F0',
+                  fontSize: '0.78rem',
+                  color: '#475569'
+                }}>
+                  <div style={{ fontWeight: '800', color: '#004D40', marginBottom: '0.2rem' }}>
+                    {assignKitModal.order.tests}
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.35rem' }}>
+                    {assignKitModal.requiredKit.map((req, idx) => (
+                      <span
+                        key={idx}
+                        style={{
+                          fontSize: '0.72rem',
+                          backgroundColor: '#CCFBF1',
+                          color: '#0F766E',
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '6px',
+                          fontWeight: '800'
+                        }}
+                      >
+                        {req.name} ×{req.qty}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ fontSize: '0.82rem', fontWeight: '900', color: '#1E293B', marginBottom: '0.6rem' }}>
+                Your In-Hand Field Kit Inventory (Review & Adjust):
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {inventory.map((inv) => {
+                  const requiredMatch = assignKitModal.requiredKit.find(r => 
+                    (r.code && inv.code === r.code) || 
+                    (r.name && inv.name.toLowerCase().includes(r.name.toLowerCase()))
+                  );
+                  const isRequired = !!requiredMatch;
+                  const currentSelected = selectedKitItems[inv.id] || 0;
+
+                  return (
+                    <div
+                      key={inv.id}
+                      style={{
+                        padding: '0.75rem 0.9rem',
+                        borderRadius: '12px',
+                        border: isRequired 
+                          ? (currentSelected > 0 ? '1.5px solid #006B70' : '1.5px solid #FCD34D')
+                          : '1px solid #E2E8F0',
+                        backgroundColor: isRequired ? (currentSelected > 0 ? '#F0FDFA' : '#FFFBEB') : '#FFFFFF',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span style={{ fontSize: '0.84rem', fontWeight: '800', color: '#0F172A' }}>
+                            {inv.name}
+                          </span>
+                          {isRequired && (
+                            <span style={{
+                              fontSize: '0.65rem',
+                              backgroundColor: '#006B70',
+                              color: '#FFFFFF',
+                              padding: '0.1rem 0.4rem',
+                              borderRadius: '4px',
+                              fontWeight: '900'
+                            }}>
+                              REQUIRED ({requiredMatch.qty})
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '0.74rem', color: '#64748B', marginTop: '0.15rem' }}>
+                          In-Hand Bag Stock: <strong style={{ color: inv.stock > 0 ? '#059669' : '#DC2626' }}>{inv.stock} {inv.unit || 'units'}</strong>
+                          {inv.code && ` • Code: ${inv.code}`}
+                        </div>
+                      </div>
+
+                      {/* Quantity Stepper for Assignment */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedKitItems(prev => ({
+                              ...prev,
+                              [inv.id]: Math.max(0, (prev[inv.id] || 0) - 1)
+                            }));
+                          }}
+                          style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '8px',
+                            border: '1px solid #CBD5E1',
+                            backgroundColor: '#FFFFFF',
+                            color: '#334155',
+                            fontWeight: '900',
+                            fontSize: '0.9rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          -
+                        </button>
+                        <span style={{
+                          minWidth: '24px',
+                          textAlign: 'center',
+                          fontSize: '0.9rem',
+                          fontWeight: '900',
+                          color: currentSelected > 0 ? '#006B70' : '#94A3B8'
+                        }}>
+                          {currentSelected}
+                        </span>
+                        <button
+                          type="button"
+                          disabled={currentSelected >= inv.stock}
+                          onClick={() => {
+                            setSelectedKitItems(prev => ({
+                              ...prev,
+                              [inv.id]: Math.min(inv.stock, (prev[inv.id] || 0) + 1)
+                            }));
+                          }}
+                          style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '8px',
+                            border: '1px solid #CBD5E1',
+                            backgroundColor: currentSelected >= inv.stock ? '#F1F5F9' : '#006B70',
+                            color: currentSelected >= inv.stock ? '#94A3B8' : '#FFFFFF',
+                            fontWeight: '900',
+                            fontSize: '0.9rem',
+                            cursor: currentSelected >= inv.stock ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div style={{
+              padding: '1rem 1.5rem',
+              borderTop: '1px solid #E2E8F0',
+              backgroundColor: '#F8FAFC',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <button
+                type="button"
+                onClick={() => setAssignKitModal(null)}
+                style={{
+                  padding: '0.65rem 1.1rem',
+                  backgroundColor: '#FFFFFF',
+                  color: '#475569',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: '10px',
+                  fontWeight: '800',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmKitAssignment}
+                style={{
+                  padding: '0.65rem 1.4rem',
+                  backgroundColor: '#006B70',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: '900',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  boxShadow: '0 4px 12px rgba(0, 107, 112, 0.25)'
+                }}
+              >
+                <CheckCircle2 size={16} /> Confirm & Assign Kit to Visit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* SHORTAGE MODAL (PROMPTS INDENT & VISIT TO MEDMARG STORE)                 */}
