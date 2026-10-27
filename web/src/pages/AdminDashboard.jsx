@@ -748,8 +748,11 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
               orders={orders} 
               setOrders={setOrders}
               salariedAgents={salariedAgents}
+              freelancers={freelancers}
               labPartners={labPartners}
               catalog={catalog}
+              API_BASE={API_BASE}
+              safeFetch={safeFetch}
             />
           )}
 

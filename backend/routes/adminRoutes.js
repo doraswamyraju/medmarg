@@ -26,11 +26,34 @@ router.post('/orders/assign', (req, res) => {
     const order = (dbStore.orders || []).find(o => o.id === orderId);
     if (order) {
         order.assignedAgent = assignedAgent;
-        order.status = 'EN_ROUTE';
+        order.status = assignedAgent.includes('Unassigned') ? 'PENDING_DISPATCH' : (order.status === 'PENDING_DISPATCH' ? 'EN_ROUTE' : order.status);
+        order.updatedAt = new Date().toISOString();
         saveDbStore();
         return res.json({ success: true, order });
     }
     res.status(404).json({ error: 'Order not found' });
+});
+
+router.put('/orders/:id', (req, res) => {
+    const { id } = req.params;
+    const order = (dbStore.orders || []).find(o => o.id === id);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    Object.assign(order, req.body, { updatedAt: new Date().toISOString() });
+    saveDbStore();
+    res.json({ success: true, order, message: `Order #${id} updated successfully.` });
+});
+
+router.delete('/orders/:id', (req, res) => {
+    const { id } = req.params;
+    const initLen = (dbStore.orders || []).length;
+    dbStore.orders = (dbStore.orders || []).filter(o => o.id !== id);
+    saveDbStore();
+
+    if (dbStore.orders.length === initLen) {
+        return res.status(404).json({ error: 'Order not found' });
+    }
+    res.json({ success: true, message: `Order #${id} deleted successfully.` });
 });
 
 // FREELANCER AGENTS MANAGEMENT
