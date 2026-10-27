@@ -397,4 +397,26 @@ router.post('/razorpay/webhook', (req, res) => {
     }
 });
 
+// 7. Check / Verify Doorstep Payment Status Live
+router.get('/order-status/:orderId', (req, res) => {
+    const { orderId } = req.params;
+    const order = (dbStore.orders || []).find(o => o.id === orderId);
+    if (!order) {
+        return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+    const isPaid = order.paymentStatus === 'PAID_ONLINE' || 
+                   order.paymentStatus === 'PAID_DOORSTEP_QR' || 
+                   order.paymentStatus === 'PAID_SUCCESS' || 
+                   Boolean(order.paymentCollected);
+    
+    res.json({
+        success: true,
+        orderId,
+        isPaid,
+        paymentStatus: order.paymentStatus,
+        paymentMode: order.paymentMode,
+        amount: order.amount || order.totalAmount
+    });
+});
+
 module.exports = router;

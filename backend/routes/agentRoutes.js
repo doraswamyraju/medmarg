@@ -2,10 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { dbStore, saveDbStore } = require('../models/dataStore');
 
-// AGENT ROSTER
+// AGENT ROSTER - Exclude CANCELLED orders from active field dispatch
 router.get('/roster', (req, res) => {
-    const orders = dbStore.orders || [];
-    res.json({ success: true, roster: orders });
+    const rawOrders = dbStore.orders || [];
+    const activeOrders = rawOrders.filter(o => o.status !== 'CANCELLED');
+    res.json({ success: true, roster: activeOrders });
 });
 
 // SAMPLE PICKUP & STATUS UPDATE (DOORSTEP VISIT & DIGITAL EXECUTION)

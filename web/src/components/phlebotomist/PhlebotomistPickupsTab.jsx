@@ -41,38 +41,64 @@ export default function PhlebotomistPickupsTab({
   // Enforce Rule: Accepts ONE order at a time
   const activeTripOrder = pickups.find(p => p.status === 'EN_ROUTE' || p.status === 'ARRIVED');
 
-  // Kit Requirements Helper for an order
+  // Kit Requirements Helper for an order based on tests and tubes
   const getRequiredKit = (pk) => {
     const list = [];
-    const tubes = pk.tubes || ['Yellow SST (Serum)', 'Lavender (EDTA Blood)'];
-    tubes.forEach(t => {
-      if (t.includes('Yellow') || t.includes('SST')) {
-        list.push({ name: 'Vacutainer Gold SST', code: 'TUBE-SST', qty: 1 });
-      } else if (t.includes('Lavender') || t.includes('EDTA')) {
-        list.push({ name: 'Vacutainer Purple EDTA', code: 'TUBE-EDTA', qty: 1 });
-      } else if (t.includes('Grey') || t.includes('Fluoride')) {
-        list.push({ name: 'Vacutainer Grey Fluoride', code: 'TUBE-FLR', qty: 1 });
-      } else {
-        list.push({ name: t, code: 'TUBE-GEN', qty: 1 });
-      }
-    });
-    list.push({ name: 'Sterile Safety Syringe 5ml', code: 'SYR-5ML', qty: 1 });
-    list.push({ name: 'Barcode Thermal Label', code: 'LBL-ROLL', qty: 1 });
+    const testStr = `${pk.tests || ''} ${pk.testName || ''} ${pk.packageName || ''}`.toLowerCase();
+    const tubes = pk.tubes || [];
+
+    // Analyze tubes or tests to deduce exact requirements
+    const hasSST = tubes.some(t => /yellow|sst|serum|gold/i.test(t)) || /lipid|thyroid|liver|lft|kft|kidney|crp|vitamin|biochem|panel/i.test(testStr);
+    const hasEDTA = tubes.some(t => /lavender|edta|purple|whole blood/i.test(t)) || /cbc|hemogram|hba1c|blood count|esr/i.test(testStr);
+    const hasFluoride = tubes.some(t => /grey|gray|fluoride|sugar|glucose/i.test(t)) || /glucose|fbs|ppbs|sugar/i.test(testStr);
+    const hasCitrate = tubes.some(t => /blue|citrate|coagulation|pt|inr/i.test(t)) || /coagulation|prothrombin|inr/i.test(testStr);
+
+    if (hasSST || (!hasEDTA && !hasFluoride && !hasCitrate)) {
+      list.push({ name: 'Vacutainer Gold SST (Serum Gel)', code: 'TUBE-SST', qty: 1 });
+    }
+    if (hasEDTA) {
+      list.push({ name: 'Vacutainer Purple (EDTA Whole Blood)', code: 'TUBE-EDTA', qty: 1 });
+    }
+    if (hasFluoride) {
+      list.push({ name: 'Vacutainer Grey (Fluoride Sugar)', code: 'TUBE-FLR', qty: 1 });
+    }
+    if (hasCitrate) {
+      list.push({ name: 'Vacutainer Light Blue (Citrate)', code: 'TUBE-CIT', qty: 1 });
+    }
+
+    // Standard Doorstep Draw Consumables
+    list.push({ name: 'Sterile Safety Syringes 5ml', code: 'SYR-5ML', qty: 1 });
+    list.push({ name: 'Barcode Thermal Label Rolls', code: 'LBL-ROLL', qty: 1 });
+
     return list;
+  };
+
+  // Helper to find matching inventory item
+  const findInventoryMatch = (req, invList) => {
+    return invList.find(i => {
+      if (req.code && i.code === req.code) return true;
+      const iName = (i.name || '').toLowerCase();
+      const rName = (req.name || '').toLowerCase();
+      if (req.code === 'LBL-ROLL' && (iName.includes('barcode') || iName.includes('label'))) return true;
+      if (req.code === 'SYR-5ML' && iName.includes('5ml')) return true;
+      if (req.code === 'TUBE-SST' && (iName.includes('sst') || iName.includes('gold') || iName.includes('serum'))) return true;
+      if (req.code === 'TUBE-EDTA' && (iName.includes('edta') || iName.includes('purple'))) return true;
+      if (req.code === 'TUBE-FLR' && (iName.includes('fluoride') || iName.includes('grey') || iName.includes('gray'))) return true;
+      if (req.code === 'TUBE-CIT' && (iName.includes('citrate') || iName.includes('blue'))) return true;
+      return iName.includes(rName) || rName.includes(iName);
+    });
   };
 
   // Open interactive Inventory Assessment & Assignment Modal
   const handleOpenAssignKitModal = (pk) => {
     const requiredKit = getRequiredKit(pk);
-    // Initialize selected counts matching required items
+    // Initialize selected counts strictly capped by current available stock!
     const initialSelections = {};
     requiredKit.forEach(req => {
-      const match = inventory.find(i => 
-        (req.code && i.code === req.code) || 
-        (req.name && i.name.toLowerCase().includes(req.name.toLowerCase()))
-      );
+      const match = findInventoryMatch(req, inventory);
       if (match) {
-        initialSelections[match.id] = req.qty;
+        // Capped by available stock so 0-stock items don't falsely show selected: 1!
+        initialSelections[match.id] = Math.min(req.qty, match.stock || 0);
       }
     });
     setSelectedKitItems(initialSelections);
@@ -87,10 +113,7 @@ export default function PhlebotomistPickupsTab({
     // Check for shortages against what is selected
     const shortages = [];
     requiredKit.forEach(req => {
-      const match = inventory.find(i => 
-        (req.code && i.code === req.code) || 
-        (req.name && i.name.toLowerCase().includes(req.name.toLowerCase()))
-      );
+      const match = findInventoryMatch(req, inventory);
       const selectedQty = match ? (selectedKitItems[match.id] || 0) : 0;
       if (selectedQty < req.qty) {
         shortages.push({
@@ -377,6 +400,28 @@ export default function PhlebotomistPickupsTab({
                     >
                       <Navigation size={11} /> Maps
                     </a>
+
+                    {/* Doorstep Patient Verification OTP */}
+                    {pk.otp && (
+                      <span
+                        title="Doorstep verification code shared with patient"
+                        style={{
+                          padding: '0.25rem 0.6rem',
+                          backgroundColor: '#F0FDFA',
+                          color: '#0F766E',
+                          borderRadius: '6px',
+                          border: '1px solid #99F6E4',
+                          fontSize: '0.75rem',
+                          fontWeight: '900',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.25rem',
+                          fontFamily: 'monospace'
+                        }}
+                      >
+                        🔑 OTP: {pk.otp}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -714,12 +759,13 @@ export default function PhlebotomistPickupsTab({
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                 {inventory.map((inv) => {
-                  const requiredMatch = assignKitModal.requiredKit.find(r => 
-                    (r.code && inv.code === r.code) || 
-                    (r.name && inv.name.toLowerCase().includes(r.name.toLowerCase()))
-                  );
+                  const requiredMatch = assignKitModal.requiredKit.find(r => {
+                    const match = findInventoryMatch(r, [inv]);
+                    return !!match;
+                  });
                   const isRequired = !!requiredMatch;
                   const currentSelected = selectedKitItems[inv.id] || 0;
+                  const isOutOfStock = inv.stock <= 0;
 
                   return (
                     <div
@@ -727,30 +773,39 @@ export default function PhlebotomistPickupsTab({
                       style={{
                         padding: '0.75rem 0.9rem',
                         borderRadius: '12px',
-                        border: isRequired 
-                          ? (currentSelected > 0 ? '1.5px solid #006B70' : '1.5px solid #FCD34D')
-                          : '1px solid #E2E8F0',
-                        backgroundColor: isRequired ? (currentSelected > 0 ? '#F0FDFA' : '#FFFBEB') : '#FFFFFF',
+                        border: isOutOfStock && isRequired
+                          ? '1.5px solid #FCA5A5'
+                          : isRequired 
+                            ? (currentSelected > 0 ? '1.5px solid #006B70' : '1.5px solid #FCD34D')
+                            : '1px solid #E2E8F0',
+                        backgroundColor: isOutOfStock && isRequired
+                          ? '#FEF2F2'
+                          : isRequired ? (currentSelected > 0 ? '#F0FDFA' : '#FFFBEB') : '#FFFFFF',
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center'
                       }}
                     >
                       <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                           <span style={{ fontSize: '0.84rem', fontWeight: '800', color: '#0F172A' }}>
                             {inv.name}
                           </span>
                           {isRequired && (
                             <span style={{
                               fontSize: '0.65rem',
-                              backgroundColor: '#006B70',
+                              backgroundColor: isOutOfStock ? '#DC2626' : '#006B70',
                               color: '#FFFFFF',
                               padding: '0.1rem 0.4rem',
                               borderRadius: '4px',
                               fontWeight: '900'
                             }}>
                               REQUIRED ({requiredMatch.qty})
+                            </span>
+                          )}
+                          {isOutOfStock && (
+                            <span style={{ fontSize: '0.65rem', backgroundColor: '#FEE2E2', color: '#991B1B', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>
+                              ⚠️ 0 In-Hand Stock
                             </span>
                           )}
                         </div>
