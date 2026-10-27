@@ -1,6 +1,11 @@
 import React from 'react';
 
-export default function LandingFooter({ onNavigateLogin, onOpenAppModal }) {
+export default function LandingFooter({ 
+  onNavigateLogin, 
+  onOpenAppModal,
+  onNavigateFreelancerSignup = () => {},
+  onNavigatePartnerSignup = () => {}
+}) {
   return (
     <footer style={{ backgroundColor: '#071F1A', color: '#94A3B8', padding: '4.5rem 1.5rem 2.5rem', borderTop: '1px solid #005F60' }}>
       <div style={{ maxWidth: '1320px', margin: '0 auto' }}>
@@ -88,9 +93,24 @@ export default function LandingFooter({ onNavigateLogin, onOpenAppModal }) {
           </div>
 
           <div>
-            <h5 style={{ color: '#FFF', fontSize: '0.9rem', fontWeight: '800', marginBottom: '1rem' }}>Portal Access</h5>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
-              <button onClick={onNavigateLogin} style={{ background: 'none', border: 'none', color: '#38BDF8', textAlign: 'left', padding: 0, cursor: 'pointer', fontWeight: '700' }}>
+            <h5 style={{ color: '#FFF', fontSize: '0.9rem', fontWeight: '800', marginBottom: '1rem' }}>Partner With Us</h5>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.85rem' }}>
+              <button 
+                onClick={onNavigateFreelancerSignup} 
+                style={{ background: 'none', border: 'none', color: '#5EEAD4', textAlign: 'left', padding: 0, cursor: 'pointer', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+              >
+                🚴 Freelance Phlebotomist Sign Up →
+              </button>
+              <button 
+                onClick={onNavigatePartnerSignup} 
+                style={{ background: 'none', border: 'none', color: '#93C5FD', textAlign: 'left', padding: 0, cursor: 'pointer', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+              >
+                🏥 Partner / Clinic Pre-Registration →
+              </button>
+              <button 
+                onClick={onNavigateLogin} 
+                style={{ background: 'none', border: 'none', color: '#94A3B8', textAlign: 'left', padding: 0, cursor: 'pointer', fontWeight: '700', marginTop: '0.4rem' }}
+              >
                 Admin / Staff / Fleet Sign In →
               </button>
             </div>

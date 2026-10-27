@@ -14,7 +14,11 @@ import LandingEcosystemAndPartners from '../components/landing/LandingEcosystemA
 import LandingFooter from '../components/landing/LandingFooter';
 import LandingAppModal from '../components/landing/LandingAppModal';
 
-export default function LandingPage({ onNavigateLogin }) {
+export default function LandingPage({ 
+  onNavigateLogin,
+  onNavigateFreelancerSignup = () => {},
+  onNavigatePartnerSignup = () => {}
+}) {
   // Master Catalog State
   const [catalog, setCatalog] = useState(() => {
     const localState = getCatalogState();
@@ -141,6 +145,8 @@ export default function LandingPage({ onNavigateLogin }) {
       <LandingFooter 
         onNavigateLogin={onNavigateLogin}
         onOpenAppModal={() => setShowAppModal(true)}
+        onNavigateFreelancerSignup={onNavigateFreelancerSignup}
+        onNavigatePartnerSignup={onNavigatePartnerSignup}
       />
 
       {/* 📑 Global Item Specification Modal */}

@@ -14,7 +14,12 @@ import {
 } from 'lucide-react';
 import { API_BASE, safeJson } from '../data/apiConfig';
 
-export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
+export default function LoginPage({ 
+  onLoginSuccess, 
+  onBackToHome = () => {},
+  onNavigateFreelancerSignup = () => {},
+  onNavigatePartnerSignup = () => {}
+}) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -424,8 +429,30 @@ export default function LoginPage({ onLoginSuccess, onBackToHome = () => {} }) {
               </button>
             </form>
 
+            {/* Fast Partner / Freelancer Onboarding Links */}
+            <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#F8FAFC', borderRadius: '14px', border: '1px solid #E2E8F0', textAlign: 'center', fontSize: '0.82rem' }}>
+              <div style={{ color: '#64748B', fontWeight: '700', marginBottom: '0.5rem' }}>Want to work with MedMarg?</div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={onNavigateFreelancerSignup}
+                  style={{ background: 'none', border: 'none', color: '#006B70', fontWeight: '800', cursor: 'pointer', padding: 0 }}
+                >
+                  🚴 Freelancer Sign Up
+                </button>
+                <span style={{ color: '#CBD5E1' }}>•</span>
+                <button
+                  type="button"
+                  onClick={onNavigatePartnerSignup}
+                  style={{ background: 'none', border: 'none', color: '#2563EB', fontWeight: '800', cursor: 'pointer', padding: 0 }}
+                >
+                  🏥 Partner Pre-Registration
+                </button>
+              </div>
+            </div>
+
             {/* Security Footer */}
-            <div style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#64748B', fontSize: '0.78rem' }}>
+            <div style={{ marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#64748B', fontSize: '0.78rem' }}>
               <Shield size={14} color="#006B70" />
               <span>256-Bit SSL Encrypted • NABL & ABDM Compliant</span>
             </div>
