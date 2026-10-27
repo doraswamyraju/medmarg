@@ -23,8 +23,10 @@ import {
   Users,
   CreditCard,
   Percent,
-  Check
+  Check,
+  Navigation
 } from 'lucide-react';
+import CareSeekerPinpointMap from '../../patient/CareSeekerPinpointMap';
 import { API_BASE, safeFetch, safeJson } from '../../../data/apiConfig';
 
 export default function CreateManualOrderModal({
@@ -45,6 +47,12 @@ export default function CreateManualOrderModal({
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [selectedAddressIndex, setSelectedAddressIndex] = useState(0);
   const [customAddress, setCustomAddress] = useState('');
+
+  // Optional Map Pinning State (Non-mandatory)
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [mapCoords, setMapCoords] = useState({ lat: 13.6288, lng: 79.4192 });
+  const [locationStatus, setLocationStatus] = useState('');
+  const [isLocating, setIsLocating] = useState(false);
 
   // New Patient Form (Inline Creation)
   const [showNewPatientForm, setShowNewPatientForm] = useState(false);
@@ -243,6 +251,64 @@ export default function CreateManualOrderModal({
   const subtotal = cartItems.reduce((acc, curr) => acc + (curr.price * (curr.quantity || 1)), 0);
   const finalTotal = Math.max(0, subtotal - Number(discountAmount || 0));
 
+  // Geolocation detection handler
+  const handleDetectGps = () => {
+    if (!navigator.geolocation) {
+      setLocationStatus('Geolocation is not supported by your browser.');
+      return;
+    }
+    setIsLocating(true);
+    setLocationStatus('Detecting GPS coordinates...');
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setMapCoords({ lat: latitude, lng: longitude });
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await res.json();
+          if (data && data.display_name) {
+            const detectedStreet = data.address?.suburb || data.address?.neighbourhood || data.address?.road || '';
+            const detectedCity = data.address?.city || data.address?.town || 'Tirupati';
+            const detectedPin = data.address?.postcode || '';
+            setNewPatientData(prev => ({
+              ...prev,
+              address: prev.address || detectedStreet,
+              city: prev.city || detectedCity,
+              pincode: prev.pincode || detectedPin
+            }));
+            setLocationStatus('📍 GPS coordinates and area detected.');
+          } else {
+            setLocationStatus('📍 GPS coordinates captured.');
+          }
+        } catch (e) {
+          setLocationStatus('📍 GPS coordinates captured.');
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      () => {
+        setIsLocating(false);
+        setLocationStatus('Could not access GPS. You can drag the pin on map.');
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  };
+
+  const handlePinMove = async (coords) => {
+    setMapCoords(coords);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.lat}&lon=${coords.lng}`);
+      const data = await res.json();
+      if (data && data.address) {
+        const road = data.address.suburb || data.address.neighbourhood || data.address.road;
+        if (road && !newPatientData.address) {
+          setNewPatientData(prev => ({ ...prev, address: road }));
+        }
+        setLocationStatus('📍 Updated from map pin.');
+      }
+    } catch (e) {}
+  };
+
   // Handle Quick Add New Patient Submission
   const handleCreateNewPatient = async () => {
     if (!newPatientData.name.trim() || !newPatientData.phone.trim()) {
@@ -271,6 +337,7 @@ export default function CreateManualOrderModal({
           fullAddress: fullAddr,
           pincode: newPatientData.pincode || '517501',
           landmark: newPatientData.landmark,
+          coords: showMapPicker ? mapCoords : null,
           isPrimary: true
         }
       ],
@@ -356,6 +423,7 @@ export default function CreateManualOrderModal({
       handoverOtp: generatedOtp,
       paymentMode: paymentMode,
       paymentStatus: paymentMode === 'PREPAID_ONLINE' ? 'PAID_SUCCESS' : 'PENDING_DOORSTEP',
+      coords: showMapPicker ? mapCoords : (selectedCustomer?.locations?.[selectedAddressIndex]?.coords || null),
       notes: orderNotes,
       createdAt: `Today ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
     };
@@ -1000,6 +1068,93 @@ export default function CreateManualOrderModal({
                         style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '0.85rem' }}
                       />
                     </div>
+                  </div>
+
+                  {/* Optional Doorstep Map Pointing (Non-Mandatory) */}
+                  <div style={{
+                    marginBottom: '1.25rem',
+                    padding: '0.85rem 1rem',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '12px',
+                    border: '1px solid #E2E8F0'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <MapPin size={16} color="#006B70" />
+                        <div>
+                          <span style={{ fontSize: '0.82rem', fontWeight: '800', color: '#1E293B' }}>
+                            Pinpoint Exact Doorstep on Map
+                          </span>
+                          <span style={{ marginLeft: '0.45rem', fontSize: '0.68rem', fontWeight: '700', backgroundColor: '#F1F5F9', color: '#64748B', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
+                            Optional
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {showMapPicker && (
+                          <button
+                            type="button"
+                            onClick={handleDetectGps}
+                            disabled={isLocating}
+                            style={{
+                              padding: '0.35rem 0.65rem',
+                              backgroundColor: '#F0FDFA',
+                              color: '#006B70',
+                              border: '1px solid #99F6E4',
+                              borderRadius: '6px',
+                              fontSize: '0.75rem',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.3rem'
+                            }}
+                          >
+                            <Navigation size={12} /> {isLocating ? 'Detecting...' : 'Detect GPS'}
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setShowMapPicker(!showMapPicker)}
+                          style={{
+                            padding: '0.35rem 0.75rem',
+                            backgroundColor: showMapPicker ? '#FEF2F2' : '#F0FDFA',
+                            color: showMapPicker ? '#B91C1C' : '#006B70',
+                            border: `1px solid ${showMapPicker ? '#FECACA' : '#99F6E4'}`,
+                            borderRadius: '6px',
+                            fontSize: '0.75rem',
+                            fontWeight: '800',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {showMapPicker ? '✕ Hide Map' : '🗺️ Open Map'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {showMapPicker && (
+                      <div style={{ marginTop: '0.85rem' }}>
+                        <div style={{ marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.72rem', color: '#64748B' }}>
+                            Drag the pin to patient's exact gate or doorstep for accurate phlebotomist dispatch.
+                          </span>
+                          <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#006B70' }}>
+                            {mapCoords.lat.toFixed(4)}, {mapCoords.lng.toFixed(4)}
+                          </span>
+                        </div>
+                        {locationStatus && (
+                          <div style={{ fontSize: '0.75rem', color: '#006B70', marginBottom: '0.5rem', fontWeight: '600' }}>
+                            {locationStatus}
+                          </div>
+                        )}
+                        <CareSeekerPinpointMap
+                          center={mapCoords}
+                          onPinMove={handlePinMove}
+                          height="200px"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
