@@ -4,7 +4,7 @@ import {
   ShieldCheck, FileText, Plus, AlertTriangle, ShieldAlert
 } from 'lucide-react';
 
-// Sub-Tab Modular Components
+import { safeJson } from '../../data/apiConfig';
 import StockAndKitsSubTab from './inventory/StockAndKitsSubTab';
 import PurchasesInwardSubTab from './inventory/PurchasesInwardSubTab';
 import AgentIndentsSubTab from './inventory/AgentIndentsSubTab';
@@ -22,7 +22,9 @@ import {
   DirectAllocateModal, 
   ScrapModal, 
   MoqConfigModal,
-  VendorModal
+  VendorModal,
+  BarcodeLabelModal,
+  AssembleKitModal
 } from './inventory/InventoryModals';
 
 export default function StockInventoryTab({
@@ -52,6 +54,8 @@ export default function StockInventoryTab({
   }, [initialStock]);
 
   const [editingStockItem, setEditingStockItem] = useState(null);
+  const [barcodeItem, setBarcodeItem] = useState(null);
+  const [assembleKitItem, setAssembleKitItem] = useState(null);
 
   // Purchases / Inward Goods State (GRN)
   const [purchases, setPurchases] = useState([]);
@@ -139,7 +143,8 @@ export default function StockInventoryTab({
   React.useEffect(() => {
     async function fetchInventorySubtabs() {
       try {
-        const [purRes, indRes, scRes, vndRes, agRes, exRes] = await Promise.all([
+        const [invRes, purRes, indRes, scRes, vndRes, agRes, exRes] = await Promise.all([
+          safeFetch(`${API_BASE}/api/v1/admin/inventory`, {}, 2500).then(r => r.json()).catch(() => null),
           safeFetch(`${API_BASE}/api/v1/admin/purchases`, {}, 2500).then(r => r.json()).catch(() => null),
           safeFetch(`${API_BASE}/api/v1/admin/indents`, {}, 2500).then(r => r.json()).catch(() => null),
           safeFetch(`${API_BASE}/api/v1/admin/scraps`, {}, 2500).then(r => r.json()).catch(() => null),
@@ -148,6 +153,10 @@ export default function StockInventoryTab({
           safeFetch(`${API_BASE}/api/v1/admin/extra-usages`, {}, 2500).then(r => r.json()).catch(() => null)
         ]);
 
+        if (invRes?.inventory && Array.isArray(invRes.inventory)) {
+          setInventoryStock(invRes.inventory);
+          parentSetInventoryStock(invRes.inventory);
+        }
         if (purRes?.purchases && purRes.purchases.length > 0) setPurchases(purRes.purchases);
         if (indRes?.indents && indRes.indents.length > 0) {
           setIndents(indRes.indents);
@@ -531,21 +540,44 @@ export default function StockInventoryTab({
     setInventoryStock(updatedStock);
     parentSetInventoryStock(updatedStock);
     setShowAddPurchaseModal(false);
+
+    if (API_BASE && safeFetch) {
+      safeFetch(`${API_BASE}/api/v1/admin/purchases`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newPurchase,
+          itemCode: purchaseForm.itemCode,
+          quantity: qty,
+          unitCost: cost
+        })
+      }).catch(err => console.warn('Purchases sync warning:', err));
+    }
   };
 
-  const handleApproveIndent = (ind) => {
-    const updatedStock = inventoryStock.map(s => {
-      if (s.code === 'STK-01') return { ...s, stock: Math.max(0, s.stock - 50) };
-      if (s.code === 'STK-02') return { ...s, stock: Math.max(0, s.stock - 20) };
-      if (s.code === 'STK-04') return { ...s, stock: Math.max(0, s.stock - 50) };
-      return s;
-    });
-    setInventoryStock(updatedStock);
-    parentSetInventoryStock(updatedStock);
-
+  const handleApproveIndent = async (ind) => {
+    // Parse requested items or apply general package deduction
     const updatedIndents = indents.map(i => i.id === ind.id ? { ...i, status: 'APPROVED_DISPATCHED' } : i);
     setIndents(updatedIndents);
     parentSetIndents(updatedIndents);
+
+    // Call backend approval API to decrement warehouse and dispatch
+    if (API_BASE && safeFetch) {
+      try {
+        const res = await safeFetch(`${API_BASE}/api/v1/admin/indents/${ind.id}/approve`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ agentId: ind.agentId || 'AG-01' })
+        });
+        const data = await safeJson(res);
+        if (data && data.inventory) {
+          setInventoryStock(data.inventory);
+          parentSetInventoryStock(data.inventory);
+        }
+      } catch (e) {
+        console.warn('Indent approve sync error:', e);
+      }
+    }
   };
 
   const handleCreateIndentSubmit = (e) => {
@@ -562,17 +594,30 @@ export default function StockInventoryTab({
   };
 
   const handleDecideExtraUsage = (usageId, decision, notes) => {
+    const decisionNotes = notes || (decision === 'WAIVED_CLINICAL_BUFFER' ? 'Allowed clinical waste by Admin' : 'Excess consumable billed to Agent Wallet');
     setExtraUsages(prev => prev.map(u => {
       if (u.id === usageId) {
         return {
           ...u,
           decision,
-          decisionNotes: notes || (decision === 'WAIVED_CLINICAL_BUFFER' ? 'Allowed clinical waste by Admin' : 'Excess consumable billed to Agent Wallet'),
+          decisionNotes,
           decidedBy: 'Super Admin'
         };
       }
       return u;
     }));
+
+    if (API_BASE && safeFetch) {
+      safeFetch(`${API_BASE}/api/v1/admin/extra-usages/${usageId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          decision,
+          decisionNotes,
+          decidedBy: 'Super Admin'
+        })
+      }).catch(err => console.warn('Extra usage backend sync error:', err));
+    }
   };
 
   const handleDirectAllocate = async (e) => {
@@ -630,6 +675,59 @@ export default function StockInventoryTab({
     }
   };
 
+  // Pack / Assemble Combo Kit Logic
+  const handleAssembleKit = async (kitItem, packQty) => {
+    const components = kitItem.components || [];
+    if (components.length === 0) {
+      alert(`Kit "${kitItem.name}" has no components configured! Please edit kit components first.`);
+      return;
+    }
+
+    // Verify stock sufficiency for all components
+    for (const c of components) {
+      const match = inventoryStock.find(s => s.code === c.itemCode || s.name.toLowerCase().includes(c.name.toLowerCase()));
+      const needed = (c.qty || 1) * packQty;
+      if (!match || match.stock < needed) {
+        alert(`Insufficient stock of "${c.name}"! Needs ${needed}, available: ${match ? match.stock : 0}`);
+        return;
+      }
+    }
+
+    // Update warehouse stock: decrement components, increment kit
+    const updatedStock = inventoryStock.map(s => {
+      if (s.code === kitItem.code) {
+        return { ...s, stock: (s.stock || 0) + packQty };
+      }
+      const comp = components.find(c => c.itemCode === s.code || s.name.toLowerCase().includes(c.name.toLowerCase()));
+      if (comp) {
+        const deduct = (comp.qty || 1) * packQty;
+        return { ...s, stock: Math.max(0, s.stock - deduct) };
+      }
+      return s;
+    });
+
+    setInventoryStock(updatedStock);
+    parentSetInventoryStock(updatedStock);
+    setAssembleKitItem(null);
+
+    // Sync with backend
+    if (API_BASE && safeFetch) {
+      try {
+        await safeFetch(`${API_BASE}/api/v1/admin/inventory/assemble-kit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            kitCode: kitItem.code,
+            quantity: packQty
+          })
+        });
+      } catch (e) {
+        console.warn('Assemble kit backend sync error:', e);
+      }
+    }
+    alert(`Successfully assembled ${packQty}x ${kitItem.name}! Component items deducted from central warehouse.`);
+  };
+
   const handleSaveScrap = (e) => {
     e.preventDefault();
     const item = inventoryStock.find(i => i.code === scrapForm.itemCode);
@@ -650,8 +748,18 @@ export default function StockInventoryTab({
     };
 
     setScrapLogs(prev => [newScrap, ...prev]);
-    setInventoryStock(prev => prev.map(s => s.code === scrapForm.itemCode ? { ...s, stock: Math.max(0, s.stock - qty) } : s));
+    const updatedStock = inventoryStock.map(s => s.code === scrapForm.itemCode ? { ...s, stock: Math.max(0, s.stock - qty) } : s);
+    setInventoryStock(updatedStock);
+    parentSetInventoryStock(updatedStock);
     setShowScrapModal(false);
+
+    if (API_BASE && safeFetch) {
+      safeFetch(`${API_BASE}/api/v1/admin/scraps`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newScrap)
+      }).catch(err => console.warn('Scrap backend sync error:', err));
+    }
   };
 
   const handleSendMoqAlertNotification = (item) => {
@@ -823,6 +931,8 @@ export default function StockInventoryTab({
           }}
           onSendMoqAlert={handleSendMoqAlertNotification}
           onImportInventory={handleImportInventory}
+          onGenerateBarcode={(stk) => setBarcodeItem(stk)}
+          onOpenAssembleKit={(stk) => setAssembleKitItem(stk)}
         />
       )}
 
@@ -974,6 +1084,20 @@ export default function StockInventoryTab({
         setVendorForm={setVendorForm}
         isEditing={isEditingVendor}
         onSave={handleSaveVendor}
+      />
+
+      <BarcodeLabelModal
+        show={Boolean(barcodeItem)}
+        onClose={() => setBarcodeItem(null)}
+        item={barcodeItem}
+      />
+
+      <AssembleKitModal
+        show={Boolean(assembleKitItem)}
+        onClose={() => setAssembleKitItem(null)}
+        kitItem={assembleKitItem}
+        inventoryStock={inventoryStock}
+        onAssemble={handleAssembleKit}
       />
 
     </div>

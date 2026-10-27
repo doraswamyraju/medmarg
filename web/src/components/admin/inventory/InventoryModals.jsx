@@ -741,3 +741,285 @@ export function VendorModal({
     </div>
   );
 }
+
+// =========================================================================
+// BARCODE & QR GENERATION MODAL FOR INVENTORY SKUs & KITS
+// =========================================================================
+export function BarcodeLabelModal({
+  show,
+  onClose,
+  item
+}) {
+  const [labelQty, setLabelQty] = React.useState(10);
+  const [lotNumber, setLotNumber] = React.useState('');
+
+  React.useEffect(() => {
+    if (item) {
+      setLotNumber(`LOT-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`);
+    }
+  }, [item]);
+
+  if (!show || !item) return null;
+
+  const barcodeValue = `${item.code}-${lotNumber || 'BATCH01'}`;
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+      <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '520px', borderRadius: '22px', border: '1px solid #CBD5E1', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
+        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F0FDFA' }}>
+          <div>
+            <span style={{ fontSize: '0.72rem', backgroundColor: '#CCFBF1', color: '#0F766E', padding: '0.15rem 0.5rem', borderRadius: '5px', fontWeight: '900' }}>
+              THERMAL BARCODE LABEL SYSTEM
+            </span>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#0F172A', margin: '0.25rem 0 0' }}>
+              Generate SKU Barcode & Label
+            </h3>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>
+        </div>
+
+        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          
+          {/* Label Preview Card (Thermal Sticker Format) */}
+          <div style={{
+            border: '2px dashed #006B70',
+            borderRadius: '14px',
+            padding: '1.25rem',
+            backgroundColor: '#FAFCFC',
+            textAlign: 'center',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '0.65rem'
+          }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: '900', color: '#004D40', letterSpacing: '0.5px' }}>
+              MEDMARG CENTRAL PHLEBOTOMY LOGISTICS
+            </div>
+
+            <div style={{ fontSize: '1rem', fontWeight: '900', color: '#0F172A' }}>
+              {item.name}
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.6rem', fontSize: '0.75rem', color: '#475569', fontWeight: '700' }}>
+              <span>SKU: <strong style={{ color: '#006B70', fontFamily: 'monospace' }}>{item.code}</strong></span>
+              <span>•</span>
+              <span>Unit: <strong>{item.unit}</strong></span>
+              <span>•</span>
+              <span>{item.type === 'KIT' ? 'COMBO KIT' : 'SINGLE'}</span>
+            </div>
+
+            {/* Stylized Barcode Simulator */}
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              padding: '0.85rem 1.25rem',
+              borderRadius: '8px',
+              border: '1px solid #E2E8F0',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              width: '85%'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px', height: '42px', width: '100%' }}>
+                {Array.from({ length: 48 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      height: '100%',
+                      width: (idx % 3 === 0 || idx % 7 === 0) ? '3px' : (idx % 2 === 0 ? '1.5px' : '2px'),
+                      backgroundColor: (idx % 5 === 0) ? '#FFFFFF' : '#0F172A'
+                    }}
+                  />
+                ))}
+              </div>
+              <div style={{ fontFamily: 'monospace', fontWeight: '900', fontSize: '0.85rem', color: '#0F172A', letterSpacing: '2px', marginTop: '0.35rem' }}>
+                *{barcodeValue}*
+              </div>
+            </div>
+
+            <div style={{ fontSize: '0.72rem', color: '#64748B', display: 'flex', gap: '0.75rem' }}>
+              <span>Batch/Lot: <strong>{lotNumber}</strong></span>
+              <span>Storage: <strong>{item.category}</strong></span>
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: '#475569', marginBottom: '0.35rem' }}>
+                Batch / Lot Number
+              </label>
+              <input
+                type="text"
+                value={lotNumber}
+                onChange={(e) => setLotNumber(e.target.value.toUpperCase())}
+                style={{ width: '100%', padding: '0.6rem 0.85rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', fontFamily: 'monospace' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: '#475569', marginBottom: '0.35rem' }}>
+                Sticker Print Quantity
+              </label>
+              <select
+                value={labelQty}
+                onChange={(e) => setLabelQty(Number(e.target.value))}
+                style={{ width: '100%', padding: '0.6rem 0.85rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', backgroundColor: '#FFFFFF' }}
+              >
+                <option value={1}>1 Label (Sample / Bin)</option>
+                <option value={10}>10 Labels</option>
+                <option value={50}>50 Labels (Batch)</option>
+                <option value={100}>100 Labels (Full Roll)</option>
+                <option value={500}>500 Labels (Bulk Case)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={handlePrint}
+              style={{
+                padding: '0.65rem 1.4rem',
+                backgroundColor: '#006B70',
+                color: '#FFF',
+                border: 'none',
+                borderRadius: '10px',
+                fontWeight: '900',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                boxShadow: '0 4px 12px rgba(0,107,112,0.25)'
+              }}
+            >
+              🖨️ Print {labelQty} Barcode Labels
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =========================================================================
+// PACK / ASSEMBLE COMBO KIT MODAL
+// =========================================================================
+export function AssembleKitModal({
+  show,
+  onClose,
+  kitItem,
+  inventoryStock = [],
+  onAssemble
+}) {
+  const [quantity, setQuantity] = React.useState(10);
+
+  if (!show || !kitItem) return null;
+
+  const components = kitItem.components || [];
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+      <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '520px', borderRadius: '22px', border: '1px solid #CBD5E1', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
+        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#EEF2FF' }}>
+          <div>
+            <span style={{ fontSize: '0.72rem', backgroundColor: '#E0E7FF', color: '#4338CA', padding: '0.15rem 0.5rem', borderRadius: '5px', fontWeight: '900' }}>
+              COMBO KIT PACKAGING DESK
+            </span>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#1E1B4B', margin: '0.25rem 0 0' }}>
+              Pack & Assemble Combo Kits
+            </h3>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>
+        </div>
+
+        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+          <div>
+            <div style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: '700' }}>Target Kit to Pack:</div>
+            <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#0F172A' }}>{kitItem.name} ({kitItem.code})</div>
+            <div style={{ fontSize: '0.8rem', color: '#059669', fontWeight: '800', marginTop: '0.2rem' }}>Current Kit Stock: {kitItem.stock} Kits</div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '800', color: '#475569', marginBottom: '0.35rem' }}>
+              How many kits to assemble/pack now?
+            </label>
+            <input
+              type="number"
+              min="1"
+              value={quantity}
+              onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+              style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1.5px solid #6366F1', borderRadius: '10px', fontSize: '1rem', fontWeight: '900', color: '#1E1B4B' }}
+            />
+          </div>
+
+          {/* Component Deduction Preview */}
+          <div style={{ backgroundColor: '#F8FAFC', borderRadius: '12px', padding: '1rem', border: '1px solid #E2E8F0' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: '900', color: '#475569', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+              Components Deducted from Warehouse:
+            </div>
+            {components.length === 0 ? (
+              <div style={{ fontSize: '0.82rem', color: '#64748B' }}>
+                No component specification configured for this kit yet.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                {components.map((c, idx) => {
+                  const neededTotal = (c.qty || 1) * quantity;
+                  const match = inventoryStock.find(s => s.code === c.itemCode || s.name.toLowerCase().includes(c.name.toLowerCase()));
+                  const available = match ? match.stock : 0;
+                  const isSufficient = available >= neededTotal;
+
+                  return (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', padding: '0.25rem 0', borderBottom: '1px dashed #E2E8F0' }}>
+                      <span>• <strong>{c.name}</strong> ({c.qty} per kit)</span>
+                      <span style={{ fontWeight: '800', color: isSufficient ? '#059669' : '#DC2626' }}>
+                        Deduct: {neededTotal} (Available: {available})
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => onAssemble(kitItem, quantity)}
+              style={{
+                padding: '0.65rem 1.4rem',
+                backgroundColor: '#4F46E5',
+                color: '#FFF',
+                border: 'none',
+                borderRadius: '10px',
+                fontWeight: '900',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                boxShadow: '0 4px 12px rgba(79,70,229,0.25)'
+              }}
+            >
+              ✓ Confirm Assembly & Add to Stock
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
