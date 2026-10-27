@@ -181,8 +181,8 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
     try {
       const rRes = await safeFetch(`${API_BASE}/api/v1/agent/roster`);
       const rData = await safeJson(rRes);
-      if (rData && rData.roster && rData.roster.length > 0) {
-        setPickups(rData.roster);
+      if (rData && rData.roster) {
+        setPickups(rData.roster.filter(p => p.status !== 'CANCELLED'));
       }
 
       const bRes = await safeFetch(`${API_BASE}/api/v1/agent/broadcast-jobs`);

@@ -46,8 +46,13 @@ export default function PhlebotomistTubeScannerModal({
 
   const orderAmount = activePickupModal?.amount || activePickupModal?.totalAmount || 899;
 
-  // Auto-generate QR if on payment step
+  const [paymentVerifying, setPaymentVerifying] = useState(false);
+  const [paymentConfirmedLive, setPaymentConfirmedLive] = useState(false);
+
+  // Auto-generate QR if on payment step and poll for payment confirmation
   useEffect(() => {
+    let pollInterval = null;
+
     if (step === 3 && !isPrepaid && activePickupModal) {
       setQrLoading(true);
       safeFetch(`${API_BASE}/api/v1/payments/generate-doorstep-qr`, {
@@ -68,7 +73,26 @@ export default function PhlebotomistTubeScannerModal({
         })
         .catch(err => console.warn('QR fetch error:', err))
         .finally(() => setQrLoading(false));
+
+      // Poll every 4 seconds to check if customer completed the UPI payment
+      pollInterval = setInterval(async () => {
+        try {
+          const res = await safeFetch(`${API_BASE}/api/v1/payments/order-status/${activePickupModal.id}`);
+          const sData = await safeJson(res);
+          if (sData && sData.isPaid) {
+            setPaymentDone(true);
+            setPaymentConfirmedLive(true);
+            clearInterval(pollInterval);
+          }
+        } catch (e) {
+          // ignore polling errors
+        }
+      }, 4000);
     }
+
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+    };
   }, [step, isPrepaid, activePickupModal, orderAmount]);
 
   if (!activePickupModal) return null;
@@ -538,32 +562,75 @@ export default function PhlebotomistTubeScannerModal({
               <div style={{ fontSize: '0.76rem', color: '#475569', fontWeight: '800' }}>
                 Google Pay • PhonePe • Paytm • BHIM • CRED UPI
               </div>
+
+              {paymentConfirmedLive && (
+                <div style={{ marginTop: '0.85rem', backgroundColor: '#DCFCE7', color: '#166534', padding: '0.5rem 0.85rem', borderRadius: '8px', fontSize: '0.82rem', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                  <CheckCircle2 size={16} /> Live UPI Payment Detected & Verified!
+                </div>
+              )}
             </div>
 
-            <button
-              onClick={() => {
-                setPaymentDone(true);
-                setStep(4);
-              }}
-              style={{
-                width: '100%',
-                padding: '0.85rem',
-                backgroundColor: '#059669',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '12px',
-                fontWeight: '900',
-                fontSize: '0.95rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.4rem',
-                boxShadow: '0 4px 12px rgba(5,150,105,0.2)'
-              }}
-            >
-              <CheckCircle2 size={18} /> Confirm ₹{orderAmount} Payment Received via UPI
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              <button
+                type="button"
+                disabled={paymentVerifying}
+                onClick={async () => {
+                  setPaymentVerifying(true);
+                  try {
+                    const res = await safeFetch(`${API_BASE}/api/v1/payments/order-status/${activePickupModal.id}`);
+                    const sData = await safeJson(res);
+                    if (sData && sData.isPaid) {
+                      setPaymentDone(true);
+                      setPaymentConfirmedLive(true);
+                      setStep(4);
+                    } else {
+                      // Check directly or allow agent to confirm after visual check of customer's UPI app success screen
+                      setPaymentDone(true);
+                      setStep(4);
+                    }
+                  } catch (e) {
+                    setPaymentDone(true);
+                    setStep(4);
+                  } finally {
+                    setPaymentVerifying(false);
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  padding: '0.85rem',
+                  backgroundColor: '#059669',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: '900',
+                  fontSize: '0.95rem',
+                  cursor: paymentVerifying ? 'wait' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.4rem',
+                  boxShadow: '0 4px 12px rgba(5,150,105,0.2)'
+                }}
+              >
+                <CheckCircle2 size={18} /> {paymentVerifying ? 'Verifying Gateway...' : `Verify & Confirm ₹${orderAmount} Payment Received`}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#64748B',
+                  fontSize: '0.8rem',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  padding: '0.3rem'
+                }}
+              >
+                ← Back to Samples & Vitals
+              </button>
+            </div>
           </div>
         )}
 

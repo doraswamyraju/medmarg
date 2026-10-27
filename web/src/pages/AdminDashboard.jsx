@@ -63,8 +63,23 @@ import AdminOffersManagerTab from '../components/admin/AdminOffersManagerTab';
 import AuditAndBackupsTab from '../components/admin/AuditAndBackupsTab';
 
 export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
-  // Navigation State
-  const [activeTab, setActiveTab] = useState('TESTS_MGMT'); 
+  // Navigation State with LocalStorage Persistence
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      return localStorage.getItem('medmarg_admin_tab') || 'LIVE_ORDERS';
+    } catch (e) {
+      return 'LIVE_ORDERS';
+    }
+  }); 
+
+  // Save selected tab to localStorage
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    try {
+      localStorage.setItem('medmarg_admin_tab', newTab);
+    } catch (e) {}
+  };
+
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [inventorySubTab, setInventorySubTab] = useState('STOCK_KITS');
   const [inventoryExpanded, setInventoryExpanded] = useState(false);
@@ -238,24 +253,31 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
 
   const pendingFreelancerCount = freelancers.filter(f => f.status === 'PENDING_VERIFICATION').length;
 
-  // Navigation Items (Single Word Labels)
+  // Navigation Items (Single Word Labels) - Rearranged logically
   const totalCatalogItems = (catalog.tests?.length || 0) + (catalog.profiles?.length || 0) + (catalog.packages?.length || 0);
   const navMenuItems = [
-    { key: 'TESTS_MGMT', label: 'Tests', icon: FlaskConical, badge: `${totalCatalogItems || 1093}` },
-    { key: 'LIVE_ORDERS', label: 'Orders', icon: Package, badge: `${orders.length}` },
-    { key: 'CUSTOMERS', label: 'Customers', icon: Users, badge: 'Care Seekers' },
-    { key: 'GPS_RADAR', label: 'Tracking', icon: Navigation, badge: 'Live GPS' },
-    { key: 'TERRITORY_MGMT', label: 'Territories', icon: Compass, badge: `${territories.length} Zones` },
-    { key: 'FREELANCERS', label: 'Freelancers', icon: Briefcase, badge: pendingFreelancerCount > 0 ? `${pendingFreelancerCount} Pending` : null },
-    { key: 'SALARIED_FLEET', label: 'Fleet', icon: Truck, badge: `${salariedAgents.length}` },
-    { key: 'INVENTORY', label: 'Inventory', icon: Boxes, badge: `${indents.filter(i => i.status === 'PENDING_APPROVAL').length || 1}` },
-    { key: 'STAFF', label: 'Staff', icon: UserCog, badge: '5 Active' },
-    { key: 'LABS', label: 'Labs', icon: Building2, badge: `${labPartners.length}` },
-    { key: 'PARTNERS_QUEUE', label: 'Partners', icon: Stethoscope, badge: `${partnerQueue.length}` },
-    { key: 'FINANCIALS', label: 'Financials', icon: DollarSign, badge: 'Razorpay' },
-    { key: 'OFFERS_MGMT', label: 'Offers Zone', icon: Sparkles, badge: 'Live Promo' },
-    { key: 'AUDIT_BACKUPS', label: 'Audit & Backup', icon: Database, badge: 'Security' },
-    { key: 'OVERVIEW', label: 'Overview', icon: BarChart3 }
+    // 1. Core Daily Operations
+    { key: 'LIVE_ORDERS', label: 'Orders', icon: Package, badge: `${orders.length}`, category: 'OPERATIONS' },
+    { key: 'GPS_RADAR', label: 'Tracking', icon: Navigation, badge: 'Live GPS', category: 'OPERATIONS' },
+    { key: 'CUSTOMERS', label: 'Customers', icon: Users, badge: 'Care Seekers', category: 'OPERATIONS' },
+    
+    // 2. Fleet, Network & Indents
+    { key: 'SALARIED_FLEET', label: 'Fleet', icon: Truck, badge: `${salariedAgents.length}`, category: 'FLEET & LOGISTICS' },
+    { key: 'FREELANCERS', label: 'Freelancers', icon: Briefcase, badge: pendingFreelancerCount > 0 ? `${pendingFreelancerCount} Pending` : null, category: 'FLEET & LOGISTICS' },
+    { key: 'INVENTORY', label: 'Inventory', icon: Boxes, badge: `${indents.filter(i => i.status === 'PENDING_APPROVAL').length || 1}`, category: 'FLEET & LOGISTICS' },
+    { key: 'TERRITORY_MGMT', label: 'Territories', icon: Compass, badge: `${territories.length} Zones`, category: 'FLEET & LOGISTICS' },
+
+    // 3. Clinical & Partners
+    { key: 'TESTS_MGMT', label: 'Tests', icon: FlaskConical, badge: `${totalCatalogItems || 1093}`, category: 'CLINICAL & NETWORK' },
+    { key: 'LABS', label: 'Labs', icon: Building2, badge: `${labPartners.length}`, category: 'CLINICAL & NETWORK' },
+    { key: 'PARTNERS_QUEUE', label: 'Partners', icon: Stethoscope, badge: `${partnerQueue.length}`, category: 'CLINICAL & NETWORK' },
+    { key: 'STAFF', label: 'Staff', icon: UserCog, badge: '5 Active', category: 'CLINICAL & NETWORK' },
+
+    // 4. Growth & Platform Administration
+    { key: 'FINANCIALS', label: 'Financials', icon: DollarSign, badge: 'Razorpay', category: 'ADMINISTRATION' },
+    { key: 'OFFERS_MGMT', label: 'Offers Zone', icon: Sparkles, badge: 'Live Promo', category: 'ADMINISTRATION' },
+    { key: 'OVERVIEW', label: 'Overview', icon: BarChart3, category: 'ADMINISTRATION' },
+    { key: 'AUDIT_BACKUPS', label: 'Audit & Backup', icon: Database, badge: 'Security', category: 'ADMINISTRATION' }
   ];
 
   // Inventory Sub-menu Items (Rendered inside Sidebar Drawer)
@@ -345,8 +367,8 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
         </div>
 
         {/* Navigation Items */}
-        <nav style={{ flex: 1, padding: '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', overflowY: 'auto' }}>
-          {navMenuItems.map((item) => {
+        <nav style={{ flex: 1, padding: '0.85rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', overflowY: 'auto' }}>
+          {navMenuItems.map((item, idx) => {
             const IconComp = item.icon;
             const isInventory = item.key === 'INVENTORY';
             const isFreelancers = item.key === 'FREELANCERS';
@@ -362,77 +384,99 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
                              : isPartners ? partnersExpanded 
                              : isOffers ? offersExpanded : false;
 
+            const prevCategory = idx > 0 ? navMenuItems[idx - 1].category : null;
+            const showCategoryHeader = !sidebarCollapsed && item.category && item.category !== prevCategory;
+
             return (
               <div key={item.key} style={{ display: 'flex', flexDirection: 'column' }}>
+                {showCategoryHeader && (
+                  <div style={{
+                    fontSize: '0.66rem',
+                    fontWeight: '900',
+                    color: '#94A3B8',
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    padding: '0.75rem 0.6rem 0.35rem 0.6rem'
+                  }}>
+                    {item.category}
+                  </div>
+                )}
                 <button
                   onClick={() => {
                     if (isInventory) {
                       if (activeTab !== 'INVENTORY') {
-                        setActiveTab('INVENTORY');
+                        handleTabChange('INVENTORY');
                         setInventoryExpanded(true);
                       } else {
                         setInventoryExpanded(!inventoryExpanded);
                       }
                     } else if (isFreelancers) {
                       if (activeTab !== 'FREELANCERS') {
-                        setActiveTab('FREELANCERS');
+                        handleTabChange('FREELANCERS');
                         setFreelancersExpanded(true);
                       } else {
                         setFreelancersExpanded(!freelancersExpanded);
                       }
                     } else if (isStaff) {
                       if (activeTab !== 'STAFF') {
-                        setActiveTab('STAFF');
+                        handleTabChange('STAFF');
                         setStaffExpanded(true);
                       } else {
                         setStaffExpanded(!staffExpanded);
                       }
                     } else if (isPartners) {
                       if (activeTab !== 'PARTNERS_QUEUE') {
-                        setActiveTab('PARTNERS_QUEUE');
+                        handleTabChange('PARTNERS_QUEUE');
                         setPartnersExpanded(true);
                       } else {
                         setPartnersExpanded(!partnersExpanded);
                       }
                     } else if (isOffers) {
                       if (activeTab !== 'OFFERS_MGMT') {
-                        setActiveTab('OFFERS_MGMT');
+                        handleTabChange('OFFERS_MGMT');
                         setOffersExpanded(true);
                       } else {
                         setOffersExpanded(!offersExpanded);
                       }
                     } else {
-                      setActiveTab(item.key);
+                      handleTabChange(item.key);
                     }
                   }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.85rem',
-                    padding: '0.75rem 1rem',
-                    borderRadius: '12px',
+                    gap: '0.75rem',
+                    padding: '0.62rem 0.85rem',
+                    borderRadius: '10px',
                     border: 'none',
                     backgroundColor: isActive ? '#006B70' : 'transparent',
                     color: isActive ? '#FFFFFF' : '#475569',
                     fontWeight: isActive ? '800' : '600',
-                    fontSize: '0.88rem',
+                    fontSize: '0.85rem',
                     cursor: 'pointer',
                     textAlign: 'left',
                     transition: 'all 0.15s ease',
                     justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-                    width: '100%'
+                    width: '100%',
+                    boxShadow: isActive ? '0 4px 12px rgba(0, 107, 112, 0.22)' : 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) e.currentTarget.style.backgroundColor = '#F1F5F9';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) e.currentTarget.style.backgroundColor = 'transparent';
                   }}
                 >
                   {IconComp && (
                     <IconComp 
-                      size={18} 
+                      size={17} 
                       color={isActive ? '#FBBF24' : '#64748B'} 
-                      style={{ flexShrink: 0, minWidth: '18px', minHeight: '18px' }} 
+                      style={{ flexShrink: 0, minWidth: '17px', minHeight: '17px' }} 
                     />
                   )}
                   {!sidebarCollapsed && <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>}
                   {!sidebarCollapsed && !!item.badge && (
-                    <span style={{ fontSize: '0.72rem', backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : '#F1F5F9', color: isActive ? '#FFFFFF' : '#475569', padding: '0.15rem 0.45rem', borderRadius: '6px', fontWeight: '800', flexShrink: 0 }}>
+                    <span style={{ fontSize: '0.68rem', backgroundColor: isActive ? 'rgba(255,255,255,0.22)' : '#F1F5F9', color: isActive ? '#FFFFFF' : '#475569', padding: '0.12rem 0.4rem', borderRadius: '6px', fontWeight: '800', flexShrink: 0 }}>
                       {item.badge}
                     </span>
                   )}

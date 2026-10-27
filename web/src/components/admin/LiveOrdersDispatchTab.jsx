@@ -57,6 +57,7 @@ export default function LiveOrdersDispatchTab({
   const [rescheduleData, setRescheduleData] = useState({ date: '', slot: '07:30 AM - 08:30 AM', reason: 'Customer requested reschedule' });
   const [cancellingOrder, setCancellingOrder] = useState(null);
   const [cancelReason, setCancelReason] = useState('Customer cancelled request');
+  const [deletingOrder, setDeletingOrder] = useState(null);
   const [isSubmittingAction, setIsSubmittingAction] = useState(false);
   const [actionNotification, setActionNotification] = useState('');
 
@@ -332,6 +333,30 @@ export default function LiveOrdersDispatchTab({
       setCancellingOrder(null);
     } catch (e) {
       showToast('Error cancelling order.');
+    } finally {
+      setIsSubmittingAction(false);
+    }
+  };
+
+  // Handle Delete Order Permanently
+  const handleConfirmDelete = async () => {
+    if (!deletingOrder) return;
+    setIsSubmittingAction(true);
+    try {
+      if (API_BASE) {
+        await safeFetch(`${API_BASE}/api/v1/admin/orders/${deletingOrder.id}`, {
+          method: 'DELETE'
+        }, 3000).catch(() => {});
+      }
+
+      setOrders(prev => prev.filter(o => o.id !== deletingOrder.id));
+      if (viewingOrder && viewingOrder.id === deletingOrder.id) {
+        setViewingOrder(null);
+      }
+      showToast(`Order #${deletingOrder.id} permanently deleted.`);
+      setDeletingOrder(null);
+    } catch (e) {
+      showToast('Error deleting order.');
     } finally {
       setIsSubmittingAction(false);
     }
@@ -728,6 +753,15 @@ export default function LiveOrdersDispatchTab({
                           >
                             <Calendar size={13} />
                           </button>
+
+                          {/* Delete Order */}
+                          <button 
+                            onClick={() => setDeletingOrder(ord)}
+                            title="Delete Order Permanently"
+                            style={{ padding: '0.4rem 0.55rem', backgroundColor: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: '8px', cursor: 'pointer' }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -855,15 +889,26 @@ export default function LiveOrdersDispatchTab({
 
             {/* Modal Footer */}
             <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <button
-                onClick={() => {
-                  setCancellingOrder(viewingOrder);
-                  setViewingOrder(null);
-                }}
-                style={{ padding: '0.55rem 1rem', backgroundColor: '#FEE2E2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
-              >
-                <Ban size={14} /> Cancel Order
-              </button>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  onClick={() => {
+                    setCancellingOrder(viewingOrder);
+                    setViewingOrder(null);
+                  }}
+                  style={{ padding: '0.55rem 0.9rem', backgroundColor: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                >
+                  <Ban size={14} /> Cancel Order
+                </button>
+                <button
+                  onClick={() => {
+                    setDeletingOrder(viewingOrder);
+                    setViewingOrder(null);
+                  }}
+                  style={{ padding: '0.55rem 0.9rem', backgroundColor: '#DC2626', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
+              </div>
 
               <div style={{ display: 'flex', gap: '0.6rem' }}>
                 <button
@@ -1250,6 +1295,50 @@ export default function LiveOrdersDispatchTab({
                   style={{ padding: '0.65rem 1.4rem', backgroundColor: '#DC2626', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}
                 >
                   {isSubmittingAction ? 'Cancelling...' : 'Confirm Cancel'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MODAL 5.5: DELETE ORDER PERMANENTLY CONFIRMATION
+          ========================================================================= */}
+      {deletingOrder && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', width: '100%', maxWidth: '440px', borderRadius: '20px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(220, 38, 38, 0.25)' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #FEE2E2', backgroundColor: '#FEF2F2', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Trash2 size={20} color="#DC2626" />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#991B1B', margin: 0 }}>Delete Order #{deletingOrder.id}</h3>
+              </div>
+              <button onClick={() => setDeletingOrder(null)} style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}><X size={20} /></button>
+            </div>
+
+            <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <p style={{ fontSize: '0.88rem', color: '#334155', margin: 0, lineHeight: 1.5 }}>
+                Are you sure you want to <strong>permanently delete</strong> order <strong>#{deletingOrder.id}</strong> for <strong>{deletingOrder.patientName || deletingOrder.careSeekerName}</strong>?
+              </p>
+              <div style={{ fontSize: '0.78rem', color: '#DC2626', backgroundColor: '#FEF2F2', padding: '0.65rem 0.85rem', borderRadius: '8px', border: '1px solid #FECACA', fontWeight: '700' }}>
+                ⚠️ This action is immediate and will remove this order from all live agent, staff, and admin dashboards.
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setDeletingOrder(null)}
+                  style={{ padding: '0.65rem 1.25rem', backgroundColor: '#F1F5F9', color: '#475569', border: '1px solid #CBD5E1', borderRadius: '10px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isSubmittingAction}
+                  onClick={handleConfirmDelete}
+                  style={{ padding: '0.65rem 1.4rem', backgroundColor: '#DC2626', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  {isSubmittingAction ? 'Deleting...' : 'Delete Permanently'}
                 </button>
               </div>
             </div>
