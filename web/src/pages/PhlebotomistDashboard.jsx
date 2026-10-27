@@ -405,59 +405,115 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
     }).catch(() => {});
   };
 
-  // Tailored Navigation Items for SALARIED vs FREELANCE
+  // Categorized Navigation Sections for Agent / Freelance Fleet Console
   const isSalaried = agentType === 'SALARIED';
-  const navigationItems = isSalaried ? [
-    { key: 'ROSTER', label: 'Assigned Pickups', icon: Bike, badge: pickups.length },
-    { key: 'SHIFT_QUOTA', label: 'Shift & Daily Quota', icon: Award, badge: `${completedPickups.size || 8}/15` },
-    { key: 'INVENTORY', label: 'Live Store & Supplies', icon: Package, badge: `${inventory.length}` },
-    { key: 'PAYMENTS', label: 'Payments Ledger', icon: CreditCard, badge: 'Live UPI' },
-    { key: 'LAB_HANDOVER', label: 'NABL Lab Handover', icon: Building2, badge: '2 Labs' },
-    { key: 'PROFILE', label: 'Profile & Security', icon: User, badge: 'Verified' }
+  
+  const navSections = isSalaried ? [
+    {
+      category: 'FIELD OPERATIONS',
+      items: [
+        { key: 'ROSTER', label: 'Assigned Pickups', icon: Bike, badge: pickups.length, badgeColor: '#006B70' },
+        { key: 'SHIFT_QUOTA', label: 'Shift & Daily Quota', icon: Award, badge: `${completedPickups.size || 8}/15`, badgeColor: '#6366F1' },
+      ]
+    },
+    {
+      category: 'SUPPLIES & LABS',
+      items: [
+        { key: 'INVENTORY', label: 'Live Store & Supplies', icon: Package, badge: `${inventory.length}`, badgeColor: '#0D9488' },
+        { key: 'LAB_HANDOVER', label: 'NABL Lab Handover', icon: Building2, badge: '2 Labs', badgeColor: '#64748B' },
+      ]
+    },
+    {
+      category: 'FINANCE & PROFILE',
+      items: [
+        { key: 'PAYMENTS', label: 'Payments Ledger', icon: CreditCard, badge: 'Live UPI', badgeColor: '#10B981' },
+        { key: 'PROFILE', label: 'Profile & Security', icon: User, badge: 'Verified', badgeColor: '#0284C7' },
+      ]
+    }
   ] : [
-    { key: 'ROSTER', label: 'Claimed Pickups', icon: Bike, badge: pickups.length },
-    { key: 'BROADCAST', label: 'Broadcast Overflow', icon: Zap, badge: `${broadcastJobs.length} Live` },
-    { key: 'INVENTORY', label: 'Live Store & Supplies', icon: Package, badge: `${inventory.length}` },
-    { key: 'WALLET', label: 'Earnings & Wallet', icon: Wallet, badge: `₹${wallet.availableCashoutBalance?.toLocaleString('en-IN')}` },
-    { key: 'PAYMENTS', label: 'Payments Ledger', icon: CreditCard, badge: 'Live UPI' },
-    { key: 'LAB_HANDOVER', label: 'NABL Lab Handover', icon: Building2, badge: '2 Labs' },
-    { key: 'PROFILE', label: 'Profile & Security', icon: User, badge: 'Verified' }
+    {
+      category: 'GIG DISPATCH',
+      items: [
+        { key: 'ROSTER', label: 'Claimed Pickups', icon: Bike, badge: pickups.length, badgeColor: '#006B70' },
+        { key: 'BROADCAST', label: 'Broadcast Marketplace', icon: Zap, badge: `${broadcastJobs.length} Live`, badgeColor: '#F59E0B' },
+      ]
+    },
+    {
+      category: 'EARNINGS & STORE',
+      items: [
+        { key: 'WALLET', label: 'Earnings & Cashout', icon: Wallet, badge: `₹${wallet.availableCashoutBalance?.toLocaleString('en-IN')}`, badgeColor: '#10B981' },
+        { key: 'INVENTORY', label: 'Live Store & Supplies', icon: Package, badge: `${inventory.length}`, badgeColor: '#0D9488' },
+      ]
+    },
+    {
+      category: 'NETWORK & ACCOUNT',
+      items: [
+        { key: 'PAYMENTS', label: 'Doorstep Payments', icon: CreditCard, badge: 'Live UPI', badgeColor: '#10B981' },
+        { key: 'LAB_HANDOVER', label: 'NABL Lab Handover', icon: Building2, badge: '2 Labs', badgeColor: '#64748B' },
+        { key: 'PROFILE', label: 'Profile & Security', icon: User, badge: 'Verified', badgeColor: '#0284C7' },
+      ]
+    }
   ];
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', color: '#0F172A', fontFamily: 'Inter, system-ui, sans-serif' }}>
       
-      {/* STANDARD MEDMARG LEFT SIDEBAR */}
+      {/* MODERN MEDMARG AGENT SIDEBAR */}
       <aside
         style={{
-          width: sidebarCollapsed ? '80px' : '260px',
+          width: sidebarCollapsed ? '76px' : '260px',
           backgroundColor: '#FFFFFF',
           borderRight: '1px solid #E2E8F0',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          transition: 'width 0.2s ease',
+          transition: 'all 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
           position: 'sticky',
           top: 0,
           height: '100vh',
           zIndex: 40,
-          flexShrink: 0
+          flexShrink: 0,
+          boxShadow: '1px 0 10px rgba(0,0,0,0.02)'
         }}
       >
-        <div>
-          {/* Top Logo & Role Badge */}
-          <div style={{ padding: '1.25rem', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: sidebarCollapsed ? 'center' : 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{ backgroundColor: '#FFFFFF', padding: '2px 4px', borderRadius: '8px', display: 'flex', alignItems: 'center' }}>
-                <img src="/logo.png" alt="MedMarg" style={{ height: '28px', objectFit: 'contain' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 110px)', overflowY: 'auto' }}>
+          {/* Top Logo & Agent Role Header */}
+          <div style={{
+            padding: sidebarCollapsed ? '1rem 0.5rem' : '1.1rem 1.15rem',
+            borderBottom: '1px solid #F1F5F9',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: sidebarCollapsed ? 'center' : 'space-between',
+            backgroundColor: '#FAFCFC'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <div style={{
+                backgroundColor: '#FFFFFF',
+                padding: '3px 6px',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                border: '1px solid #E2E8F0'
+              }}>
+                <img src="/logo.png" alt="MedMarg" style={{ height: '24px', objectFit: 'contain' }} />
               </div>
               {!sidebarCollapsed && (
                 <div>
-                  <div style={{ fontSize: '0.7rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.15rem 0.45rem', borderRadius: '4px', fontWeight: '900', display: 'inline-block' }}>
-                    {agentType === 'FREELANCE' ? 'FREELANCE AGENT' : 'COLLECTION AGENT'}
+                  <div style={{
+                    fontSize: '0.68rem',
+                    backgroundColor: agentType === 'FREELANCE' ? '#FEF3C7' : '#DCFCE7',
+                    color: agentType === 'FREELANCE' ? '#92400E' : '#166534',
+                    padding: '0.15rem 0.45rem',
+                    borderRadius: '5px',
+                    fontWeight: '900',
+                    letterSpacing: '0.4px',
+                    display: 'inline-block'
+                  }}>
+                    {agentType === 'FREELANCE' ? 'FREELANCE FLEET' : 'COLLECTION AGENT'}
                   </div>
-                  <div style={{ fontSize: '0.8rem', fontWeight: '800', color: '#64748B', marginTop: '2px' }}>
-                    Fleet Console
+                  <div style={{ fontSize: '0.78rem', fontWeight: '800', color: '#0F766E', marginTop: '1px' }}>
+                    Agent Field Console
                   </div>
                 </div>
               )}
@@ -465,102 +521,199 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
 
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              title={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
               style={{
-                background: 'none',
-                border: 'none',
-                color: '#94A3B8',
+                background: '#F1F5F9',
+                border: '1px solid #E2E8F0',
+                color: '#64748B',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                padding: '4px'
+                width: '26px',
+                height: '26px',
+                borderRadius: '7px',
+                transition: 'all 0.15s ease'
               }}
             >
-              {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+              {sidebarCollapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
             </button>
           </div>
 
-          {/* Navigation Menu */}
-          <nav style={{ padding: '1rem 0.75rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            {navigationItems.map(item => {
-              const IconComp = item.icon;
-              const isActive = activeTab === item.key;
-              return (
-                <button
-                  key={item.key}
-                  onClick={() => setActiveTab(item.key)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.85rem',
-                    padding: '0.75rem 1rem',
-                    borderRadius: '12px',
-                    border: 'none',
-                    backgroundColor: isActive ? '#006B70' : 'transparent',
-                    color: isActive ? '#FFFFFF' : '#475569',
-                    fontWeight: isActive ? '800' : '600',
-                    fontSize: '0.88rem',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.15s ease',
-                    justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
-                    width: '100%'
-                  }}
-                >
-                  <IconComp size={18} color={isActive ? '#FBBF24' : '#64748B'} />
-                  {!sidebarCollapsed && <span style={{ flex: 1 }}>{item.label}</span>}
-                  {!sidebarCollapsed && item.badge !== undefined && (
-                    <span style={{ fontSize: '0.72rem', backgroundColor: isActive ? 'rgba(255,255,255,0.2)' : '#F1F5F9', color: isActive ? '#FFFFFF' : '#475569', padding: '0.15rem 0.45rem', borderRadius: '6px', fontWeight: '800' }}>
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+          {/* On-Duty & Cold-Bag Mini Status Bar when expanded */}
+          {!sidebarCollapsed && (
+            <div style={{
+              margin: '0.75rem 0.85rem 0.25rem',
+              padding: '0.6rem 0.75rem',
+              backgroundColor: '#F0FDFA',
+              borderRadius: '10px',
+              border: '1px solid #CCFBF1',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block', boxShadow: '0 0 0 2px rgba(16,185,129,0.2)' }} />
+                <span style={{ fontSize: '0.72rem', fontWeight: '800', color: '#0F766E' }}>ON DUTY</span>
+              </div>
+              <span style={{ fontSize: '0.7rem', fontWeight: '800', color: '#0369A1', backgroundColor: '#E0F2FE', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                ❄️ Bag: 4.2°C
+              </span>
+            </div>
+          )}
+
+          {/* Categorized Navigation Menu */}
+          <nav style={{ padding: '0.5rem 0.65rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', flex: 1 }}>
+            {navSections.map((sec, secIdx) => (
+              <div key={secIdx}>
+                {!sidebarCollapsed && (
+                  <div style={{
+                    fontSize: '0.66rem',
+                    fontWeight: '900',
+                    color: '#94A3B8',
+                    letterSpacing: '0.6px',
+                    padding: '0.35rem 0.65rem 0.25rem',
+                    textTransform: 'uppercase'
+                  }}>
+                    {sec.category}
+                  </div>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                  {sec.items.map(item => {
+                    const IconComp = item.icon;
+                    const isActive = activeTab === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        onClick={() => setActiveTab(item.key)}
+                        title={sidebarCollapsed ? item.label : undefined}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem',
+                          padding: sidebarCollapsed ? '0.65rem 0' : '0.65rem 0.85rem',
+                          borderRadius: '10px',
+                          border: 'none',
+                          backgroundColor: isActive ? '#006B70' : 'transparent',
+                          color: isActive ? '#FFFFFF' : '#475569',
+                          fontWeight: isActive ? '800' : '600',
+                          fontSize: '0.84rem',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'all 0.15s ease',
+                          justifyContent: sidebarCollapsed ? 'center' : 'flex-start',
+                          width: '100%',
+                          boxShadow: isActive ? '0 4px 12px rgba(0, 107, 112, 0.22)' : 'none'
+                        }}
+                      >
+                        <IconComp size={17} color={isActive ? '#FDE047' : '#64748B'} style={{ flexShrink: 0 }} />
+                        {!sidebarCollapsed && (
+                          <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {item.label}
+                          </span>
+                        )}
+                        {!sidebarCollapsed && item.badge !== undefined && (
+                          <span style={{
+                            fontSize: '0.68rem',
+                            backgroundColor: isActive ? 'rgba(255,255,255,0.22)' : '#F1F5F9',
+                            color: isActive ? '#FFFFFF' : '#334155',
+                            padding: '0.12rem 0.45rem',
+                            borderRadius: '5px',
+                            fontWeight: '800'
+                          }}>
+                            {item.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
         </div>
 
-        {/* User Card & Logout Bottom of Sidebar */}
-        <div style={{ padding: '1rem', borderTop: '1px solid #F1F5F9', backgroundColor: '#FFFFFF' }}>
+        {/* User Card & Action Footer */}
+        <div style={{
+          padding: '0.85rem 1rem',
+          borderTop: '1px solid #F1F5F9',
+          backgroundColor: '#FAFCFC',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.55rem'
+        }}>
           {!sidebarCollapsed && (
-            <div style={{ marginBottom: '0.75rem' }}>
-              <div style={{ fontSize: '0.88rem', fontWeight: '900', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {user?.name || 'Ramesh Kumar'}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.6rem',
+              padding: '0.35rem 0.45rem',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '9px',
+              border: '1px solid #E2E8F0'
+            }}>
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                backgroundColor: '#006B70',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: '900',
+                fontSize: '0.85rem',
+                flexShrink: 0
+              }}>
+                {(user?.name || 'Ramesh Kumar').charAt(0)}
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {user?.id || 'AG-01'} • Hero Electric EV
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: '900', color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user?.name || 'Ramesh Kumar'}
+                </div>
+                <div style={{ fontSize: '0.7rem', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user?.id || 'AG-01'} • Hero Electric EV
+                </div>
               </div>
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.45rem' }}>
             <button
               onClick={onSwitchRole}
+              title="Switch to Admin / Staff / Partner Portal"
               style={{
                 flex: 1,
-                padding: '0.45rem',
-                backgroundColor: '#F1F5F9',
-                color: '#475569',
-                border: '1px solid #E2E8F0',
+                padding: '0.5rem 0.4rem',
+                backgroundColor: '#FFFFFF',
+                color: '#334155',
+                border: '1px solid #CBD5E1',
                 borderRadius: '8px',
-                fontSize: '0.75rem',
+                fontSize: '0.74rem',
                 fontWeight: '800',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.3rem'
               }}
             >
               {sidebarCollapsed ? '⇄' : 'Switch Portal'}
             </button>
             <button
               onClick={onLogout}
+              title="Logout from Fleet Console"
               style={{
-                padding: '0.45rem 0.75rem',
-                backgroundColor: '#EF4444',
-                color: '#FFF',
-                border: 'none',
+                padding: '0.5rem 0.65rem',
+                backgroundColor: '#FEE2E2',
+                color: '#DC2626',
+                border: '1px solid #FECACA',
                 borderRadius: '8px',
-                fontSize: '0.75rem',
+                fontSize: '0.74rem',
                 fontWeight: '800',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
               }}
             >
               {sidebarCollapsed ? '✕' : 'Logout'}
