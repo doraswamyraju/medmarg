@@ -770,7 +770,7 @@ router.delete('/vendors/:code', (req, res) => {
 });
 
 // ==========================================
-// AGENT IN-HAND INVENTORIES CRUD
+// AGENT IN-HAND INVENTORIES CRUD & DIRECT ALLOCATION
 // ==========================================
 router.get('/agent-inventory', (req, res) => {
     res.json({ success: true, agentInventories: dbStore.agentInventories || [] });
@@ -788,6 +788,92 @@ router.put('/agent-inventory/:agentId', (req, res) => {
     }
     saveDbStore();
     res.json({ success: true, agentInventory: ag });
+});
+
+// DIRECT STOCK ALLOCATION / ONBOARDING KIT DISPATCH (WAREHOUSE -> AGENT BAG)
+router.post('/agent-inventory/allocate', (req, res) => {
+    const { agentId, itemCode, quantity, notes = '' } = req.body;
+    if (!agentId || !itemCode || !quantity || quantity <= 0) {
+        return res.status(400).json({ error: 'Agent ID, Item Code, and a valid positive quantity are required.' });
+    }
+
+    if (!dbStore.inventoryStock) dbStore.inventoryStock = [];
+    const stockItem = dbStore.inventoryStock.find(i => i.code === itemCode);
+    if (!stockItem) {
+        return res.status(404).json({ error: `Item/Kit ${itemCode} does not exist in Central Warehouse stock.` });
+    }
+
+    const allotQty = Number(quantity);
+    if (stockItem.stock < allotQty) {
+        return res.status(400).json({ 
+            error: `Insufficient warehouse stock! Only ${stockItem.stock} ${stockItem.unit} of ${stockItem.name} available. Please record inward purchase first.` 
+        });
+    }
+
+    // 1. Deduct from central warehouse
+    stockItem.stock -= allotQty;
+
+    // 2. Credit to agent in-hand inventory (agentRoutes format)
+    if (!dbStore.agentInventory) dbStore.agentInventory = {};
+    if (!dbStore.agentInventory[agentId]) dbStore.agentInventory[agentId] = [];
+
+    const existingInBag = dbStore.agentInventory[agentId].find(i => i.code === itemCode || (i.name && i.name.toLowerCase() === stockItem.name.toLowerCase()));
+    if (existingInBag) {
+        existingInBag.stock = (existingInBag.stock || 0) + allotQty;
+    } else {
+        dbStore.agentInventory[agentId].push({
+            id: `INV-${Date.now().toString().slice(-4)}`,
+            name: stockItem.name,
+            code: stockItem.code,
+            stock: allotQty,
+            unit: stockItem.unit,
+            minThreshold: stockItem.type === 'KIT' ? 2 : 5
+        });
+    }
+
+    // 3. Mirror in dbStore.agentInventories (admin table format)
+    if (!dbStore.agentInventories) dbStore.agentInventories = [];
+    let adminAg = dbStore.agentInventories.find(a => a.agentId === agentId);
+    const agentObj = (dbStore.salariedAgents || []).find(a => a.id === agentId) || 
+                     (dbStore.freelancers || []).find(f => f.id === agentId);
+
+    if (!adminAg) {
+        adminAg = {
+            agentId,
+            agentName: agentObj?.name || 'Assigned Agent',
+            agentType: agentObj?.role === 'FREELANCER_AGENT' ? 'Freelance Agent' : 'Salaried Agent',
+            phone: agentObj?.phone || '+91 90000 00000',
+            zone: agentObj?.area || agentObj?.assignedZone || 'Tirupati Central',
+            inHandStock: {},
+            lastRefillDate: 'Just Now',
+            warning: null
+        };
+        dbStore.agentInventories.push(adminAg);
+    }
+
+    if (!adminAg.inHandStock) adminAg.inHandStock = {};
+    const subKey = itemCode === 'STK-01' ? 'sstTubes' :
+                   itemCode === 'STK-02' ? 'edtaTubes' :
+                   itemCode === 'STK-03' ? 'fluorideTubes' :
+                   itemCode === 'KIT-101' ? 'fullBodyKits' : itemCode;
+    adminAg.inHandStock[subKey] = (adminAg.inHandStock[subKey] || 0) + allotQty;
+    adminAg.lastRefillDate = 'Just Now';
+
+    saveDbStore();
+
+    res.json({
+        success: true,
+        message: `Successfully allocated ${allotQty} ${stockItem.unit} of ${stockItem.name} to Agent ${adminAg.agentName}.`,
+        warehouseStock: stockItem.stock,
+        agentBag: dbStore.agentInventory[agentId]
+    });
+});
+
+// ==========================================
+// CENTRAL BARCODE REGISTRY (ADMIN AUDIT)
+// ==========================================
+router.get('/barcodes', (req, res) => {
+    res.json({ success: true, barcodes: dbStore.barcodes || [] });
 });
 
 // ==========================================

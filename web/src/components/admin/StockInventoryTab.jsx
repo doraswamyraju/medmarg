@@ -583,17 +583,27 @@ export default function StockInventoryTab({
     }));
   };
 
-  const handleDirectAllocate = (e) => {
+  const handleDirectAllocate = async (e) => {
     e.preventDefault();
     const qty = Number(allocateForm.quantity) || 10;
+    const targetItem = inventoryStock.find(s => s.code === allocateForm.itemCode);
+
+    if (!targetItem || targetItem.stock < qty) {
+      alert(`Insufficient central warehouse stock! Only ${targetItem ? targetItem.stock : 0} available.`);
+      return;
+    }
     
-    setInventoryStock(prev => prev.map(s => s.code === allocateForm.itemCode ? { ...s, stock: Math.max(0, s.stock - qty) } : s));
+    // Optimistic UI updates
+    const updatedStock = inventoryStock.map(s => s.code === allocateForm.itemCode ? { ...s, stock: Math.max(0, s.stock - qty) } : s);
+    setInventoryStock(updatedStock);
+    parentSetInventoryStock(updatedStock);
     
     setAgentInventories(prev => prev.map(ag => {
       if (ag.agentId === allocateForm.agentId) {
         const stockKey = allocateForm.itemCode === 'STK-01' ? 'sstTubes' : 
                          allocateForm.itemCode === 'STK-02' ? 'edtaTubes' : 
-                         allocateForm.itemCode === 'STK-03' ? 'fluorideTubes' : 'needles21g';
+                         allocateForm.itemCode === 'STK-03' ? 'fluorideTubes' : 
+                         allocateForm.itemCode === 'KIT-101' ? 'fullBodyKits' : 'needles21g';
         return {
           ...ag,
           inHandStock: {
@@ -608,6 +618,24 @@ export default function StockInventoryTab({
     }));
 
     setShowDirectAllocateModal(false);
+
+    // Call backend API
+    if (API_BASE && safeFetch) {
+      try {
+        await safeFetch(`${API_BASE}/api/v1/admin/agent-inventory/allocate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            agentId: allocateForm.agentId,
+            itemCode: allocateForm.itemCode,
+            quantity: qty,
+            notes: allocateForm.notes
+          })
+        });
+      } catch (err) {
+        console.warn('Backend allocation sync error:', err);
+      }
+    }
   };
 
   const handleSaveScrap = (e) => {
