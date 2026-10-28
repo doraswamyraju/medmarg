@@ -197,54 +197,54 @@ export default function AuditAndBackupsTab({ API_BASE, safeFetch }) {
           </div>
         </div>
 
-        {/* Tab switchers */}
-        <div style={{
-          display: 'flex',
-          backgroundColor: 'rgba(255, 255, 255, 0.08)',
-          borderRadius: '12px',
-          padding: '4px',
-          gap: '4px'
-        }}>
-          <button
-            onClick={() => setActiveSubTab('AUDIT_LOGS')}
-            style={{
-              padding: '0.6rem 1.25rem',
-              borderRadius: '8px',
-              border: 'none',
-              background: activeSubTab === 'AUDIT_LOGS' ? '#006B70' : 'transparent',
-              color: '#FFFFFF',
-              fontWeight: '700',
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              transition: 'all 0.2s'
-            }}
-          >
-            <Clock size={16} /> Audit Trail Log
-          </button>
-          <button
-            onClick={() => setActiveSubTab('BACKUPS')}
-            style={{
-              padding: '0.6rem 1.25rem',
-              borderRadius: '8px',
-              border: 'none',
-              background: activeSubTab === 'BACKUPS' ? '#006B70' : 'transparent',
-              color: '#FFFFFF',
-              fontWeight: '700',
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              transition: 'all 0.2s'
-            }}
-          >
-            <Database size={16} /> Backup & Snapshots ({backups.length})
-          </button>
+          {/* Tab switchers */}
+          <div style={{
+            display: 'flex',
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            borderRadius: '12px',
+            padding: '4px',
+            gap: '4px'
+          }}>
+            <button
+              onClick={() => setActiveSubTab('AUDIT_LOGS')}
+              style={{
+                padding: '0.6rem 1.25rem',
+                borderRadius: '8px',
+                border: 'none',
+                background: activeSubTab === 'AUDIT_LOGS' ? '#006B70' : 'transparent',
+                color: '#FFFFFF',
+                fontWeight: '700',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                transition: 'all 0.2s'
+              }}
+            >
+              <Clock size={16} /> Audit Trail Log (Last 5 Updates)
+            </button>
+            <button
+              onClick={() => setActiveSubTab('BACKUPS')}
+              style={{
+                padding: '0.6rem 1.25rem',
+                borderRadius: '8px',
+                border: 'none',
+                background: activeSubTab === 'BACKUPS' ? '#006B70' : 'transparent',
+                color: '#FFFFFF',
+                fontWeight: '700',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                transition: 'all 0.2s'
+              }}
+            >
+              <Database size={16} /> Stored Snapshots (Last 5)
+            </button>
+          </div>
         </div>
-      </div>
 
       {/* Notification Toast */}
       {statusMsg && (
@@ -334,6 +334,10 @@ export default function AuditAndBackupsTab({ API_BASE, safeFetch }) {
           </div>
 
           {/* Audit Logs Table */}
+          <div style={{ marginBottom: '0.75rem', fontSize: '0.78rem', color: '#64748B', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#059669', display: 'inline-block' }}></span>
+            Displaying the last 5 updates & changes only (Total events recorded: {filteredLogs.length})
+          </div>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
               <thead>
@@ -355,7 +359,7 @@ export default function AuditAndBackupsTab({ API_BASE, safeFetch }) {
                     </td>
                   </tr>
                 ) : (
-                  filteredLogs.map((log) => {
+                  filteredLogs.slice(0, 5).map((log) => {
                     const isSnapshot = log.action.includes('SNAPSHOT');
                     const isRestore = log.action.includes('RESTORE');
                     const isDelete = log.action.includes('DELETE');
@@ -481,9 +485,14 @@ export default function AuditAndBackupsTab({ API_BASE, safeFetch }) {
           {/* Backup Snapshots Table */}
           <div style={{ backgroundColor: '#FFFFFF', borderRadius: '14px', border: '1px solid #E2E8F0', padding: '1.5rem', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800', color: '#0F172A' }}>
-                Stored Recovery Snapshots ({backups.length})
-              </h3>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: '800', color: '#0F172A' }}>
+                  Stored Recovery Snapshots (Showing Last 5 Updates)
+                </h3>
+                <div style={{ fontSize: '0.78rem', color: '#64748B', marginTop: '0.2rem' }}>
+                  Total historical snapshots available: {backups.length}
+                </div>
+              </div>
               <button
                 onClick={fetchBackups}
                 style={{
@@ -525,7 +534,7 @@ export default function AuditAndBackupsTab({ API_BASE, safeFetch }) {
                       </td>
                     </tr>
                   ) : (
-                    backups.map((b) => (
+                    backups.slice(0, 5).map((b) => (
                       <tr key={b.filename} style={{ borderBottom: '1px solid #F1F5F9' }}>
                         <td style={{ padding: '0.85rem 1rem', fontFamily: 'monospace', fontWeight: '700', color: '#0F172A' }}>
                           {b.filename}

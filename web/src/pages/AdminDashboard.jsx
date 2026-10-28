@@ -875,6 +875,8 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
               labPartners={labPartners} 
               setLabPartners={setLabPartners}
               territories={territories}
+              API_BASE={API_BASE}
+              safeFetch={safeFetch}
             />
           )}
 
@@ -901,6 +903,11 @@ export default function AdminDashboard({ user, onSwitchRole, onLogout }) {
             <OverviewKpiTab 
               catalog={catalog} 
               partnerQueue={partnerQueue} 
+              orders={orders}
+              freelancers={freelancers}
+              salariedAgents={salariedAgents}
+              labPartners={labPartners}
+              setActiveTab={setActiveTab}
             />
           )}
 
