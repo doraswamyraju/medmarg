@@ -16,7 +16,8 @@ import {
   CheckCircle, 
   AlertCircle,
   TrendingUp,
-  Sparkles
+  Sparkles,
+  Truck
 } from 'lucide-react';
 import { API_BASE, safeJson } from '../data/apiConfig';
 
@@ -398,11 +399,7 @@ export default function PartnerSignupPage({ onNavigateLogin, onNavigateHome }) {
                       onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                       style={{ width: '100%', padding: '0.75rem 1rem', border: '1.5px solid #CBD5E1', borderRadius: '10px', fontSize: '0.9rem', color: '#0F172A', outline: 'none', backgroundColor: '#FFF' }}
                     >
-                      <option value="Tirupati, AP">Tirupati & Suburban, AP</option>
-                      <option value="Chittoor, AP">Chittoor Town, AP</option>
-                      <option value="Renigunta, AP">Renigunta / Chandragiri, AP</option>
-                      <option value="Nellore, AP">Nellore, AP</option>
-                      <option value="Bangalore, KA">Bangalore South / East, KA</option>
+                      <option value="Tirupati, AP">Tirupati & Suburban, AP (Active)</option>
                     </select>
                   </div>
 
