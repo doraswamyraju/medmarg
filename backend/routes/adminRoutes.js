@@ -331,6 +331,16 @@ router.post('/customers', (req, res) => {
     res.status(201).json({ success: true, customer: newCustomer });
 });
 
+router.put('/customers/:id', (req, res) => {
+    const { id } = req.params;
+    const cust = (dbStore.customers || []).find(c => c.id === id);
+    if (!cust) return res.status(404).json({ error: 'Customer not found' });
+
+    Object.assign(cust, req.body, { updatedAt: new Date().toISOString() });
+    saveDbStore();
+    res.json({ success: true, customer: cust, message: 'Customer updated successfully' });
+});
+
 router.delete('/customers/:id', (req, res) => {
     const { id } = req.params;
     if (dbStore.customers) {
