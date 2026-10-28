@@ -440,6 +440,88 @@ export default function PhlebotomistDashboard({ user, agentType = 'SALARIED', on
     }
   ];
 
+  // Check if freelance phlebotomist is pending admin verification
+  const isPendingVerification = (user?.status === 'PENDING_VERIFICATION' || user?.kycStatus === 'UNDER_REVIEW') && !isSalaried;
+
+  if (isPendingVerification) {
+    return (
+      <div style={{ minHeight: '100vh', backgroundColor: '#F8FAFC', display: 'flex', flexDirection: 'column', fontFamily: 'Inter, system-ui, sans-serif' }}>
+        <header style={{ backgroundColor: '#FFFFFF', borderBottom: '1px solid #E2E8F0', padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontWeight: '900', color: '#006B70', fontSize: '1.1rem' }}>MedMarg Fleet</span>
+            <span style={{ fontSize: '0.75rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '800' }}>
+              KYC UNDER REVIEW
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              onClick={onSwitchRole}
+              style={{ padding: '0.5rem 1rem', backgroundColor: '#F1F5F9', color: '#334155', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer' }}
+            >
+              Switch Portal
+            </button>
+            <button
+              onClick={onLogout}
+              style={{ padding: '0.5rem 1rem', backgroundColor: '#FEE2E2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer' }}
+            >
+              Logout
+            </button>
+          </div>
+        </header>
+
+        <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+          <div style={{ maxWidth: '600px', width: '100%', backgroundColor: '#FFFFFF', borderRadius: '24px', padding: '3rem 2.5rem', border: '1px solid #E2E8F0', boxShadow: '0 20px 40px rgba(0,0,0,0.06)', textAlign: 'center' }}>
+            <div style={{ width: '72px', height: '72px', borderRadius: '50%', backgroundColor: '#FEF3C7', color: '#D97706', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem', boxShadow: '0 8px 20px rgba(217,119,6,0.15)' }}>
+              <Clock size={38} />
+            </div>
+
+            <span style={{ fontSize: '0.75rem', fontWeight: '900', color: '#D97706', letterSpacing: '0.06em', textTransform: 'uppercase', backgroundColor: '#FEF3C7', padding: '0.25rem 0.75rem', borderRadius: '12px' }}>
+              APPLICATION UNDER VERIFICATION
+            </span>
+
+            <h1 style={{ fontSize: '1.75rem', fontWeight: '900', color: '#0F172A', margin: '0.8rem 0 0.5rem' }}>
+              Welcome, {user?.name || 'Phlebotomist Partner'}!
+            </h1>
+
+            <p style={{ color: '#64748B', fontSize: '0.92rem', lineHeight: '1.6', margin: '0 0 1.75rem' }}>
+              Your onboarding fee payment has been confirmed and your technical qualification dossier (Aadhaar, PAN, MLT Certificate, Paramedical Board Registration) is currently <strong>Under Review</strong> by the MedMarg Operations Governance Desk.
+            </p>
+
+            <div style={{ backgroundColor: '#F8FAFC', borderRadius: '16px', padding: '1.25rem', border: '1px solid #E2E8F0', textAlign: 'left', marginBottom: '1.75rem', fontSize: '0.86rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0' }}>
+                <span style={{ color: '#64748B' }}>Partner ID:</span>
+                <strong style={{ color: '#0F172A' }}>{user?.id || 'FL-Pending'}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0' }}>
+                <span style={{ color: '#64748B' }}>Onboarding Fee:</span>
+                <strong style={{ color: '#16A34A' }}>₹2,000 Paid (Held for Instant Wallet Credit upon Approval)</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0' }}>
+                <span style={{ color: '#64748B' }}>Review Status:</span>
+                <strong style={{ color: '#D97706' }}>● Pending Verification in Admin Panel</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0' }}>
+                <span style={{ color: '#64748B' }}>Turnaround Time:</span>
+                <strong style={{ color: '#006B70' }}>Within 2 - 4 Business Hours</strong>
+              </div>
+            </div>
+
+            <p style={{ color: '#94A3B8', fontSize: '0.8rem', lineHeight: '1.5', margin: '0 0 1.5rem' }}>
+              Once approved by the Super Admin, your account status will automatically switch to <strong>AVAILABLE</strong> and you can start accepting open broadcast pickup orders across Tirupati.
+            </p>
+
+            <button
+              onClick={() => window.location.reload()}
+              style={{ padding: '0.85rem 2rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '0.92rem', fontWeight: '800', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 15px rgba(0,107,112,0.25)' }}
+            >
+              <RefreshCw size={16} /> Check Verification Status
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F8FAFC', color: '#0F172A', fontFamily: 'Inter, system-ui, sans-serif' }}>
       

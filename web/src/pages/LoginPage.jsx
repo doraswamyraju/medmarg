@@ -10,7 +10,9 @@ import {
   Loader2,
   KeyRound,
   Eye,
-  EyeOff
+  EyeOff,
+  Clock,
+  X
 } from 'lucide-react';
 import { API_BASE, safeJson } from '../data/apiConfig';
 
@@ -23,6 +25,7 @@ export default function LoginPage({
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showPartnerComingSoon, setShowPartnerComingSoon] = useState(false);
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,6 +48,14 @@ export default function LoginPage({
     setLoading(true);
     setError('');
 
+    const cleanId = identifier.trim().toLowerCase();
+    // Intercept partner portal logins
+    if (cleanId.includes('partner') || cleanId.startsWith('p-') || cleanId.includes('doctor') || cleanId.includes('dr.')) {
+      setLoading(false);
+      setShowPartnerComingSoon(true);
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
         method: 'POST',
@@ -57,6 +68,11 @@ export default function LoginPage({
       const data = await safeJson(res);
 
       if (data && data.user) {
+        if (data.user.role === 'PARTNER' || data.user.role === 'DOCTOR') {
+          setLoading(false);
+          setShowPartnerComingSoon(true);
+          return;
+        }
         setTimeout(() => {
           setLoading(false);
           onLoginSuccess(data.user);
@@ -466,6 +482,63 @@ export default function LoginPage({
       <footer style={{ padding: '1rem 2rem', textAlign: 'center', fontSize: '0.8rem', color: '#94A3B8', borderTop: '1px solid #E2E8F0', backgroundColor: '#FFF' }}>
         © 2026 MedMarg Healthcare Platform (https://www.medmarg.com/). All rights reserved. NABL, CAP & ISO 9001 Certified.
       </footer>
+
+      {/* Partner Portal Coming Soon Modal */}
+      {showPartnerComingSoon && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '24px', maxWidth: '480px', width: '100%', padding: '2.5rem', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid #E2E8F0', position: 'relative' }}>
+            <button
+              onClick={() => setShowPartnerComingSoon(false)}
+              style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', background: '#F1F5F9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748B' }}
+            >
+              <X size={18} />
+            </button>
+
+            <div style={{ width: '68px', height: '68px', borderRadius: '50%', backgroundColor: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem' }}>
+              <Clock size={36} />
+            </div>
+
+            <span style={{ fontSize: '0.75rem', fontWeight: '900', color: '#2563EB', letterSpacing: '0.08em', textTransform: 'uppercase', backgroundColor: '#DBEAFE', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>
+              PORTAL UNDER ACTIVE DEPLOYMENT
+            </span>
+
+            <h3 style={{ fontSize: '1.45rem', fontWeight: '900', color: '#0F172A', margin: '0.8rem 0 0.5rem' }}>
+              Partner Console Coming Soon!
+            </h3>
+
+            <p style={{ color: '#64748B', fontSize: '0.9rem', lineHeight: '1.6', margin: '0 0 1.5rem' }}>
+              The dedicated <strong>Healthcare Partner & Doctor Referral Dashboard</strong> is currently under final review and will be updated once the panel is live. Registered partners will receive SMS and WhatsApp notifications with instant access credentials.
+            </p>
+
+            <div style={{ backgroundColor: '#F8FAFC', borderRadius: '14px', padding: '1rem', border: '1px solid #E2E8F0', textAlign: 'left', marginBottom: '1.5rem', fontSize: '0.82rem' }}>
+              <div style={{ fontWeight: '800', color: '#0F172A', marginBottom: '0.3rem' }}>Next Steps:</div>
+              <div style={{ color: '#64748B', lineHeight: '1.5' }}>
+                • Fill out the partner pre-registration form if not already submitted.<br />
+                • Admin will review your practice details and assign your referral code.<br />
+                • Live login access will be activated directly on release.
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                onClick={() => {
+                  setShowPartnerComingSoon(false);
+                  onNavigatePartnerSignup();
+                }}
+                style={{ flex: 1, padding: '0.8rem', backgroundColor: '#2563EB', color: '#FFF', border: 'none', borderRadius: '12px', fontSize: '0.88rem', fontWeight: '800', cursor: 'pointer' }}
+              >
+                Go to Pre-Registration →
+              </button>
+              <button
+                onClick={() => setShowPartnerComingSoon(false)}
+                style={{ padding: '0.8rem 1.2rem', backgroundColor: '#F1F5F9', color: '#334155', border: '1px solid #CBD5E1', borderRadius: '12px', fontSize: '0.88rem', fontWeight: '800', cursor: 'pointer' }}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

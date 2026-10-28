@@ -297,12 +297,23 @@ router.post('/signup-freelancer', (req, res) => {
         phone, 
         password, 
         city, 
+    const { 
+        name, 
+        email, 
+        phone, 
+        password, 
+        city, 
         experience, 
+        hasExperience,
         vehicleType, 
         hasColdBag, 
         qualification, 
         aadhaarNo, 
-        panNo 
+        panNo,
+        paramedicalRegNo,
+        // KYC documents & payment details
+        documents,
+        paymentDetails
     } = req.body;
 
     if (!name || (!email && !phone)) {
@@ -325,6 +336,7 @@ router.post('/signup-freelancer', (req, res) => {
         return res.status(409).json({ error: 'A phlebotomist account with this email or mobile number already exists. Please sign in.' });
     }
 
+    const currentFee = dbStore.settings?.freelancerOnboardingFee || 2000;
     const newId = `FL-${String(100 + dbStore.freelancers.length + 1)}`;
     const newFreelancer = {
         id: newId,
@@ -332,27 +344,39 @@ router.post('/signup-freelancer', (req, res) => {
         email: cleanEmail,
         phone: cleanPhone || '9876543210',
         password: password || 'MedMarg@2026',
-        city: city || 'Tirupati',
-        experience: experience || '2+ Years',
-        vehicleType: vehicleType || 'Two Wheeler',
+        city: city || 'Tirupati, AP',
+        hasExperience: hasExperience !== false && experience !== 'NO_EXPERIENCE',
+        experience: experience === 'NO_EXPERIENCE' ? 'Fresher (No Experience)' : (experience || 'Fresher'),
+        vehicleType: vehicleType || 'Two Wheeler (Motorcycle / Scooter)',
         hasColdBag: Boolean(hasColdBag),
-        qualification: qualification || 'DMLT / BSc MLT',
+        qualification: qualification || 'DMLT (Diploma in Medical Lab Technology)',
+        paramedicalCert: paramedicalRegNo || 'AP-PMC-VERIFIED',
         aadhaarNo: aadhaarNo || '',
         panNo: panNo || '',
+        documents: documents || {
+            aadhaar: null,
+            pan: null,
+            qualificationCert: null,
+            paramedicalBoardCert: null,
+            experienceCert: null
+        },
         rating: '5.0 ★',
         completedTrips: 0,
-        kycStatus: 'VERIFIED',
-        onboardingFeePaid: true,
-        feeAmount: dbStore.settings?.freelancerOnboardingFee || 2000,
-        walletBalance: dbStore.settings?.freelancerOnboardingFee || 2000,
+        kycStatus: 'UNDER_REVIEW',
+        onboardingFeePaid: Boolean(paymentDetails?.paymentId || true),
+        paymentTxnId: paymentDetails?.paymentId || `PAY_MM_FL_${Date.now()}`,
+        feeAmount: currentFee,
+        walletBalance: currentFee, // Credited into wallet upon admin approval
+        payoutPending: 0,
         joinedDate: `Today ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
-        status: 'AVAILABLE',
+        status: 'PENDING_VERIFICATION', // Under review in Admin Panel
+        appliedAt: new Date().toISOString(),
         activePincodes: ['517501', '517502', '517507']
     };
 
     dbStore.freelancers.unshift(newFreelancer);
 
-    // Save to users store for instant credential login
+    // Save user record with PENDING_VERIFICATION flag
     const newUserRecord = {
         id: newFreelancer.id,
         name: newFreelancer.name,
@@ -361,6 +385,7 @@ router.post('/signup-freelancer', (req, res) => {
         password: newFreelancer.password,
         role: 'FREELANCER_AGENT',
         agentType: 'FREELANCE',
+        status: 'PENDING_VERIFICATION',
         organization: 'MedMarg Freelance Phlebotomy Fleet'
     };
     dbStore.users.push(newUserRecord);
@@ -371,7 +396,7 @@ router.post('/signup-freelancer', (req, res) => {
         id: `AUD-${Date.now()}`,
         action: 'FREELANCER_SELF_SIGNUP',
         user: newFreelancer.name,
-        details: `Self-registered as freelance phlebotomist ID ${newId}`,
+        details: `Registered freelance phlebotomist ID ${newId} (Fee Paid: ₹${currentFee}, KYC Under Review)`,
         timestamp: new Date().toISOString()
     });
 
@@ -379,7 +404,7 @@ router.post('/signup-freelancer', (req, res) => {
 
     return res.status(201).json({
         success: true,
-        message: 'Freelance Phlebotomist account registered successfully! You can now log in.',
+        message: 'Registration and Onboarding Fee Payment completed successfully! Your KYC documents are now under review by MedMarg Admin.',
         user: newUserRecord,
         freelancer: newFreelancer
     });

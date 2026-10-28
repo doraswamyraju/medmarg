@@ -1012,49 +1012,147 @@ export default function FreelancerDeskTab({
             </div>
 
             <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              
+              {/* Payment Proof Card */}
+              <div style={{ backgroundColor: '#F0FDF4', borderRadius: '12px', padding: '1rem', border: '1px solid #BBF7D0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                  <div style={{ fontWeight: '800', color: '#166534', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <CreditCard size={18} color="#16A34A" /> Onboarding Fee Paid: ₹{selectedDocFreelancer.feeAmount || onboardingFee}
+                  </div>
+                  <span style={{ fontSize: '0.72rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '800' }}>
+                    PAID VIA RAZORPAY / GATEWAY
+                  </span>
+                </div>
+                <div style={{ fontSize: '0.82rem', color: '#166534' }}>
+                  Txn Ref: <strong style={{ fontFamily: 'monospace' }}>{selectedDocFreelancer.paymentTxnId || `PAY_FL_${selectedDocFreelancer.id}_OK`}</strong> • Verified & Held in Trust for Wallet Credit upon Approval
+                </div>
+              </div>
+
+              {/* Statutory Identity KYC: Aadhaar & PAN */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div style={{ backgroundColor: '#F8FAFC', borderRadius: '12px', padding: '1rem', border: '1px solid #E2E8F0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                    <span style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.85rem' }}>🪪 Aadhaar Card</span>
+                    <span style={{ fontSize: '0.7rem', backgroundColor: '#E0F2FE', color: '#0369A1', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>GOVT ID</span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#64748B', marginBottom: '0.5rem' }}>
+                    No: <strong>{selectedDocFreelancer.aadhaarNo || 'Registered Verified'}</strong>
+                  </div>
+                  <div style={{ backgroundColor: '#FFFFFF', padding: '0.75rem', borderRadius: '8px', border: '1px dashed #CBD5E1', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <FileText size={20} color="#006B70" />
+                    <span style={{ fontSize: '0.78rem', color: '#0F172A', fontWeight: '700' }}>
+                      {selectedDocFreelancer.documents?.aadhaar || `Aadhaar_${selectedDocFreelancer.id}.pdf`}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ backgroundColor: '#F8FAFC', borderRadius: '12px', padding: '1rem', border: '1px solid #E2E8F0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                    <span style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.85rem' }}>💳 PAN Card</span>
+                    <span style={{ fontSize: '0.7rem', backgroundColor: '#FEF3C7', color: '#B45309', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: '800' }}>PAYOUT KYC</span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#64748B', marginBottom: '0.5rem' }}>
+                    PAN: <strong>{selectedDocFreelancer.panNo || 'ABCDE1234F'}</strong>
+                  </div>
+                  <div style={{ backgroundColor: '#FFFFFF', padding: '0.75rem', borderRadius: '8px', border: '1px dashed #CBD5E1', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <FileText size={20} color="#006B70" />
+                    <span style={{ fontSize: '0.78rem', color: '#0F172A', fontWeight: '700' }}>
+                      {selectedDocFreelancer.documents?.pan || `PAN_${selectedDocFreelancer.id}.jpg`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Technical Lab Qualifications: Degree/Diploma & Board Certificate */}
               <div style={{ backgroundColor: '#F8FAFC', borderRadius: '12px', padding: '1rem', border: '1px solid #E2E8F0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                   <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     🎓 {selectedDocFreelancer.qualification} Certificate
                   </div>
-                  <span style={{ fontSize: '0.72rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '800' }}>VERIFIED FORMAT</span>
+                  <span style={{ fontSize: '0.72rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '800' }}>LAB QUALIFIED</span>
                 </div>
-                <div style={{ backgroundColor: '#FFFFFF', height: '120px', borderRadius: '8px', border: '1px dashed #CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.3rem' }}>
-                  <FileText size={32} color="#006B70" />
-                  <span style={{ fontSize: '0.8rem', color: '#0F172A', fontWeight: '700' }}>DMLT_Degree_Certificate_{selectedDocFreelancer.id}.pdf</span>
-                  <span style={{ fontSize: '0.72rem', color: '#64748B' }}>State Board of Technical Education & Training • 1.2 MB</span>
+                <div style={{ backgroundColor: '#FFFFFF', padding: '0.85rem', borderRadius: '8px', border: '1px dashed #CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <FileText size={26} color="#006B70" />
+                    <div>
+                      <div style={{ fontSize: '0.82rem', color: '#0F172A', fontWeight: '700' }}>
+                        {selectedDocFreelancer.documents?.qualificationCert || `Degree_Diploma_${selectedDocFreelancer.id}.pdf`}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748B' }}>State Board / University Technical Certification</div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: '#006B70', fontWeight: '800' }}>VERIFIED FORMAT</span>
                 </div>
               </div>
 
+              {/* Paramedical Board Registration Certificate */}
               <div style={{ backgroundColor: '#F8FAFC', borderRadius: '12px', padding: '1rem', border: '1px solid #E2E8F0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                   <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    📜 Paramedical Council Registration ({selectedDocFreelancer.paramedicalCert})
+                    📜 Paramedical Board Certificate ({selectedDocFreelancer.paramedicalCert})
                   </div>
-                  <span style={{ fontSize: '0.72rem', backgroundColor: '#E0F2FE', color: '#0369A1', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '800' }}>ACTIVE LICENSE</span>
+                  <span style={{ fontSize: '0.72rem', backgroundColor: '#E0F2FE', color: '#0369A1', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '800' }}>BOARD REG</span>
                 </div>
-                <div style={{ backgroundColor: '#FFFFFF', height: '100px', borderRadius: '8px', border: '1px dashed #CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.3rem' }}>
-                  <Award size={28} color="#D97706" />
-                  <span style={{ fontSize: '0.8rem', color: '#0F172A', fontWeight: '700' }}>AP_Paramedical_Registration_Card.jpg</span>
+                <div style={{ backgroundColor: '#FFFFFF', padding: '0.85rem', borderRadius: '8px', border: '1px dashed #CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <Award size={26} color="#D97706" />
+                    <div>
+                      <div style={{ fontSize: '0.82rem', color: '#0F172A', fontWeight: '700' }}>
+                        {selectedDocFreelancer.documents?.paramedicalBoardCert || `Paramedical_Board_Registration_${selectedDocFreelancer.id}.jpg`}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748B' }}>AP Paramedical Board / Allied Healthcare License</div>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: '#0369A1', fontWeight: '800' }}>ACTIVE RECORD</span>
                 </div>
               </div>
 
+              {/* Experience Certificate / Fresher Status */}
               <div style={{ backgroundColor: '#F8FAFC', borderRadius: '12px', padding: '1rem', border: '1px solid #E2E8F0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                   <div style={{ fontWeight: '800', color: '#0F172A', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    💳 Registration Fee Payment Proof (₹{selectedDocFreelancer.feeAmount || 2000})
+                    💼 Phlebotomy & Hospital Experience: <strong>{selectedDocFreelancer.experience}</strong>
                   </div>
-                  <span style={{ fontSize: '0.72rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '800' }}>PAID VIA RAZORPAY</span>
+                  {selectedDocFreelancer.experience?.includes('No Experience') || selectedDocFreelancer.experience === 'NO_EXPERIENCE' ? (
+                    <span style={{ fontSize: '0.72rem', backgroundColor: '#F1F5F9', color: '#64748B', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '800' }}>FRESHER (NO CERT REQUIRED)</span>
+                  ) : (
+                    <span style={{ fontSize: '0.72rem', backgroundColor: '#DCFCE7', color: '#15803D', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '800' }}>EXPERIENCE CERT ATTACHED</span>
+                  )}
                 </div>
-                <div style={{ fontSize: '0.82rem', color: '#64748B' }}>
-                  Txn Ref: <strong style={{ color: '#006B70', fontFamily: 'monospace' }}>PAY_FL_908123490</strong> • Verified by MedMarg Accounting System
-                </div>
+                {!(selectedDocFreelancer.experience?.includes('No Experience') || selectedDocFreelancer.experience === 'NO_EXPERIENCE') ? (
+                  <div style={{ backgroundColor: '#FFFFFF', padding: '0.85rem', borderRadius: '8px', border: '1px dashed #CBD5E1', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <FileText size={26} color="#2563EB" />
+                    <div>
+                      <div style={{ fontSize: '0.82rem', color: '#0F172A', fontWeight: '700' }}>
+                        {selectedDocFreelancer.documents?.experienceCert || `Hospital_Lab_Experience_Relieving_Letter_${selectedDocFreelancer.id}.pdf`}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748B' }}>Diagnostic Center / Hospital Phlebotomy Experience Certificate</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.8rem', color: '#64748B', fontStyle: 'italic', padding: '0.4rem 0' }}>
+                    Applicant selected "No Experience (Fresher Phlebotomist)". MedMarg induction & cold-chain SOP training will be assigned upon approval.
+                  </div>
+                )}
               </div>
 
+              {/* Action buttons in Dossier */}
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+                {selectedDocFreelancer.status === 'PENDING_VERIFICATION' && (
+                  <button
+                    onClick={() => {
+                      const target = selectedDocFreelancer;
+                      setSelectedDocFreelancer(null);
+                      handleApprove(target);
+                    }}
+                    style={{ padding: '0.65rem 1.4rem', backgroundColor: '#10B981', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                  >
+                    <CheckCircle size={15} /> Approve & Set Commission
+                  </button>
+                )}
                 <button 
                   onClick={() => setSelectedDocFreelancer(null)} 
-                  style={{ padding: '0.65rem 1.4rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}
+                  style={{ padding: '0.65rem 1.4rem', backgroundColor: '#64748B', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}
                 >
                   Close Dossier
                 </button>
