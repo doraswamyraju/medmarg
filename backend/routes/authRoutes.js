@@ -297,12 +297,6 @@ router.post('/signup-freelancer', (req, res) => {
         phone, 
         password, 
         city, 
-    const { 
-        name, 
-        email, 
-        phone, 
-        password, 
-        city, 
         experience, 
         hasExperience,
         vehicleType, 
