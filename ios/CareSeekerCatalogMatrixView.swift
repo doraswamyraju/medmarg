@@ -55,13 +55,12 @@ struct CareSeekerCatalogMatrixView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Pinned Top Header: Search Bar & Quick Category Filters
-            VStack(spacing: 10) {
+            // Pinned Top Header: Search Bar (Fixed at Top)
+            VStack(spacing: 8) {
                 searchAndFiltersSection
-                subTabsPillsBar
             }
             .padding(.top, 10)
-            .padding(.bottom, 12)
+            .padding(.bottom, 10)
             .background(Color.white)
             .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
 
@@ -150,11 +149,11 @@ struct CareSeekerCatalogMatrixView: View {
     // 🔀 2. SUB-TABS PILLS BAR
     // ==========================================
     private var subTabsPillsBar: some View {
-        HStack(spacing: 6) {
-            subTabButton(key: "ALL", label: "All Tests (\(catalogStore.allItems.count))", icon: "square.grid.2x2.fill")
-            subTabButton(key: "PACKAGES", label: "Full Body (\(catalogStore.packages.count))", icon: "cube.box.fill")
-            subTabButton(key: "PROFILES", label: "Profiles (\(catalogStore.profiles.count))", icon: "rectangle.stack.fill")
-            subTabButton(key: "TESTS", label: "Single Tests (\(catalogStore.tests.count))", icon: "flask.fill")
+        HStack(spacing: 8) {
+            subTabButton(key: "ALL", label: "All Tests", icon: "square.grid.2x2.fill")
+            subTabButton(key: "PACKAGES", label: "Full Body", icon: "cube.box.fill")
+            subTabButton(key: "PROFILES", label: "Profiles", icon: "rectangle.stack.fill")
+            subTabButton(key: "TESTS", label: "Single Tests", icon: "flask.fill")
         }
         .padding(.horizontal, 16)
     }

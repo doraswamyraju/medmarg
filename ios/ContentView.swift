@@ -257,6 +257,7 @@ struct ContentView: View {
                 .sheet(isPresented: $showCheckoutModal) {
                     CareSeekerCheckoutModal(
                         isOpen: $showCheckoutModal,
+                        user: loggedInUser,
                         cartItems: cartItems,
                         selectedLabProvider: selectedLabProvider,
                         onOrderSuccess: { newOrder in
