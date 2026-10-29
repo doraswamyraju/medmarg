@@ -542,6 +542,22 @@ struct NABLReportViewerSheet: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
                 }
+                ToolbarItem(placement: .primaryAction) {
+                    Button(action: {
+                        let cleanOrderId = report.id.replacingOccurrences(of: "REP-", with: "")
+                        let downloadUrlStr = "https://medmarg.com/api/v1/reports/\(cleanOrderId)/download"
+                        if let url = URL(string: downloadUrlStr) {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.down.doc.fill")
+                            Text("Official PDF")
+                        }
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(MedMargTheme.primaryTeal)
+                    }
+                }
             }
         }
     }

@@ -107,8 +107,8 @@ class CatalogStore: ObservableObject {
     @Published var isOnlineSynced: Bool = false
     @Published var lastSyncedText: String = "Loaded from Master Store"
 
-    // Default backend URL (Local dev or configurable Hostinger VPS)
-    var backendBaseURL: String = "https://medmarg.sriddha.com"
+    // Default backend URL (Production Hostinger VPS API)
+    var backendBaseURL: String = "https://medmarg.com"
 
     private let userDefaultsKey = "medmarg_cached_catalog_v3"
 
