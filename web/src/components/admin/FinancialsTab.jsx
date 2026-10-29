@@ -20,7 +20,38 @@ import {
 import { API_BASE, safeFetch } from '../../data/apiConfig';
 
 export default function FinancialsTab({ transactions = [] }) {
-  const [activeSubTab, setActiveSubTab] = useState('INVOICE_CONFIG'); // 'INVOICE_CONFIG' | 'TRANSACTIONS'
+  const [activeSubTab, setActiveSubTab] = useState('RECONCILIATION'); // 'RECONCILIATION' | 'INVOICE_CONFIG' | 'TRANSACTIONS'
+  const [ledgerData, setLedgerData] = useState([]);
+  const [ledgerSummary, setLedgerSummary] = useState({
+    totalCollected: 0,
+    totalLabPayable: 0,
+    totalPhleboPayable: 0,
+    netGrossMargin: 0,
+    settledOrdersCount: 0,
+    pendingOrdersCount: 0
+  });
+  const [loadingLedger, setLoadingLedger] = useState(false);
+
+  // Load live ledger from backend
+  const loadLedger = async () => {
+    setLoadingLedger(true);
+    try {
+      const res = await safeFetch(`${API_BASE}/api/v1/payments/ledger`);
+      const data = await res.json();
+      if (data.success) {
+        setLedgerData(data.ledger || []);
+        if (data.summary) setLedgerSummary(data.summary);
+      }
+    } catch (e) {
+      console.warn('Failed to fetch ledger:', e);
+    } finally {
+      setLoadingLedger(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLedger();
+  }, []);
 
   // GST Invoice Business Settings State
   const [invoiceSettings, setInvoiceSettings] = useState({
@@ -118,6 +149,26 @@ export default function FinancialsTab({ transactions = [] }) {
         {/* Tab Switcher */}
         <div style={{ display: 'flex', gap: '0.5rem', backgroundColor: '#F1F5F9', padding: '0.35rem', borderRadius: '12px' }}>
           <button
+            onClick={() => setActiveSubTab('RECONCILIATION')}
+            style={{
+              padding: '0.55rem 1.1rem',
+              borderRadius: '9px',
+              border: 'none',
+              fontWeight: '800',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              backgroundColor: activeSubTab === 'RECONCILIATION' ? '#006B70' : 'transparent',
+              color: activeSubTab === 'RECONCILIATION' ? '#FFFFFF' : '#475569',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            <DollarSign size={16} /> B2B Settlements & Margins
+          </button>
+
+          <button
             onClick={() => setActiveSubTab('INVOICE_CONFIG')}
             style={{
               padding: '0.55rem 1.1rem',
@@ -134,7 +185,7 @@ export default function FinancialsTab({ transactions = [] }) {
               transition: 'all 0.15s ease'
             }}
           >
-            <Receipt size={16} /> GST Invoice Preparation Setup
+            <Receipt size={16} /> GST Invoice Setup
           </button>
 
           <button
@@ -154,10 +205,126 @@ export default function FinancialsTab({ transactions = [] }) {
               transition: 'all 0.15s ease'
             }}
           >
-            <CreditCard size={16} /> Patient Payments Ledger ({transactions.length})
+            <CreditCard size={16} /> Patient Payments ({ledgerData.length || transactions.length})
           </button>
         </div>
       </div>
+
+      {/* SUBTAB 0: B2B SETTLEMENTS & MARGIN RECONCILIATION */}
+      {activeSubTab === 'RECONCILIATION' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          
+          {/* Summary Metric Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+            
+            <div style={{ backgroundColor: '#FFFFFF', padding: '1.25rem', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+              <div style={{ fontSize: '0.74rem', fontWeight: '800', color: '#64748B', textTransform: 'uppercase' }}>Gross Customer Collections</div>
+              <div style={{ fontSize: '1.65rem', fontWeight: '900', color: '#0F172A', marginTop: '0.35rem' }}>₹{ledgerSummary.totalCollected.toLocaleString()}</div>
+              <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: '700', marginTop: '0.2rem' }}>100% Real-Time Captured</div>
+            </div>
+
+            <div style={{ backgroundColor: '#FFFFFF', padding: '1.25rem', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+              <div style={{ fontSize: '0.74rem', fontWeight: '800', color: '#64748B', textTransform: 'uppercase' }}>Lab B2B Payable (45%)</div>
+              <div style={{ fontSize: '1.65rem', fontWeight: '900', color: '#B45309', marginTop: '0.35rem' }}>₹{ledgerSummary.totalLabPayable.toLocaleString()}</div>
+              <div style={{ fontSize: '0.75rem', color: '#D97706', fontWeight: '700', marginTop: '0.2rem' }}>NABL Diagnostic Transfer</div>
+            </div>
+
+            <div style={{ backgroundColor: '#FFFFFF', padding: '1.25rem', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+              <div style={{ fontSize: '0.74rem', fontWeight: '800', color: '#64748B', textTransform: 'uppercase' }}>Fleet Payouts (20%)</div>
+              <div style={{ fontSize: '1.65rem', fontWeight: '900', color: '#2563EB', marginTop: '0.35rem' }}>₹{ledgerSummary.totalPhleboPayable.toLocaleString()}</div>
+              <div style={{ fontSize: '0.75rem', color: '#3B82F6', fontWeight: '700', marginTop: '0.2rem' }}>Doorstep Phlebotomist Pay</div>
+            </div>
+
+            <div style={{ backgroundColor: '#FFFFFF', padding: '1.25rem', borderRadius: '16px', border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+              <div style={{ fontSize: '0.74rem', fontWeight: '800', color: '#64748B', textTransform: 'uppercase' }}>MedMarg Gross Margin (35%)</div>
+              <div style={{ fontSize: '1.65rem', fontWeight: '900', color: '#006B70', marginTop: '0.35rem' }}>₹{ledgerSummary.netGrossMargin.toLocaleString()}</div>
+              <div style={{ fontSize: '0.75rem', color: '#059669', fontWeight: '700', marginTop: '0.2rem' }}>Platform Operating Margin</div>
+            </div>
+
+          </div>
+
+          {/* Full B2B Reconciliation Table */}
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '20px', border: '1.5px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontWeight: '900', fontSize: '1.05rem', color: '#0F172A' }}>
+                  Multi-Lab Settlement & Doorstep Margin Audit
+                </div>
+                <div style={{ fontSize: '0.78rem', color: '#64748B' }}>
+                  Auto-calculated splits per sample collected & processed in Tirupati, AP
+                </div>
+              </div>
+
+              <button 
+                onClick={loadLedger} 
+                style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#F1F5F9', border: 'none', padding: '0.45rem 0.85rem', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '0.8rem', color: '#334155' }}
+              >
+                <RefreshCw size={14} className={loadingLedger ? 'animate-spin' : ''} /> Refresh Ledger
+              </button>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
+                    <th style={{ padding: '1rem 1.25rem' }}>ORDER / TXN</th>
+                    <th style={{ padding: '1rem' }}>PATIENT</th>
+                    <th style={{ padding: '1rem' }}>PROCESSING LAB</th>
+                    <th style={{ padding: '1rem' }}>COLLECTED (₹)</th>
+                    <th style={{ padding: '1rem' }}>LAB SHARE (₹)</th>
+                    <th style={{ padding: '1rem' }}>PHLEBO (₹)</th>
+                    <th style={{ padding: '1rem' }}>MEDMARG MARGIN (₹)</th>
+                    <th style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>STATUS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(ledgerData.length > 0 ? ledgerData : transactions).map((item, idx) => {
+                    const collectedAmt = Number(item.amount || 499);
+                    const labShare = item.labCost || Math.round(collectedAmt * 0.45);
+                    const phleboShare = item.phleboPayout || Math.round(collectedAmt * 0.20);
+                    const platformMargin = item.grossMargin || (collectedAmt - labShare - phleboShare);
+
+                    return (
+                      <tr key={item.id || idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                        <td style={{ padding: '1rem 1.25rem' }}>
+                          <div style={{ fontWeight: '800', color: '#006B70' }}>{item.orderId || `ORD-${item.id}`}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{item.id}</div>
+                        </td>
+                        <td style={{ padding: '1rem' }}>
+                          <div style={{ fontWeight: '700', color: '#0F172A' }}>{item.patient}</div>
+                          <div style={{ fontSize: '0.72rem', color: '#64748B' }}>{item.mode}</div>
+                        </td>
+                        <td style={{ padding: '1rem', color: '#475569', fontSize: '0.8rem' }}>
+                          {item.labName || 'MedMarg Central Hub'}
+                        </td>
+                        <td style={{ padding: '1rem', fontWeight: '900', color: '#0F172A' }}>
+                          ₹{collectedAmt}
+                        </td>
+                        <td style={{ padding: '1rem', fontWeight: '800', color: '#B45309' }}>
+                          ₹{labShare}
+                        </td>
+                        <td style={{ padding: '1rem', fontWeight: '800', color: '#2563EB' }}>
+                          ₹{phleboShare}
+                        </td>
+                        <td style={{ padding: '1rem', fontWeight: '900', color: '#059669' }}>
+                          ₹{platformMargin}
+                        </td>
+                        <td style={{ padding: '1rem 1.25rem', textAlign: 'right' }}>
+                          <span style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: '800', backgroundColor: '#DCFCE7', color: '#15803D' }}>
+                            {item.settlementStatus || 'SETTLED'}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+
+        </div>
+      )}
 
       {/* SUBTAB 1: GST INVOICE PREPARATION CONFIGURATION */}
       {activeSubTab === 'INVOICE_CONFIG' && (

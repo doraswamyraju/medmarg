@@ -419,4 +419,77 @@ router.get('/order-status/:orderId', (req, res) => {
     });
 });
 
+// 8. Financial Reconciliation Ledger (Multi-Lab, Phlebotomist Payouts, Gross Margins)
+router.get('/ledger', (req, res) => {
+    const orders = dbStore.orders || [];
+    const ledger = orders.map((o, idx) => {
+        const orderAmount = Number(o.amount || o.totalAmount || 499);
+        const labCost = Math.round(orderAmount * 0.45); // 45% B2B Lab Transfer
+        const phleboPayout = Math.round(orderAmount * 0.20); // 20% Phlebotomist Doorstep Payout
+        const grossMargin = orderAmount - labCost - phleboPayout;
+
+        return {
+            id: `TXN-${1000 + idx}`,
+            orderId: o.id,
+            patient: o.patientName || 'Care Seeker',
+            patientPhone: o.phone || o.patientPhone || 'N/A',
+            mode: o.paymentMode || (o.paymentStatus === 'PAID_DOORSTEP_QR' ? 'Doorstep UPI QR' : 'Online Prepaid'),
+            amount: orderAmount,
+            labCost,
+            phleboPayout,
+            grossMargin,
+            paymentStatus: o.paymentStatus || 'PAID_SUCCESS',
+            settlementStatus: o.settlementStatus || (o.paymentStatus === 'PAID_SUCCESS' ? 'SETTLED' : 'PENDING'),
+            labName: o.processingLab || 'MedMarg Central Pathology Hub',
+            date: o.date || 'Today'
+        };
+    });
+
+    const totalCollected = ledger.reduce((acc, curr) => acc + curr.amount, 0);
+    const totalLabPayable = ledger.reduce((acc, curr) => acc + curr.labCost, 0);
+    const totalPhleboPayable = ledger.reduce((acc, curr) => acc + curr.phleboPayout, 0);
+    const netGrossMargin = ledger.reduce((acc, curr) => acc + curr.grossMargin, 0);
+
+    res.json({
+        success: true,
+        ledger,
+        summary: {
+            totalCollected,
+            totalLabPayable,
+            totalPhleboPayable,
+            netGrossMargin,
+            settledOrdersCount: ledger.filter(l => l.settlementStatus === 'SETTLED').length,
+            pendingOrdersCount: ledger.filter(l => l.settlementStatus === 'PENDING').length
+        }
+    });
+});
+
+// 9. Manual Doorstep Cash / External Collection Override (Staff / Phlebo)
+router.post('/mark-collected', (req, res) => {
+    const { orderId, mode = 'CASH_DOORSTEP', collectedBy = 'Staff' } = req.body;
+    if (!orderId) {
+        return res.status(400).json({ success: false, error: 'Order ID required' });
+    }
+
+    const order = (dbStore.orders || []).find(o => o.id === orderId);
+    if (!order) {
+        return res.status(404).json({ success: false, error: 'Order not found' });
+    }
+
+    order.paymentStatus = 'PAID_COLLECTED';
+    order.paymentCollected = true;
+    order.paymentMode = mode;
+    order.collectedBy = collectedBy;
+    order.collectedAt = new Date().toISOString();
+
+    saveDbStore();
+
+    res.json({
+        success: true,
+        message: `Order #${orderId} marked as collected via ${mode}`,
+        order
+    });
+});
+
 module.exports = router;
+
