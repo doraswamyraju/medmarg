@@ -162,10 +162,56 @@ struct CareSeekerTrackingView: View {
         .background(MedMargTheme.slate50)
         .onAppear {
             isPulsingRadar = true
+            fetchLiveOrders()
         }
         .fullScreenCover(isPresented: $showFullScreenMap) {
             fullScreenTrackingModal
         }
+    }
+
+    private func fetchLiveOrders() {
+        guard let url = URL(string: "https://medmarg.com/api/v1/orders") else { return }
+        URLSession.shared.dataTask(with: url) { data, _, _ in
+            guard let d = data,
+                  let json = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+                  let ordersArray = json["orders"] as? [[String: Any]], !ordersArray.isEmpty else { return }
+
+            let parsed: [LiveOrderModel] = ordersArray.compactMap { dict in
+                let id = dict["id"] as? String ?? "ORD"
+                let date = dict["date"] as? String ?? "Today"
+                let slot = dict["slot"] as? String ?? "Morning Slot"
+                let address = dict["address"] as? String ?? "Tirupati, AP"
+                let phleboName = dict["phleboName"] as? String ?? "Certified Phlebotomist"
+                let phleboPhone = dict["phleboPhone"] as? String ?? "+91 98765 11223"
+                let status = dict["status"] as? String ?? "BOOKED"
+                let otp = dict["handoverOtp"] as? String ?? "\(dict["otp"] as? String ?? "3921")"
+                let amt = dict["amount"] as? Int ?? (dict["totalAmount"] as? Int ?? 499)
+                let payStatus = dict["paymentStatus"] as? String ?? "PAID"
+                let itemsRaw = dict["items"] as? String ?? "Diagnostic Health Profile"
+
+                return LiveOrderModel(
+                    id: id,
+                    date: date,
+                    slot: slot,
+                    address: address,
+                    phleboName: phleboName,
+                    phleboPhone: phleboPhone,
+                    status: status,
+                    eta: status == "COMPLETED" ? "Delivered" : "30 Mins",
+                    tempTelemetry: "4.0°C (Controlled)",
+                    handoverOtp: otp,
+                    items: [LiveOrderItem(id: id, name: itemsRaw, price: amt)],
+                    totalAmount: amt,
+                    paymentStatus: payStatus
+                )
+            }
+
+            DispatchQueue.main.async {
+                if !parsed.isEmpty {
+                    self.allOrders = parsed
+                }
+            }
+        }.resume()
     }
 
     // ==========================================
