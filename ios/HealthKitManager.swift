@@ -98,19 +98,19 @@ class HealthKitManager: ObservableObject {
     @Published var authorizationError: String? = nil
 
     // 🫀 Live Vitals State (Real-Time Sensors & Synced Apple Health)
-    @Published var heartRate: Double = 74.0 // BPM
-    @Published var restingHeartRate: Double = 68.0 // BPM
-    @Published var bloodOxygen: Double = 98.4 // SpO2 %
-    @Published var systolicBP: Double = 122.0 // mmHg
-    @Published var diastolicBP: Double = 81.0 // mmHg
-    @Published var bloodGlucose: Double = 98.0 // mg/dL (Fasting)
-    @Published var stepCount: Int = 6842 // Steps
-    @Published var activeCalories: Double = 428.0 // kcal
-    @Published var bodyTemperature: Double = 98.6 // °F
-    @Published var respiratoryRate: Double = 16.0 // breaths/min
-    @Published var sleepHours: Double = 7.4 // hrs
-    @Published var bodyWeight: Double = 68.5 // kg
-    @Published var heartRateTrend: [Double] = [72, 70, 75, 78, 74, 76, 73, 75, 74]
+    @Published var heartRate: Double = 0.0 // BPM
+    @Published var restingHeartRate: Double = 0.0 // BPM
+    @Published var bloodOxygen: Double = 0.0 // SpO2 %
+    @Published var systolicBP: Double = 0.0 // mmHg
+    @Published var diastolicBP: Double = 0.0 // mmHg
+    @Published var bloodGlucose: Double = 0.0 // mg/dL (Fasting)
+    @Published var stepCount: Int = 0 // Steps
+    @Published var activeCalories: Double = 0.0 // kcal
+    @Published var bodyTemperature: Double = 0.0 // °F
+    @Published var respiratoryRate: Double = 0.0 // breaths/min
+    @Published var sleepHours: Double = 0.0 // hrs
+    @Published var bodyWeight: Double = 0.0 // kg
+    @Published var heartRateTrend: [Double] = []
 
     // Diagnostic Correlations & Smart Alerts
     @Published var activeAlerts: [VitalAlert] = []

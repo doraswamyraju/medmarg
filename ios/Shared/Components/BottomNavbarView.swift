@@ -64,13 +64,14 @@ struct BottomNavbarView: View {
                 } else {
                     // ==========================================
                     // 📱 PATIENT / CARE SEEKER 5 CORE TABS
-                    // 0: Home, 1: Tests, 3: Track (ALWAYS CENTER), 4: Reports, 6: Profile
+                    // 1: Tests, 7: Orders, 3: Track (CENTER), 4: Reports, 5: Offers
+                    // (Profile is accessible via Topbar avatar)
                     // ==========================================
-                    // Tab 0: Home
-                    bottomNavTab(index: 0, icon: "house.fill", title: "Home")
-
                     // Tab 1: Tests Matrix
                     bottomNavTab(index: 1, icon: "flask.fill", title: "Tests")
+
+                    // Tab 7: Orders Desk
+                    bottomNavTab(index: 7, icon: "bag.fill", title: "Orders")
 
                     // Tab 3: Track (ALWAYS CENTER HIGHLIGHTED ACTION BUTTON)
                     Button(action: { selectedTab = 3 }) {
@@ -103,8 +104,8 @@ struct BottomNavbarView: View {
                     // Tab 4: Health Vault Reports
                     bottomNavTab(index: 4, icon: "doc.text.fill", title: "Reports")
 
-                    // Tab 6: Profile & Settings
-                    bottomNavTab(index: 6, icon: "person.crop.circle.fill", title: "Profile")
+                    // Tab 5: Offers Zone & Promos
+                    bottomNavTab(index: 5, icon: "tag.fill", title: "Offers")
                 }
             }
             .padding(.bottom, 6)

@@ -62,13 +62,36 @@ struct TopbarView: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: 34, height: 34)
+                        .frame(width: 36, height: 36)
                         .shadow(color: MedMargTheme.primaryTeal.opacity(0.3), radius: 4, x: 0, y: 2)
 
-                    Text(user.name.isEmpty ? "C" : String(user.name.prefix(1)).uppercased())
-                        .font(.system(size: 14, weight: .black))
-                        .foregroundColor(.white)
+                    if let avatarStr = user.avatarUrl, let avatarUrl = URL(string: avatarStr) {
+                        AsyncImage(url: avatarUrl) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 36, height: 36)
+                                    .clipShape(Circle())
+                            case .failure, .empty:
+                                Text(user.name.isEmpty ? "C" : String(user.name.prefix(1)).uppercased())
+                                    .font(.system(size: 14, weight: .black))
+                                    .foregroundColor(.white)
+                            @unknown default:
+                                Text(user.name.isEmpty ? "C" : String(user.name.prefix(1)).uppercased())
+                                    .font(.system(size: 14, weight: .black))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                    } else {
+                        Text(user.name.isEmpty ? "C" : String(user.name.prefix(1)).uppercased())
+                            .font(.system(size: 14, weight: .black))
+                            .foregroundColor(.white)
+                    }
                 }
+                .frame(width: 36, height: 36)
+                .clipShape(Circle())
                 .overlay(
                     Circle()
                         .stroke(MedMargTheme.accentEmerald, lineWidth: 1.5)

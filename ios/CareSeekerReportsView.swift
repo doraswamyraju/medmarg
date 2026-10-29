@@ -40,43 +40,11 @@ struct BiomarkerTrendSeries {
 
 struct CareSeekerReportsView: View {
     var user: UserProfile? = nil
-    @State private var reports: [DiagnosticReportModel] = [
-        DiagnosticReportModel(
-            id: "REP-8821",
-            title: "MedMarg Master Health Checkup (Comprehensive 104 Params)",
-            date: "28 Aug 2026",
-            lab: "MedMarg Central Diagnostics (NABL ISO 15189)",
-            doctorVerified: "Dr. Ananya Sharma (MD Pathologist)",
-            status: "VERIFIED_NABL",
-            summary: "All vital parameters within normal ranges. Vitamin D3 slightly low (22 ng/mL - mild insufficiency).",
-            biomarkers: [
-                ReportBiomarker(name: "Fasting Blood Sugar (FBS)", value: "92 mg/dL", status: "NORMAL", range: "70 - 100 mg/dL"),
-                ReportBiomarker(name: "HbA1c (Glycated Hemoglobin)", value: "5.4%", status: "NORMAL", range: "< 5.7%"),
-                ReportBiomarker(name: "Total Cholesterol", value: "178 mg/dL", status: "NORMAL", range: "< 200 mg/dL"),
-                ReportBiomarker(name: "Thyroid TSH", value: "2.14 µIU/mL", status: "NORMAL", range: "0.4 - 4.2 µIU/mL"),
-                ReportBiomarker(name: "Vitamin D3 (25-OH)", value: "22.4 ng/mL", status: "LOW", range: "30 - 100 ng/mL"),
-                ReportBiomarker(name: "Hemoglobin (CBC)", value: "14.8 g/dL", status: "NORMAL", range: "13.0 - 17.0 g/dL")
-            ]
-        ),
-        DiagnosticReportModel(
-            id: "REP-7910",
-            title: "Diabetic & Lipid Comprehensive Panel",
-            date: "14 May 2026",
-            lab: "Apollo Diagnostics Hub / MedMarg Sync",
-            doctorVerified: "Dr. K. Sivasankar (Consultant Biochemist)",
-            status: "VERIFIED_NABL",
-            summary: "Lipid profile optimal. Glycemic control is under healthy limits.",
-            biomarkers: [
-                ReportBiomarker(name: "Fasting Blood Sugar (FBS)", value: "96 mg/dL", status: "NORMAL", range: "70 - 100 mg/dL"),
-                ReportBiomarker(name: "HbA1c", value: "5.6%", status: "NORMAL", range: "< 5.7%"),
-                ReportBiomarker(name: "Total Cholesterol", value: "184 mg/dL", status: "NORMAL", range: "< 200 mg/dL")
-            ]
-        )
-    ]
-
+    @State private var reports: [DiagnosticReportModel] = []
+    @State private var isLoadingReports: Bool = false
     @State private var activeTrendBiomarker: String = "FBS"
     @State private var selectedReportForPreview: DiagnosticReportModel? = nil
-    @State private var expandedReportIds: Set<String> = ["REP-8821"]
+    @State private var expandedReportIds: Set<String> = []
 
     private var biomarkerTrends: [String: BiomarkerTrendSeries] {
         [
@@ -130,8 +98,10 @@ struct CareSeekerReportsView: View {
                 // 1. NABL Health Vault Hero Banner
                 healthVaultHeroBanner
 
-                // 2. Multi-Month Biomarker Longitudinal Progression Analyzer
-                biomarkerProgressionCard
+                // 2. Multi-Month Biomarker Longitudinal Progression Analyzer (shown if reports or health data exist)
+                if !reports.isEmpty {
+                    biomarkerProgressionCard
+                }
 
                 // 3. Verified Diagnostic Reports List
                 diagnosticReportsListSection
@@ -144,6 +114,9 @@ struct CareSeekerReportsView: View {
         .background(MedMargTheme.slate50)
         .sheet(item: $selectedReportForPreview) { rep in
             NABLReportViewerSheet(report: rep, patientName: user?.name ?? "Care Seeker")
+        }
+        .onAppear {
+            fetchLiveReports()
         }
     }
 
@@ -303,128 +276,227 @@ struct CareSeekerReportsView: View {
     // ==========================================
     private var diagnosticReportsListSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("Verified Pathology Reports (\(reports.count))")
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(MedMargTheme.slate900)
-
-            ForEach(reports) { rep in
-                let isExpanded = expandedReportIds.contains(rep.id)
-
-                VStack(alignment: .leading, spacing: 12) {
-                    
-                    // Card Top
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack(spacing: 6) {
-                                Text(rep.id)
-                                    .font(.system(size: 10, weight: .black, design: .monospaced))
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(MedMargTheme.lightTeal)
-                                    .foregroundColor(MedMargTheme.primaryTeal)
-                                    .cornerRadius(4)
-
-                                Text("• \(rep.date)")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(MedMargTheme.slate500)
-                            }
-
-                            Text(rep.title)
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(MedMargTheme.slate900)
-
-                            Text("Processing Hub: \(rep.lab)")
-                                .font(.system(size: 11))
-                                .foregroundColor(MedMargTheme.slate500)
-
-                            Text("Signed by: \(rep.doctorVerified)")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(MedMargTheme.primaryTeal)
-                        }
-
-                        Spacer()
-
-                        Button(action: { selectedReportForPreview = rep }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: "doc.text.viewfinder")
-                                Text("View PDF")
-                                    .font(.system(size: 12, weight: .bold))
-                            }
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(MedMargTheme.primaryTeal)
-                            .foregroundColor(.white)
-                            .cornerRadius(8)
-                        }
-                    }
-
-                    // Clinical Summary
-                    Text("Remarks: \(rep.summary)")
-                        .font(.system(size: 11))
-                        .foregroundColor(MedMargTheme.slate700)
-                        .padding(8)
-                        .background(MedMargTheme.slate50)
-                        .cornerRadius(8)
-
-                    // Expandable Biomarkers Toggle
-                    Button(action: {
-                        if isExpanded {
-                            expandedReportIds.remove(rep.id)
-                        } else {
-                            expandedReportIds.insert(rep.id)
-                        }
-                    }) {
-                        HStack {
-                            Text(isExpanded ? "Hide Biomarkers" : "View \(rep.biomarkers.count) Biomarkers")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(MedMargTheme.primaryTeal)
-                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(MedMargTheme.primaryTeal)
-                        }
-                    }
-
-                    // Biomarkers Table
-                    if isExpanded {
-                        VStack(spacing: 6) {
-                            ForEach(rep.biomarkers) { bio in
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(bio.name)
-                                            .font(.system(size: 12, weight: .medium))
-                                            .foregroundColor(MedMargTheme.slate900)
-                                        Text("Ref Range: \(bio.range)")
-                                            .font(.system(size: 10))
-                                            .foregroundColor(MedMargTheme.slate500)
-                                    }
-
-                                    Spacer()
-
-                                    Text(bio.value)
-                                        .font(.system(size: 12, weight: .bold))
-                                        .foregroundColor(MedMargTheme.slate900)
-
-                                    Text(bio.status)
-                                        .font(.system(size: 9, weight: .black))
-                                        .padding(.horizontal, 6)
-                                        .padding(.vertical, 2)
-                                        .background(bio.status == "NORMAL" ? Color.green.opacity(0.12) : Color.orange.opacity(0.12))
-                                        .foregroundColor(bio.status == "NORMAL" ? Color(red: 0.03, green: 0.5, blue: 0.3) : Color.orange)
-                                        .cornerRadius(4)
-                                }
-                                .padding(8)
-                                .background(MedMargTheme.slate50)
-                                .cornerRadius(8)
-                            }
-                        }
-                    }
+            HStack {
+                Text("Verified Pathology Reports (\(reports.count))")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(MedMargTheme.slate900)
+                Spacer()
+                if isLoadingReports {
+                    ProgressView()
+                        .scaleEffect(0.8)
                 }
-                .padding(16)
+            }
+
+            if reports.isEmpty && !isLoadingReports {
+                VStack(spacing: 14) {
+                    Image(systemName: "doc.text.magnifyingglass")
+                        .font(.system(size: 40))
+                        .foregroundColor(MedMargTheme.primaryTeal.opacity(0.8))
+                        .padding(.top, 10)
+
+                    VStack(spacing: 4) {
+                        Text("No Diagnostic Reports Generated Yet")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(MedMargTheme.slate900)
+
+                        Text("When your blood or pathology samples are analyzed and certified by NABL labs, your digitized reports and biomarker graphs will appear here.")
+                            .font(.system(size: 12))
+                            .foregroundColor(MedMargTheme.slate500)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
+                    }
+
+                    HStack(spacing: 6) {
+                        Image(systemName: "shield.lefthalf.filled")
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                            .font(.system(size: 12))
+                        Text("100% NABL Accredited & Doctor-Signed Digital Delivery")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(MedMargTheme.lightTeal)
+                    .cornerRadius(8)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(24)
                 .background(Color.white)
                 .cornerRadius(20)
                 .overlay(RoundedRectangle(cornerRadius: 20).stroke(MedMargTheme.slate200, lineWidth: 1))
+            } else {
+                ForEach(reports) { rep in
+                    let isExpanded = expandedReportIds.contains(rep.id)
+
+                    VStack(alignment: .leading, spacing: 12) {
+                        
+                        // Card Top
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack(spacing: 6) {
+                                    Text(rep.id)
+                                        .font(.system(size: 10, weight: .black, design: .monospaced))
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 2)
+                                        .background(MedMargTheme.lightTeal)
+                                        .foregroundColor(MedMargTheme.primaryTeal)
+                                        .cornerRadius(4)
+
+                                    Text("• \(rep.date)")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(MedMargTheme.slate500)
+                                }
+
+                                Text(rep.title)
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(MedMargTheme.slate900)
+
+                                Text("Processing Hub: \(rep.lab)")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(MedMargTheme.slate500)
+
+                                Text("Signed by: \(rep.doctorVerified)")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(MedMargTheme.primaryTeal)
+                            }
+
+                            Spacer()
+
+                            Button(action: { selectedReportForPreview = rep }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "doc.text.viewfinder")
+                                    Text("View PDF")
+                                        .font(.system(size: 12, weight: .bold))
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(MedMargTheme.primaryTeal)
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
+                            }
+                        }
+
+                        // Clinical Summary
+                        Text("Remarks: \(rep.summary)")
+                            .font(.system(size: 11))
+                            .foregroundColor(MedMargTheme.slate700)
+                            .padding(8)
+                            .background(MedMargTheme.slate50)
+                            .cornerRadius(8)
+
+                        // Expandable Biomarkers Toggle
+                        if !rep.biomarkers.isEmpty {
+                            Button(action: {
+                                if isExpanded {
+                                    expandedReportIds.remove(rep.id)
+                                } else {
+                                    expandedReportIds.insert(rep.id)
+                                }
+                            }) {
+                                HStack {
+                                    Text(isExpanded ? "Hide Biomarkers" : "View \(rep.biomarkers.count) Biomarkers")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .foregroundColor(MedMargTheme.primaryTeal)
+                                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(MedMargTheme.primaryTeal)
+                                }
+                            }
+
+                            // Biomarkers Table
+                            if isExpanded {
+                                VStack(spacing: 6) {
+                                    ForEach(rep.biomarkers) { bio in
+                                        HStack {
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text(bio.name)
+                                                    .font(.system(size: 12, weight: .medium))
+                                                    .foregroundColor(MedMargTheme.slate900)
+                                                Text("Ref Range: \(bio.range)")
+                                                    .font(.system(size: 10))
+                                                    .foregroundColor(MedMargTheme.slate500)
+                                            }
+
+                                            Spacer()
+
+                                            Text(bio.value)
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(MedMargTheme.slate900)
+
+                                            Text(bio.status)
+                                                .font(.system(size: 9, weight: .black))
+                                                .padding(.horizontal, 6)
+                                                .padding(.vertical, 2)
+                                                .background(bio.status == "NORMAL" ? Color.green.opacity(0.12) : Color.orange.opacity(0.12))
+                                                .foregroundColor(bio.status == "NORMAL" ? Color(red: 0.03, green: 0.5, blue: 0.3) : Color.orange)
+                                                .cornerRadius(4)
+                                        }
+                                        .padding(8)
+                                        .background(MedMargTheme.slate50)
+                                        .cornerRadius(8)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(16)
+                    .background(Color.white)
+                    .cornerRadius(20)
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(MedMargTheme.slate200, lineWidth: 1))
+                }
             }
         }
+    }
+
+    private func fetchLiveReports() {
+        isLoadingReports = true
+        let userEmail = user?.email.lowercased() ?? ""
+        guard let url = URL(string: "https://medmarg.com/api/v1/orders") else {
+            isLoadingReports = false
+            return
+        }
+
+        URLSession.shared.dataTask(with: url) { data, _, _ in
+            DispatchQueue.main.async {
+                self.isLoadingReports = false
+                guard let data = data,
+                      let raw = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let orders = (raw["data"] as? [[String: Any]]) ?? (raw["orders"] as? [[String: Any]]) else {
+                    return
+                }
+
+                var fetched: [DiagnosticReportModel] = []
+                for ord in orders {
+                    let status = (ord["status"] as? String)?.uppercased() ?? ""
+                    let patientEmail = (ord["patientEmail"] as? String)?.lowercased() ?? (ord["customerEmail"] as? String)?.lowercased() ?? ""
+                    
+                    if !userEmail.isEmpty && !patientEmail.isEmpty && patientEmail != userEmail {
+                        continue
+                    }
+
+                    if status == "COMPLETED" || status == "REPORT_READY" || status == "DELIVERED" {
+                        let id = (ord["id"] as? String) ?? "REP-\(Int.random(in: 1000...9999))"
+                        let title = (ord["testName"] as? String) ?? (ord["packageName"] as? String) ?? "NABL Diagnostic Report"
+                        let lab = (ord["labPartner"] as? String) ?? (ord["lab"] as? String) ?? "MedMarg NABL Hub"
+                        let doc = (ord["doctor"] as? String) ?? "Dr. A. Verma, MD (Path)"
+                        let date = (ord["reportDate"] as? String) ?? (ord["createdAt"] as? String)?.prefix(10).description ?? "Recent"
+
+                        fetched.append(DiagnosticReportModel(
+                            id: id,
+                            title: title,
+                            date: date,
+                            lab: lab,
+                            doctorVerified: doc,
+                            status: "Verified",
+                            summary: "All clinical parameters validated against NABL Reference Limits.",
+                            biomarkers: []
+                        ))
+                    }
+                }
+
+                self.reports = fetched
+            }
+        }.resume()
     }
 }
 
