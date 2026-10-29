@@ -485,25 +485,67 @@ struct CareSeekerCheckoutModal: View {
     private func handlePlaceOrder() {
         isSubmitting = true
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            isSubmitting = false
-            let newOrder = LiveOrderModel(
-                id: "MM-LAB-\(Int.random(in: 1000...9999))",
-                date: "Today",
-                slot: selectedSlot,
-                address: savedAddresses[selectedAddressIndex].address,
-                phleboName: "Ramesh Kumar (Certified Phlebotomist)",
-                phleboPhone: "+91 98765 11223",
-                status: "ASSIGNED",
-                eta: isExpressPhlebotomy ? "30 Mins" : "Tomorrow Morning",
-                tempTelemetry: "3.8°C (Optimal Cold-Chain)",
-                handoverOtp: "\(Int.random(in: 1000...9999))",
-                items: cartItems.map { LiveOrderItem(id: $0.id, name: $0.title, price: $0.price) },
-                totalAmount: cartTotal,
-                paymentStatus: paymentMode == "RAZORPAY_ONLINE" ? "PAID" : "PENDING_DOORSTEP"
-            )
-            onOrderSuccess(newOrder)
-            isOpen = false
+        let orderId = "MM-LAB-\(Int.random(in: 1000...9999))"
+        let chosenAddress = savedAddresses[selectedAddressIndex].address
+        let itemsList = cartItems.map { LiveOrderItem(id: $0.id, name: $0.title, price: $0.price) }
+        let itemsNames = cartItems.map { $0.title }.joined(separator: ", ")
+
+        let payload: [String: Any] = [
+            "id": orderId,
+            "patientName": beneficiaryName.isEmpty ? "Rahul Sharma" : beneficiaryName,
+            "patientPhone": "+91 98765 43210",
+            "patientEmail": "patient@medmarg.com",
+            "address": chosenAddress,
+            "slot": selectedSlot,
+            "items": itemsNames,
+            "amount": cartTotal,
+            "totalAmount": cartTotal,
+            "paymentMode": paymentMode,
+            "paymentStatus": paymentMode == "RAZORPAY_ONLINE" ? "PAID_ONLINE" : "PENDING_DOORSTEP",
+            "status": "COLLECTION_ASSIGNED",
+            "phleboName": "Ramesh Kumar (Certified Phlebotomist)",
+            "phleboPhone": "+91 98765 11223",
+            "handoverOtp": "\(Int.random(in: 1000...9999))",
+            "processingLab": selectedLabProvider == "THYROCARE" ? "Thyrocare Central Processing Hub (NABL)" : "Dr. Lal PathLabs Hub (NABL)",
+            "date": "Today"
+        ]
+
+        guard let url = URL(string: "https://medmarg.com/api/v1/orders") else {
+            completeLocalOrder(orderId: orderId, address: chosenAddress, items: itemsList)
+            return
         }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 5.0
+        request.httpBody = try? JSONSerialization.data(withJSONObject: payload, options: [])
+
+        URLSession.shared.dataTask(with: request) { _, _, _ in
+            DispatchQueue.main.async {
+                self.completeLocalOrder(orderId: orderId, address: chosenAddress, items: itemsList)
+            }
+        }.resume()
+    }
+
+    private func completeLocalOrder(orderId: String, address: String, items: [LiveOrderItem]) {
+        self.isSubmitting = false
+        let newOrder = LiveOrderModel(
+            id: orderId,
+            date: "Today",
+            slot: selectedSlot,
+            address: address,
+            phleboName: "Ramesh Kumar (Certified Phlebotomist)",
+            phleboPhone: "+91 98765 11223",
+            status: "ASSIGNED",
+            eta: isExpressPhlebotomy ? "30 Mins" : "Tomorrow Morning",
+            tempTelemetry: "3.8°C (Optimal Cold-Chain)",
+            handoverOtp: "\(Int.random(in: 1000...9999))",
+            items: items,
+            totalAmount: cartTotal,
+            paymentStatus: paymentMode == "RAZORPAY_ONLINE" ? "PAID" : "PENDING_DOORSTEP"
+        )
+        onOrderSuccess(newOrder)
+        isOpen = false
     }
 }
