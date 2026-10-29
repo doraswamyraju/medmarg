@@ -34,7 +34,6 @@ final class GoogleSignInManager: NSObject, ObservableObject, ASWebAuthentication
             URLQueryItem(name: "redirect_uri", value: redirectUri),
             URLQueryItem(name: "response_type", value: "code"),
             URLQueryItem(name: "scope", value: "openid email profile"),
-            URLQueryItem(name: "prompt", value: "select_account"),
             URLQueryItem(name: "nonce", value: UUID().uuidString)
         ]
 
