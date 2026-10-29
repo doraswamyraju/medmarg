@@ -123,11 +123,13 @@ export default function PartnerSignupPage({ onNavigateLogin, onNavigateHome }) {
               <ArrowLeft size={16} /> Back to Home
             </button>
             <button
-              onClick={() => setShowComingSoon(true)}
+              onClick={() => {
+                if (window.location) window.location.href = '/login';
+              }}
               style={{ padding: '0.55rem 1.1rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
             >
-              <span>Partner Portal Login</span>
-              <span style={{ fontSize: '0.65rem', backgroundColor: '#FDE047', color: '#854D0E', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: '900' }}>SOON</span>
+              <span>Partner & Doctor Login</span>
+              <span style={{ fontSize: '0.65rem', backgroundColor: '#DCFCE7', color: '#166534', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: '900' }}>LIVE</span>
             </button>
           </div>
         </div>
