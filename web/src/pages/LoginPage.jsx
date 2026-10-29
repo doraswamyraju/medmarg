@@ -49,12 +49,7 @@ export default function LoginPage({
     setError('');
 
     const cleanId = identifier.trim().toLowerCase();
-    // Intercept partner portal logins
-    if (cleanId.includes('partner') || cleanId.startsWith('p-') || cleanId.includes('doctor') || cleanId.includes('dr.')) {
-      setLoading(false);
-      setShowPartnerComingSoon(true);
-      return;
-    }
+    // Allow Partner / Doctor portal authentication directly into Doctor Dashboard
 
     try {
       const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
