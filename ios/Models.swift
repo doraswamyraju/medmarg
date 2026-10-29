@@ -34,6 +34,7 @@ enum UserRole: String, CaseIterable, Identifiable {
     case scanCenter = "SCAN_CENTER"
     case pharmacy = "PHARMACY"
     case collectionAgent = "COLLECTION_AGENT"
+    case freelanceAgent = "FREELANCE_AGENT"
 
     var id: String { self.rawValue }
 
@@ -45,7 +46,8 @@ enum UserRole: String, CaseIterable, Identifiable {
         case .diagnosticLab: return "Diagnostic Lab Partner"
         case .scanCenter: return "Radiology & Scan Center"
         case .pharmacy: return "Generic Pharmacy Partner"
-        case .collectionAgent: return "Collection Agent (Fleet)"
+        case .collectionAgent: return "Salaried Fleet Agent"
+        case .freelanceAgent: return "Freelance Phlebotomist (Gig)"
         }
     }
 
@@ -58,6 +60,7 @@ enum UserRole: String, CaseIterable, Identifiable {
         case .scanCenter: return "waveform.path.ecg.rectangle"
         case .pharmacy: return "pills.fill"
         case .collectionAgent: return "car.fill"
+        case .freelanceAgent: return "bicycle.circle.fill"
         }
     }
 }

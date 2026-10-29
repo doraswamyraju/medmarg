@@ -88,6 +88,18 @@ struct ContentView: View {
             organization: "Tirupati Field Collection Fleet",
             status: "Active",
             createdAt: "30-Aug-2026"
+        ),
+        UserProfile(
+            id: "usr_freelancer",
+            name: "Siva Phlebo (Freelance MLT)",
+            username: "freelancer",
+            email: "freelancer@medmarg.com",
+            phone: "+91 94943 11223",
+            password: "password123",
+            role: .freelanceAgent,
+            organization: "MedMarg Gig Phlebotomist Network (Tirupati)",
+            status: "Active",
+            createdAt: "30-Aug-2026"
         )
     ]
 
@@ -194,7 +206,7 @@ struct ContentView: View {
                                 RadiologyDeskView(user: user, onLogout: logout)
                             case .pharmacy:
                                 PharmacyDeskView(user: user, onLogout: logout)
-                            case .collectionAgent:
+                            case .collectionAgent, .freelanceAgent:
                                 FleetDeskView(user: user, onLogout: logout)
                             }
                         }
@@ -2276,9 +2288,9 @@ struct FleetDeskView: View {
                             Text(user.name)
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundColor(MedMargTheme.slate900)
-                            Text("Certified Phlebotomist • AG-01 Tirupati Fleet")
-                                .font(.system(size: 11))
-                                .foregroundColor(MedMargTheme.slate500)
+                            Text(user.role == .freelanceAgent ? "⚡ Certified Freelance MLT • ₹180 / Doorstep Sample" : "Certified Salaried Fleet • AG-01 Tirupati")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(user.role == .freelanceAgent ? MedMargTheme.primaryTeal : MedMargTheme.slate500)
                         }
 
                         Spacer()
