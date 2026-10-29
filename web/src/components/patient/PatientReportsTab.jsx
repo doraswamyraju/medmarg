@@ -110,35 +110,8 @@ export default function PatientReportsTab({ user }) {
   };
 
   const handleDownloadPDF = (rep) => {
-    // Generate downloadable official PDF blob representation or open viewer
-    const content = `
-========================================================================
-MEDMARG CENTRAL DIAGNOSTICS & RESEARCH HUB
-NABL ACCREDITED (ISO 15189:2022) | ICMR RECOGNIZED
-Report ID: ${rep.id} | Date: ${rep.date}
-========================================================================
-Patient Name: ${user?.name || 'Rahul Sharma'} | Age: 34 | Gender: Male
-Doctor Signature: ${rep.doctorVerified}
-Processing Hub: ${rep.lab}
-Status: VERIFIED & DIGITALLY SIGNED
-
-CLINICAL BIOMARKERS SUMMARY:
-${(rep.biomarkers || []).map(b => `- ${b.name}: ${b.value} (Normal Range: ${b.range}) [${b.status}]`).join('\n')}
-
-Clinical Remarks: ${rep.summary || 'All parameters evaluated.'}
-========================================================================
-Encrypted Hash: SHA-256 Verified on Google Drive
-========================================================================
-    `;
-
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${rep.id}_MedMarg_NABL_Report.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const reportUrl = `${API_BASE}/api/v1/reports/${rep.orderId || rep.id}/download`;
+    window.open(reportUrl, '_blank');
   };
 
   return (
