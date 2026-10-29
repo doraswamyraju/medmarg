@@ -517,19 +517,47 @@ struct CareSeekerLoginView: View {
             case .success(let gUser):
                 let emailLower = gUser.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
                 
-                // 1. Check if user already exists in database / registered accounts
+                // 1. Check if user already exists in registered accounts OR previously saved phone in UserDefaults
+                let cachedPhone = UserDefaults.standard.string(forKey: "medmarg_user_phone_\(emailLower)") ?? ""
+                if let pic = gUser.picture, !pic.isEmpty {
+                    UserDefaults.standard.set(pic, forKey: "medmarg_user_avatar_\(emailLower)")
+                }
+                let effectiveAvatar = gUser.picture ?? UserDefaults.standard.string(forKey: "medmarg_user_avatar_\(emailLower)")
+
                 if let existing = self.users.first(where: {
                     $0.email.lowercased() == emailLower ||
                     (!emailLower.isEmpty && $0.username.lowercased() == emailLower.components(separatedBy: "@").first ?? "")
                 }) {
-                    // Sync with Backend Firestore API
-                    self.syncGoogleAuthToBackend(email: gUser.email, name: gUser.name, googleId: gUser.googleId, phone: existing.phone)
-                    // Log in immediately to the existing user's respective role dashboard (Admin, Doctor, Lab, Scan, Pharma, Agent, Patient)
-                    self.loggedInUser = existing
+                    let phoneToUse = !existing.phone.isEmpty ? existing.phone : cachedPhone
+                    self.syncGoogleAuthToBackend(email: gUser.email, name: gUser.name, googleId: gUser.googleId, phone: phoneToUse)
+                    var updated = existing
+                    if updated.phone.isEmpty { updated.phone = phoneToUse }
+                    if updated.avatarUrl == nil || updated.avatarUrl?.isEmpty == true { updated.avatarUrl = effectiveAvatar }
+                    self.loggedInUser = updated
                     return
                 }
 
-                // 2. User does NOT exist -> Ask for phone number, then route to Patient (Customer) Panel
+                if !cachedPhone.isEmpty {
+                    // Previously saved phone number -> Bypass phone prompt!
+                    let patient = UserProfile(
+                        id: "usr_g_\(gUser.googleId.prefix(8))",
+                        name: gUser.name.isEmpty ? "Google User" : gUser.name,
+                        username: emailLower.components(separatedBy: "@").first ?? "google_user",
+                        email: emailLower,
+                        phone: cachedPhone,
+                        password: "oauth_google_verified",
+                        role: .patient,
+                        organization: "Care Seeker (Google Verified)",
+                        status: "Active",
+                        createdAt: "Today",
+                        avatarUrl: effectiveAvatar
+                    )
+                    self.syncGoogleAuthToBackend(email: gUser.email, name: gUser.name, googleId: gUser.googleId, phone: cachedPhone)
+                    self.loggedInUser = patient
+                    return
+                }
+
+                // 2. First-time login without phone -> Ask for phone once, then persist
                 let newPatient = UserProfile(
                     id: "usr_g_\(gUser.googleId.prefix(8))",
                     name: gUser.name.isEmpty ? "Google User" : gUser.name,
@@ -537,10 +565,11 @@ struct CareSeekerLoginView: View {
                     email: emailLower,
                     phone: "",
                     password: "oauth_google_verified",
-                    role: .patient, // New user becomes a patient in customer panel
+                    role: .patient,
                     organization: "Care Seeker (Google ID)",
                     status: "Active",
-                    createdAt: "Today"
+                    createdAt: "Today",
+                    avatarUrl: effectiveAvatar
                 )
 
                 self.pendingOAuthUser = newPatient
@@ -567,7 +596,10 @@ struct CareSeekerLoginView: View {
             user.phone = fullPhone
             user.role = .patient // Ensure always patient (customer) panel for new signups
             
-            // Sync phone update to Backend Firestore database
+            // Persist phone locally in UserDefaults so user is never prompted again
+            UserDefaults.standard.set(fullPhone, forKey: "medmarg_user_phone_\(user.email.lowercased())")
+
+            // Sync phone update to Backend database
             syncPhoneUpdateToBackend(userId: user.id, phone: fullPhone)
             syncGoogleAuthToBackend(email: user.email, name: user.name, googleId: user.id, phone: fullPhone)
             
@@ -579,7 +611,7 @@ struct CareSeekerLoginView: View {
     }
 
     private let apiBaseUrls = [
-        "https://medmarg.sriddha.com",
+        "https://medmarg.com",
         "http://127.0.0.1:5080"
     ]
 

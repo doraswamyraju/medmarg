@@ -76,7 +76,9 @@ struct UserProfile: Identifiable, Equatable {
     var organization: String
     var status: String
     var createdAt: String
+    var avatarUrl: String? = nil
 }
+
 
 // ==========================================
 // 🧪 WEB MODULE OFFICIAL TEST & DATA MODELS
@@ -108,7 +110,7 @@ struct ScanServiceItem: Identifiable, Equatable {
     let mrp: Int
     let durationMins: Int
     let nextSlot: String
-    let fastingRequired: Bool
+    let fastingRequired: Bool	
 }
 
 struct GenericMedicineItem: Identifiable, Equatable {

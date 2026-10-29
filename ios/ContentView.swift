@@ -143,9 +143,7 @@ struct ContentView: View {
     @State private var fastingFilter: String = "ALL" // "ALL" | "YES" | "NO"
     @State private var sampleFilter: String = "ALL" // "ALL" | "SERUM" | "EDTA" | "URINE" | "PLASMA"
     
-    @State private var cartItems: [CartItem] = [
-        CartItem(id: "MM_MASTER", title: "MedMarg Master Health Checkup (Comprehensive)", subtitle: "SERUM, EDTA, URINE • 24h TAT", provider: "MedMarg Processing Hub", price: 1499, mrp: 3999, type: "PACKAGE")
-    ]
+    @State private var cartItems: [CartItem] = []
 
     var totalCartPrice: Int {
         cartItems.reduce(0) { $0 + $1.price }
@@ -764,6 +762,15 @@ struct ContentView: View {
                     user: user,
                     onLogout: logout,
                     onOpenAddressModal: { showAddressModal = true }
+                )
+            case 7:
+                CareSeekerTrackingView(
+                    selectedTab: $selectedTab,
+                    onOrderCall: {
+                        if let url = URL(string: "tel://919876543210") {
+                            UIApplication.shared.open(url)
+                        }
+                    }
                 )
             default:
                 CareSeekerHomeView(

@@ -32,6 +32,11 @@ struct CareSeekerVitalsView: View {
                 // 1. Apple Health Connection & Live Telemetry Banner
                 appleHealthHeaderBanner
 
+                // Connect Apple Watch & HealthKit Hero Card (when not yet granted)
+                if !healthKit.isAuthorized {
+                    connectWatchHeroBanner
+                }
+
                 // 2. Critical Health Alerts (if any vitals outside range)
                 if !healthKit.activeAlerts.isEmpty {
                     vitalAlertsSection
@@ -144,7 +149,7 @@ struct CareSeekerVitalsView: View {
                     Circle()
                         .fill(healthKit.isAuthorized ? Color.green : Color.orange)
                         .frame(width: 8, height: 8)
-                    Text(healthKit.isAuthorized ? "Connected to Apple Health" : "HealthKit Demo Mode (Tap to Connect)")
+                    Text(healthKit.isAuthorized ? "Apple Watch & Apple Health Active" : "Sensors Not Linked (Tap to Connect)")
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundColor(.white)
                 }
@@ -176,6 +181,66 @@ struct CareSeekerVitalsView: View {
         )
         .cornerRadius(20)
         .shadow(color: MedMargTheme.darkTeal.opacity(0.35), radius: 10, x: 0, y: 5)
+    }
+
+    // ==========================================
+    // ⌚️ CONNECT APPLE WATCH & SENSORS HERO
+    // ==========================================
+    private var connectWatchHeroBanner: some View {
+        Button(action: {
+            healthKit.requestAuthorization { success in
+                if success {
+                    healthKit.fetchAllVitalsFromAppleHealth()
+                }
+            }
+        }) {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .fill(MedMargTheme.primaryTeal.opacity(0.12))
+                        .frame(width: 48, height: 48)
+
+                    Image(systemName: "applewatch.side.right")
+                        .font(.system(size: 24))
+                        .foregroundColor(MedMargTheme.primaryTeal)
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text("Connect Apple Watch & Apple Health")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(MedMargTheme.slate900)
+
+                        Text("Sync")
+                            .font(.system(size: 10, weight: .black))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(MedMargTheme.primaryTeal)
+                            .cornerRadius(4)
+                    }
+
+                    Text("Tap to authorize read access to your Heart Rate, SpO2, and Vitals from Apple Watch & paired health sensors.")
+                        .font(.system(size: 11))
+                        .foregroundColor(MedMargTheme.slate500)
+                        .lineLimit(2)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(MedMargTheme.slate500)
+            }
+            .padding(14)
+            .background(Color.white)
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(MedMargTheme.primaryTeal.opacity(0.3), lineWidth: 1.5)
+            )
+            .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
+        }
     }
 
     // ==========================================

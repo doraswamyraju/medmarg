@@ -117,6 +117,8 @@ struct CareSeekerHomeView: View {
         ("FASTING60", "Early Bird 06:00 AM Slot Phlebotomy", "Fastest 60-min doorstep sample pickup", Color(red: 0.05, green: 0.45, blue: 0.35), "bolt.fill")
     ]
 
+    @State private var activeLiveOrder: LiveOrderModel? = nil
+
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 20) {
@@ -124,8 +126,10 @@ struct CareSeekerHomeView: View {
                 // 1. Live Apple Health Telemetry Quick Bar (Clickable -> Vitals Tab)
                 appleHealthQuickBar
 
-                // 2. Active Live Dispatch Radar Banner (if order active)
-                activeDispatchQuickBanner
+                // 2. Active Live Dispatch Radar Banner (ONLY if an active order exists in the field)
+                if let ord = activeLiveOrder, ord.status != "COMPLETED" {
+                    activeDispatchQuickBanner(order: ord)
+                }
 
                 // 3. Search Bar for 913+ Tests
                 searchBarSection
@@ -145,6 +149,55 @@ struct CareSeekerHomeView: View {
             .padding(.top, 16)
         }
         .background(MedMargTheme.slate50)
+        .onAppear {
+            checkActiveOrder()
+        }
+    }
+
+    private func checkActiveOrder() {
+        guard let url = URL(string: "https://medmarg.com/api/v1/orders") else { return }
+        URLSession.shared.dataTask(with: url) { data, _, _ in
+            guard let d = data,
+                  let json = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+                  let ordersArray = json["orders"] as? [[String: Any]], !ordersArray.isEmpty else { return }
+
+            // Find ongoing uncompleted order
+            if let activeDict = ordersArray.first(where: {
+                let st = $0["status"] as? String ?? ""
+                return st == "ASSIGNED" || st == "ENROUTE" || st == "SAMPLE_COLLECTED" || st == "IN_LAB" || st == "COLLECTION_ASSIGNED"
+            }) {
+                let id = activeDict["id"] as? String ?? "MM-ORD"
+                let phlebo = activeDict["phleboName"] as? String ?? "Certified Phlebotomist"
+                let phleboPhone = activeDict["phleboPhone"] as? String ?? "+91 98765 11223"
+                let status = activeDict["status"] as? String ?? "ENROUTE"
+                let otp = activeDict["handoverOtp"] as? String ?? "\(activeDict["otp"] as? String ?? "4821")"
+                let amt = activeDict["amount"] as? Int ?? (activeDict["totalAmount"] as? Int ?? 499)
+
+                let orderObj = LiveOrderModel(
+                    id: id,
+                    date: "Today",
+                    slot: "Morning",
+                    address: "Tirupati, AP",
+                    phleboName: phlebo,
+                    phleboPhone: phleboPhone,
+                    status: status,
+                    eta: "14 Mins",
+                    tempTelemetry: "3.8°C",
+                    handoverOtp: otp,
+                    items: [],
+                    totalAmount: amt,
+                    paymentStatus: "PAID"
+                )
+
+                DispatchQueue.main.async {
+                    self.activeLiveOrder = orderObj
+                }
+            } else {
+                DispatchQueue.main.async {
+                    self.activeLiveOrder = nil
+                }
+            }
+        }.resume()
     }
 
     // ==========================================
@@ -199,7 +252,7 @@ struct CareSeekerHomeView: View {
     // ==========================================
     // 📡 2. ACTIVE DISPATCH QUICK BANNER
     // ==========================================
-    private var activeDispatchQuickBanner: some View {
+    private func activeDispatchQuickBanner(order: LiveOrderModel) -> some View {
         Button(action: { selectedTab = 3 }) {
             HStack(spacing: 12) {
                 ZStack {
@@ -213,11 +266,11 @@ struct CareSeekerHomeView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Text("Order #MM-LAB-9842 • Enroute")
+                        Text("Order #\(order.id) • \(order.status)")
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(MedMargTheme.slate900)
 
-                        Text("ETA 14 Mins")
+                        Text("ETA \(order.eta)")
                             .font(.system(size: 9, weight: .black))
                             .foregroundColor(MedMargTheme.primaryTeal)
                             .padding(.horizontal, 5)
@@ -226,7 +279,7 @@ struct CareSeekerHomeView: View {
                             .cornerRadius(4)
                     }
 
-                    Text("Ramesh Kumar • IoT Cold-Chain: 3.8°C • OTP: 4821")
+                    Text("\(order.phleboName) • IoT Cold-Chain: \(order.tempTelemetry) • OTP: \(order.handoverOtp)")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundColor(MedMargTheme.slate500)
                         .lineLimit(1)
