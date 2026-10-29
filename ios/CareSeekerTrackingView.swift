@@ -51,48 +51,8 @@ struct CareSeekerTrackingView: View {
     @Binding var selectedTab: Int
     let onOrderCall: () -> Void
 
-    @State private var allOrders: [LiveOrderModel] = [
-        LiveOrderModel(
-            id: "MM-LAB-9842",
-            date: "31 Aug 2026",
-            slot: "07:30 AM - 08:30 AM",
-            address: "Plot 42, Air Bypass Road, Tirupati, AP - 517501",
-            phleboName: "Ramesh Kumar (Certified Phlebotomist)",
-            phleboPhone: "+91 98765 11223",
-            status: "ENROUTE",
-            eta: "14 Mins",
-            tempTelemetry: "3.8°C (Optimal Cold-Chain)",
-            handoverOtp: "4821",
-            items: [
-                LiveOrderItem(id: "1", name: "MedMarg Master Health Checkup (Comprehensive)", price: 1499),
-                LiveOrderItem(id: "2", name: "Thyroid Profile Total (T3/T4/TSH)", price: 299)
-            ],
-            totalAmount: 1798,
-            paymentStatus: "PAID",
-            phleboCoord: CLLocationCoordinate2D(latitude: 13.6330, longitude: 79.4160),
-            doorstepCoord: CLLocationCoordinate2D(latitude: 13.6288, longitude: 79.4192)
-        ),
-        LiveOrderModel(
-            id: "MM-LAB-7193",
-            date: "15 Sep 2026",
-            slot: "06:30 AM - 07:30 AM",
-            address: "Door 12-4/A, Gandhi Road, Tirupati, AP - 517502",
-            phleboName: "Anand Reddy (Lead Phlebotomist)",
-            phleboPhone: "+91 98480 22334",
-            status: "COMPLETED",
-            eta: "Delivered",
-            tempTelemetry: "4.1°C (Completed)",
-            handoverOtp: "8912",
-            items: [
-                LiveOrderItem(id: "3", name: "HbA1c & Fasting Blood Sugar", price: 399)
-            ],
-            totalAmount: 399,
-            paymentStatus: "PAID",
-            phleboCoord: CLLocationCoordinate2D(latitude: 13.6290, longitude: 79.4200),
-            doorstepCoord: CLLocationCoordinate2D(latitude: 13.6290, longitude: 79.4200)
-        )
-    ]
-
+    @State private var allOrders: [LiveOrderModel] = []
+    @State private var isLoading: Bool = false
     @State private var selectedOrderIndex: Int = 0
     @State private var isPulsingRadar: Bool = false
     @State private var mapRecenterTrigger: UUID = UUID()
@@ -103,19 +63,19 @@ struct CareSeekerTrackingView: View {
     private var currentOrder: LiveOrderModel {
         guard !allOrders.isEmpty else {
             return LiveOrderModel(
-                id: "MM-LAB-9842",
-                date: "Today",
-                slot: "07:30 AM - 08:30 AM",
-                address: "Plot 42, Air Bypass Road, Tirupati, AP - 517501",
-                phleboName: "Ramesh Kumar",
-                phleboPhone: "+91 98765 11223",
-                status: "ENROUTE",
-                eta: "14 Mins",
-                tempTelemetry: "3.8°C",
-                handoverOtp: "4821",
+                id: "",
+                date: "",
+                slot: "",
+                address: "",
+                phleboName: "",
+                phleboPhone: "",
+                status: "BOOKED",
+                eta: "",
+                tempTelemetry: "",
+                handoverOtp: "",
                 items: [],
-                totalAmount: 1798,
-                paymentStatus: "PAID"
+                totalAmount: 0,
+                paymentStatus: ""
             )
         }
         return allOrders[min(selectedOrderIndex, allOrders.count - 1)]
@@ -136,23 +96,26 @@ struct CareSeekerTrackingView: View {
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 20) {
-                
-                // 1. Multi-Order Selector Pills
-                if allOrders.count > 1 {
-                    orderSelectorBar
+                if allOrders.isEmpty {
+                    emptyTrackingView
+                } else {
+                    // 1. Multi-Order Selector Pills
+                    if allOrders.count > 1 {
+                        orderSelectorBar
+                    }
+
+                    // 2. Dispatch Radar Hero Banner with 4-Digit Handover OTP
+                    dispatchHeroBanner
+
+                    // 3. Native MapKit Live GPS Radar with Driving Route
+                    nativeMapKitRadarCard
+
+                    // 4. 6-Stage Diagnostic Pipeline Telemetry Stepper
+                    pipelineStepperCard
+
+                    // 5. Assigned Phlebotomist Contact Card & Ordered Tests
+                    phlebotomistAndBillCards
                 }
-
-                // 2. Dispatch Radar Hero Banner with 4-Digit Handover OTP
-                dispatchHeroBanner
-
-                // 3. Native MapKit Live GPS Radar with Driving Route
-                nativeMapKitRadarCard
-
-                // 4. 6-Stage Diagnostic Pipeline Telemetry Stepper
-                pipelineStepperCard
-
-                // 5. Assigned Phlebotomist Contact Card & Ordered Tests
-                phlebotomistAndBillCards
 
                 Spacer().frame(height: 80)
             }
@@ -169,47 +132,112 @@ struct CareSeekerTrackingView: View {
         }
     }
 
-    private func fetchLiveOrders() {
-        guard let url = URL(string: "https://medmarg.com/api/v1/orders") else { return }
-        URLSession.shared.dataTask(with: url) { data, _, _ in
-            guard let d = data,
-                  let json = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
-                  let ordersArray = json["orders"] as? [[String: Any]], !ordersArray.isEmpty else { return }
+    private var emptyTrackingView: some View {
+        VStack(spacing: 16) {
+            Spacer().frame(height: 30)
 
-            let parsed: [LiveOrderModel] = ordersArray.compactMap { dict in
-                let id = dict["id"] as? String ?? "ORD"
-                let date = dict["date"] as? String ?? "Today"
-                let slot = dict["slot"] as? String ?? "Morning Slot"
-                let address = dict["address"] as? String ?? "Tirupati, AP"
-                let phleboName = dict["phleboName"] as? String ?? "Certified Phlebotomist"
-                let phleboPhone = dict["phleboPhone"] as? String ?? "+91 98765 11223"
-                let status = dict["status"] as? String ?? "BOOKED"
-                let otp = dict["handoverOtp"] as? String ?? "\(dict["otp"] as? String ?? "3921")"
-                let amt = dict["amount"] as? Int ?? (dict["totalAmount"] as? Int ?? 499)
-                let payStatus = dict["paymentStatus"] as? String ?? "PAID"
-                let itemsRaw = dict["items"] as? String ?? "Diagnostic Health Profile"
+            ZStack {
+                Circle()
+                    .fill(MedMargTheme.primaryTeal.opacity(0.1))
+                    .frame(width: 88, height: 88)
 
-                return LiveOrderModel(
-                    id: id,
-                    date: date,
-                    slot: slot,
-                    address: address,
-                    phleboName: phleboName,
-                    phleboPhone: phleboPhone,
-                    status: status,
-                    eta: status == "COMPLETED" ? "Delivered" : "30 Mins",
-                    tempTelemetry: "4.0°C (Controlled)",
-                    handoverOtp: otp,
-                    items: [LiveOrderItem(id: id, name: itemsRaw, price: amt)],
-                    totalAmount: amt,
-                    paymentStatus: payStatus
-                )
+                Image(systemName: "location.fill.viewfinder")
+                    .font(.system(size: 40))
+                    .foregroundColor(MedMargTheme.primaryTeal)
             }
 
-            DispatchQueue.main.async {
-                if !parsed.isEmpty {
-                    self.allOrders = parsed
+            VStack(spacing: 6) {
+                Text("No Active Orders to Track")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(MedMargTheme.slate900)
+
+                Text("When you book a diagnostic test or health checkup, your phlebotomist's real-time GPS location and cold-chain temperature telemetry will appear here.")
+                    .font(.system(size: 12))
+                    .foregroundColor(MedMargTheme.slate500)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+            }
+
+            Button(action: { selectedTab = 1 }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "flask.fill")
+                    Text("Explore Tests & Packages")
+                        .font(.system(size: 13, weight: .bold))
                 }
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(
+                    LinearGradient(
+                        colors: [MedMargTheme.primaryTeal, MedMargTheme.darkTeal],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(12)
+                .shadow(color: MedMargTheme.primaryTeal.opacity(0.3), radius: 6, x: 0, y: 3)
+            }
+            .padding(.top, 8)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+    }
+
+    private func fetchLiveOrders() {
+        isLoading = true
+        guard let url = URL(string: "https://medmarg.com/api/v1/admin/orders") else {
+            isLoading = false
+            return
+        }
+        URLSession.shared.dataTask(with: url) { data, _, _ in
+            DispatchQueue.main.async {
+                self.isLoading = false
+                guard let d = data,
+                      let json = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+                      let ordersArray = (json["orders"] as? [[String: Any]]) ?? (json["data"] as? [[String: Any]]) else {
+                    self.allOrders = []
+                    return
+                }
+
+                // Filter for active tracking states: BOOKED, ASSIGNED, ENROUTE, SAMPLE_COLLECTED, IN_LAB
+                let activeOrders = ordersArray.filter { dict in
+                    let status = (dict["status"] as? String)?.uppercased() ?? ""
+                    return status != "CANCELLED" && status != "COMPLETED" && status != "DELIVERED"
+                }
+
+                let parsed: [LiveOrderModel] = activeOrders.compactMap { dict in
+                    let id = dict["id"] as? String ?? "ORD"
+                    let date = dict["date"] as? String ?? "Today"
+                    let slot = dict["slot"] as? String ?? "Morning Slot"
+                    let address = dict["address"] as? String ?? "Tirupati, AP"
+                    let phleboName = dict["phleboName"] as? String ?? "Certified Phlebotomist"
+                    let phleboPhone = dict["phleboPhone"] as? String ?? "+91 98765 11223"
+                    let status = (dict["status"] as? String)?.uppercased() ?? "BOOKED"
+                    let otp = dict["handoverOtp"] as? String ?? "\(dict["otp"] as? String ?? "3921")"
+                    let amt = dict["amount"] as? Int ?? (dict["totalAmount"] as? Int ?? 499)
+                    let payStatus = dict["paymentStatus"] as? String ?? "PAID"
+                    let itemsRaw = dict["items"] as? String ?? (dict["testName"] as? String ?? "Diagnostic Health Profile")
+
+                    return LiveOrderModel(
+                        id: id,
+                        date: date,
+                        slot: slot,
+                        address: address,
+                        phleboName: phleboName,
+                        phleboPhone: phleboPhone,
+                        status: status,
+                        eta: status == "COMPLETED" ? "Delivered" : "30 Mins",
+                        tempTelemetry: "4.0°C (Controlled)",
+                        handoverOtp: otp,
+                        items: [LiveOrderItem(id: id, name: itemsRaw, price: amt)],
+                        totalAmount: amt,
+                        paymentStatus: payStatus
+                    )
+                }
+
+                self.allOrders = parsed
             }
         }.resume()
     }

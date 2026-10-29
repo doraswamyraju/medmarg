@@ -54,41 +54,47 @@ struct CareSeekerCatalogMatrixView: View {
     }
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 16) {
-                
-                // 1. Search & Filter Bar
+        VStack(spacing: 0) {
+            // Pinned Top Header: Search Bar & Quick Category Filters
+            VStack(spacing: 10) {
                 searchAndFiltersSection
-
-                // 2. Sub-Tabs Pills (ALL, PACKAGES, PROFILES, TESTS)
                 subTabsPillsBar
-
-                // 3. Fasting & Specimen Chips Row
-                filterChipsRow
-
-                // 4. Count & Summary
-                HStack {
-                    Text("\(filteredItems.count) Diagnostic Tests & Packages Available")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(MedMargTheme.slate500)
-                    Spacer()
-                    Text("Starts From Pricing")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(MedMargTheme.primaryTeal)
-                }
-                .padding(.horizontal, 16)
-
-                // 5. Diagnostic Test Matrix Cards
-                LazyVStack(spacing: 12) {
-                    ForEach(filteredItems) { item in
-                        matrixItemCard(item: item)
-                    }
-                }
-                .padding(.horizontal, 16)
-
-                Spacer().frame(height: 80)
             }
-            .padding(.top, 12)
+            .padding(.top, 10)
+            .padding(.bottom, 12)
+            .background(Color.white)
+            .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 3)
+
+            // Scrollable Content
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 14) {
+                    // Fasting & Specimen quick filters
+                    filterChipsRow
+                        .padding(.top, 12)
+
+                    // Results counter
+                    HStack {
+                        Text("\(filteredItems.count) Tests & Health Packages")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(MedMargTheme.slate900)
+                        Spacer()
+                        Text("Free Doorstep Pickup")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                    }
+                    .padding(.horizontal, 16)
+
+                    // Streamlined Diagnostic Test Cards
+                    LazyVStack(spacing: 12) {
+                        ForEach(filteredItems) { item in
+                            matrixItemCard(item: item)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+
+                    Spacer().frame(height: 80)
+                }
+            }
         }
         .background(MedMargTheme.slate50)
     }

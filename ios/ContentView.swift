@@ -764,13 +764,9 @@ struct ContentView: View {
                     onOpenAddressModal: { showAddressModal = true }
                 )
             case 7:
-                CareSeekerTrackingView(
+                CareSeekerOrdersView(
                     selectedTab: $selectedTab,
-                    onOrderCall: {
-                        if let url = URL(string: "tel://919876543210") {
-                            UIApplication.shared.open(url)
-                        }
-                    }
+                    user: user
                 )
             default:
                 CareSeekerHomeView(

@@ -45,6 +45,7 @@
 		B2000036 /* AppleSignInManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000036 /* AppleSignInManager.swift */; };
 		B2000037 /* GoogleSignInManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000037 /* GoogleSignInManager.swift */; };
 		B2000038 /* NotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000038 /* NotificationManager.swift */; };
+		B2000039 /* CareSeekerOrdersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000039 /* CareSeekerOrdersView.swift */; };
 		B1000004 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F1000004 /* Assets.xcassets */; };
 		B1000005 /* catalogData.json in Resources */ = {isa = PBXBuildFile; fileRef = F1000005 /* catalogData.json */; };
 /* End PBXBuildFile section */
@@ -89,6 +90,7 @@
 		F2000036 /* AppleSignInManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppleSignInManager.swift"; sourceTree = "<group>"; };
 		F2000037 /* GoogleSignInManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GoogleSignInManager.swift"; sourceTree = "<group>"; };
 		F2000038 /* NotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NotificationManager.swift"; sourceTree = "<group>"; };
+		F2000039 /* CareSeekerOrdersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CareSeekerOrdersView.swift"; sourceTree = "<group>"; };
 		F1000004 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F1000005 /* catalogData.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "catalogData.json"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -145,6 +147,7 @@
 				F2000036 /* AppleSignInManager.swift */,
 				F2000037 /* GoogleSignInManager.swift */,
 				F2000038 /* NotificationManager.swift */,
+				F2000039 /* CareSeekerOrdersView.swift */,
 				F1000004 /* Assets.xcassets */,
 				F1000005 /* catalogData.json */,
 				P1000000 /* MedMarg.app */,
@@ -260,6 +263,7 @@
 				B2000036 /* AppleSignInManager.swift in Sources */,
 				B2000037 /* GoogleSignInManager.swift in Sources */,
 				B2000038 /* NotificationManager.swift in Sources */,
+				B2000039 /* CareSeekerOrdersView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
