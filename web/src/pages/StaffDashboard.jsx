@@ -1,15 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import StaffQueueTab from '../components/staff/StaffQueueTab';
+import StaffDispatchDesk from '../components/staff/StaffDispatchDesk';
+import LabOrdersTab from '../components/lab/LabOrdersTab';
 import CatalogManagementTab from '../components/admin/CatalogManagementTab';
 import initialCatalog from '../data/catalogData.json';
 import { getCatalogState, saveCatalogState } from '../data/catalogStore';
-import { DollarSign, CheckSquare, Layers } from 'lucide-react';
+import { DollarSign, CheckSquare, Layers, Truck, FlaskConical, ShoppingBag } from 'lucide-react';
+import { API_BASE, safeFetch } from '../data/apiConfig';
 
 export default function StaffDashboard({ user, onSwitchRole, onLogout }) {
-  const [activeStaffTab, setActiveStaffTab] = useState('LAB_PRICING_CATALOG'); // 'LAB_PRICING_CATALOG' | 'SAMPLE_QUEUE'
+  const [activeStaffTab, setActiveStaffTab] = useState('DISPATCH_ORDERS'); // 'DISPATCH_ORDERS' | 'LAB_SAMPLES' | 'LAB_PRICING_CATALOG'
   const [catalog, setCatalog] = useState(getCatalogState() || initialCatalog);
+  const [labSamples, setLabSamples] = useState([]);
   const [isSyncingSheets, setIsSyncingSheets] = useState(false);
   const [syncLogs, setSyncLogs] = useState([]);
+
+  useEffect(() => {
+    safeFetch(`${API_BASE}/api/v1/lab/queue`)
+      .then(r => r.json())
+      .then(d => {
+        if (d && Array.isArray(d.samples)) setLabSamples(d.samples);
+      })
+      .catch(() => {});
+  }, []);
 
   const [staffTasks, setStaffTasks] = useState([
     { id: 'TSK-101', patient: 'Rahul Sharma', task: 'Receive SST Gel Tube & Assign Barcode', status: 'IN_PROGRESS' },
@@ -50,6 +63,42 @@ export default function StaffDashboard({ user, onSwitchRole, onLogout }) {
           {/* Subtab Switcher */}
           <div style={{ display: 'flex', backgroundColor: 'rgba(0,0,0,0.2)', padding: '0.25rem', borderRadius: '10px', gap: '0.25rem' }}>
             <button
+              onClick={() => setActiveStaffTab('DISPATCH_ORDERS')}
+              style={{
+                padding: '0.45rem 0.85rem',
+                backgroundColor: activeStaffTab === 'DISPATCH_ORDERS' ? '#FBBF24' : 'transparent',
+                color: activeStaffTab === 'DISPATCH_ORDERS' ? '#78350F' : '#FFF',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: '900',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+            >
+              <Truck size={14} /> 1. Dispatch & Orders Desk
+            </button>
+            <button
+              onClick={() => setActiveStaffTab('LAB_SAMPLES')}
+              style={{
+                padding: '0.45rem 0.85rem',
+                backgroundColor: activeStaffTab === 'LAB_SAMPLES' ? '#FBBF24' : 'transparent',
+                color: activeStaffTab === 'LAB_SAMPLES' ? '#78350F' : '#FFF',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: '900',
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem'
+              }}
+            >
+              <FlaskConical size={14} /> 2. Sample Ingestion & Reports
+            </button>
+            <button
               onClick={() => setActiveStaffTab('LAB_PRICING_CATALOG')}
               style={{
                 padding: '0.45rem 0.85rem',
@@ -65,25 +114,7 @@ export default function StaffDashboard({ user, onSwitchRole, onLogout }) {
                 gap: '0.35rem'
               }}
             >
-              <DollarSign size={14} /> 3-Lab Pricing & Catalog
-            </button>
-            <button
-              onClick={() => setActiveStaffTab('SAMPLE_QUEUE')}
-              style={{
-                padding: '0.45rem 0.85rem',
-                backgroundColor: activeStaffTab === 'SAMPLE_QUEUE' ? '#FBBF24' : 'transparent',
-                color: activeStaffTab === 'SAMPLE_QUEUE' ? '#78350F' : '#FFF',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: '900',
-                fontSize: '0.8rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem'
-              }}
-            >
-              <CheckSquare size={14} /> Sample Accessioning Queue
+              <DollarSign size={14} /> 3. Multi-Lab Catalog Slabs
             </button>
           </div>
 
@@ -93,7 +124,20 @@ export default function StaffDashboard({ user, onSwitchRole, onLogout }) {
       </header>
 
       <main style={{ padding: '2rem', maxWidth: '1400px', margin: '0 auto' }}>
-        {activeStaffTab === 'LAB_PRICING_CATALOG' ? (
+        {activeStaffTab === 'DISPATCH_ORDERS' && (
+          <StaffDispatchDesk catalog={catalog} user={user} />
+        )}
+
+        {activeStaffTab === 'LAB_SAMPLES' && (
+          <LabOrdersTab 
+            orders={labSamples} 
+            onResultsUpdated={(id, rep) => {
+              setLabSamples(prev => prev.map(s => s.id === id ? { ...s, status: 'REPORT_READY', reportPdfUrl: rep.pdfUrl } : s));
+            }} 
+          />
+        )}
+
+        {activeStaffTab === 'LAB_PRICING_CATALOG' && (
           <CatalogManagementTab
             catalog={catalog}
             setCatalog={setCatalog}
@@ -102,8 +146,6 @@ export default function StaffDashboard({ user, onSwitchRole, onLogout }) {
             isSyncingSheets={isSyncingSheets}
             syncLogs={syncLogs}
           />
-        ) : (
-          <StaffQueueTab staffTasks={staffTasks} />
         )}
       </main>
     </div>
