@@ -1,26 +1,35 @@
-import React, { useState } from 'react';
-import { FlaskConical, Building2, Upload, CreditCard } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { FlaskConical, Building2, Upload, CreditCard, RefreshCw } from 'lucide-react';
 import LabOrdersTab from '../components/lab/LabOrdersTab';
+import { API_BASE, safeFetch } from '../data/apiConfig';
 
 export default function LabPartnerDashboard({ user, onSwitchRole, onLogout }) {
   const [activeTab, setActiveTab] = useState('ORDERS');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState('');
-  const [generatedDriveLink, setGeneratedDriveLink] = useState('');
+  const [orders, setOrders] = useState([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const [orders, setOrders] = useState([
-    { id: 'ORD-8921', patient: 'Rahul Sharma', test: 'Aarogyam Complete 1.3 (104 Tests)', type: 'Home Collection (Air Bypass Rd, Tirupati)', slot: 'Today, 07:30 AM', status: 'Sample Processing', collector: 'Ramesh Kumar (Phlebotomist)', barcode: 'MED-BC-9921', driveReport: 'https://drive.google.com/file/d/1A2B3C4D_MedMarg_SampleReport_Aarogyam/view?usp=sharing' },
-    { id: 'ORD-8922', patient: 'K. Srinivasa Rao', test: 'Lipid Profile & Thyroid Total', type: 'Home Collection (SVIMS Rd, Tirupati)', slot: 'Today, 08:30 AM', status: 'Sample Analyzing', collector: 'Suresh Babu (Phlebotomist)', barcode: 'MED-BC-9922', driveReport: '' }
-  ]);
+  const fetchLabQueue = async () => {
+    setIsRefreshing(true);
+    try {
+      const res = await safeFetch(`${API_BASE}/api/v1/lab/queue`);
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.samples)) {
+        setOrders(data.samples);
+      }
+    } catch (e) {
+      console.warn('Lab queue fallback:', e);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
-  const handleSimulateDriveUpload = (orderId) => {
-    setUploadStatus('Uploading report PDF to Google Drive...');
-    setTimeout(() => {
-      const mockDriveLink = `https://drive.google.com/file/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/view?usp=sharing`;
-      setGeneratedDriveLink(mockDriveLink);
-      setOrders(orders.map(o => o.id === orderId ? { ...o, status: 'Report Uploaded', driveReport: mockDriveLink } : o));
-      setUploadStatus('✓ Report PDF successfully synced to Google Drive & Patient Health Locker!');
-    }, 1200);
+  useEffect(() => {
+    fetchLabQueue();
+  }, []);
+
+  const handleResultsUpdated = (orderId, report) => {
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'REPORT_READY', reportPdfUrl: report.pdfUrl } : o));
   };
 
   const navMenuItems = [
@@ -69,12 +78,21 @@ export default function LabPartnerDashboard({ user, onSwitchRole, onLogout }) {
 
       {/* Main Content */}
       <main style={{ flex: 1, padding: '2rem' }}>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: '900', color: '#0F172A', marginBottom: '1.5rem' }}>
-          MedMarg Designated NABL Processing Lab Portal
-        </h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
+            MedMarg Designated NABL Processing Lab Portal
+          </h1>
+          <button
+            onClick={fetchLabQueue}
+            disabled={isRefreshing}
+            style={{ padding: '0.5rem 1rem', backgroundColor: '#F1F5F9', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.82rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+          >
+            <RefreshCw size={14} className={isRefreshing ? 'spin' : ''} /> Refresh Queue
+          </button>
+        </div>
 
         {activeTab === 'ORDERS' && (
-          <LabOrdersTab orders={orders} handleSimulateDriveUpload={handleSimulateDriveUpload} />
+          <LabOrdersTab orders={orders} onResultsUpdated={handleResultsUpdated} />
         )}
 
         {activeTab === 'EARNINGS' && (

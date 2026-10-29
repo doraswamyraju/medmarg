@@ -18,6 +18,7 @@ const paymentRouter = require('./routes/paymentRoutes');
 const offerRouter = require('./routes/offerRoutes');
 const scanRouter = require('./routes/scanRoutes');
 const customerRouter = require('./routes/customerRoutes');
+const reportRouter = require('./routes/reportRoutes');
 
 const app = express();
 
@@ -58,6 +59,7 @@ app.use('/api/v1/offers', offerRouter);
 app.use('/api/v1/scans', scanRouter);
 app.use('/api/v1/customer', customerRouter);
 app.use('/api/v1/customers', customerRouter);
+app.use('/api/v1', reportRouter);
 app.use('/api/v1', orderRouter);
 
 // LEGACY TESTS ENDPOINT COMPATIBILITY (Single-Lab MedMarg Format)
