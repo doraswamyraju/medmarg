@@ -84,6 +84,14 @@ router.post('/lab/submit-results', (req, res) => {
 
     saveDbStore();
 
+    // 🔔 DISPATCH PUSH & EMAIL NOTIFICATIONS TO PATIENT
+    try {
+        const { notificationService } = require('../services/notificationService');
+        notificationService.notifyReportReady(order, reportData);
+    } catch (notifErr) {
+        console.warn('[Report Submission] Failed to dispatch notifications:', notifErr.message);
+    }
+
     res.json({
         success: true,
         message: 'Clinical results saved and digital report stamped successfully!',

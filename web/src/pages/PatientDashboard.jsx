@@ -175,8 +175,8 @@ export default function PatientDashboard({ user, onSwitchRole, onLogout }) {
 
     // Notifications from real orders
     (allOrders || []).forEach(ord => {
-      const isOngoing = ord.status === 'ASSIGNED' || ord.status === 'ENROUTE' || ord.status === 'EN_ROUTE' || ord.status === 'SAMPLE_COLLECTED';
-      const isDelivered = ord.status === 'COMPLETED' || ord.status === 'DELIVERED';
+      const isOngoing = ord.status === 'ASSIGNED' || ord.status === 'ENROUTE' || ord.status === 'EN_ROUTE' || ord.status === 'SAMPLE_COLLECTED' || ord.status === 'ARRIVED_AT_LAB';
+      const isDelivered = ord.status === 'COMPLETED' || ord.status === 'DELIVERED' || ord.status === 'REPORT_READY';
 
       if (isOngoing) {
         list.push({
