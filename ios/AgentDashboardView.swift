@@ -175,11 +175,17 @@ struct AgentDashboardView: View {
                 } else if selectedTab == 7 {
                     // Tab 7: Dedicated Orders View (matching Reference Image)
                     AgentOrdersView(user: user, selectedTab: $selectedTab, showSidebar: $showSidebar)
+                } else if selectedTab == 1 {
+                    // Tab 1: Dedicated Inventory View (matching Reference Image 1)
+                    AgentInventoryView(user: user, selectedTab: $selectedTab, showSidebar: $showSidebar)
                 } else if selectedTab == 3 {
                     // Tab 3: Dedicated Payments View (matching Reference Image 5)
                     AgentPaymentsView(user: user, selectedTab: $selectedTab, showSidebar: $showSidebar)
+                } else if selectedTab == 4 {
+                    // Tab 4: Dedicated Profile & Settings View (matching Reference Image 2)
+                    AgentProfileView(user: user, onLogout: onLogout, selectedTab: $selectedTab, showSidebar: $showSidebar)
                 } else {
-                    // Other tabs: Inventory (1), Quota (2), Payments (3), Profile (4)
+                    // Other tabs: Quota (2)
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 16) {
                             if let banner = actionBannerMessage {
@@ -203,14 +209,8 @@ struct AgentDashboardView: View {
                                 .padding(.top, 12)
                             }
 
-                            if selectedTab == 1 {
-                                agentInventoryStoreSection
-                            } else if selectedTab == 2 {
+                            if selectedTab == 2 {
                                 agentShiftQuotaSection
-                            } else if selectedTab == 3 {
-                                agentPaymentsLedgerSection
-                            } else if selectedTab == 4 {
-                                agentProfileSection
                             }
 
                             Spacer().frame(height: 120) // Spacing for floating navbar

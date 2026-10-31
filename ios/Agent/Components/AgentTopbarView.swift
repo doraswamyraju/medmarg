@@ -13,6 +13,7 @@ struct AgentTopbarView: View {
     let agentId: String
     @Binding var isOnDuty: Bool
     @ObservedObject var locationManager: AgentLocationManager
+    var unreadNotificationCount: Int = 0
     let onToggleDuty: (Bool) -> Void
     var onLogoTap: () -> Void = {}
     var onSidebarTap: () -> Void = {}
@@ -87,7 +88,7 @@ struct AgentTopbarView: View {
                 .shadow(color: (isOnDuty ? Color(red: 0.0, green: 0.72, blue: 0.42) : MedMargTheme.slate500).opacity(0.3), radius: 4, y: 2)
             }
 
-            // 4. Notification Bell with Badge Count (Opens NotificationCenter bottom sheet)
+            // 4. Notification Bell with Badge Count (ONLY SHOWS COUNT IF PENDING NOTIFICATIONS > 0)
             Button(action: onNotificationTap) {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: "bell")
@@ -95,14 +96,16 @@ struct AgentTopbarView: View {
                         .foregroundColor(MedMargTheme.slate900)
                         .padding(4)
 
-                    // Red Badge
-                    Text("3")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 16, height: 16)
-                        .background(Color.red)
-                        .clipShape(Circle())
-                        .offset(x: 4, y: -4)
+                    // Dynamic Red Badge - only shown if unread notifications exist
+                    if unreadNotificationCount > 0 {
+                        Text("\(unreadNotificationCount)")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 16, height: 16)
+                            .background(Color.red)
+                            .clipShape(Circle())
+                            .offset(x: 4, y: -4)
+                    }
                 }
             }
 

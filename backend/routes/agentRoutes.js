@@ -722,9 +722,15 @@ router.get('/quota-stats', (req, res) => {
         o.status === 'SAMPLE_COLLECTED' || o.status === 'COMPLETED' || o.status === 'DELIVERED'
     ).length;
 
-    // Calculate real earnings from completed collections
+    // Calculate real doorstep collections collected in-hand by phlebotomist (Doorstep QR / Cash)
+    // CRITICAL: Prepaid online orders are settled via payment gateway to corporate account, NEVER counted in phlebo in-hand collections!
     const collectionsToday = agentOrders
-        .filter(o => o.status === 'SAMPLE_COLLECTED' || o.status === 'COMPLETED' || o.paymentStatus === 'PAID_SUCCESS' || o.paymentStatus === 'PAID_DOORSTEP_QR')
+        .filter(o => {
+            const mode = ((o.paymentMode || '') + ' ' + (o.paymentNotes || '')).toUpperCase();
+            const isDoorstep = mode.includes('DOORSTEP') || mode.includes('CASH') || mode.includes('COD') || o.paymentStatus === 'PAID_DOORSTEP_QR';
+            const isCollected = o.status === 'SAMPLE_COLLECTED' || o.status === 'COMPLETED' || o.status === 'DELIVERED';
+            return isDoorstep && (isCollected || o.paymentStatus === 'PAID_DOORSTEP_QR');
+        })
         .reduce((sum, o) => sum + (Number(o.amount) || Number(o.totalAmount) || 0), 0);
 
     const samplesCount = completed;

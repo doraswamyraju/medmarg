@@ -38,6 +38,7 @@ struct AgentHomeDashboardView: View {
     @State private var activeOrderDetailOrder: AgentPickupOrder? = nil
     @State private var showCreateManualOrderModal: Bool = false
     @State private var showNotificationCenter: Bool = false
+    @State private var unreadNotificationsCount: Int = 0
     @State private var activeAssessKitOrder: AgentPickupOrder? = nil
     @State private var activeVisitModalOrder: AgentPickupOrder? = nil
     @State private var activeDoorstepQrOrder: AgentPickupOrder? = nil
@@ -51,7 +52,19 @@ struct AgentHomeDashboardView: View {
     }
 
     var nextAssignedOrder: AgentPickupOrder? {
-        rosterOrders.first { $0.status != "COMPLETED" && $0.status != "DELIVERED" }
+        rosterOrders.first { $0.status != "COMPLETED" && $0.status != "DELIVERED" && $0.status != "SAMPLE_COLLECTED" }
+    }
+
+    var collectedOrdersAwaitingHandover: [AgentPickupOrder] {
+        rosterOrders.filter { $0.status == "SAMPLE_COLLECTED" }
+    }
+
+    private var doorstepCollectionsToday: Int {
+        rosterOrders.filter { ord in
+            let mode = ((ord.paymentMode ?? "") + " " + (ord.paymentNotes ?? "")).lowercased()
+            let isDoorstep = mode.contains("doorstep") || mode.contains("cash") || mode.contains("cod") || ord.paymentStatus == "PAID_DOORSTEP_QR"
+            return ord.isPaid && isDoorstep
+        }.reduce(0) { $0 + $1.effectiveAmount }
     }
 
     // Filtered orders for segmented tabs
@@ -85,6 +98,7 @@ struct AgentHomeDashboardView: View {
                     agentId: effectiveAgentId,
                     isOnDuty: $isOnDuty,
                     locationManager: locationManager,
+                    unreadNotificationCount: unreadNotificationsCount,
                     onToggleDuty: { duty in
                         updateDuty(duty)
                     },
@@ -130,9 +144,14 @@ struct AgentHomeDashboardView: View {
                         // Tirupati Temple Landscape Greeting Card (Reference Design 3)
                         agentHeroGreetingCard
 
+                        // Lab Handover Banner (Active when collected specimens are in the cold bag)
+                        if !collectedOrdersAwaitingHandover.isEmpty {
+                            labHandoverActionCard
+                        }
+
                         // Single Horizontal Row: Metric Counters (100% Live Telemetry - Tappable)
                         AgentMetricCountersRow(
-                            todayEarnings: quotaStats?.earningsToday ?? 0,
+                            todayEarnings: doorstepCollectionsToday,
                             assignedCount: rosterOrders.count,
                             completedCount: quotaStats?.samplesToday ?? completedCount,
                             totalTarget: quotaStats?.maxDailyQuota ?? 15,
@@ -384,6 +403,68 @@ struct AgentHomeDashboardView: View {
     }
 
     // ==========================================
+    // 🚚 LAB HANDOVER ACTION CARD (IMAGE MATCHING)
+    // ==========================================
+    private var labHandoverActionCard: some View {
+        Button(action: {
+            showLabHandoverSheet = true
+        }) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Color.orange.opacity(0.15))
+                        .frame(width: 44, height: 44)
+                    Image(systemName: "box.truck.fill")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(Color.orange)
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text("LAB HANDOVER READY")
+                            .font(.system(size: 11, weight: .black))
+                            .foregroundColor(Color.orange)
+
+                        Text("\(collectedOrdersAwaitingHandover.count) \(collectedOrdersAwaitingHandover.count == 1 ? "Specimen" : "Specimens")")
+                            .font(.system(size: 10, weight: .bold))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.orange.opacity(0.15))
+                            .foregroundColor(Color.orange)
+                            .cornerRadius(6)
+                    }
+
+                    Text("Samples stored at 3.8°C in Cold Bag CB-88. Tap to complete digital transfer to NABL Pathology Lab.")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(MedMargTheme.slate700)
+                        .lineLimit(2)
+                }
+
+                Spacer()
+
+                HStack(spacing: 2) {
+                    Text("Handover")
+                        .font(.system(size: 11, weight: .bold))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .bold))
+                }
+                .foregroundColor(Color.orange)
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.orange.opacity(0.06))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.orange.opacity(0.35), lineWidth: 1.2)
+                    )
+            )
+            .padding(.horizontal, 16)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    // ==========================================
     // 🏛️ TIRUPATI TEMPLE GREETING CARD (IMAGE 3)
     // ==========================================
     private var agentHeroGreetingCard: some View {
@@ -597,15 +678,29 @@ struct AgentHomeDashboardView: View {
                 Spacer()
 
                 // Status Badge & Chevron
+                let isCollected = order.status == "SAMPLE_COLLECTED" || order.status == "COMPLETED" || order.status == "DELIVERED"
+                let statusText: String = {
+                    if isCollected { return "Collected" }
+                    if order.status == "ENROUTE" || order.status == "EN_ROUTE" { return "En Route" }
+                    if order.status == "ARRIVED" { return "At Doorstep" }
+                    if order.status == "KIT_ASSIGNED" { return "Kit Ready" }
+                    return "Pending"
+                }()
+                let statusColor: Color = {
+                    if isCollected { return Color(red: 0.0, green: 0.65, blue: 0.42) }
+                    if order.status == "ENROUTE" || order.status == "EN_ROUTE" { return Color.blue }
+                    if order.status == "ARRIVED" { return MedMargTheme.primaryTeal }
+                    if order.status == "KIT_ASSIGNED" { return Color.teal }
+                    return Color.orange
+                }()
+
                 HStack(spacing: 6) {
-                    Text(order.status == "COMPLETED" ? "Completed" : (order.status == "ENROUTE" ? "En Route" : (order.status == "KIT_ASSIGNED" ? "Ready" : "Pending")))
+                    Text(statusText)
                         .font(.system(size: 9, weight: .bold))
-                        .foregroundColor(order.status == "COMPLETED" ? Color.green : (order.status == "ENROUTE" ? Color.blue : Color.orange))
+                        .foregroundColor(statusColor)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
-                        .background(
-                            (order.status == "COMPLETED" ? Color.green : (order.status == "ENROUTE" ? Color.blue : Color.orange)).opacity(0.12)
-                        )
+                        .background(statusColor.opacity(0.12))
                         .cornerRadius(6)
 
                     Image(systemName: "chevron.right")
@@ -777,6 +872,18 @@ struct AgentHomeDashboardView: View {
                         pendingToday: pendingVal,
                         incentivesEarned: incentivesVal
                     )
+                }
+            }
+        }
+
+        // Fetch Live Notifications Unread Count
+        if let notifUrl = URL(string: "https://medmarg.com/api/v1/notifications/user-stream?userId=\(effectiveAgentId)") {
+            if let (nData, _) = try? await URLSession.shared.data(from: notifUrl),
+               let nJson = try? JSONSerialization.jsonObject(with: nData) as? [String: Any],
+               let nList = nJson["notifications"] as? [[String: Any]] {
+                let unread = nList.filter { ($0["read"] as? Bool) != true }.count
+                await MainActor.run {
+                    self.unreadNotificationsCount = unread
                 }
             }
         }
