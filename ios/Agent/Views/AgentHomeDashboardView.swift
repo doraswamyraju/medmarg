@@ -782,6 +782,7 @@ struct AgentHomeDashboardView: View {
     }
 
     private func startTrip(for order: AgentPickupOrder) {
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "trip_start_\(order.id)")
         guard let url = URL(string: "https://medmarg.com/api/v1/agent/pickup/update") else { return }
 
         var req = URLRequest(url: url)

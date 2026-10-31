@@ -15,6 +15,7 @@ struct AgentAssessAssignKitModal: View {
 
     @State private var isSubmitting: Bool = false
     @State private var errorMessage: String? = nil
+    @State private var showKitNotRequiredSheet: Bool = false
 
     // Derived required consumables based on ordered tests
     private var requiredConsumables: [(name: String, code: String, qty: Int, icon: String)] {
@@ -200,22 +201,42 @@ struct AgentAssessAssignKitModal: View {
                     .background(Color.white)
                     .cornerRadius(14)
 
-                    // 3. Confirm & Assign Kit Action Button
-                    Button(action: submitKitAssignment) {
-                        HStack(spacing: 8) {
-                            if isSubmitting {
-                                ProgressView().tint(.white)
+                    // 3. Confirm Actions
+                    VStack(spacing: 10) {
+                        Button(action: submitKitAssignment) {
+                            HStack(spacing: 8) {
+                                if isSubmitting {
+                                    ProgressView().tint(.white)
+                                }
+                                Text(isSubmitting ? "Assigning Kit..." : "✓ Confirm & Assign Kit to Visit")
+                                    .font(.system(size: 14, weight: .black))
                             }
-                            Text(isSubmitting ? "Assigning Kit..." : "✓ Confirm & Assign Kit to Visit")
-                                .font(.system(size: 14, weight: .black))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(MedMargTheme.primaryTeal)
+                            .cornerRadius(12)
                         }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(MedMargTheme.primaryTeal)
-                        .cornerRadius(12)
+                        .disabled(isSubmitting)
+
+                        // Secondary Action: Mark as Kit Not Required
+                        Button(action: {
+                            showKitNotRequiredSheet = true
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "slash.circle")
+                                Text("Mark as Kit Not Required")
+                                    .font(.system(size: 13, weight: .bold))
+                            }
+                            .foregroundColor(MedMargTheme.slate700)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.slate200, lineWidth: 1))
+                        }
+                        .disabled(isSubmitting)
                     }
-                    .disabled(isSubmitting)
                 }
                 .padding(16)
             }
@@ -226,6 +247,24 @@ struct AgentAssessAssignKitModal: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
+            }
+            .confirmationDialog(
+                "Mark Kit as Not Required",
+                isPresented: $showKitNotRequiredSheet,
+                titleVisibility: .visible
+            ) {
+                Button("Patient Has Doctor / Home Collection Kit") {
+                    submitKitNotRequired(reason: "Patient Has Doctor / Home Collection Kit")
+                }
+                Button("Supplies Already Pre-Delivered at Clinic") {
+                    submitKitNotRequired(reason: "Supplies Already Pre-Delivered at Clinic")
+                }
+                Button("Non-Invasive / Urine Sample Only") {
+                    submitKitNotRequired(reason: "Non-Invasive / Urine Sample Only")
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text("Select the reason why kit supplies from your bag are not required for this visit. You will then be able to start the order.")
             }
         }
     }
@@ -274,6 +313,52 @@ struct AgentAssessAssignKitModal: View {
                     self.dismiss()
                 } else {
                     self.errorMessage = json["message"] as? String ?? "Insufficient supplies in in-hand kit"
+                }
+            }
+        }.resume()
+    }
+
+    private func submitKitNotRequired(reason: String) {
+        isSubmitting = true
+        errorMessage = nil
+
+        guard let url = URL(string: "https://medmarg.com/api/v1/agent/order/assign-kit") else {
+            isSubmitting = false
+            return
+        }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let payload: [String: Any] = [
+            "orderId": order.id,
+            "agentId": agentId,
+            "kitNotRequired": true,
+            "reason": reason
+        ]
+
+        req.httpBody = try? JSONSerialization.data(withJSONObject: payload)
+
+        URLSession.shared.dataTask(with: req) { data, res, err in
+            DispatchQueue.main.async {
+                self.isSubmitting = false
+                if let err = err {
+                    self.errorMessage = err.localizedDescription
+                    return
+                }
+
+                guard let d = data,
+                      let json = try? JSONSerialization.jsonObject(with: d) as? [String: Any] else {
+                    self.errorMessage = "Failed to parse server response"
+                    return
+                }
+
+                if let success = json["success"] as? Bool, success {
+                    self.onKitAssigned()
+                    self.dismiss()
+                } else {
+                    self.errorMessage = json["message"] as? String ?? "Failed to mark kit as not required"
                 }
             }
         }.resume()
