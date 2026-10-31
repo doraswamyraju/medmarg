@@ -253,41 +253,79 @@ const DEFAULT_AGENT_INVENTORY = [
 
 // AGENT CONSUMABLES INVENTORY (LIVE SYNCED WITH ADMIN & STORE IN-CHARGE)
 // STRICT AUDIT RULE: Agent only holds consumables explicitly allotted from Central Warehouse!
+// The agent panel sees all live master catalog items, but quantity reflects ONLY the agent's in-hand stock (NEVER central warehouse numbers).
 router.get('/inventory', (req, res) => {
-    const agentId = req.query.agentId || 'AG-01';
-
-    if (!dbStore.agentInventory) dbStore.agentInventory = {};
-    
-    // Check if agent has an explicit allocated record, or look in dbStore.agentInventories
-    if (!dbStore.agentInventory[agentId]) {
-        const adminAgentRecord = (dbStore.agentInventories || []).find(a => a.agentId === agentId);
-        if (adminAgentRecord && adminAgentRecord.inHandStock) {
-            // Map admin format to agent item list
-            const mapped = [];
-            const ih = adminAgentRecord.inHandStock;
-            if (ih.sstTubes) mapped.push({ id: 'INV-SST', name: 'Vacutainer Gold SST (Serum Gel)', code: 'TUBE-SST', stock: ih.sstTubes, unit: 'Tubes', minThreshold: 5 });
-            if (ih.edtaTubes) mapped.push({ id: 'INV-EDTA', name: 'Vacutainer Purple (EDTA Whole Blood)', code: 'TUBE-EDTA', stock: ih.edtaTubes, unit: 'Tubes', minThreshold: 5 });
-            if (ih.fluorideTubes) mapped.push({ id: 'INV-FLR', name: 'Vacutainer Grey (Fluoride Sugar)', code: 'TUBE-FLR', stock: ih.fluorideTubes, unit: 'Tubes', minThreshold: 5 });
-            if (ih.needles21g) mapped.push({ id: 'INV-SYR', name: 'Sterile Safety Syringes 5ml', code: 'SYR-5ML', stock: ih.needles21g, unit: 'Units', minThreshold: 10 });
-            if (ih.barcodeRolls) mapped.push({ id: 'INV-LBL', name: 'Barcode Thermal Label Rolls', code: 'LBL-ROLL', stock: ih.barcodeRolls, unit: 'Rolls', minThreshold: 1 });
-            if (ih.fullBodyKits) mapped.push({ id: 'INV-KIT', name: 'Standard Phlebotomy Sample Collection Kit', code: 'KIT-101', stock: ih.fullBodyKits, unit: 'Kits', minThreshold: 2 });
-            dbStore.agentInventory[agentId] = mapped;
-        } else {
-            // New agent or freelance agent with 0 allotted stock
-            dbStore.agentInventory[agentId] = [];
-        }
-        saveDbStore();
+    let agentId = (req.query.agentId || 'AG-01').trim();
+    if (!agentId || agentId.toLowerCase() === 'unassigned') {
+        agentId = 'AG-01';
     }
 
-    const inHandInventory = dbStore.agentInventory[agentId] || [];
-    const warehouseStock = dbStore.inventoryStock || [];
+    if (!dbStore.agentInventory) dbStore.agentInventory = {};
+
+    // Standard live master catalog items
+    const masterItemsTemplate = [
+        { id: 'INV-SST', name: 'Vacutainer Gold SST (Serum Gel)', code: 'TUBE-SST', category: 'Blood Containers', unit: 'Tubes', minThreshold: 5 },
+        { id: 'INV-EDTA', name: 'Vacutainer Purple (EDTA Whole Blood)', code: 'TUBE-EDTA', category: 'Blood Containers', unit: 'Tubes', minThreshold: 5 },
+        { id: 'INV-FLR', name: 'Vacutainer Grey (Fluoride Sugar)', code: 'TUBE-FLR', category: 'Blood Containers', unit: 'Tubes', minThreshold: 5 },
+        { id: 'INV-SYR', name: 'Sterile Safety Syringes 5ml', code: 'SYR-5ML', category: 'Consumables', unit: 'Units', minThreshold: 10 },
+        { id: 'INV-GLV', name: 'Nitrile Examination Gloves', code: 'GLV-NIT-M', category: 'Consumables', unit: 'Pairs', minThreshold: 10 },
+        { id: 'INV-LBL', name: 'Barcode Thermal Label Rolls', code: 'LBL-ROLL', category: 'Lab Supplies', unit: 'Rolls', minThreshold: 1 },
+        { id: 'INV-KIT', name: 'Standard Phlebotomy Sample Collection Kit', code: 'KIT-101', category: 'Pre-Packaged Kits', unit: 'Kits', minThreshold: 2 }
+    ];
+
+    // Include any custom catalog items configured in dbStore.inventoryStock
+    (dbStore.inventoryStock || []).forEach(wh => {
+        if (!masterItemsTemplate.some(m => m.code === wh.code || m.name.toLowerCase() === wh.name.toLowerCase())) {
+            masterItemsTemplate.push({
+                id: `INV-${wh.code}`,
+                name: wh.name,
+                code: wh.code,
+                category: wh.category || 'Consumables',
+                unit: wh.unit || 'Units',
+                minThreshold: 5
+            });
+        }
+    });
+
+    const agentBag = dbStore.agentInventory[agentId] || [];
+    const adminAgentRecord = (dbStore.agentInventories || []).find(a => a.agentId === agentId);
+    const ih = adminAgentRecord ? adminAgentRecord.inHandStock : null;
+
+    // Map each live item to the agent's available stock ONLY (NEVER warehouse quantity)
+    const inHandInventory = masterItemsTemplate.map(item => {
+        let stock = 0;
+        const inBag = agentBag.find(b => b.code === item.code || (b.name && b.name.toLowerCase() === item.name.toLowerCase()));
+        if (inBag !== undefined && inBag.stock !== undefined) {
+            stock = inBag.stock;
+        } else if (ih) {
+            if (item.code === 'TUBE-SST') stock = ih.sstTubes || 0;
+            else if (item.code === 'TUBE-EDTA') stock = ih.edtaTubes || 0;
+            else if (item.code === 'TUBE-FLR') stock = ih.fluorideTubes || 0;
+            else if (item.code === 'SYR-5ML') stock = ih.needles21g || 0;
+            else if (item.code === 'LBL-ROLL') stock = ih.barcodeRolls || 0;
+            else if (item.code === 'KIT-101') stock = ih.fullBodyKits || 0;
+        }
+        return {
+            id: item.id,
+            name: item.name,
+            code: item.code,
+            category: item.category,
+            unit: item.unit,
+            stock: Math.max(0, Number(stock) || 0),
+            minThreshold: item.minThreshold
+        };
+    });
+
+    dbStore.agentInventory[agentId] = inHandInventory;
+    saveDbStore();
+
     const agentIndents = (dbStore.indents || []).filter(i => !i.agentId || i.agentId === agentId || (i.agentName && i.agentName.includes(agentId)));
 
+    // Do NOT expose warehouse stock counts to the agent
     res.json({
         success: true,
         agentId,
         inventory: inHandInventory,
-        warehouseStock: warehouseStock,
         indents: agentIndents
     });
 });

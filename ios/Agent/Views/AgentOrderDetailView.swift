@@ -135,7 +135,7 @@ struct AgentOrderDetailView: View {
         .sheet(isPresented: $showAssessKitModal) {
             AgentAssessAssignKitModal(
                 order: order,
-                agentId: order.assignedAgent ?? "AG-01",
+                agentId: ((order.assignedAgent ?? "").trimmingCharacters(in: .whitespaces).isEmpty || (order.assignedAgent ?? "").lowercased() == "unassigned") ? "AG-01" : (order.assignedAgent ?? "AG-01"),
                 inHandInventory: [],
                 onKitAssigned: {
                     updateOrderStatus(to: "KIT_ASSIGNED")
