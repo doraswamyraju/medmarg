@@ -15,6 +15,7 @@
 		B2000056 /* AgentPreCollectionVitalsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000056 /* AgentPreCollectionVitalsSheet.swift */; };
 		B2000057 /* DeviceBarcodeScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000057 /* DeviceBarcodeScannerView.swift */; };
 		B2000058 /* AgentOrderedTestsBottomSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000058 /* AgentOrderedTestsBottomSheet.swift */; };
+		B2000059 /* ImagePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000059 /* ImagePickerView.swift */; };
 		B2000041 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000041 /* LocationManager.swift */; };
 		B2000042 /* AgentTopbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000042 /* AgentTopbarView.swift */; };
 		B2000043 /* AgentMetricCountersRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000043 /* AgentMetricCountersRow.swift */; };
@@ -80,6 +81,7 @@
 		F2000056 /* AgentPreCollectionVitalsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/Sheets/AgentPreCollectionVitalsSheet.swift"; sourceTree = "<group>"; };
 		F2000057 /* DeviceBarcodeScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/Components/DeviceBarcodeScannerView.swift"; sourceTree = "<group>"; };
 		F2000058 /* AgentOrderedTestsBottomSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/Sheets/AgentOrderedTestsBottomSheet.swift"; sourceTree = "<group>"; };
+		F2000059 /* ImagePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/Components/ImagePickerView.swift"; sourceTree = "<group>"; };
 		F2000041 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/LocationManager.swift"; sourceTree = "<group>"; };
 		F2000042 /* AgentTopbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/Components/AgentTopbarView.swift"; sourceTree = "<group>"; };
 		F2000043 /* AgentMetricCountersRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/Components/AgentMetricCountersRow.swift"; sourceTree = "<group>"; };
@@ -207,6 +209,7 @@
 				F2000056 /* AgentPreCollectionVitalsSheet.swift */,
 				F2000057 /* DeviceBarcodeScannerView.swift */,
 				F2000058 /* AgentOrderedTestsBottomSheet.swift */,
+				F2000059 /* ImagePickerView.swift */,
 				F2000037 /* GoogleSignInManager.swift */,
 				F2000038 /* NotificationManager.swift */,
 				F2000039 /* CareSeekerOrdersView.swift */,
@@ -344,6 +347,7 @@
 				B2000056 /* AgentPreCollectionVitalsSheet.swift in Sources */,
 				B2000057 /* DeviceBarcodeScannerView.swift in Sources */,
 				B2000058 /* AgentOrderedTestsBottomSheet.swift in Sources */,
+				B2000059 /* ImagePickerView.swift in Sources */,
 				B2000037 /* GoogleSignInManager.swift in Sources */,
 				B2000038 /* NotificationManager.swift in Sources */,
 				B2000039 /* CareSeekerOrdersView.swift in Sources */,
