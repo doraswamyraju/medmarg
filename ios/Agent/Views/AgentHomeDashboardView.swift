@@ -35,6 +35,7 @@ struct AgentHomeDashboardView: View {
     @State private var orderFilterTab: Int = 0 // 0: Today's Orders, 1: In Progress, 2: Completed
 
     // Sheets & Workflow Modals
+    @State private var activeOrderDetailOrder: AgentPickupOrder? = nil
     @State private var showCreateManualOrderModal: Bool = false
     @State private var showNotificationCenter: Bool = false
     @State private var activeAssessKitOrder: AgentPickupOrder? = nil
@@ -164,13 +165,13 @@ struct AgentHomeDashboardView: View {
                                 AgentNextAssignedCard(
                                     order: nextOrder,
                                     onStartTrip: {
-                                        startTrip(for: nextOrder)
+                                        activeOrderDetailOrder = nextOrder
                                     },
                                     onAssessKit: {
                                         activeAssessKitOrder = nextOrder
                                     },
                                     onOpenVisit: {
-                                        activeVisitModalOrder = nextOrder
+                                        activeOrderDetailOrder = nextOrder
                                     },
                                     onDoorstepQr: {
                                         activeDoorstepQrOrder = nextOrder
@@ -344,6 +345,18 @@ struct AgentHomeDashboardView: View {
                         await fetchLiveData()
                         actionBanner = "Consumables indent raised with Central Store!"
                     }
+                }
+            )
+        }
+        .fullScreenCover(item: $activeOrderDetailOrder) { detailOrder in
+            AgentOrderDetailView(
+                order: detailOrder,
+                onBack: {
+                    activeOrderDetailOrder = nil
+                    Task { await fetchLiveData() }
+                },
+                onOrderUpdated: {
+                    Task { await fetchLiveData() }
                 }
             )
         }
@@ -595,13 +608,7 @@ struct AgentHomeDashboardView: View {
     }
 
     private func handleTimelineOrderTap(order: AgentPickupOrder) {
-        if order.status == "BOOKED" || order.status == "ASSIGNED" {
-            activeAssessKitOrder = order
-        } else if order.status == "KIT_ASSIGNED" {
-            startTrip(for: order)
-        } else {
-            activeVisitModalOrder = order
-        }
+        activeOrderDetailOrder = order
     }
 
     private var emptyPickupsCard: some View {
