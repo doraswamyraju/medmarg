@@ -391,7 +391,6 @@ router.post('/profile/update', (req, res) => {
         profile: agent
     });
 });
-});
 
 // RAISE INDENT (STOCK REPLENISHMENT REQUEST TO ADMIN/STORE IN-CHARGE)
 router.post('/indent', (req, res) => {
