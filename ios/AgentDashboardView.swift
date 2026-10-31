@@ -40,6 +40,8 @@ struct AgentPickupOrder: Identifiable, Codable, Equatable {
     var kitAssigned: Bool?
     var kitNotRequired: Bool?
     var tripStartedAt: String?
+    var transactionId: String?
+    var paymentNotes: String?
 
     var effectivePatientName: String {
         patientName ?? careSeekerName ?? "Care Seeker"
@@ -173,6 +175,9 @@ struct AgentDashboardView: View {
                 } else if selectedTab == 7 {
                     // Tab 7: Dedicated Orders View (matching Reference Image)
                     AgentOrdersView(user: user, selectedTab: $selectedTab, showSidebar: $showSidebar)
+                } else if selectedTab == 3 {
+                    // Tab 3: Dedicated Payments View (matching Reference Image 5)
+                    AgentPaymentsView(user: user, selectedTab: $selectedTab, showSidebar: $showSidebar)
                 } else {
                     // Other tabs: Inventory (1), Quota (2), Payments (3), Profile (4)
                     ScrollView(showsIndicators: false) {

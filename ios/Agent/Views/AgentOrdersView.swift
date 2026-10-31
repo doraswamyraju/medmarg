@@ -32,6 +32,7 @@ struct AgentOrdersView: View {
     @State private var activeVisitModalOrder: AgentPickupOrder? = nil
     @State private var activeAssessKitOrder: AgentPickupOrder? = nil
     @State private var activeDoorstepQrOrder: AgentPickupOrder? = nil
+    @State private var showLabHandoverSheet: Bool = false
     @State private var actionBanner: String? = nil
 
     private var effectiveAgentId: String {
@@ -138,6 +139,25 @@ struct AgentOrdersView: View {
                     // Search Bar + Filters + Sort Buttons
                     searchAndFilterBar
 
+                    if selectedFilterCategory == "HANDOVER" && handoverCount > 0 {
+                        Button(action: { showLabHandoverSheet = true }) {
+                            HStack(spacing: 8) {
+                                Image(systemName: "truck.box.fill")
+                                    .font(.system(size: 14))
+                                Text("Proceed to Lab Handover (\(handoverCount) Specimens)")
+                                    .font(.system(size: 13, weight: .bold))
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 11, weight: .bold))
+                            }
+                            .foregroundColor(.white)
+                            .padding(14)
+                            .background(MedMargTheme.primaryTeal)
+                            .cornerRadius(12)
+                            .padding(.horizontal, 16)
+                        }
+                    }
+
                     // Order Cards List
                     VStack(spacing: 14) {
                         if isLoading {
@@ -223,6 +243,18 @@ struct AgentOrdersView: View {
                 onSelectOrder: { order in
                     showTrackNavigateView = false
                     selectedOrderDetail = order
+                }
+            )
+        }
+        .sheet(isPresented: $showLabHandoverSheet) {
+            AgentLabHandoverView(
+                agentId: effectiveAgentId,
+                agentName: user.name,
+                onHandoverCompleted: {
+                    Task {
+                        await fetchLiveRoster()
+                        actionBanner = "Specimens successfully handed over to NABL Lab!"
+                    }
                 }
             )
         }

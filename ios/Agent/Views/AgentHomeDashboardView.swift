@@ -44,6 +44,7 @@ struct AgentHomeDashboardView: View {
     @State private var activeReviewOrder: AgentPickupOrder? = nil
     @State private var showIndentSheet: Bool = false
     @State private var showHandoverSuccessAlert: Bool = false
+    @State private var showLabHandoverSheet: Bool = false
 
     private var effectiveAgentId: String {
         user.username.isEmpty ? (user.id.isEmpty ? "AG-01" : user.id) : user.username
@@ -211,7 +212,7 @@ struct AgentHomeDashboardView: View {
                                     }
                                 },
                                 onLabHandoverTap: {
-                                    submitLabHandover()
+                                    showLabHandoverSheet = true
                                 }
                             )
 
@@ -362,6 +363,18 @@ struct AgentHomeDashboardView: View {
         }
         .sheet(isPresented: $showNotificationCenter) {
             NotificationCenterSheet(isPresented: $showNotificationCenter)
+        }
+        .sheet(isPresented: $showLabHandoverSheet) {
+            AgentLabHandoverView(
+                agentId: effectiveAgentId,
+                agentName: user.name,
+                onHandoverCompleted: {
+                    Task {
+                        await fetchLiveData()
+                        actionBanner = "Specimens safely transferred to Regional NABL Lab!"
+                    }
+                }
+            )
         }
         .alert("NABL Lab Handover Complete", isPresented: $showHandoverSuccessAlert) {
             Button("OK", role: .cancel) { }
