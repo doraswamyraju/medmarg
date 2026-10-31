@@ -36,6 +36,7 @@ struct AgentHomeDashboardView: View {
 
     // Sheets & Workflow Modals
     @State private var showCreateManualOrderModal: Bool = false
+    @State private var showNotificationCenter: Bool = false
     @State private var activeAssessKitOrder: AgentPickupOrder? = nil
     @State private var activeVisitModalOrder: AgentPickupOrder? = nil
     @State private var activeDoorstepQrOrder: AgentPickupOrder? = nil
@@ -76,7 +77,7 @@ struct AgentHomeDashboardView: View {
             MedMargTheme.slate50.ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // 1. Dedicated Agent Topbar with On/Off Duty Switch & Profile
+                // 1. Dedicated Agent Topbar with On/Off Duty Switch & Actions
                 AgentTopbarView(
                     agentName: user.name,
                     agentId: effectiveAgentId,
@@ -85,12 +86,19 @@ struct AgentHomeDashboardView: View {
                     onToggleDuty: { duty in
                         updateDuty(duty)
                     },
+                    onLogoTap: {
+                        selectedTab = 0
+                    },
                     onSidebarTap: {
                         withAnimation { showSidebar.toggle() }
                     },
+                    onNotificationTap: {
+                        showNotificationCenter = true
+                    },
                     onProfileTap: {
                         selectedTab = 4
-                    }
+                    },
+                    onLogoutTap: onLogout
                 )
 
                 // 2. Main Scrollable Content
@@ -333,6 +341,9 @@ struct AgentHomeDashboardView: View {
                     }
                 }
             )
+        }
+        .sheet(isPresented: $showNotificationCenter) {
+            NotificationCenterSheet(isPresented: $showNotificationCenter)
         }
         .alert("NABL Lab Handover Complete", isPresented: $showHandoverSuccessAlert) {
             Button("OK", role: .cancel) { }

@@ -1,14 +1,11 @@
 import SwiftUI
 
 // =========================================================================
-// 🏷️ AGENT TOPBAR VIEW (FLEET STATUS, LIVE ON/OFF DUTY TOGGLE, GPS RADAR)
-// Redesigned to pixel-match reference Image 3:
-// - Left: Hamburger (line.3.horizontal)
-// - MedMarg Logo
-// - Center: Pill toggle "ON DUTY" (Green capsule with white text & inner white knob)
-// - Right: Notification bell with unread badge count
-// - Profile Avatar circle with initials/photo
-// - Logout shortcut
+// 🏷️ AGENT TOPBAR VIEW (FLEET STATUS, LIVE ON/OFF DUTY TOGGLE, ACTIONS)
+// 1. Click on logo -> takes user to home (selectedTab = 0)
+// 2. Click on notification -> opens NotificationCenterSheet bottom sheet
+// 3. Click on profile icon -> opens agent profile screen (selectedTab = 4)
+// 4. Click on logout -> logs out agent and returns to login screen
 // =========================================================================
 
 struct AgentTopbarView: View {
@@ -17,9 +14,11 @@ struct AgentTopbarView: View {
     @Binding var isOnDuty: Bool
     @ObservedObject var locationManager: AgentLocationManager
     let onToggleDuty: (Bool) -> Void
+    var onLogoTap: () -> Void = {}
     var onSidebarTap: () -> Void = {}
     var onNotificationTap: () -> Void = {}
     var onProfileTap: () -> Void = {}
+    var onLogoutTap: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 12) {
@@ -30,15 +29,18 @@ struct AgentTopbarView: View {
                     .foregroundColor(MedMargTheme.slate900)
             }
 
-            // 2. MedMarg Brand Logo
-            Image("logo")
-                .resizable()
-                .scaledToFit()
-                .frame(height: 28)
+            // 2. MedMarg Brand Logo (Clicking takes user to Home)
+            Button(action: onLogoTap) {
+                Image("logo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 28)
+            }
+            .buttonStyle(PlainButtonStyle())
 
             Spacer()
 
-            // 3. Green Pill "ON DUTY" Toggle matching reference design exactly
+            // 3. Green Pill "ON DUTY" Toggle matching reference design
             Button(action: {
                 withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
                     isOnDuty.toggle()
@@ -85,7 +87,7 @@ struct AgentTopbarView: View {
                 .shadow(color: (isOnDuty ? Color(red: 0.0, green: 0.72, blue: 0.42) : MedMargTheme.slate500).opacity(0.3), radius: 4, y: 2)
             }
 
-            // 4. Notification Bell with Badge Count (Reference shows bell with red badge "3")
+            // 4. Notification Bell with Badge Count (Opens NotificationCenter bottom sheet)
             Button(action: onNotificationTap) {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: "bell")
@@ -104,7 +106,7 @@ struct AgentTopbarView: View {
                 }
             }
 
-            // 5. Profile Avatar Circle (matching photo/initials in reference)
+            // 5. Profile Avatar Circle (Opens agent profile screen)
             Button(action: onProfileTap) {
                 ZStack {
                     Circle()
@@ -127,8 +129,8 @@ struct AgentTopbarView: View {
                 )
             }
 
-            // 6. Quick Logout / Exit Icon (far right in reference)
-            Button(action: onSidebarTap) {
+            // 6. Quick Logout Button (Logs out agent back to login screen)
+            Button(action: onLogoutTap) {
                 Image(systemName: "rectangle.portrait.and.arrow.right")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(MedMargTheme.slate700)
