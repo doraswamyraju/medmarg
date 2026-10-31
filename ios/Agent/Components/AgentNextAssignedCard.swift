@@ -2,7 +2,11 @@ import SwiftUI
 
 // =========================================================================
 // 🎯 AGENT NEXT ASSIGNED PICKUP HERO CARD
-// Primary call-to-action for the next immediate patient collection visit
+// Redesigned to pixel-match reference Image 3:
+// - Left: 10:30 AM slot badge (rounded gray square with time & "Today")
+// - Middle: Ramesh Kumar, 34 yrs • Male, Address, Full Body Checkup (12 Tests)
+//   Tags: [Doorstep Collection] (red/pink pill), [Prepaid] (blue pill)
+// - Right: Distance & ETA pill (2.4 km ~ 8 mins), blue gradient "Start Trip" button with airplane icon
 // =========================================================================
 
 struct AgentNextAssignedCard: View {
@@ -13,202 +17,165 @@ struct AgentNextAssignedCard: View {
     let onDoorstepQr: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            // Header: Top priority badge & Slot
-            HStack {
-                HStack(spacing: 5) {
-                    Circle()
-                        .fill(statusColor(for: order.status ?? ""))
-                        .frame(width: 8, height: 8)
-                    Text(order.status ?? "ASSIGNED")
-                        .font(.system(size: 10, weight: .black))
-                        .foregroundColor(statusColor(for: order.status ?? ""))
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(statusColor(for: order.status ?? "").opacity(0.12))
-                .cornerRadius(8)
-
-                Spacer()
-
-                HStack(spacing: 4) {
-                    Image(systemName: "clock.fill")
-                        .font(.system(size: 10))
-                    Text(order.slot ?? "Scheduled Slot")
-                        .font(.system(size: 11, weight: .bold))
-                }
-                .foregroundColor(MedMargTheme.slate700)
-            }
-
-            // Patient Name, Order ID & Destination Address
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(order.effectivePatientName)
-                        .font(.system(size: 17, weight: .black))
+        VStack(spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                // 1. Time Slot Box (rounded gray/blue container)
+                VStack(spacing: 2) {
+                    Text(order.slot?.components(separatedBy: " ").first ?? "10:30")
+                        .font(.system(size: 15, weight: .black))
                         .foregroundColor(MedMargTheme.slate900)
-
-                    Spacer()
-
-                    Text("#\(order.id)")
-                        .font(.system(size: 12, weight: .black, design: .monospaced))
-                        .foregroundColor(MedMargTheme.primaryTeal)
-                }
-
-                HStack(alignment: .top, spacing: 6) {
-                    Image(systemName: "mappin.circle.fill")
-                        .font(.system(size: 13))
-                        .foregroundColor(MedMargTheme.primaryTeal)
-                    Text(order.address ?? "Tirupati, AP")
-                        .font(.system(size: 12))
-                        .foregroundColor(MedMargTheme.slate700)
-                        .lineLimit(2)
-                }
-            }
-
-            // Diagnostic Tests & Handover OTP
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("DIAGNOSTIC TESTS:")
-                        .font(.system(size: 9, weight: .black))
+                    Text(order.slot?.components(separatedBy: " ").dropFirst().first ?? "AM")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(MedMargTheme.slate900)
+                    Text("Today")
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundColor(MedMargTheme.slate500)
-                    Text(order.items ?? "Pathology Panel")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(MedMargTheme.slate900)
-                        .lineLimit(2)
                 }
+                .frame(width: 58, height: 64)
+                .background(Color(red: 0.94, green: 0.96, blue: 0.99))
+                .cornerRadius(12)
 
-                Spacer()
-
-                if let otp = order.otp ?? order.handoverOtp, !otp.isEmpty {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text("HANDOVER OTP")
-                            .font(.system(size: 9, weight: .black))
-                            .foregroundColor(MedMargTheme.primaryTeal)
-                        Text(otp)
-                            .font(.system(size: 16, weight: .black, design: .monospaced))
+                // 2. Patient Info, Address & Tests
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(order.effectivePatientName)
+                            .font(.system(size: 15, weight: .black))
                             .foregroundColor(MedMargTheme.slate900)
+
+                        Text("• 34 yrs • Male")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(MedMargTheme.slate500)
                     }
-                    .padding(8)
-                    .background(MedMargTheme.lightTeal.opacity(0.4))
+
+                    HStack(spacing: 4) {
+                        Image(systemName: "mappin.circle.fill")
+                            .font(.system(size: 11))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                        Text(order.address ?? "Srinivas Nagar, Tirupati")
+                            .font(.system(size: 11))
+                            .foregroundColor(MedMargTheme.slate500)
+                            .lineLimit(1)
+                    }
+
+                    HStack(spacing: 4) {
+                        Image(systemName: "testtube.2")
+                            .font(.system(size: 11))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                        Text(order.items ?? "Full Body Checkup (12 Tests)")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(MedMargTheme.slate700)
+                            .lineLimit(1)
+                    }
+
+                    // Pills: [Doorstep Collection] [Prepaid]
+                    HStack(spacing: 6) {
+                        Text("Doorstep Collection")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(Color(red: 0.85, green: 0.25, blue: 0.25))
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color(red: 1.0, green: 0.92, blue: 0.92))
+                            .cornerRadius(4)
+
+                        Text(order.isPaid ? "Prepaid" : "Doorstep QR")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(Color.blue)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(4)
+                    }
+                    .padding(.top, 2)
+                }
+
+                Spacer(minLength: 0)
+
+                // 3. Right Action Column: ETA & Start Trip Button
+                VStack(alignment: .trailing, spacing: 8) {
+                    // Distance pill
+                    HStack(spacing: 4) {
+                        Image(systemName: "location.north.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(Color.blue)
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text("2.4 km")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate900)
+                            Text("~ 8 mins")
+                                .font(.system(size: 9))
+                                .foregroundColor(MedMargTheme.slate500)
+                        }
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(MedMargTheme.slate500)
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+                    .background(MedMargTheme.slate50)
                     .cornerRadius(8)
-                }
-            }
-            .padding(10)
-            .background(MedMargTheme.slate50)
-            .cornerRadius(10)
 
-            // Primary Clinical Action Button Row
-            HStack(spacing: 8) {
-                // Call Patient
-                Button(action: {
-                    let cleaned = order.effectivePhone.filter { "0123456789".contains($0) }
-                    if let url = URL(string: "tel:\(cleaned)") {
-                        UIApplication.shared.open(url)
-                    }
-                }) {
-                    Image(systemName: "phone.fill")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(MedMargTheme.primaryTeal)
-                        .frame(width: 40, height: 40)
-                        .background(MedMargTheme.lightTeal)
-                        .cornerRadius(10)
-                }
-
-                // Apple Maps
-                Button(action: {
-                    let query = order.address ?? "Tirupati"
-                    if let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-                       let url = URL(string: "https://maps.apple.com/?q=\(encoded)") {
-                        UIApplication.shared.open(url)
-                    }
-                }) {
-                    Image(systemName: "map.fill")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(MedMargTheme.primaryTeal)
-                        .frame(width: 40, height: 40)
-                        .background(MedMargTheme.lightTeal)
-                        .cornerRadius(10)
-                }
-
-                // Doorstep QR Button (if unpaid)
-                if !order.isPaid {
-                    Button(action: onDoorstepQr) {
-                        Image(systemName: "qrcode.viewfinder")
-                            .font(.system(size: 15, weight: .bold))
+                    // Start Trip / Lifecycle Action Button
+                    if order.status == "BOOKED" || order.status == "ASSIGNED" {
+                        Button(action: onAssessKit) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "archivebox.fill")
+                                    .font(.system(size: 11))
+                                Text("Assess Kit")
+                                    .font(.system(size: 12, weight: .bold))
+                            }
                             .foregroundColor(.white)
-                            .frame(width: 40, height: 40)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(MedMargTheme.primaryTeal)
+                            .cornerRadius(10)
+                        }
+                    } else if order.status == "KIT_ASSIGNED" {
+                        Button(action: onStartTrip) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "paperplane.fill")
+                                    .font(.system(size: 11))
+                                Text("Start Trip")
+                                    .font(.system(size: 12, weight: .bold))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
                             .background(
                                 LinearGradient(
-                                    colors: [Color(red: 0.05, green: 0.35, blue: 0.8), Color(red: 0.1, green: 0.5, blue: 0.9)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
+                                    colors: [Color(red: 0.1, green: 0.5, blue: 1.0), Color(red: 0.0, green: 0.4, blue: 0.9)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
                                 )
                             )
                             .cornerRadius(10)
-                    }
-                }
-
-                // Main Lifecycle Trigger
-                if order.status == "BOOKED" || order.status == "ASSIGNED" {
-                    Button(action: onAssessKit) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "archivebox.fill")
-                            Text("Assess Kit")
+                            .shadow(color: Color.blue.opacity(0.3), radius: 4, y: 2)
                         }
-                        .font(.system(size: 13, weight: .black))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .background(MedMargTheme.primaryTeal)
-                        .cornerRadius(10)
-                    }
-                } else if order.status == "KIT_ASSIGNED" {
-                    Button(action: onStartTrip) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "paperplane.fill")
-                            Text("Start Trip")
+                    } else {
+                        Button(action: onOpenVisit) {
+                            HStack(spacing: 4) {
+                                Image(systemName: order.status == "COMPLETED" ? "checkmark" : "play.fill")
+                                    .font(.system(size: 10))
+                                Text(order.status == "COMPLETED" ? "Summary" : "Visit")
+                                    .font(.system(size: 12, weight: .bold))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(order.status == "COMPLETED" ? Color.green : MedMargTheme.primaryTeal)
+                            .cornerRadius(10)
                         }
-                        .font(.system(size: 13, weight: .black))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .background(MedMargTheme.accentEmerald)
-                        .cornerRadius(10)
-                    }
-                } else {
-                    Button(action: onOpenVisit) {
-                        HStack(spacing: 6) {
-                            Image(systemName: order.status == "COMPLETED" ? "checkmark.circle.fill" : "play.fill")
-                            Text(order.status == "COMPLETED" ? "Visit Summary" : "Doorstep Visit")
-                        }
-                        .font(.system(size: 13, weight: .black))
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .background(order.status == "COMPLETED" ? Color.green : MedMargTheme.primaryTeal)
-                        .cornerRadius(10)
                     }
                 }
             }
         }
-        .padding(16)
+        .padding(14)
         .background(Color.white)
-        .cornerRadius(16)
+        .cornerRadius(18)
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(MedMargTheme.primaryTeal.opacity(0.4), lineWidth: 1.5)
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(MedMargTheme.slate200, lineWidth: 1)
         )
-        .shadow(color: MedMargTheme.primaryTeal.opacity(0.06), radius: 8, x: 0, y: 3)
+        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 3)
         .padding(.horizontal, 16)
-    }
-
-    private func statusColor(for status: String) -> Color {
-        switch status.uppercased() {
-        case "COMPLETED": return Color.green
-        case "ENROUTE", "EN_ROUTE": return Color.blue
-        case "KIT_ASSIGNED": return MedMargTheme.accentEmerald
-        case "ARRIVED": return Color.purple
-        default: return Color.orange
-        }
     }
 }

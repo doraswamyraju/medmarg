@@ -4,8 +4,14 @@ import AuthenticationServices
 
 // =========================================================================
 // 📱 DEDICATED CARE SEEKER & CLIENT LOGIN MODULE (IOS SWIFTUI)
-// Supports Email / Phone Number + Password, Face ID / Touch ID, Google, Apple
-// Uses ASWebAuthenticationSession for Google Sign-In & Native Apple Sign-In
+// Pixel-accurate match to reference Image 2 (Phlebotomist hero overlooking Tirupati):
+// - Top 48%: Phlebotomist overlooking Tirupati temple hero
+// - Brand Header: MedMarg logo + "TRUSTED DIAGNOSTICS. CLOSER TO YOU."
+// - Slogan: "Every Sample Builds a Healthier Tomorrow" with green accent underline
+// - 3 Feature Badges: Trusted Diagnostics, At Your Doorstep, Healthier Communities
+// - Bottom Sliding Card: "Welcome to MedMarg", Continue with Google / Apple,
+//   Email/Password inputs, Gradient Sign In Button, Face ID / Touch ID Button,
+//   Create Account link & compliance note
 // =========================================================================
 
 struct CareSeekerLoginView: View {
@@ -18,13 +24,9 @@ struct CareSeekerLoginView: View {
     @State private var emailOrPhoneInput: String = ""
     @State private var passwordInput: String = ""
     @State private var isPasswordVisible: Bool = false
-    @State private var rememberMe: Bool = true
     @State private var errorMessage: String = ""
     @State private var isBiometricAvailable: Bool = false
     @State private var isAuthenticating: Bool = false
-
-    // Quick Portal Role Selector Pills for instant 1-tap switching (Patient, Agent, Freelancer, Admin)
-    @State private var selectedPortalRole: String = "PATIENT" // "PATIENT", "AGENT", "FREELANCER", "ADMIN"
 
     // Phone Collection Modal Sheet (For First-Time OAuth without Phone)
     @State private var showPhoneCollectionSheet: Bool = false
@@ -32,7 +34,7 @@ struct CareSeekerLoginView: View {
     @State private var phoneInputForOAuth: String = ""
     @State private var phoneCollectionError: String = ""
 
-    // Apple ID Account Linking Sheet (First-time Apple sign-in linking to Google / Credentials)
+    // Apple ID Account Linking Sheet
     @State private var showAppleLinkSheet: Bool = false
     @State private var pendingAppleResult: AppleSignInResult? = nil
     @State private var linkEmailOrPhoneInput: String = ""
@@ -62,7 +64,7 @@ struct CareSeekerLoginView: View {
                 VStack(spacing: 0) {
                     heroTopOverlaySection
 
-                    Spacer().frame(height: 36)
+                    Spacer().frame(height: 32)
 
                     slidingLoginCard
                 }
@@ -79,67 +81,57 @@ struct CareSeekerLoginView: View {
         }
     }
 
+    // ==========================================
+    // 🌄 HERO BACKGROUND VIEW
+    // ==========================================
     private var heroBackgroundView: some View {
         VStack(spacing: 0) {
             GeometryReader { geo in
                 Image("hero")
                     .resizable()
                     .scaledToFill()
-                    .frame(width: geo.size.width, height: 420)
+                    .frame(width: geo.size.width, height: 440)
                     .clipped()
                     .overlay(
                         LinearGradient(
                             colors: [
-                                Color.black.opacity(0.15),
+                                Color.black.opacity(0.12),
                                 Color.clear,
-                                Color(red: 0.94, green: 0.97, blue: 0.98)
+                                Color(red: 0.94, green: 0.97, blue: 0.98).opacity(0.8)
                             ],
                             startPoint: .top,
                             endPoint: .bottom
                         )
                     )
             }
-            .frame(height: 380)
+            .frame(height: 400)
 
             Spacer()
         }
         .ignoresSafeArea(edges: .top)
     }
 
+    // ==========================================
+    // 🏷️ HERO OVERLAY: BRAND, SLOGAN & BADGES
+    // ==========================================
     private var heroTopOverlaySection: some View {
         VStack(alignment: .leading, spacing: 14) {
             // MedMarg Brand Tag
-            HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
                 Image("logo")
                     .resizable()
                     .scaledToFit()
-                    .frame(height: 38)
+                    .frame(height: 42)
 
-                Spacer()
-
-                // City selector pill
-                Button(action: { showCityPicker = true }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "mappin.circle.fill")
-                            .font(.system(size: 11))
-                            .foregroundColor(MedMargTheme.primaryTeal)
-                        Text(currentCity.components(separatedBy: ",").first ?? currentCity)
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(MedMargTheme.slate900)
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundColor(MedMargTheme.primaryTeal)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(Color.white.opacity(0.92))
-                    .cornerRadius(16)
-                    .shadow(color: Color.black.opacity(0.06), radius: 3)
-                }
+                Text("TRUSTED DIAGNOSTICS. CLOSER TO YOU.")
+                    .font(.system(size: 8, weight: .black))
+                    .foregroundColor(MedMargTheme.primaryTeal)
+                    .tracking(1.2)
+                    .padding(.leading, 4)
             }
-            .padding(.top, 10)
+            .padding(.top, 16)
 
-            // Slogan & Tagline
+            // Slogan & Tagline matching reference Image 2
             VStack(alignment: .leading, spacing: 4) {
                 Text("Every\nSample Builds\na Healthier\nTomorrow")
                     .font(.system(size: 32, weight: .black, design: .rounded))
@@ -148,13 +140,13 @@ struct CareSeekerLoginView: View {
 
                 Rectangle()
                     .fill(MedMargTheme.accentEmerald)
-                    .frame(width: 44, height: 3)
-                    .cornerRadius(1.5)
+                    .frame(width: 44, height: 3.5)
+                    .cornerRadius(2)
                     .padding(.top, 4)
             }
-            .padding(.top, 8)
+            .padding(.top, 10)
 
-            // 3 Bullet Badges
+            // 3 Bullet Badges with circles
             VStack(alignment: .leading, spacing: 10) {
                 badgeFeatureRow(icon: "checkmark.shield", title: "Trusted", subtitle: "Diagnostics")
                 badgeFeatureRow(icon: "house", title: "At Your", subtitle: "Doorstep")
@@ -166,9 +158,34 @@ struct CareSeekerLoginView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private func badgeFeatureRow(icon: String, title: String, subtitle: String) -> some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle()
+                    .stroke(MedMargTheme.accentEmerald, lineWidth: 1.5)
+                    .frame(width: 26, height: 26)
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(MedMargTheme.accentEmerald)
+            }
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 11, weight: .black))
+                    .foregroundColor(MedMargTheme.slate900)
+                Text(subtitle)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(MedMargTheme.slate700)
+            }
+        }
+    }
+
+    // ==========================================
+    // 📋 SLIDING WHITE LOGIN CARD
+    // ==========================================
     private var slidingLoginCard: some View {
-        VStack(spacing: 18) {
-            // Drag Indicator
+        VStack(spacing: 16) {
+            // Drag Indicator Pill
             Capsule()
                 .fill(MedMargTheme.slate200)
                 .frame(width: 44, height: 4)
@@ -189,14 +206,14 @@ struct CareSeekerLoginView: View {
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(MedMargTheme.slate500)
             }
-            .padding(.top, 4)
+            .padding(.top, 2)
 
-            // Social Buttons Side-by-Side (Google & Apple)
+            // Social Buttons Side-by-Side: Continue with Google & Continue with Apple
             HStack(spacing: 12) {
-                appleSignInButton
                 googleSignInButton
+                appleSignInButton
             }
-            .padding(.top, 6)
+            .padding(.top, 4)
 
             // OR Divider
             HStack(spacing: 12) {
@@ -223,7 +240,7 @@ struct CareSeekerLoginView: View {
                 .cornerRadius(10)
             }
 
-            // Form Inputs
+            // Form Inputs (Email + Password)
             VStack(spacing: 12) {
                 // Email / Phone
                 HStack(spacing: 12) {
@@ -357,15 +374,24 @@ struct CareSeekerLoginView: View {
                 .font(.system(size: 12, weight: .bold))
                 .foregroundColor(Color.blue)
             }
-            .padding(.top, 4)
+            .padding(.top, 2)
 
-            // Terms & Privacy
-            Text("By continuing, you agree to our Terms of Service and Privacy Policy")
-                .font(.system(size: 10))
-                .foregroundColor(MedMargTheme.slate500)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 12)
+            // Terms & Privacy Note
+            HStack(spacing: 3) {
+                Text("By continuing, you agree to our")
+                    .font(.system(size: 10))
+                    .foregroundColor(MedMargTheme.slate500)
+                Text("Terms of Service")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(Color.blue)
+                Text("and")
+                    .font(.system(size: 10))
+                    .foregroundColor(MedMargTheme.slate500)
+                Text("Privacy Policy")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(Color.blue)
+            }
+            .padding(.bottom, 8)
         }
         .padding(22)
         .background(Color.white)
@@ -373,274 +399,41 @@ struct CareSeekerLoginView: View {
         .shadow(color: Color.black.opacity(0.08), radius: 20, x: 0, y: -6)
     }
 
-    private func badgeFeatureRow(icon: String, title: String, subtitle: String) -> some View {
-        HStack(spacing: 10) {
-            ZStack {
-                Circle()
-                    .stroke(MedMargTheme.accentEmerald, lineWidth: 1.5)
-                    .frame(width: 26, height: 26)
-                Image(systemName: icon)
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(MedMargTheme.accentEmerald)
-            }
-
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                    .font(.system(size: 11, weight: .black))
-                    .foregroundColor(MedMargTheme.slate900)
-                Text(subtitle)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(MedMargTheme.slate700)
-            }
-        }
-    }
-
     // ==========================================
-    // 🏥 1. BRAND HEADER & SERVING CITY BADGE
-    // ==========================================
-    private var headerBrandSection: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 12) {
-                Image("logo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 42)
-
-                Spacer()
-
-                Button(action: { showCityPicker = true }) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "mappin.circle.fill")
-                            .font(.system(size: 12))
-                            .foregroundColor(MedMargTheme.primaryTeal)
-                        Text(currentCity.components(separatedBy: ",").first ?? currentCity)
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(MedMargTheme.slate900)
-                        Image(systemName: "chevron.down")
-                            .font(.system(size: 9, weight: .black))
-                            .foregroundColor(MedMargTheme.primaryTeal)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.white)
-                    .cornerRadius(20)
-                    .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
-                }
-            }
-            .padding(.top, 4)
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 6) {
-                    Text("Healthcare Unified Portal")
-                        .font(.system(size: 22, weight: .black, design: .rounded))
-                        .foregroundColor(MedMargTheme.slate900)
-
-                    Text("NABL")
-                        .font(.system(size: 9, weight: .black))
-                        .foregroundColor(MedMargTheme.primaryTeal)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(MedMargTheme.lightTeal)
-                        .cornerRadius(6)
-                }
-
-                Text("Enter credentials to sign in directly into your authorized portal.")
-                    .font(.system(size: 12))
-                    .foregroundColor(MedMargTheme.slate500)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, 4)
-        }
-    }
-
-    // ==========================================
-    // 👥 2. ROLE SELECTOR CHIPS
-    // ==========================================
-    private var roleQuickSelectorSection: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                rolePill(role: "PATIENT", title: "Patient (Customer)", icon: "person.fill", email: "patient@medmarg.com")
-                rolePill(role: "AGENT", title: "Fleet Phlebotomist", icon: "car.fill", email: "salaried@medmarg.com")
-                rolePill(role: "FREELANCER", title: "Freelance MLT", icon: "bicycle.circle.fill", email: "freelance@medmarg.com")
-                rolePill(role: "ADMIN", title: "Super Admin", icon: "shield.fill", email: "admin@medmarg.com")
-            }
-            .padding(.horizontal, 2)
-            .padding(.vertical, 2)
-        }
-    }
-
-    private func rolePill(role: String, title: String, icon: String, email: String) -> some View {
-        let isSelected = selectedPortalRole == role
-        return Button(action: {
-            selectedPortalRole = role
-            emailOrPhoneInput = email
-            passwordInput = "password123"
-            errorMessage = ""
-        }) {
-            HStack(spacing: 6) {
-                Image(systemName: icon)
-                    .font(.system(size: 11, weight: .bold))
-                Text(title)
-                    .font(.system(size: 11, weight: .bold))
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(isSelected ? MedMargTheme.primaryTeal : Color.white)
-            .foregroundColor(isSelected ? .white : MedMargTheme.slate700)
-            .cornerRadius(20)
-            .overlay(
-                RoundedRectangle(cornerRadius: 20)
-                    .stroke(isSelected ? MedMargTheme.primaryTeal : MedMargTheme.slate200, lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(isSelected ? 0.08 : 0.02), radius: 4, x: 0, y: 2)
-        }
-    }
-
-    // ==========================================
-    // 🔑 3. FORM CONTROLS
-    // ==========================================
-    private var credentialForm: some View {
-        VStack(spacing: 14) {
-            // Identifier Input
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Email Address or Mobile Number")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(MedMargTheme.slate700)
-
-                HStack(spacing: 10) {
-                    Image(systemName: "envelope.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(MedMargTheme.primaryTeal)
-
-                    TextField("e.g. name@medmarg.com or 9876543210", text: $emailOrPhoneInput)
-                        .font(.system(size: 14, weight: .semibold))
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                }
-                .padding(13)
-                .background(MedMargTheme.slate50)
-                .cornerRadius(12)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.slate200, lineWidth: 1))
-            }
-
-            // Password Field
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("Password")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(MedMargTheme.slate700)
-                    Spacer()
-                    Button("Forgot?") {
-                        errorMessage = "Password reset instructions sent to your registered contact."
-                    }
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(MedMargTheme.primaryTeal)
-                }
-
-                HStack(spacing: 10) {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(MedMargTheme.primaryTeal)
-
-                    if isPasswordVisible {
-                        TextField("Password", text: $passwordInput)
-                            .font(.system(size: 14, weight: .semibold))
-                    } else {
-                        SecureField("Password", text: $passwordInput)
-                            .font(.system(size: 14, weight: .semibold))
-                    }
-
-                    Button(action: { isPasswordVisible.toggle() }) {
-                        Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
-                            .font(.system(size: 13))
-                            .foregroundColor(MedMargTheme.slate500)
-                    }
-                }
-                .padding(13)
-                .background(MedMargTheme.slate50)
-                .cornerRadius(12)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.slate200, lineWidth: 1))
-            }
-
-            // Sign In Action Button
-            Button(action: handlePasswordLogin) {
-                HStack(spacing: 8) {
-                    if isAuthenticating {
-                        ProgressView().tint(.white)
-                    }
-                    Text(isAuthenticating ? "Verifying Credentials..." : "Sign In to Portal")
-                        .font(.system(size: 15, weight: .bold))
-                    if !isAuthenticating {
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 13, weight: .bold))
-                    }
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(MedMargTheme.primaryTeal)
-                .cornerRadius(12)
-                .shadow(color: MedMargTheme.primaryTeal.opacity(0.35), radius: 8, x: 0, y: 4)
-            }
-            .disabled(isAuthenticating)
-            .padding(.top, 4)
-        }
-    }
-
-    // ==========================================
-    // 👤 BIOMETRICS QUICK BUTTON
-    // ==========================================
-    private var biometricQuickLoginButton: some View {
-        Button(action: handleBiometricLogin) {
-            HStack(spacing: 8) {
-                Image(systemName: "faceid")
-                    .font(.system(size: 16, weight: .bold))
-                Text("Sign In with Face ID")
-                    .font(.system(size: 13, weight: .bold))
-            }
-            .foregroundColor(MedMargTheme.primaryTeal)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(MedMargTheme.lightTeal.opacity(0.7))
-            .cornerRadius(12)
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.primaryTeal.opacity(0.3), lineWidth: 1))
-        }
-    }
-
-    // ==========================================
-    // 🍏 APPLE SIGN IN BUTTON
-    // ==========================================
-    private var appleSignInButton: some View {
-        Button(action: handleAppleSignIn) {
-            HStack(spacing: 6) {
-                Image(systemName: "applelogo")
-                    .font(.system(size: 15, weight: .bold))
-                Text("Apple")
-                    .font(.system(size: 13, weight: .bold))
-            }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
-            .background(Color.black)
-            .cornerRadius(12)
-        }
-    }
-
-    // ==========================================
-    // 🌐 GOOGLE SIGN IN BUTTON
+    // 🌐 SOCIAL BUTTONS: GOOGLE & APPLE
     // ==========================================
     private var googleSignInButton: some View {
         Button(action: handleGoogleSignIn) {
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 Text("G")
-                    .font(.system(size: 15, weight: .black))
-                    .foregroundColor(.red)
-                Text("Google")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.system(size: 16, weight: .black))
+                    .foregroundColor(Color(red: 0.86, green: 0.25, blue: 0.20))
+                Text("Continue with Google")
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundColor(MedMargTheme.slate900)
+                    .lineLimit(1)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .padding(.vertical, 11)
+            .background(Color.white)
+            .cornerRadius(12)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.slate200, lineWidth: 1))
+        }
+    }
+
+    private var appleSignInButton: some View {
+        Button(action: handleAppleSignIn) {
+            HStack(spacing: 8) {
+                Image(systemName: "applelogo")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.black)
+                Text("Continue with Apple")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(MedMargTheme.slate900)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 11)
             .background(Color.white)
             .cornerRadius(12)
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.slate200, lineWidth: 1))
@@ -648,38 +441,7 @@ struct CareSeekerLoginView: View {
     }
 
     // ==========================================
-    // 🛡️ 4. FOOTER & COMPLIANCE
-    // ==========================================
-    private var footerComplianceSection: some View {
-        VStack(spacing: 8) {
-            HStack(spacing: 16) {
-                HStack(spacing: 4) {
-                    Image(systemName: "shield.checkmark.fill")
-                        .foregroundColor(MedMargTheme.primaryTeal)
-                    Text("NABL Certified")
-                }
-                HStack(spacing: 4) {
-                    Image(systemName: "lock.shield.fill")
-                        .foregroundColor(MedMargTheme.primaryTeal)
-                    Text("256-Bit SSL")
-                }
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.seal.fill")
-                        .foregroundColor(MedMargTheme.primaryTeal)
-                    Text("ABDM Ready")
-                }
-            }
-            .font(.system(size: 10, weight: .bold))
-            .foregroundColor(MedMargTheme.slate500)
-
-            Text("© 2026 MedMarg Healthcare. All Rights Reserved.")
-                .font(.system(size: 10))
-                .foregroundColor(MedMargTheme.slate500.opacity(0.8))
-        }
-    }
-
-    // ==========================================
-    // 📱 6. PHONE COLLECTION MODAL SHEET (FOR FIRST-TIME OAUTH USERS)
+    // 📱 PHONE COLLECTION MODAL SHEET (FOR FIRST-TIME OAUTH)
     // ==========================================
     private var phoneCollectionModalSheet: some View {
         NavigationStack {
@@ -751,12 +513,7 @@ struct CareSeekerLoginView: View {
     }
 
     // ==========================================
-    // 🔗 7. APPLE ACCOUNT LINKING MODAL SHEET
-    // Connects @icloud / Apple ID to user's real @gmail or MedMarg credentials
-    // ==========================================
-    // ==========================================
-    // 🔗 7. APPLE ACCOUNT LINKING MODAL SHEET
-    // Connects @icloud / Apple ID to user's real @gmail or MedMarg credentials
+    // 🔗 APPLE ACCOUNT LINKING MODAL SHEET
     // ==========================================
     private var appleAccountLinkingModalSheet: some View {
         NavigationStack {
@@ -846,10 +603,9 @@ struct CareSeekerLoginView: View {
         VStack(spacing: 10) {
             Button(action: handleLinkAppleWithGoogle) {
                 HStack(spacing: 12) {
-                    Image("google_icon")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 20, height: 20)
+                    Text("G")
+                        .font(.system(size: 18, weight: .black))
+                        .foregroundColor(Color(red: 0.86, green: 0.25, blue: 0.20))
                     Text("Link with Google Account")
                         .font(.system(size: 14, weight: .bold))
                         .foregroundColor(MedMargTheme.slate900)
@@ -957,7 +713,6 @@ struct CareSeekerLoginView: View {
     // ==========================================
     // ⚙️ AUTHENTICATION LOGIC & HANDLERS
     // ==========================================
-    
     private func cleanDigitsOnly(_ str: String) -> String {
         return str.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
     }
@@ -1044,7 +799,6 @@ struct CareSeekerLoginView: View {
                 }
             }
         } else {
-            // Fallback for Simulator / devices without biometric enrollment
             self.loggedInUser = self.users.first(where: { $0.role == .patient }) ?? self.users[0]
         }
     }
@@ -1063,7 +817,6 @@ struct CareSeekerLoginView: View {
                 let appleUserId = appleResult.userIdentifier
                 let rawEmail = (appleResult.email ?? "").lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
                 
-                // 1. Check if this Apple user ID was already linked to a primary email/account
                 if let linkedEmail = UserDefaults.standard.string(forKey: "medmarg_apple_linked_user_\(appleUserId)"),
                    !linkedEmail.isEmpty {
                     if let existing = self.users.first(where: { $0.email.lowercased() == linkedEmail.lowercased() }) {
@@ -1089,7 +842,6 @@ struct CareSeekerLoginView: View {
                     return
                 }
 
-                // 2. Check if the Apple email directly matches an existing account (non-private-relay match)
                 if !rawEmail.isEmpty, let existing = self.users.first(where: {
                     $0.email.lowercased() == rawEmail ||
                     $0.username.lowercased() == rawEmail.components(separatedBy: "@").first ?? ""
@@ -1099,7 +851,6 @@ struct CareSeekerLoginView: View {
                     return
                 }
 
-                // 3. First-time Apple Sign-In with iCloud / Private Relay -> Prompt to link Google or MedMarg credentials!
                 self.pendingAppleResult = appleResult
                 self.linkEmailOrPhoneInput = ""
                 self.linkPasswordInput = ""
@@ -1125,7 +876,6 @@ struct CareSeekerLoginView: View {
                 let googleEmail = gUser.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
                 let appleUserId = appleResult.userIdentifier
                 
-                // Link Apple user identifier to Google email
                 UserDefaults.standard.set(googleEmail, forKey: "medmarg_apple_linked_user_\(appleUserId)")
                 if let pic = gUser.picture, !pic.isEmpty {
                     UserDefaults.standard.set(pic, forKey: "medmarg_user_avatar_\(googleEmail)")
@@ -1137,7 +887,6 @@ struct CareSeekerLoginView: View {
                 self.showAppleLinkSheet = false
                 self.pendingAppleResult = nil
 
-                // Check existing registered user
                 if let existing = self.users.first(where: { $0.email.lowercased() == googleEmail }) {
                     var updated = existing
                     if updated.phone.isEmpty && !cachedPhone.isEmpty { updated.phone = cachedPhone }
@@ -1164,7 +913,6 @@ struct CareSeekerLoginView: View {
                     return
                 }
 
-                // If no phone yet, prompt for phone
                 let newPatient = UserProfile(
                     id: "usr_g_\(gUser.googleId.prefix(8))",
                     name: gUser.name.isEmpty ? "Google User" : gUser.name,
@@ -1211,7 +959,6 @@ struct CareSeekerLoginView: View {
             let matchPhone = !inputDigits.isEmpty && cleanDigitsOnly(u.phone).hasSuffix(inputDigits)
             return (matchEmail || matchUser || matchPhone) && u.password == pass
         }) {
-            // Save link in UserDefaults
             UserDefaults.standard.set(found.email.lowercased(), forKey: "medmarg_apple_linked_user_\(appleResult.userIdentifier)")
             
             isLinkingAccount = false
@@ -1275,7 +1022,6 @@ struct CareSeekerLoginView: View {
             case .success(let gUser):
                 let emailLower = gUser.email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
                 
-                // 1. Check if user already exists in registered accounts OR previously saved phone in UserDefaults
                 let cachedPhone = UserDefaults.standard.string(forKey: "medmarg_user_phone_\(emailLower)") ?? ""
                 if let pic = gUser.picture, !pic.isEmpty {
                     UserDefaults.standard.set(pic, forKey: "medmarg_user_avatar_\(emailLower)")
@@ -1296,7 +1042,6 @@ struct CareSeekerLoginView: View {
                 }
 
                 if !cachedPhone.isEmpty {
-                    // Previously saved phone number -> Bypass phone prompt!
                     let patient = UserProfile(
                         id: "usr_g_\(gUser.googleId.prefix(8))",
                         name: gUser.name.isEmpty ? "Google User" : gUser.name,
@@ -1315,7 +1060,6 @@ struct CareSeekerLoginView: View {
                     return
                 }
 
-                // 2. First-time login without phone -> Ask for phone once, then persist
                 let newPatient = UserProfile(
                     id: "usr_g_\(gUser.googleId.prefix(8))",
                     name: gUser.name.isEmpty ? "Google User" : gUser.name,
@@ -1352,12 +1096,10 @@ struct CareSeekerLoginView: View {
         if var user = pendingOAuthUser {
             let fullPhone = "+91 \(clean)"
             user.phone = fullPhone
-            user.role = .patient // Ensure always patient (customer) panel for new signups
+            user.role = .patient
             
-            // Persist phone locally in UserDefaults so user is never prompted again
             UserDefaults.standard.set(fullPhone, forKey: "medmarg_user_phone_\(user.email.lowercased())")
 
-            // Sync phone update to Backend database
             syncPhoneUpdateToBackend(userId: user.id, phone: fullPhone)
             syncGoogleAuthToBackend(email: user.email, name: user.name, googleId: user.id, phone: fullPhone)
             
@@ -1422,3 +1164,4 @@ struct RoundedCornerShape: Shape {
         return Path(path.cgPath)
     }
 }
+

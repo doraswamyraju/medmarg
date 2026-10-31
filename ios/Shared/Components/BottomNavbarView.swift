@@ -16,12 +16,14 @@ struct BottomNavbarView: View {
 
     // ==========================================
     // 🔮 GLASSMORPHIC FLOATING PILL NAVBAR FOR AGENT
-    // Matches Reference Design 3: Dark frosted glass capsule
+    // Pixel-perfect match to reference Image 3:
+    // Floating dark glassmorphic capsule with glowing active green pill tab
     // Tabs: 0: Home, 7: Orders, 1: Inventory, 3: Payments, 4: Reports
+    // Pure transparent surroundings (ZERO white background)
     // ==========================================
     private var agentGlassmorphicNavbar: some View {
         HStack(spacing: 0) {
-            agentGlassTab(index: 0, icon: "house.fill", title: "Home", isCenterBadge: true)
+            agentGlassTab(index: 0, icon: "house.fill", title: "Home")
             agentGlassTab(index: 7, icon: "list.clipboard.fill", title: "Orders")
             agentGlassTab(index: 1, icon: "cube.box.fill", title: "Inventory")
             agentGlassTab(index: 3, icon: "indianrupeesign.circle.fill", title: "Payments")
@@ -31,13 +33,13 @@ struct BottomNavbarView: View {
         .padding(.vertical, 8)
         .background(
             Capsule()
-                .fill(Color(red: 0.08, green: 0.16, blue: 0.18).opacity(0.92))
+                .fill(Color(red: 0.08, green: 0.16, blue: 0.18).opacity(0.95))
                 .overlay(
                     Capsule()
                         .stroke(
                             LinearGradient(
                                 colors: [
-                                    Color.white.opacity(0.3),
+                                    Color.white.opacity(0.25),
                                     Color.white.opacity(0.08),
                                     Color.clear
                                 ],
@@ -47,13 +49,14 @@ struct BottomNavbarView: View {
                             lineWidth: 1
                         )
                 )
-                .shadow(color: Color.black.opacity(0.35), radius: 16, x: 0, y: 8)
+                .shadow(color: Color.black.opacity(0.4), radius: 16, x: 0, y: 8)
         )
         .padding(.horizontal, 16)
-        .padding(.bottom, 6)
+        .padding(.bottom, 4)
+        .background(Color.clear)
     }
 
-    private func agentGlassTab(index: Int, icon: String, title: String, isCenterBadge: Bool = false) -> some View {
+    private func agentGlassTab(index: Int, icon: String, title: String) -> some View {
         let isSelected = (selectedTab == index) || (index == 0 && (selectedTab != 7 && selectedTab != 1 && selectedTab != 3 && selectedTab != 4))
         
         return Button(action: {
@@ -61,9 +64,9 @@ struct BottomNavbarView: View {
                 selectedTab = index
             }
         }) {
-            VStack(spacing: 4) {
+            VStack(spacing: 3) {
                 if isSelected {
-                    // Glowing Active Capsule or Icon
+                    // Glowing Active Green Pill
                     ZStack {
                         Capsule()
                             .fill(
@@ -76,11 +79,11 @@ struct BottomNavbarView: View {
                                     endPoint: .bottom
                                 )
                             )
-                            .frame(width: 52, height: 34)
+                            .frame(width: 52, height: 32)
                             .overlay(Capsule().stroke(Color(red: 0.0, green: 0.95, blue: 0.65).opacity(0.6), lineWidth: 1))
 
                         Image(systemName: icon)
-                            .font(.system(size: 16, weight: .black))
+                            .font(.system(size: 15, weight: .black))
                             .foregroundColor(Color(red: 0.2, green: 1.0, blue: 0.7))
                     }
 
@@ -94,15 +97,15 @@ struct BottomNavbarView: View {
                         .frame(width: 4, height: 4)
                         .shadow(color: Color(red: 0.0, green: 0.95, blue: 0.65), radius: 4)
                 } else {
-                    VStack(spacing: 4) {
+                    VStack(spacing: 3) {
                         Image(systemName: icon)
-                            .font(.system(size: 17, weight: .medium))
-                            .foregroundColor(Color.white.opacity(0.6))
-                            .frame(height: 34)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(Color.white.opacity(0.65))
+                            .frame(height: 32)
 
                         Text(title)
                             .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.6))
+                            .foregroundColor(Color.white.opacity(0.65))
 
                         Circle()
                             .fill(Color.clear)
@@ -137,9 +140,6 @@ struct BottomNavbarView: View {
 
             HStack(spacing: 0) {
                 if userRole == .admin {
-                    // ==========================================
-                    // 🛡️ SUPER ADMIN DEDICATED 5-ELEMENT BOTTOM NAVBAR
-                    // ==========================================
                     bottomNavTab(index: 1, icon: "flask.fill", title: "Tests")
                     bottomNavTab(index: 2, icon: "building.2.fill", title: "Labs")
 
@@ -166,7 +166,6 @@ struct BottomNavbarView: View {
                     bottomNavTab(index: 3, icon: "cross.case.fill", title: "Hospitals")
                     bottomNavTab(index: 5, icon: "car.fill", title: "Agents")
                 } else {
-                    // Customer
                     bottomNavTab(index: 1, icon: "flask.fill", title: "Tests")
                     bottomNavTab(index: 7, icon: "bag.fill", title: "Orders")
 
