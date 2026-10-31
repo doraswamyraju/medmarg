@@ -243,13 +243,26 @@ struct ContentView: View {
                             }
                         }
 
-                        // 3. Shared Dynamic Bottom Navigation Bar (5 Elements: Home, Labs, Track, Reports, Profile)
+                        // 3. Shared Dynamic Bottom Navigation Bar (For non-agents, stays in VStack)
+                        if user.role != .collectionAgent && user.role != .freelanceAgent {
+                            BottomNavbarView(
+                                selectedTab: $selectedTab,
+                                userRole: user.role,
+                                showBottomSheetMenu: $showBottomSheetMenu,
+                                showQuickCreateSheet: $showQuickCreateSheet
+                            )
+                        }
+                    }
+
+                    // 3b. Glassmorphic Floating Pill Navbar for Agent Roles (Overlay in ZStack with no white container)
+                    if user.role == .collectionAgent || user.role == .freelanceAgent {
                         BottomNavbarView(
                             selectedTab: $selectedTab,
                             userRole: user.role,
                             showBottomSheetMenu: $showBottomSheetMenu,
                             showQuickCreateSheet: $showQuickCreateSheet
                         )
+                        .padding(.bottom, 6)
                     }
 
                     // 4. Floating Cart Pill Bar (When items exist in cart & user is Patient)
