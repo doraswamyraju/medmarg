@@ -3,11 +3,11 @@ import SwiftUI
 // =========================================================================
 // 📊 AGENT METRIC COUNTERS (SINGLE HORIZONTAL SCROLLABLE ROW)
 // 100% Live Telemetry - STRICTLY ZERO DUMMY/SAMPLE/HARDCODED DATA
-// Shows 4 Cards matching reference Image 3:
-// 1. Today's Collections (₹)
-// 2. Assigned Orders
-// 3. Completed (Daily Quota)
-// 4. On-Time Rate (%)
+// Tappable cards:
+// 1. Today's Collections (₹) -> opens Payments ledger
+// 2. Assigned Orders -> opens Orders tab
+// 3. Completed (Daily Quota) -> opens Shift Targets / Quota
+// 4. On-Time Rate (%) -> opens Performance / Reports
 // =========================================================================
 
 struct AgentMetricCountersRow: View {
@@ -16,53 +16,66 @@ struct AgentMetricCountersRow: View {
     let completedCount: Int
     let totalTarget: Int
     let onTimePercentage: Int
+    var onSelectMetric: (Int) -> Void = { _ in }
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
-                // 1. Today's Collections
-                metricCard(
-                    title: "Today's Collections",
-                    value: "₹\(todayEarnings.formatted())",
-                    trendText: "+0%",
-                    trendSub: "vs. yesterday",
-                    icon: "testtube.2",
-                    accentColor: MedMargTheme.primaryTeal,
-                    hasProgressBar: false
-                )
+                // 1. Today's Collections (Tapping navigates to Payments tab 3)
+                Button(action: { onSelectMetric(3) }) {
+                    metricCard(
+                        title: "Today's Collections",
+                        value: "₹\(todayEarnings.formatted())",
+                        trendText: todayEarnings > 0 ? "Live" : "No visits closed",
+                        trendSub: "",
+                        icon: "testtube.2",
+                        accentColor: MedMargTheme.primaryTeal,
+                        hasProgressBar: false
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
 
-                // 2. Assigned Orders
-                metricCard(
-                    title: "Assigned Orders",
-                    value: "\(assignedCount)",
-                    trendText: "\(max(0, assignedCount - completedCount)) Pending",
-                    trendSub: "",
-                    icon: "doc.text.fill",
-                    accentColor: Color(red: 0.2, green: 0.5, blue: 0.95),
-                    hasProgressBar: false
-                )
+                // 2. Assigned Orders (Tapping navigates to Orders tab 7)
+                Button(action: { onSelectMetric(7) }) {
+                    metricCard(
+                        title: "Assigned Orders",
+                        value: "\(assignedCount)",
+                        trendText: "\(max(0, assignedCount - completedCount)) Pending",
+                        trendSub: "",
+                        icon: "doc.text.fill",
+                        accentColor: Color(red: 0.2, green: 0.5, blue: 0.95),
+                        hasProgressBar: false
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
 
-                // 3. Completed Quota
-                metricCard(
-                    title: "Completed",
-                    value: "\(completedCount) / \(max(1, totalTarget))",
-                    trendText: "Daily Quota",
-                    trendSub: "",
-                    icon: "checkmark.circle.fill",
-                    accentColor: Color.orange,
-                    hasProgressBar: true
-                )
+                // 3. Completed Quota (Tapping navigates to Shift Quota tab 2)
+                Button(action: { onSelectMetric(2) }) {
+                    metricCard(
+                        title: "Completed",
+                        value: "\(completedCount) / \(max(1, totalTarget))",
+                        trendText: "Daily Quota",
+                        trendSub: "",
+                        icon: "checkmark.circle.fill",
+                        accentColor: Color.orange,
+                        hasProgressBar: true
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
 
-                // 4. On-Time Rate
-                metricCard(
-                    title: "On-Time Rate",
-                    value: "\(onTimePercentage)%",
-                    trendText: onTimePercentage >= 90 ? "Excellent" : "Standard",
-                    trendSub: "",
-                    icon: "clock.fill",
-                    accentColor: Color(red: 0.55, green: 0.35, blue: 0.85),
-                    hasProgressBar: false
-                )
+                // 4. On-Time Rate (Tapping navigates to Reports tab 4)
+                Button(action: { onSelectMetric(4) }) {
+                    metricCard(
+                        title: "On-Time Rate",
+                        value: "\(onTimePercentage)%",
+                        trendText: onTimePercentage >= 90 ? "Excellent" : "Standard",
+                        trendSub: "",
+                        icon: "clock.fill",
+                        accentColor: Color(red: 0.55, green: 0.35, blue: 0.85),
+                        hasProgressBar: false
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 4)
@@ -126,7 +139,7 @@ struct AgentMetricCountersRow: View {
                         Circle()
                             .fill(accentColor)
                             .frame(width: 5, height: 5)
-                    } else if title == "Today's Collections" {
+                    } else if title == "Today's Collections" && todayEarnings > 0 {
                         Image(systemName: "arrow.up")
                             .font(.system(size: 8, weight: .bold))
                             .foregroundColor(accentColor)

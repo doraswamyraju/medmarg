@@ -128,13 +128,18 @@ struct AgentHomeDashboardView: View {
                         // Tirupati Temple Landscape Greeting Card (Reference Design 3)
                         agentHeroGreetingCard
 
-                        // Single Horizontal Row: Metric Counters (100% Live Telemetry)
+                        // Single Horizontal Row: Metric Counters (100% Live Telemetry - Tappable)
                         AgentMetricCountersRow(
                             todayEarnings: quotaStats?.earningsToday ?? 0,
                             assignedCount: rosterOrders.count,
                             completedCount: quotaStats?.samplesToday ?? completedCount,
                             totalTarget: quotaStats?.maxDailyQuota ?? 15,
-                            onTimePercentage: Int(quotaStats?.onTimeRate?.replacingOccurrences(of: "%", with: "") ?? "98") ?? 98
+                            onTimePercentage: Int(quotaStats?.onTimeRate?.replacingOccurrences(of: "%", with: "") ?? "98") ?? 98,
+                            onSelectMetric: { targetTab in
+                                withAnimation {
+                                    selectedTab = targetTab
+                                }
+                            }
                         )
 
                         // Latest Assigned Order Section
