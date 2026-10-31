@@ -718,73 +718,21 @@ struct CareSeekerLoginView: View {
         let inputDigits = cleanDigitsOnly(input)
         let inputLower = input.lowercased()
 
-        // 1. Direct match in local pre-registered user profiles
+        // 1. Direct match in local pre-registered user profiles with STRICT password verification
         if let found = users.first(where: { u in
             let matchEmail = u.email.lowercased() == inputLower
             let matchUser = u.username.lowercased() == inputLower
             let matchPhone = !inputDigits.isEmpty && cleanDigitsOnly(u.phone).hasSuffix(inputDigits)
-            return (matchEmail || matchUser || matchPhone) && (u.password == pass || pass == "password123")
+            return (matchEmail || matchUser || matchPhone) && u.password == pass
         }) {
             loggedInUser = found
             return
         }
 
-        // 2. Fallback matching for Phlebotomists & Agents (agent, salaried, freelance)
-        if inputLower.contains("agent") || inputLower.contains("salaried") || inputDigits.hasSuffix("9777777777") || inputDigits.hasSuffix("9876555555") {
-            if let agent = users.first(where: { $0.role == .collectionAgent }) {
-                loggedInUser = agent
-                return
-            }
-        }
-
-        if inputLower.contains("freelance") || inputDigits.hasSuffix("9666666666") || inputDigits.hasSuffix("9494311223") {
-            if let fl = users.first(where: { $0.role == .freelanceAgent }) {
-                loggedInUser = fl
-                return
-            }
-        }
-
-        // 3. Fallback matching for Admin, Doctor, Lab, Scans, Pharmacy, Patient
-        if inputLower.contains("admin") || inputDigits.hasSuffix("9999999999") {
-            if let adm = users.first(where: { $0.role == .admin }) {
-                loggedInUser = adm
-                return
-            }
-        }
-        if inputLower.contains("doc") || inputDigits.hasSuffix("9555555555") {
-            if let doc = users.first(where: { $0.role == .doctor }) {
-                loggedInUser = doc
-                return
-            }
-        }
-        if inputLower.contains("lab") || inputDigits.hasSuffix("9444444444") {
-            if let lab = users.first(where: { $0.role == .diagnosticLab }) {
-                loggedInUser = lab
-                return
-            }
-        }
-        if inputLower.contains("scan") || inputDigits.hasSuffix("9333333333") {
-            if let sc = users.first(where: { $0.role == .scanCenter }) {
-                loggedInUser = sc
-                return
-            }
-        }
-        if inputLower.contains("pharma") || inputDigits.hasSuffix("9876544444") {
-            if let ph = users.first(where: { $0.role == .pharmacy }) {
-                loggedInUser = ph
-                return
-            }
-        }
-
-        if inputLower.contains("patient") || inputDigits.hasSuffix("9876543210") {
-            loggedInUser = users.first(where: { $0.role == .patient }) ?? users[0]
-            return
-        }
-
-        // 4. Remote authentication fallback against live MedMarg server
+        // 2. Remote authentication against live MedMarg backend (/api/v1/auth/login)
         isAuthenticating = true
         guard let url = URL(string: "https://medmarg.com/api/v1/auth/login") else {
-            errorMessage = "Invalid credentials. Please verify email/phone and password."
+            errorMessage = "Invalid email/phone or password. Please check your credentials."
             isAuthenticating = false
             return
         }
@@ -801,36 +749,24 @@ struct CareSeekerLoginView: View {
                 self.isAuthenticating = false
                 if let d = data,
                    let json = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+                   let success = json["success"] as? Bool, success,
                    let uData = json["user"] as? [String: Any],
                    let roleStr = uData["role"] as? String {
-                    
-                    let role: UserRole
-                    switch roleStr {
-                    case "ADMIN", "SUPER_ADMIN": role = .admin
-                    case "DOCTOR": role = .doctor
-                    case "DIAGNOSTIC_LAB": role = .diagnosticLab
-                    case "SCAN_CENTER": role = .scanCenter
-                    case "PHARMACY": role = .pharmacy
-                    case "FREELANCER_AGENT", "FREELANCE_AGENT", "FREELANCE": role = .freelanceAgent
-                    case "SALARIED_AGENT", "COLLECTION_AGENT", "AGENT": role = .collectionAgent
-                    default: role = .patient
-                    }
-
-                    let profile = UserProfile(
-                        id: uData["id"] as? String ?? "usr_\(Date().timeIntervalSince1970)",
-                        name: uData["name"] as? String ?? input,
-                        username: (uData["email"] as? String ?? input).components(separatedBy: "@").first ?? input,
-                        email: uData["email"] as? String ?? input,
-                        phone: uData["phone"] as? String ?? input,
+                    let remoteUser = UserProfile(
+                        id: uData["id"] as? String ?? "usr_remote",
+                        name: uData["name"] as? String ?? "User",
+                        username: uData["username"] as? String ?? input,
+                        email: uData["email"] as? String ?? "",
+                        phone: uData["phone"] as? String ?? "",
                         password: pass,
-                        role: role,
+                        role: UserRole.from(string: roleStr),
                         organization: uData["organization"] as? String ?? "MedMarg",
                         status: "Active",
                         createdAt: "Today"
                     )
-                    self.loggedInUser = profile
+                    self.loggedInUser = remoteUser
                 } else {
-                    self.errorMessage = "Invalid credentials. Please verify email/phone and password."
+                    self.errorMessage = "Incorrect password or account not found. Please try again."
                 }
             }
         }.resume()

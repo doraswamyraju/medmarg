@@ -10,11 +10,22 @@ struct AgentTopbarView: View {
     @Binding var isOnDuty: Bool
     @ObservedObject var locationManager: AgentLocationManager
     let onToggleDuty: (Bool) -> Void
+    var onSidebarTap: () -> Void = {}
     var onNotificationTap: () -> Void = {}
     var onProfileTap: () -> Void = {}
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
+            // Hamburger Sidebar Button
+            Button(action: onSidebarTap) {
+                Image(systemName: "line.3.horizontal")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(MedMargTheme.primaryTeal)
+                    .padding(8)
+                    .background(MedMargTheme.lightTeal)
+                    .cornerRadius(10)
+            }
+
             // Fleet Logo Badge
             HStack(spacing: 6) {
                 Image("logo")

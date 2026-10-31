@@ -134,6 +134,7 @@ struct AgentDashboardView: View {
     let user: UserProfile
     let onLogout: () -> Void
     @Binding var selectedTab: Int // 0: Pickups, 1: Inventory/Store, 2: Shift Quota, 3: Payments, 4: Profile
+    @Binding var showSidebar: Bool
 
     // Live Server States
     @State private var rosterOrders: [AgentPickupOrder] = []
@@ -190,7 +191,7 @@ struct AgentDashboardView: View {
 
                         // Tab 0: Assigned Pickups & Field Execution
                         if selectedTab == 0 {
-                            AgentHomeDashboardView(user: user, onLogout: onLogout, selectedTab: $selectedTab)
+                            AgentHomeDashboardView(user: user, onLogout: onLogout, selectedTab: $selectedTab, showSidebar: $showSidebar)
                         } else if selectedTab == 1 {
                             agentInventoryStoreSection
                         } else if selectedTab == 2 {
@@ -200,7 +201,7 @@ struct AgentDashboardView: View {
                         } else if selectedTab == 4 {
                             agentProfileSection
                         } else {
-                            AgentHomeDashboardView(user: user, onLogout: onLogout, selectedTab: $selectedTab)
+                            AgentHomeDashboardView(user: user, onLogout: onLogout, selectedTab: $selectedTab, showSidebar: $showSidebar)
                         }
 
                         Spacer().frame(height: 80) // Spacing for custom bottom navbar

@@ -199,27 +199,27 @@ struct ContentView: View {
                 // Logged-in App Workspace with Navigation Drawer & Topbar
                 ZStack(alignment: .bottom) {
                     VStack(spacing: 0) {
-                        // 1. Unified Industry-Standard Top Bar
-                        TopbarView(
-                            user: user,
-                            currentCity: $currentCity,
-                            showSidebar: $showSidebar,
-                            showCityPicker: $showCityPicker,
-                            showCartSheet: $showCartSheet,
-                            showNotificationCenter: $showNotificationCenter,
-                            cartItemCount: cartItems.count,
-                            onLogout: logout,
-                            onLogoTap: { selectedTab = 0 },
-                            onProfileTap: {
-                                if user.role == .collectionAgent || user.role == .freelanceAgent {
-                                    selectedTab = 4
-                                } else if user.role == .admin {
-                                    selectedTab = 7
-                                } else {
-                                    selectedTab = 6
+                        // 1. Unified Industry-Standard Top Bar (Hidden for Agent whose Home screen has dedicated Topbar)
+                        if user.role != .collectionAgent && user.role != .freelanceAgent {
+                            TopbarView(
+                                user: user,
+                                currentCity: $currentCity,
+                                showSidebar: $showSidebar,
+                                showCityPicker: $showCityPicker,
+                                showCartSheet: $showCartSheet,
+                                showNotificationCenter: $showNotificationCenter,
+                                cartItemCount: cartItems.count,
+                                onLogout: logout,
+                                onLogoTap: { selectedTab = 0 },
+                                onProfileTap: {
+                                    if user.role == .admin {
+                                        selectedTab = 7
+                                    } else {
+                                        selectedTab = 6
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                         
                         // 2. Role-Based Active View Body
                         Group {
@@ -237,9 +237,9 @@ struct ContentView: View {
                             case .pharmacy:
                                 PharmacyDeskView(user: user, onLogout: logout)
                             case .collectionAgent:
-                                AgentDashboardView(user: user, onLogout: logout, selectedTab: $selectedTab)
+                                AgentDashboardView(user: user, onLogout: logout, selectedTab: $selectedTab, showSidebar: $showSidebar)
                             case .freelanceAgent:
-                                AgentDashboardView(user: user, onLogout: logout, selectedTab: $selectedTab)
+                                AgentDashboardView(user: user, onLogout: logout, selectedTab: $selectedTab, showSidebar: $showSidebar)
                             }
                         }
 
@@ -2190,16 +2190,17 @@ struct ContentView: View {
     // ==========================================
     private func handleLogin() {
         let trimmed = usernameInput.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        if trimmed.isEmpty {
-            errorMessage = "Please enter username or email"
+        let pass = passwordInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty || pass.isEmpty {
+            errorMessage = "Please enter both username/email and password"
             return
         }
 
-        if let match = users.first(where: { $0.username.lowercased() == trimmed || $0.email.lowercased() == trimmed }) {
+        if let match = users.first(where: { ($0.username.lowercased() == trimmed || $0.email.lowercased() == trimmed) && $0.password == pass }) {
             loggedInUser = match
             errorMessage = ""
         } else {
-            quickDemoLogin(role: .patient)
+            errorMessage = "Invalid username or password"
         }
     }
 

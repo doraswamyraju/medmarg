@@ -16,6 +16,7 @@ struct AgentHomeDashboardView: View {
     let user: UserProfile
     let onLogout: () -> Void
     @Binding var selectedTab: Int
+    @Binding var showSidebar: Bool
 
     @StateObject private var locationManager = AgentLocationManager.shared
 
@@ -59,6 +60,9 @@ struct AgentHomeDashboardView: View {
                     onToggleDuty: { duty in
                         updateDuty(duty)
                     },
+                    onSidebarTap: {
+                        withAnimation { showSidebar.toggle() }
+                    },
                     onProfileTap: {
                         selectedTab = 4
                     }
@@ -88,13 +92,13 @@ struct AgentHomeDashboardView: View {
                             .padding(.top, 8)
                         }
 
-                        // Single Horizontal Row: Metric Counters
+                        // Single Horizontal Row: Metric Counters (100% Live Telemetry)
                         AgentMetricCountersRow(
-                            todayEarnings: quotaStats?.earningsToday ?? (quotaStats?.completedToday ?? 8) * 150,
+                            todayEarnings: quotaStats?.earningsToday ?? 0,
                             assignedCount: rosterOrders.count,
-                            completedCount: quotaStats?.completedToday ?? 8,
-                            totalTarget: quotaStats?.targetToday ?? 15,
-                            onTimePercentage: 98
+                            completedCount: quotaStats?.samplesToday ?? rosterOrders.filter { $0.status == "SAMPLE_COLLECTED" || $0.status == "COMPLETED" }.count,
+                            totalTarget: quotaStats?.maxDailyQuota ?? 15,
+                            onTimePercentage: Int(quotaStats?.onTimeRate?.replacingOccurrences(of: "%", with: "") ?? "100") ?? 100
                         )
                         .padding(.top, 4)
 
@@ -439,6 +443,10 @@ struct AgentHomeDashboardView: View {
                     let status = d["status"] as? String
                     let otp = d["handoverOtp"] as? String ?? (d["otp"] as? String)
                     let slot = d["slot"] as? String
+                    let date = d["date"] as? String ?? "Today"
+                    let eta = d["eta"] as? String ?? ""
+                    let temp = d["tempTelemetry"] as? String
+                    let payMode = d["paymentMode"] as? String ?? "DOORSTEP_QR"
                     let payStatus = d["paymentStatus"] as? String
                     let barcode = d["barcode"] as? String
 
@@ -448,31 +456,31 @@ struct AgentHomeDashboardView: View {
                         careSeekerName: name,
                         phone: phone,
                         patientPhone: phone,
-                        city: "Tirupati",
+                        city: d["city"] as? String ?? "Tirupati",
                         address: addr,
                         items: items,
-                        totalPersons: 1,
-                        selectedLabProvider: "MedMarg",
-                        labName: "MedMarg Regional Hub",
+                        totalPersons: d["totalPersons"] as? Int ?? 1,
+                        selectedLabProvider: d["selectedLabProvider"] as? String ?? "MedMarg",
+                        labName: d["labName"] as? String ?? "MedMarg Regional Hub",
                         amount: amt,
                         totalAmount: amt,
                         status: status,
-                        assignedAgent: user.name,
-                        phleboName: user.name,
-                        phleboPhone: user.phone,
-                        phleboRating: "4.9",
+                        assignedAgent: d["assignedAgent"] as? String ?? user.name,
+                        phleboName: d["phleboName"] as? String ?? user.name,
+                        phleboPhone: d["phleboPhone"] as? String ?? user.phone,
+                        phleboRating: d["phleboRating"] as? String ?? "4.9",
                         otp: otp,
                         handoverOtp: otp,
                         slot: slot,
-                        date: "Today",
-                        eta: "25 Mins",
-                        tempTelemetry: "3.8°C",
-                        paymentMode: "DOORSTEP_QR",
+                        date: date,
+                        eta: eta,
+                        tempTelemetry: temp,
+                        paymentMode: payMode,
                         paymentStatus: payStatus,
                         barcode: barcode,
-                        arrivalPhoto: nil,
-                        samplePhotos: nil,
-                        reviewRequestSent: false,
+                        arrivalPhoto: d["arrivalPhoto"] as? String,
+                        samplePhotos: d["samplePhotos"] as? [String],
+                        reviewRequestSent: d["reviewRequestSent"] as? Bool ?? false,
                         phleboVitals: nil
                     )
                 }
@@ -517,18 +525,20 @@ struct AgentHomeDashboardView: View {
         }
 
         // Fetch Quota Stats
-        if let quotaUrl = URL(string: "https://medmarg.com/api/v1/agent/quota-stats") {
+        if let quotaUrl = URL(string: "https://medmarg.com/api/v1/agent/quota-stats?agentId=\(effectiveAgentId)") {
             if let (qData, _) = try? await URLSession.shared.data(from: quotaUrl),
-               let qJson = try? JSONSerialization.jsonObject(with: qData) as? [String: Any],
-               let stats = qJson["stats"] as? [String: Any] {
-                let agentIdVal = stats["agentId"] as? String ?? effectiveAgentId
-                let agentNameVal = stats["agentName"] as? String ?? user.name
-                let zoneVal = stats["zone"] as? String ?? "Zone 1 Tirupati"
-                let targetVal = stats["targetToday"] as? Int ?? 15
-                let completedVal = stats["completedToday"] as? Int ?? 8
-                let pendingVal = stats["pendingToday"] as? Int ?? 7
-                let earningsVal = stats["earningsToday"] as? Int ?? 1200
-                let incentivesVal = stats["incentivesEarned"] as? Int ?? 250
+               let qJson = try? JSONSerialization.jsonObject(with: qData) as? [String: Any] {
+                let agentIdVal = qJson["agentId"] as? String ?? effectiveAgentId
+                let agentNameVal = qJson["name"] as? String ?? user.name
+                let zoneVal = qJson["zone"] as? String ?? "Zone 1 Tirupati"
+                let targetVal = qJson["maxDailyQuota"] as? Int ?? 15
+                let completedVal = qJson["samplesToday"] as? Int ?? 0
+                let pendingVal = qJson["quotaRemaining"] as? Int ?? max(0, targetVal - completedVal)
+                let ratingVal = qJson["rating"] as? Double ?? 4.9
+                let onTime = qJson["onTimeRate"] as? String ?? "100%"
+                let fasting = qJson["fastingAccuracy"] as? String ?? "100%"
+                let earningsVal = (qJson["earningsToday"] as? Int) ?? (completedVal * 150)
+                let incentivesVal = qJson["incentivesEarned"] as? Int ?? 0
 
                 await MainActor.run {
                     self.quotaStats = AgentQuotaStats(
@@ -537,10 +547,10 @@ struct AgentHomeDashboardView: View {
                         samplesToday: completedVal,
                         maxDailyQuota: targetVal,
                         quotaRemaining: pendingVal,
-                        rating: 4.9,
+                        rating: ratingVal,
                         zone: zoneVal,
-                        onTimeRate: "98%",
-                        fastingAccuracy: "100%",
+                        onTimeRate: onTime,
+                        fastingAccuracy: fasting,
                         earningsToday: earningsVal,
                         completedToday: completedVal,
                         targetToday: targetVal,
