@@ -51,6 +51,19 @@ enum UserRole: String, CaseIterable, Identifiable {
         }
     }
 
+    static func from(string: String) -> UserRole {
+        switch string.uppercased() {
+        case "ADMIN", "SUPER_ADMIN": return .admin
+        case "DOCTOR": return .doctor
+        case "DIAGNOSTIC_LAB", "LAB": return .diagnosticLab
+        case "SCAN_CENTER", "RADIOLOGY": return .scanCenter
+        case "PHARMACY": return .pharmacy
+        case "FREELANCER_AGENT", "FREELANCE_AGENT", "FREELANCE": return .freelanceAgent
+        case "SALARIED_AGENT", "COLLECTION_AGENT", "AGENT": return .collectionAgent
+        default: return .patient
+        }
+    }
+
     var iconName: String {
         switch self {
         case .patient: return "person.crop.circle.fill"
