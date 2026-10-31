@@ -164,11 +164,14 @@ struct AgentDashboardView: View {
             MedMargTheme.slate50.ignoresSafeArea()
 
             Group {
-                if selectedTab == 0 || (selectedTab != 1 && selectedTab != 2 && selectedTab != 3 && selectedTab != 4) {
-                    // Full dedicated home dashboard manages its own internal ScrollView & Topbar
+                if selectedTab == 0 {
+                    // Tab 0: Dedicated Home Dashboard
                     AgentHomeDashboardView(user: user, onLogout: onLogout, selectedTab: $selectedTab, showSidebar: $showSidebar)
+                } else if selectedTab == 7 {
+                    // Tab 7: Dedicated Orders View (matching Reference Image)
+                    AgentOrdersView(user: user, selectedTab: $selectedTab, showSidebar: $showSidebar)
                 } else {
-                    // Other tabs: Inventory, Quota, Payments, Profile
+                    // Other tabs: Inventory (1), Quota (2), Payments (3), Profile (4)
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 16) {
                             if let banner = actionBannerMessage {
