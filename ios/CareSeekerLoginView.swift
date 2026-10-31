@@ -87,7 +87,7 @@ struct CareSeekerLoginView: View {
     private var heroBackgroundView: some View {
         VStack(spacing: 0) {
             GeometryReader { geo in
-                Image("hero")
+                Image(uiImage: MedMargAssets.heroImage)
                     .resizable()
                     .scaledToFill()
                     .frame(width: geo.size.width, height: 440)

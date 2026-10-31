@@ -163,53 +163,52 @@ struct AgentDashboardView: View {
         ZStack {
             MedMargTheme.slate50.ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                // Subtab Body Content based on Agent's Active Tab
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 16) {
-                        // Global Banner if any
-                        if let banner = actionBannerMessage {
-                            HStack(spacing: 8) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.white)
-                                Text(banner)
-                                    .font(.system(size: 13, weight: .bold))
-                                    .foregroundColor(.white)
-                                Spacer()
-                                Button(action: { actionBannerMessage = nil }) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 12, weight: .bold))
+            Group {
+                if selectedTab == 0 || (selectedTab != 1 && selectedTab != 2 && selectedTab != 3 && selectedTab != 4) {
+                    // Full dedicated home dashboard manages its own internal ScrollView & Topbar
+                    AgentHomeDashboardView(user: user, onLogout: onLogout, selectedTab: $selectedTab, showSidebar: $showSidebar)
+                } else {
+                    // Other tabs: Inventory, Quota, Payments, Profile
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 16) {
+                            if let banner = actionBannerMessage {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "checkmark.circle.fill")
                                         .foregroundColor(.white)
+                                    Text(banner)
+                                        .font(.system(size: 13, weight: .bold))
+                                        .foregroundColor(.white)
+                                    Spacer()
+                                    Button(action: { actionBannerMessage = nil }) {
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 12, weight: .bold))
+                                            .foregroundColor(.white)
+                                    }
                                 }
+                                .padding(12)
+                                .background(MedMargTheme.primaryTeal)
+                                .cornerRadius(12)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 12)
                             }
-                            .padding(12)
-                            .background(MedMargTheme.primaryTeal)
-                            .cornerRadius(12)
-                            .padding(.horizontal, 16)
-                            .padding(.top, 12)
-                        }
 
-                        // Tab 0: Assigned Pickups & Field Execution
-                        if selectedTab == 0 {
-                            AgentHomeDashboardView(user: user, onLogout: onLogout, selectedTab: $selectedTab, showSidebar: $showSidebar)
-                        } else if selectedTab == 1 {
-                            agentInventoryStoreSection
-                        } else if selectedTab == 2 {
-                            agentShiftQuotaSection
-                        } else if selectedTab == 3 {
-                            agentPaymentsLedgerSection
-                        } else if selectedTab == 4 {
-                            agentProfileSection
-                        } else {
-                            AgentHomeDashboardView(user: user, onLogout: onLogout, selectedTab: $selectedTab, showSidebar: $showSidebar)
-                        }
+                            if selectedTab == 1 {
+                                agentInventoryStoreSection
+                            } else if selectedTab == 2 {
+                                agentShiftQuotaSection
+                            } else if selectedTab == 3 {
+                                agentPaymentsLedgerSection
+                            } else if selectedTab == 4 {
+                                agentProfileSection
+                            }
 
-                        Spacer().frame(height: 80) // Spacing for custom bottom navbar
+                            Spacer().frame(height: 120) // Spacing for floating navbar
+                        }
+                        .padding(.top, 12)
                     }
-                    .padding(.top, 12)
-                }
-                .refreshable {
-                    await fetchAllLiveAgentData()
+                    .refreshable {
+                        await fetchAllLiveAgentData()
+                    }
                 }
             }
 

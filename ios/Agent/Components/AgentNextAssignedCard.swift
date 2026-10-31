@@ -19,37 +19,33 @@ struct AgentNextAssignedCard: View {
     var body: some View {
         VStack(spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
-                // 1. Time Slot Box (rounded gray/blue container)
+                // 1. Time Slot Box (clean, non-truncating format)
                 VStack(spacing: 2) {
-                    Text(order.slot?.components(separatedBy: " ").first ?? "10:30")
-                        .font(.system(size: 15, weight: .black))
+                    Text(cleanSlotTime(order.slot))
+                        .font(.system(size: 13, weight: .black))
                         .foregroundColor(MedMargTheme.slate900)
-                    Text(order.slot?.components(separatedBy: " ").dropFirst().first ?? "AM")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(MedMargTheme.slate900)
-                    Text("Today")
+                        .lineLimit(1)
+                    Text(order.slot?.contains("PM") == true ? "PM" : "AM")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(MedMargTheme.slate700)
+                    Text(order.date?.contains("Tomorrow") == true ? "Tmrw" : "Today")
                         .font(.system(size: 9, weight: .medium))
                         .foregroundColor(MedMargTheme.slate500)
                 }
-                .frame(width: 58, height: 64)
+                .frame(width: 54, height: 62)
                 .background(Color(red: 0.94, green: 0.96, blue: 0.99))
                 .cornerRadius(12)
 
                 // 2. Patient Info, Address & Tests
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Text(order.effectivePatientName)
-                            .font(.system(size: 15, weight: .black))
-                            .foregroundColor(MedMargTheme.slate900)
-
-                        Text("• 34 yrs • Male")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(MedMargTheme.slate500)
-                    }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(order.effectivePatientName.capitalized)
+                        .font(.system(size: 14, weight: .black))
+                        .foregroundColor(MedMargTheme.slate900)
+                        .lineLimit(1)
 
                     HStack(spacing: 4) {
                         Image(systemName: "mappin.circle.fill")
-                            .font(.system(size: 11))
+                            .font(.system(size: 10))
                             .foregroundColor(MedMargTheme.primaryTeal)
                         Text(order.address ?? "Srinivas Nagar, Tirupati")
                             .font(.system(size: 11))
@@ -59,33 +55,33 @@ struct AgentNextAssignedCard: View {
 
                     HStack(spacing: 4) {
                         Image(systemName: "testtube.2")
-                            .font(.system(size: 11))
+                            .font(.system(size: 10))
                             .foregroundColor(MedMargTheme.primaryTeal)
-                        Text(order.items ?? "Full Body Checkup (12 Tests)")
+                        Text(order.items ?? "Diagnostic Pathology Panel")
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(MedMargTheme.slate700)
                             .lineLimit(1)
                     }
 
-                    // Pills: [Doorstep Collection] [Prepaid]
-                    HStack(spacing: 6) {
+                    // Pills: [Doorstep Collection] [Prepaid / Doorstep QR]
+                    HStack(spacing: 5) {
                         Text("Doorstep Collection")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(.system(size: 8, weight: .bold))
                             .foregroundColor(Color(red: 0.85, green: 0.25, blue: 0.25))
-                            .padding(.horizontal, 6)
+                            .padding(.horizontal, 5)
                             .padding(.vertical, 2)
                             .background(Color(red: 1.0, green: 0.92, blue: 0.92))
                             .cornerRadius(4)
 
                         Text(order.isPaid ? "Prepaid" : "Doorstep QR")
-                            .font(.system(size: 9, weight: .bold))
+                            .font(.system(size: 8, weight: .bold))
                             .foregroundColor(Color.blue)
-                            .padding(.horizontal, 6)
+                            .padding(.horizontal, 5)
                             .padding(.vertical, 2)
                             .background(Color.blue.opacity(0.1))
                             .cornerRadius(4)
                     }
-                    .padding(.top, 2)
+                    .padding(.top, 1)
                 }
 
                 Spacer(minLength: 0)
@@ -177,5 +173,16 @@ struct AgentNextAssignedCard: View {
         )
         .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 3)
         .padding(.horizontal, 16)
+    }
+
+    private func cleanSlotTime(_ slot: String?) -> String {
+        guard let s = slot, !s.isEmpty else { return "10:30" }
+        let parts = s.components(separatedBy: CharacterSet.whitespacesAndNewlines)
+        for p in parts {
+            if p.contains(":") {
+                return p
+            }
+        }
+        return parts.first ?? "10:30"
     }
 }

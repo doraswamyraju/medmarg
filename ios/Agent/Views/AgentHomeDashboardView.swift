@@ -218,7 +218,7 @@ struct AgentHomeDashboardView: View {
                             }
                         }
 
-                        Spacer().frame(height: 110) // Spacing for floating navbar and FAB
+                        Spacer().frame(height: 160) // Generous spacing so content scrolls well above floating navbar & FAB
                     }
                     .padding(.top, 8)
                 }
@@ -227,12 +227,13 @@ struct AgentHomeDashboardView: View {
                 }
             }
 
-            // Floating Action Button with Speech Bubble Tooltip
+            // Floating Action Button with Speech Bubble Tooltip (positioned right above bottom navbar)
             AgentFloatingActionButton {
                 showCreateManualOrderModal = true
             }
-            .padding(.trailing, 20)
-            .padding(.bottom, 80)
+            .padding(.trailing, 16)
+            .padding(.bottom, 82)
+            .zIndex(10)
 
             // Loading Overlay
             if isLoading {
@@ -346,7 +347,7 @@ struct AgentHomeDashboardView: View {
     private var agentHeroGreetingCard: some View {
         ZStack(alignment: .leading) {
             // Tirupati Temple Background Image
-            Image("temple")
+            Image(uiImage: MedMargAssets.templeImage)
                 .resizable()
                 .scaledToFill()
                 .frame(height: 130)
@@ -354,9 +355,9 @@ struct AgentHomeDashboardView: View {
                 .overlay(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.92),
-                            Color.white.opacity(0.45),
-                            Color.white.opacity(0.95)
+                            Color.white.opacity(0.85),
+                            Color.white.opacity(0.35),
+                            Color.white.opacity(0.92)
                         ],
                         startPoint: .leading,
                         endPoint: .trailing
