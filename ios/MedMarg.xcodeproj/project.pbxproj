@@ -380,6 +380,11 @@
 				DEVELOPMENT_TEAM = UDYR7AUVZ7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "MedMarg uses your camera to scan vacutainer barcodes and capture sample collection verification photos.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MedMarg accesses photos for sample collection verification.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "MedMarg uses your location to navigate to patient doorsteps and dispatch the nearest phlebotomist.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "MedMarg uses background location to broadcast live sample collection transit tracking to patients and lab dispatch desks.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "MedMarg accesses Apple HealthKit to display real-time vital biomarkers and deliver correlated diagnostic test suggestions.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "MedMarg allows you to log diagnostic vital readings directly into Apple Health.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "MedMarg uses Face ID / Touch ID for fast and secure client login.";
@@ -426,6 +431,11 @@
 				DEVELOPMENT_TEAM = UDYR7AUVZ7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "MedMarg uses your camera to scan vacutainer barcodes and capture sample collection verification photos.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "MedMarg accesses photos for sample collection verification.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "MedMarg uses your location to navigate to patient doorsteps and dispatch the nearest phlebotomist.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "MedMarg uses background location to broadcast live sample collection transit tracking to patients and lab dispatch desks.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "MedMarg accesses Apple HealthKit to display real-time vital biomarkers and deliver correlated diagnostic test suggestions.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "MedMarg allows you to log diagnostic vital readings directly into Apple Health.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "MedMarg uses Face ID / Touch ID for fast and secure client login.";
