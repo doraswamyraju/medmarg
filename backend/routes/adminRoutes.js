@@ -26,7 +26,7 @@ router.post('/orders/assign', (req, res) => {
     const order = (dbStore.orders || []).find(o => o.id === orderId);
     if (order) {
         order.assignedAgent = assignedAgent;
-        order.status = assignedAgent.includes('Unassigned') ? 'PENDING_DISPATCH' : (order.status === 'PENDING_DISPATCH' ? 'EN_ROUTE' : order.status);
+        order.status = assignedAgent.includes('Unassigned') ? 'PENDING_DISPATCH' : (order.status === 'PENDING_DISPATCH' ? 'ASSIGNED' : order.status);
         order.updatedAt = new Date().toISOString();
         saveDbStore();
         return res.json({ success: true, order });
@@ -445,7 +445,7 @@ router.post('/dispatch/auto', (req, res) => {
         const order = (dbStore.orders || []).find(o => o.id === orderId);
         if (order) {
             order.assignedAgent = `${primaryAgent.name} (${primaryAgent.id})`;
-            order.status = 'EN_ROUTE';
+            order.status = 'ASSIGNED';
         }
         saveDbStore();
         return res.json({
@@ -464,7 +464,7 @@ router.post('/dispatch/auto', (req, res) => {
         const order = (dbStore.orders || []).find(o => o.id === orderId);
         if (order) {
             order.assignedAgent = `${backupAgent.name} (${backupAgent.id})`;
-            order.status = 'EN_ROUTE';
+            order.status = 'ASSIGNED';
         }
         saveDbStore();
         return res.json({

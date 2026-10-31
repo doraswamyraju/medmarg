@@ -1,4 +1,5 @@
 import SwiftUI
+import WebKit
 
 // =========================================================================
 // 💳 CARE SEEKER MULTI-STEP CHECKOUT & BOOKING MODAL
@@ -39,8 +40,10 @@ struct CareSeekerCheckoutModal: View {
     @State private var isSubmitting: Bool = false
     @State private var showRazorpaySheet: Bool = false
     @State private var razorpayOrderId: String = ""
-    @State private var razorpayKeyId: String = "rzp_test_517501MMG001"
+    @State private var razorpayKeyId: String = "rzp_live_Tno7dmuqnwn1YS"
+    @State private var razorpayPaymentUrl: String = ""
     @State private var pendingOrderId: String = ""
+    @State private var errorMessage: String? = nil
 
     private var cartTotal: Int {
         cartItems.reduce(0) { $0 + $1.price }
@@ -533,6 +536,7 @@ struct CareSeekerCheckoutModal: View {
 
         let patientEffectiveName = beneficiaryName.isEmpty ? (user?.name ?? "Customer") : beneficiaryName
         let patientEffectivePhone = beneficiaryPhone.isEmpty ? (user?.phone ?? "+91 98765 43210") : beneficiaryPhone
+        let patientEmail = user?.email.lowercased() ?? "patient@medmarg.com"
 
         let body: [String: Any] = [
             "amount": cartTotal,
@@ -542,28 +546,27 @@ struct CareSeekerCheckoutModal: View {
             "notes": [
                 "itemsCount": cartItems.count,
                 "slot": "\(selectedDate), \(selectedSlot)",
-                "lab": activeLabName
+                "lab": activeLabName,
+                "email": patientEmail
             ]
         ]
 
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.timeoutInterval = 6.0
+        req.timeoutInterval = 8.0
         req.httpBody = try? JSONSerialization.data(withJSONObject: body, options: [])
 
-        URLSession.shared.dataTask(with: req) { data, _, _ in
+        URLSession.shared.dataTask(with: req) { data, _, err in
             DispatchQueue.main.async {
+                self.isSubmitting = false
                 if let d = data,
                    let json = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
                    let pData = json["data"] as? [String: Any] {
-                    self.razorpayOrderId = pData["orderId"] as? String ?? "order_\(UUID().uuidString.prefix(12))"
-                    self.razorpayKeyId = pData["keyId"] as? String ?? "rzp_test_517501MMG001"
-                } else {
-                    self.razorpayOrderId = "order_\(UUID().uuidString.prefix(12))"
-                    self.razorpayKeyId = "rzp_test_517501MMG001"
+                    self.razorpayOrderId = pData["orderId"] as? String ?? ""
+                    self.razorpayKeyId = pData["keyId"] as? String ?? "rzp_live_Tno7dmuqnwn1YS"
+                    self.razorpayPaymentUrl = pData["paymentUrl"] as? String ?? ""
                 }
-                self.isSubmitting = false
                 self.showRazorpaySheet = true
             }
         }.resume()
@@ -578,6 +581,9 @@ struct CareSeekerCheckoutModal: View {
         let effectivePatientPhone = beneficiaryPhone.isEmpty ? (user?.phone ?? "+91 98765 43210") : beneficiaryPhone
         let effectiveUserEmail = user?.email.lowercased() ?? "patient@medmarg.com"
         let otpCode = "\(Int.random(in: 1000...9999))"
+
+        let initialStatus = isExpressPhlebotomy ? "ENROUTE" : "BOOKED"
+        let initialEta = isExpressPhlebotomy ? "15 Mins" : selectedSlot
 
         let bookingPayload: [String: Any] = [
             "id": orderId,
@@ -598,7 +604,8 @@ struct CareSeekerCheckoutModal: View {
             "totalAmount": cartTotal,
             "paymentMode": paymentMode,
             "paymentStatus": paymentStatus,
-            "status": "ENROUTE",
+            "status": initialStatus,
+            "eta": initialEta,
             "phleboName": "Ramesh Kumar (Certified Phlebotomist)",
             "phleboPhone": "+91 98765 11223",
             "handoverOtp": otpCode,
@@ -607,56 +614,36 @@ struct CareSeekerCheckoutModal: View {
             "selectedLabProvider": selectedLabProvider,
             "isExpress": isExpressPhlebotomy,
             "tempTelemetry": "3.8°C (Optimal Cold-Chain)",
-            "date": "Today"
+            "date": selectedDate
         ]
 
-        // 1. Post to main booking endpoint
+        // 1. Submit single booking to unified orders API
         if let bookUrl = URL(string: "https://medmarg.com/api/v1/orders/book") {
             var req = URLRequest(url: bookUrl)
             req.httpMethod = "POST"
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            req.timeoutInterval = 5.0
+            req.timeoutInterval = 8.0
             req.httpBody = try? JSONSerialization.data(withJSONObject: bookingPayload, options: [])
             URLSession.shared.dataTask(with: req).resume()
         }
 
-        // 2. Also Post to admin orders endpoint to ensure instant synchronization
-        if let adminUrl = URL(string: "https://medmarg.com/api/v1/admin/orders") {
-            var adminReq = URLRequest(url: adminUrl)
-            adminReq.httpMethod = "POST"
-            adminReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            adminReq.timeoutInterval = 5.0
-            adminReq.httpBody = try? JSONSerialization.data(withJSONObject: bookingPayload, options: [])
-            URLSession.shared.dataTask(with: adminReq).resume()
-        }
-
-        // 3. Fallback to local server if running
-        if let localUrl = URL(string: "http://127.0.0.1:5080/api/v1/orders/book") {
-            var localReq = URLRequest(url: localUrl)
-            localReq.httpMethod = "POST"
-            localReq.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            localReq.timeoutInterval = 2.0
-            localReq.httpBody = try? JSONSerialization.data(withJSONObject: bookingPayload, options: [])
-            URLSession.shared.dataTask(with: localReq).resume()
-        }
-
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-            self.completeLocalOrder(orderId: orderId, address: chosenAddress, items: itemsList, paymentStatus: paymentStatus, otp: otpCode)
+            self.completeLocalOrder(orderId: orderId, address: chosenAddress, items: itemsList, paymentStatus: paymentStatus, otp: otpCode, status: initialStatus, eta: initialEta)
         }
     }
 
-    private func completeLocalOrder(orderId: String, address: String, items: [LiveOrderItem], paymentStatus: String, otp: String) {
+    private func completeLocalOrder(orderId: String, address: String, items: [LiveOrderItem], paymentStatus: String, otp: String, status: String, eta: String) {
         self.isSubmitting = false
         self.showRazorpaySheet = false
         let newOrder = LiveOrderModel(
             id: orderId,
-            date: "Today",
+            date: selectedDate,
             slot: selectedSlot,
             address: address,
             phleboName: "Ramesh Kumar (Certified Phlebotomist)",
             phleboPhone: "+91 98765 11223",
-            status: "ENROUTE",
-            eta: isExpressPhlebotomy ? "15 Mins" : "Tomorrow Morning",
+            status: status,
+            eta: eta,
             tempTelemetry: "3.8°C (Optimal Cold-Chain)",
             handoverOtp: otp,
             items: items,
@@ -668,217 +655,258 @@ struct CareSeekerCheckoutModal: View {
     }
 
     // ==========================================
-    // 💳 RAZORPAY PAYMENT GATEWAY MODAL SHEET
+    // 💳 RAZORPAY OFFICIAL CHECKOUT SHEET
     // ==========================================
     private var razorpayPaymentGatewayModal: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                // Razorpay Header Brand Bar
-                HStack(spacing: 12) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color(red: 0.05, green: 0.18, blue: 0.38))
-                            .frame(width: 36, height: 36)
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 18))
-                            .foregroundColor(Color(red: 0.13, green: 0.59, blue: 0.95))
+            ZStack {
+                Color(red: 0.05, green: 0.08, blue: 0.17).ignoresSafeArea()
+
+                RazorpayStandardCheckoutWebView(
+                    keyId: razorpayKeyId,
+                    orderId: razorpayOrderId,
+                    amount: cartTotal,
+                    businessName: "Medcare Health Services",
+                    productDescription: "MedMarg Diagnostics (\(cartItems.count) Tests)",
+                    prefillName: beneficiaryName.isEmpty ? (user?.name ?? "Patient") : beneficiaryName,
+                    prefillEmail: user?.email.lowercased() ?? "patient@medmarg.com",
+                    prefillContact: beneficiaryPhone.replacingOccurrences(of: " ", with: ""),
+                    hostedFallbackUrl: razorpayPaymentUrl,
+                    onSuccess: { paymentId, rzpOrderId, signature in
+                        DispatchQueue.main.async {
+                            self.isSubmitting = true
+                            self.executeOrderPersistence(orderId: self.pendingOrderId, paymentStatus: "PAID_SUCCESS")
+                        }
+                    },
+                    onFailure: { errDesc in
+                        DispatchQueue.main.async {
+                            self.errorMessage = errDesc
+                        }
+                    },
+                    onDismiss: {
+                        DispatchQueue.main.async {
+                            self.showRazorpaySheet = false
+                        }
                     }
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 4) {
-                            Text("Razorpay")
-                                .font(.system(size: 16, weight: .black))
-                                .foregroundColor(Color(red: 0.05, green: 0.18, blue: 0.38))
-                            Text("TRUSTED")
-                                .font(.system(size: 9, weight: .black))
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 2)
-                                .background(Color.green.opacity(0.15))
-                                .foregroundColor(Color(red: 0.05, green: 0.55, blue: 0.25))
-                                .cornerRadius(4)
-                        }
-                        Text("Medcare Health Services (MedMarg)")
-                            .font(.system(size: 11))
-                            .foregroundColor(MedMargTheme.slate500)
-                    }
-
-                    Spacer()
-
-                    VStack(alignment: .trailing, spacing: 1) {
-                        Text("AMOUNT")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(MedMargTheme.slate500)
-                        Text("₹\(cartTotal)")
-                            .font(.system(size: 17, weight: .black, design: .rounded))
-                            .foregroundColor(MedMargTheme.primaryTeal)
-                    }
-                }
-                .padding(16)
-                .background(Color.white)
-                .overlay(Rectangle().frame(height: 1).foregroundColor(MedMargTheme.slate200), alignment: .bottom)
-
-                // Gateway Content
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 16) {
-                        // Order details summary pill
-                        HStack {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text("Patient: \(beneficiaryName)")
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(MedMargTheme.slate900)
-                                Text("Phone: \(beneficiaryPhone) • \(cartItems.count) Tests")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(MedMargTheme.slate500)
-                            }
-                            Spacer()
-                            Text(pendingOrderId)
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundColor(MedMargTheme.primaryTeal)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(MedMargTheme.lightTeal)
-                                .cornerRadius(6)
-                        }
-                        .padding(12)
-                        .background(MedMargTheme.slate50)
-                        .cornerRadius(12)
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.slate200, lineWidth: 1))
-
-                        // Fast Checkout UPI Options
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("UPI / INSTANT PAY")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(MedMargTheme.slate500)
-
-                            razorpayMethodRow(
-                                title: "Google Pay",
-                                subtitle: "Instant approval with any linked bank",
-                                icon: "g.circle.fill",
-                                color: Color(red: 0.26, green: 0.52, blue: 0.96)
-                            )
-
-                            razorpayMethodRow(
-                                title: "PhonePe",
-                                subtitle: "Fast checkout using UPI ID / Mobile",
-                                icon: "p.circle.fill",
-                                color: Color(red: 0.38, green: 0.15, blue: 0.58)
-                            )
-
-                            razorpayMethodRow(
-                                title: "Paytm UPI",
-                                subtitle: "Pay directly with Wallet or Bank account",
-                                icon: "creditcard.circle.fill",
-                                color: Color(red: 0.0, green: 0.72, blue: 0.96)
-                            )
-                        }
-                        .padding(14)
-                        .background(Color.white)
-                        .cornerRadius(14)
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(MedMargTheme.slate200, lineWidth: 1))
-
-                        // Cards & NetBanking
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("CARDS & NETBANKING")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(MedMargTheme.slate500)
-
-                            razorpayMethodRow(
-                                title: "Credit / Debit Card",
-                                subtitle: "Visa, Mastercard, RuPay, Maestro",
-                                icon: "creditcard.fill",
-                                color: MedMargTheme.primaryTeal
-                            )
-
-                            razorpayMethodRow(
-                                title: "NetBanking",
-                                subtitle: "All Indian banks supported (SBI, HDFC, ICICI, etc.)",
-                                icon: "building.columns.fill",
-                                color: MedMargTheme.slate700
-                            )
-                        }
-                        .padding(14)
-                        .background(Color.white)
-                        .cornerRadius(14)
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(MedMargTheme.slate200, lineWidth: 1))
-
-                        // Security guarantee badge
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.shield.fill")
-                                .foregroundColor(Color.green)
-                            Text("PCI-DSS Certified 256-bit Bank Grade Security")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(MedMargTheme.slate500)
-                        }
-                        .padding(.top, 4)
-                    }
-                    .padding(16)
-                }
-
-                // Gateway Action Button
-                VStack(spacing: 8) {
-                    Button(action: {
-                        isSubmitting = true
-                        executeOrderPersistence(orderId: pendingOrderId, paymentStatus: "PAID_SUCCESS")
-                    }) {
-                        HStack(spacing: 8) {
-                            if isSubmitting {
-                                ProgressView().tint(.white)
-                            }
-                            Text(isSubmitting ? "Verifying Payment..." : "Pay ₹\(cartTotal) via Razorpay")
-                                .font(.system(size: 15, weight: .bold))
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(Color(red: 0.05, green: 0.18, blue: 0.38))
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                        .shadow(color: Color(red: 0.05, green: 0.18, blue: 0.38).opacity(0.3), radius: 6, x: 0, y: 3)
-                    }
-                    .disabled(isSubmitting)
-                }
-                .padding(16)
-                .background(Color.white)
-                .overlay(Rectangle().frame(height: 1).foregroundColor(MedMargTheme.slate200), alignment: .top)
+                )
             }
-            .navigationTitle("Razorpay Gateway")
+            .navigationTitle("Razorpay Secure Checkout")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        showRazorpaySheet = false
+                    Button(action: { showRazorpaySheet = false }) {
+                        Text("Close")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
                     }
                 }
             }
         }
     }
+}
 
-    private func razorpayMethodRow(title: String, subtitle: String, icon: String, color: Color) -> some View {
-        Button(action: {
-            isSubmitting = true
-            executeOrderPersistence(orderId: pendingOrderId, paymentStatus: "PAID_SUCCESS")
-        }) {
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(color)
-                    .frame(width: 28)
+// =========================================================================
+// 🌐 RAZORPAY STANDARD JAVASCRIPT CHECKOUT WEBVIEW (OFFICIAL SDK PARITY)
+// Embeds the official checkout.razorpay.com standard frame on iOS
+// =========================================================================
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(MedMargTheme.slate900)
-                    Text(subtitle)
-                        .font(.system(size: 10))
-                        .foregroundColor(MedMargTheme.slate500)
+struct RazorpayStandardCheckoutWebView: UIViewRepresentable {
+    let keyId: String
+    let orderId: String
+    let amount: Int
+    let businessName: String
+    let productDescription: String
+    let prefillName: String
+    let prefillEmail: String
+    let prefillContact: String
+    let hostedFallbackUrl: String
+    let onSuccess: (String, String, String) -> Void
+    let onFailure: (String) -> Void
+    let onDismiss: () -> Void
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    func makeUIView(context: Context) -> WKWebView {
+        let contentController = WKUserContentController()
+        contentController.add(context.coordinator, name: "razorpayHandler")
+
+        let config = WKWebViewConfiguration()
+        config.userContentController = contentController
+        config.preferences.javaScriptCanOpenWindowsAutomatically = true
+
+        let webView = WKWebView(frame: .zero, configuration: config)
+        webView.navigationDelegate = context.coordinator
+        webView.isOpaque = false
+        webView.backgroundColor = UIColor(red: 0.05, green: 0.08, blue: 0.17, alpha: 1.0)
+        webView.scrollView.backgroundColor = UIColor(red: 0.05, green: 0.08, blue: 0.17, alpha: 1.0)
+
+        // If a hosted Razorpay payment link was generated by the backend, load that directly
+        if let linkUrl = URL(string: hostedFallbackUrl), !hostedFallbackUrl.isEmpty {
+            let req = URLRequest(url: linkUrl)
+            webView.load(req)
+            return webView
+        }
+
+        // Standard official Razorpay embedded checkout script
+        let safeContact = prefillContact.hasPrefix("+") ? prefillContact : "+91\(prefillContact)"
+        let html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <title>Razorpay Checkout</title>
+            <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+            <style>
+                * { box-sizing: border-box; }
+                body {
+                    margin: 0;
+                    padding: 0;
+                    background: #0B132B;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 100vh;
+                    color: #FFFFFF;
                 }
+                .loader-container {
+                    text-align: center;
+                    padding: 24px;
+                }
+                .spinner {
+                    width: 44px;
+                    height: 44px;
+                    border: 4px solid rgba(255, 255, 255, 0.15);
+                    border-radius: 50%;
+                    border-top-color: #006B70;
+                    animation: spin 0.8s linear infinite;
+                    margin: 0 auto 16px;
+                }
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+                h3 { margin: 0 0 8px; font-size: 16px; font-weight: 700; color: #FFFFFF; }
+                p { margin: 0; font-size: 13px; color: #94A3B8; }
+            </style>
+        </head>
+        <body>
+            <div class="loader-container">
+                <div class="spinner"></div>
+                <h3>Connecting to Razorpay</h3>
+                <p>Opening official payment gateway...</p>
+            </div>
+            <script>
+                window.onload = function() {
+                    try {
+                        var options = {
+                            "key": "\(keyId)",
+                            "amount": "\(amount * 100)",
+                            "currency": "INR",
+                            "name": "\(businessName)",
+                            "description": "\(productDescription)",
+                            \(orderId.isEmpty ? "" : "\"order_id\": \"\(orderId)\",")
+                            "image": "https://medmarg.com/logo-icon.png",
+                            "prefill": {
+                                "name": "\(prefillName)",
+                                "email": "\(prefillEmail)",
+                                "contact": "\(safeContact)"
+                            },
+                            "theme": {
+                                "color": "#006B70",
+                                "backdrop_color": "#0B132B"
+                            },
+                            "modal": {
+                                "backdropclose": false,
+                                "escape": false,
+                                "handleback": true,
+                                "ondismiss": function() {
+                                    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.razorpayHandler) {
+                                        window.webkit.messageHandlers.razorpayHandler.postMessage({
+                                            "status": "dismissed"
+                                        });
+                                    }
+                                }
+                            },
+                            "handler": function (response) {
+                                if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.razorpayHandler) {
+                                    window.webkit.messageHandlers.razorpayHandler.postMessage({
+                                        "status": "success",
+                                        "payment_id": response.razorpay_payment_id || "",
+                                        "order_id": response.razorpay_order_id || "",
+                                        "signature": response.razorpay_signature || ""
+                                    });
+                                }
+                            }
+                        };
+                        var rzp = new Razorpay(options);
+                        rzp.on('payment.failed', function (response){
+                            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.razorpayHandler) {
+                                window.webkit.messageHandlers.razorpayHandler.postMessage({
+                                    "status": "failed",
+                                    "error": (response.error && response.error.description) ? response.error.description : "Payment could not be processed"
+                                });
+                            }
+                        });
+                        rzp.open();
+                    } catch (e) {
+                        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.razorpayHandler) {
+                            window.webkit.messageHandlers.razorpayHandler.postMessage({
+                                "status": "failed",
+                                "error": e.message || "Failed to launch Razorpay"
+                            });
+                        }
+                    }
+                };
+            </script>
+        </body>
+        </html>
+        """
 
-                Spacer()
+        webView.loadHTMLString(html, baseURL: URL(string: "https://medmarg.com"))
+        return webView
+    }
 
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(MedMargTheme.slate500.opacity(0.6))
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
+
+    class Coordinator: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+        var parent: RazorpayStandardCheckoutWebView
+
+        init(_ parent: RazorpayStandardCheckoutWebView) {
+            self.parent = parent
+        }
+
+        func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            guard let dict = message.body as? [String: Any],
+                  let status = dict["status"] as? String else { return }
+
+            if status == "success" {
+                let paymentId = dict["payment_id"] as? String ?? ""
+                let orderId = dict["order_id"] as? String ?? ""
+                let sig = dict["signature"] as? String ?? ""
+                parent.onSuccess(paymentId, orderId, sig)
+            } else if status == "failed" {
+                let err = dict["error"] as? String ?? "Payment failed"
+                parent.onFailure(err)
+            } else if status == "dismissed" {
+                parent.onDismiss()
             }
-            .padding(.vertical, 6)
+        }
+
+        // Allow navigation to external UPI intent URLs (phonepe://, paytmmp://, gpay://, etc.)
+        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+            if let url = navigationAction.request.url {
+                let scheme = url.scheme?.lowercased() ?? ""
+                if scheme != "http" && scheme != "https" && scheme != "about" {
+                    if UIApplication.shared.canOpenURL(url) {
+                        UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                        decisionHandler(.cancel)
+                        return
+                    }
+                }
+            }
+            decisionHandler(.allow)
         }
     }
 }

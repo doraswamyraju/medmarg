@@ -41,7 +41,11 @@
 	<key>NSFaceIDUsageDescription</key>
 	<string>MedMarg uses Face ID / Touch ID for fast and secure client login.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>MedMarg uses your location to dispatch the nearest certified phlebotomist for home sample collection.</string>
+	<string>MedMarg uses your location to navigate to patient doorsteps and dispatch the nearest phlebotomist.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>MedMarg uses background location to broadcast live sample collection transit tracking to patients and lab dispatch desks.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>MedMarg uses your camera to scan vacutainer barcodes and capture sample collection verification photos.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

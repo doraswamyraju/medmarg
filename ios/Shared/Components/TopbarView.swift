@@ -26,10 +26,30 @@ struct TopbarView: View {
 
             // 2. Logo -> Tapping Logo navigates to Home
             Button(action: onLogoTap) {
-                Image("logo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 26)
+                HStack(spacing: 6) {
+                    Image("logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 26)
+
+                    if user.role == .collectionAgent {
+                        Text("FLEET")
+                            .font(.system(size: 9, weight: .black))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(MedMargTheme.primaryTeal)
+                            .cornerRadius(4)
+                    } else if user.role == .freelanceAgent {
+                        Text("GIG MLT")
+                            .font(.system(size: 9, weight: .black))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.orange)
+                            .cornerRadius(4)
+                    }
+                }
             }
 
             Spacer()

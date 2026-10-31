@@ -82,10 +82,34 @@ struct ContentView: View {
             name: "Ramesh Kumar (Phlebo AG-01)",
             username: "agent",
             email: "agent@medmarg.com",
-            phone: "+91 98765 55555",
+            phone: "+91 97777 77777",
             password: "password123",
             role: .collectionAgent,
             organization: "Tirupati Field Collection Fleet",
+            status: "Active",
+            createdAt: "30-Aug-2026"
+        ),
+        UserProfile(
+            id: "usr_salaried",
+            name: "Ramesh Kumar (Salaried Agent AG-01)",
+            username: "salaried",
+            email: "salaried@medmarg.com",
+            phone: "+91 97777 77777",
+            password: "password123",
+            role: .collectionAgent,
+            organization: "MedMarg In-House Fleet (Zone 1)",
+            status: "Active",
+            createdAt: "30-Aug-2026"
+        ),
+        UserProfile(
+            id: "usr_freelance",
+            name: "Siva Phlebo (Freelance MLT)",
+            username: "freelance",
+            email: "freelance@medmarg.com",
+            phone: "+91 96666 66666",
+            password: "password123",
+            role: .freelanceAgent,
+            organization: "MedMarg Gig Phlebotomist Network (Tirupati)",
             status: "Active",
             createdAt: "30-Aug-2026"
         ),
@@ -94,7 +118,7 @@ struct ContentView: View {
             name: "Siva Phlebo (Freelance MLT)",
             username: "freelancer",
             email: "freelancer@medmarg.com",
-            phone: "+91 94943 11223",
+            phone: "+91 96666 66666",
             password: "password123",
             role: .freelanceAgent,
             organization: "MedMarg Gig Phlebotomist Network (Tirupati)",
@@ -131,7 +155,7 @@ struct ContentView: View {
     @State private var showQuickCreateSheet: Bool = false
     @State private var selectedCategory: String = "All Tests & Packages"
     @State private var searchQuery: String = ""
-    @State private var selectedLabProvider: String = "medmarg_suggested"
+    @AppStorage("medmarg_preferred_lab_choice") private var selectedLabProvider: String = "medmarg_suggested"
     @State private var orderSuccessBanner: String? = nil
     
     // Item Details Modal State
@@ -186,7 +210,15 @@ struct ContentView: View {
                             cartItemCount: cartItems.count,
                             onLogout: logout,
                             onLogoTap: { selectedTab = 0 },
-                            onProfileTap: { selectedTab = 6 }
+                            onProfileTap: {
+                                if user.role == .collectionAgent || user.role == .freelanceAgent {
+                                    selectedTab = 4
+                                } else if user.role == .admin {
+                                    selectedTab = 7
+                                } else {
+                                    selectedTab = 6
+                                }
+                            }
                         )
                         
                         // 2. Role-Based Active View Body
@@ -204,8 +236,10 @@ struct ContentView: View {
                                 RadiologyDeskView(user: user, onLogout: logout)
                             case .pharmacy:
                                 PharmacyDeskView(user: user, onLogout: logout)
-                            case .collectionAgent, .freelanceAgent:
-                                FleetDeskView(user: user, onLogout: logout)
+                            case .collectionAgent:
+                                AgentDashboardView(user: user, onLogout: logout, selectedTab: $selectedTab)
+                            case .freelanceAgent:
+                                AgentDashboardView(user: user, onLogout: logout, selectedTab: $selectedTab)
                             }
                         }
 

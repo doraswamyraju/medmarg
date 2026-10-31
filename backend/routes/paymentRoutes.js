@@ -229,10 +229,40 @@ router.post('/create-order', async (req, res) => {
 
         const razorpayOrder = await razorpay.orders.create(options);
 
+        // Also create a hosted Razorpay checkout payment link for native mobile app integration
+        let hostedPaymentUrl = null;
+        let paymentLinkId = null;
+        try {
+            let cleanPhone = (patientPhone || '').replace(/[^0-9]/g, '');
+            if (cleanPhone.length === 10) cleanPhone = '+91' + cleanPhone;
+            else if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) cleanPhone = '+' + cleanPhone;
+            else if (!cleanPhone.startsWith('+')) cleanPhone = '+917997991101'; // Default valid merchant contact fallback
+
+            const plink = await razorpay.paymentLink.create({
+                amount: amountInPaise,
+                currency: 'INR',
+                accept_partial: false,
+                reference_id: receiptId,
+                description: `MedMarg Lab Services (${orderId || receiptId})`,
+                customer: {
+                    name: patientName || 'MedMarg Patient',
+                    contact: cleanPhone,
+                    email: (notes && notes.email) || 'patient@medmarg.com'
+                },
+                notify: { sms: false, email: false },
+                notes: options.notes
+            });
+            hostedPaymentUrl = plink.short_url;
+            paymentLinkId = plink.id;
+        } catch (plinkErr) {
+            console.warn('[Razorpay PaymentLink note]:', plinkErr.message);
+        }
+
         if (orderId && dbStore.orders) {
             const existingOrder = dbStore.orders.find(o => o.id === orderId);
             if (existingOrder) {
                 existingOrder.razorpayOrderId = razorpayOrder.id;
+                if (paymentLinkId) existingOrder.razorpayPaymentLinkId = paymentLinkId;
                 saveDbStore();
             }
         }
@@ -247,7 +277,9 @@ router.post('/create-order', async (req, res) => {
                 currency: razorpayOrder.currency,
                 keyId: process.env.RAZORPAY_KEY_ID,
                 businessName: 'Medcare Health Services',
-                description: 'MedMarg Diagnostic Lab Services'
+                description: 'MedMarg Diagnostic Lab Services',
+                paymentUrl: hostedPaymentUrl,
+                paymentLinkId: paymentLinkId
             },
             error: null
         });
@@ -397,13 +429,29 @@ router.post('/razorpay/webhook', (req, res) => {
     }
 });
 
-// 7. Check / Verify Doorstep Payment Status Live
-router.get('/order-status/:orderId', (req, res) => {
+// 7. Check / Verify Order / Payment Status Live (supports Razorpay Payment Link sync)
+router.get('/order-status/:orderId', async (req, res) => {
     const { orderId } = req.params;
     const order = (dbStore.orders || []).find(o => o.id === orderId);
     if (!order) {
         return res.status(404).json({ success: false, error: 'Order not found' });
     }
+
+    // If order has a razorpayPaymentLinkId and is not marked paid yet, query Razorpay live
+    if (order.razorpayPaymentLinkId && order.paymentStatus !== 'PAID_SUCCESS' && razorpay) {
+        try {
+            const plink = await razorpay.paymentLink.fetch(order.razorpayPaymentLinkId);
+            if (plink && (plink.status === 'paid' || plink.amount_paid > 0)) {
+                order.paymentStatus = 'PAID_SUCCESS';
+                order.paymentCollected = true;
+                order.razorpayPaymentId = (plink.payments && plink.payments.length > 0) ? plink.payments[0].payment_id : plink.id;
+                saveDbStore();
+            }
+        } catch (syncErr) {
+            console.warn('[Razorpay plink sync]:', syncErr.message);
+        }
+    }
+
     const isPaid = order.paymentStatus === 'PAID_ONLINE' || 
                    order.paymentStatus === 'PAID_DOORSTEP_QR' || 
                    order.paymentStatus === 'PAID_SUCCESS' || 

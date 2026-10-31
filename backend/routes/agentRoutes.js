@@ -11,13 +11,32 @@ router.get('/roster', (req, res) => {
 
 // SAMPLE PICKUP & STATUS UPDATE (DOORSTEP VISIT & DIGITAL EXECUTION)
 router.post('/pickup/update', (req, res) => {
-    const { orderId, status, barcode, arrivalPhoto, samplePhotos, paymentCollected, paymentMode, sendReviewRequest, notes, vitals } = req.body;
+    const { 
+        orderId, 
+        status, 
+        barcode, 
+        arrivalPhoto, 
+        samplePhotos, 
+        paymentCollected, 
+        paymentMode, 
+        sendReviewRequest, 
+        notes, 
+        vitals,
+        tripStartedAt,
+        completedAt,
+        durationMinutes,
+        extraInventoryConsumed
+    } = req.body;
     const order = (dbStore.orders || []).find(o => o.id === orderId);
     if (order) {
         if (status) order.status = status;
         if (barcode) order.barcode = barcode;
         if (arrivalPhoto) order.arrivalPhoto = arrivalPhoto;
         if (samplePhotos) order.samplePhotos = samplePhotos;
+        if (tripStartedAt) order.tripStartedAt = tripStartedAt;
+        if (completedAt) order.completedAt = completedAt;
+        if (durationMinutes !== undefined) order.durationMinutes = durationMinutes;
+        if (extraInventoryConsumed) order.extraInventoryConsumed = extraInventoryConsumed;
         if (paymentCollected) {
             order.paymentStatus = 'PAID_DOORSTEP_QR';
             order.paymentMode = paymentMode || 'DOORSTEP_QR';
