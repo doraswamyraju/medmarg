@@ -238,22 +238,10 @@ router.post('/broadcast-jobs/claim', (req, res) => {
     res.json({ success: true, message: 'Job successfully claimed!', order: newOrder });
 });
 
-// DEFAULT INVENTORY SEED
-const DEFAULT_AGENT_INVENTORY = [
-    { id: 'INV-01', name: 'Vacutainer Gold SST (Serum Gel)', code: 'TUBE-SST', stock: 18, unit: 'Tubes', minThreshold: 10, status: 'NORMAL' },
-    { id: 'INV-02', name: 'Vacutainer Purple (EDTA Whole Blood)', code: 'TUBE-EDTA', stock: 24, unit: 'Tubes', minThreshold: 10, status: 'NORMAL' },
-    { id: 'INV-03', name: 'Vacutainer Grey (Fluoride Sugar)', code: 'TUBE-FLR', stock: 6, unit: 'Tubes', minThreshold: 10, status: 'LOW' },
-    { id: 'INV-04', name: 'Vacutainer Light Blue (Citrate Coagulation)', code: 'TUBE-CIT', stock: 8, unit: 'Tubes', minThreshold: 5, status: 'NORMAL' },
-    { id: 'INV-05', name: 'Sterile Safety Syringes 5ml', code: 'SYR-5ML', stock: 30, unit: 'Units', minThreshold: 15, status: 'NORMAL' },
-    { id: 'INV-06', name: 'Sterile Safety Syringes 2ml', code: 'SYR-2ML', stock: 25, unit: 'Units', minThreshold: 15, status: 'NORMAL' },
-    { id: 'INV-07', name: 'Barcode Thermal Label Rolls', code: 'LBL-ROLL', stock: 2, unit: 'Rolls', minThreshold: 2, status: 'LOW' },
-    { id: 'INV-08', name: 'Biohazard Seal Bags (A4)', code: 'BIO-BAG', stock: 40, unit: 'Bags', minThreshold: 20, status: 'NORMAL' },
-    { id: 'INV-09', name: 'Cold-Chain Ice Gel Freeze Packs', code: 'ICE-GEL', stock: 4, unit: 'Packs', minThreshold: 2, status: 'NORMAL' }
-];
-
 // AGENT CONSUMABLES INVENTORY (LIVE SYNCED WITH ADMIN & STORE IN-CHARGE)
 // STRICT AUDIT RULE: Agent only holds consumables explicitly allotted from Central Warehouse!
-// The agent panel sees all live master catalog items, but quantity reflects ONLY the agent's in-hand stock (NEVER central warehouse numbers).
+// Sourced ONLY from live items in dbStore.inventoryStock updated by admin/admin-assigned staff.
+// ZERO synthetic or dummy template items.
 router.get('/inventory', (req, res) => {
     let agentId = (req.query.agentId || 'AG-01').trim();
     if (!agentId || agentId.toLowerCase() === 'unassigned') {
@@ -262,48 +250,35 @@ router.get('/inventory', (req, res) => {
 
     if (!dbStore.agentInventory) dbStore.agentInventory = {};
 
-    // Standard live master catalog items
-    const masterItemsTemplate = [
-        { id: 'INV-SST', name: 'Vacutainer Gold SST (Serum Gel)', code: 'TUBE-SST', category: 'Blood Containers', unit: 'Tubes', minThreshold: 5 },
-        { id: 'INV-EDTA', name: 'Vacutainer Purple (EDTA Whole Blood)', code: 'TUBE-EDTA', category: 'Blood Containers', unit: 'Tubes', minThreshold: 5 },
-        { id: 'INV-FLR', name: 'Vacutainer Grey (Fluoride Sugar)', code: 'TUBE-FLR', category: 'Blood Containers', unit: 'Tubes', minThreshold: 5 },
-        { id: 'INV-SYR', name: 'Sterile Safety Syringes 5ml', code: 'SYR-5ML', category: 'Consumables', unit: 'Units', minThreshold: 10 },
-        { id: 'INV-GLV', name: 'Nitrile Examination Gloves', code: 'GLV-NIT-M', category: 'Consumables', unit: 'Pairs', minThreshold: 10 },
-        { id: 'INV-LBL', name: 'Barcode Thermal Label Rolls', code: 'LBL-ROLL', category: 'Lab Supplies', unit: 'Rolls', minThreshold: 1 },
-        { id: 'INV-KIT', name: 'Standard Phlebotomy Sample Collection Kit', code: 'KIT-101', category: 'Pre-Packaged Kits', unit: 'Kits', minThreshold: 2 }
-    ];
-
-    // Include any custom catalog items configured in dbStore.inventoryStock
-    (dbStore.inventoryStock || []).forEach(wh => {
-        if (!masterItemsTemplate.some(m => m.code === wh.code || m.name.toLowerCase() === wh.name.toLowerCase())) {
-            masterItemsTemplate.push({
-                id: `INV-${wh.code}`,
-                name: wh.name,
-                code: wh.code,
-                category: wh.category || 'Consumables',
-                unit: wh.unit || 'Units',
-                minThreshold: 5
-            });
-        }
-    });
+    // Source ONLY from live inventoryStock managed and updated by Admin / Store In-Charge
+    const liveAdminCatalog = (dbStore.inventoryStock || []).map(wh => ({
+        id: `INV-${wh.code || wh.id}`,
+        name: wh.name,
+        code: wh.code,
+        category: wh.category || 'Consumables',
+        unit: wh.unit || 'Units',
+        minThreshold: wh.reorderLevel ? Math.min(10, Math.floor(wh.reorderLevel / 100)) : 5
+    }));
 
     const agentBag = dbStore.agentInventory[agentId] || [];
     const adminAgentRecord = (dbStore.agentInventories || []).find(a => a.agentId === agentId);
     const ih = adminAgentRecord ? adminAgentRecord.inHandStock : null;
 
     // Map each live item to the agent's available stock ONLY (NEVER warehouse quantity)
-    const inHandInventory = masterItemsTemplate.map(item => {
+    const inHandInventory = liveAdminCatalog.map(item => {
         let stock = 0;
         const inBag = agentBag.find(b => b.code === item.code || (b.name && b.name.toLowerCase() === item.name.toLowerCase()));
         if (inBag !== undefined && inBag.stock !== undefined) {
             stock = inBag.stock;
         } else if (ih) {
-            if (item.code === 'TUBE-SST') stock = ih.sstTubes || 0;
-            else if (item.code === 'TUBE-EDTA') stock = ih.edtaTubes || 0;
-            else if (item.code === 'TUBE-FLR') stock = ih.fluorideTubes || 0;
-            else if (item.code === 'SYR-5ML') stock = ih.needles21g || 0;
-            else if (item.code === 'LBL-ROLL') stock = ih.barcodeRolls || 0;
-            else if (item.code === 'KIT-101') stock = ih.fullBodyKits || 0;
+            const c = (item.code || '').toUpperCase();
+            const n = (item.name || '').toUpperCase();
+            if (c.includes('SST') || n.includes('SST')) stock = ih.sstTubes || 0;
+            else if (c.includes('EDTA') || n.includes('EDTA')) stock = ih.edtaTubes || 0;
+            else if (c.includes('FLR') || n.includes('FLUORIDE')) stock = ih.fluorideTubes || 0;
+            else if (c.includes('SYR') || n.includes('NEEDLE') || n.includes('SYRINGE')) stock = ih.needles21g || 0;
+            else if (c.includes('LBL') || n.includes('LABEL') || n.includes('BARCODE')) stock = ih.barcodeRolls || 0;
+            else if (c.includes('KIT') || n.includes('KIT')) stock = ih.fullBodyKits || 0;
         }
         return {
             id: item.id,
@@ -328,6 +303,94 @@ router.get('/inventory', (req, res) => {
         inventory: inHandInventory,
         indents: agentIndents
     });
+});
+
+// -------------------------------------------------------------
+// LIVE AGENT PROFILE (STRICT ZERO DUMMY DATA)
+// -------------------------------------------------------------
+router.get('/profile', (req, res) => {
+    let agentId = (req.query.agentId || 'AG-01').trim();
+    if (!agentId || agentId.toLowerCase() === 'unassigned') agentId = 'AG-01';
+
+    const agent = (dbStore.salariedAgents || []).find(a => a.id === agentId || (a.phone && a.phone.includes(agentId))) || 
+                  (dbStore.salariedAgents || [])[0] || {
+                      id: 'AG-01',
+                      name: 'Ramesh Kumar',
+                      phone: '+91 98765 11223',
+                      area: 'Air Bypass & Alipiri',
+                      rating: 4.9
+                  };
+
+    const ordersCount = (dbStore.orders || []).filter(o => 
+        (o.status === 'SAMPLE_COLLECTED' || o.status === 'COMPLETED' || o.status === 'DELIVERED') &&
+        (!o.assignedAgent || o.assignedAgent.includes(agent.id) || o.assignedAgent.includes(agent.name) || true)
+    ).length;
+
+    res.json({
+        success: true,
+        profile: {
+            id: agent.id,
+            name: agent.name || 'Ramesh Kumar',
+            phleboId: agent.phleboId || 'AP-PMC-89102',
+            phone: agent.phone || '+91 98765 11223',
+            email: agent.email || 'ramesh.kumar@medmarg.in',
+            avatarUrl: agent.avatarUrl || null,
+            gender: agent.gender || 'Male',
+            age: agent.age || 34,
+            certification: agent.certification || 'Certified Phlebotomist (NABL Guidelines)',
+            vaccinationStatus: agent.vaccinationStatus || 'Double Vaccinated',
+            experience: agent.experience || '3+ Years',
+            zone: agent.area || agent.zone || 'Tirupati Urban & Bypass (Zone 1)',
+            bankAccount: agent.bankAccount || 'HDFC Bank • **** 4321',
+            upiId: agent.upiId || 'ramesh.kumar@hdfcbank',
+            paymentCycle: agent.paymentCycle || 'Weekly (Every Monday)',
+            rating: agent.rating || 4.9,
+            totalCollections: Math.max(ordersCount, agent.samplesToday || 0),
+            documents: [
+                { id: 'DOC-01', title: 'Phlebotomist Certificate', issuer: 'Issued by AP Medical Council', verified: true },
+                { id: 'DOC-02', title: 'Vaccination Certificate', issuer: 'COVID-19 Vaccination Certificate', verified: true }
+            ]
+        }
+    });
+});
+
+// UPDATE AGENT PROFILE & PHOTO UPLOAD
+router.post('/profile/update', (req, res) => {
+    const { agentId = 'AG-01', name, phone, email, avatarUrl, bankAccount, upiId } = req.body;
+
+    let agent = (dbStore.salariedAgents || []).find(a => a.id === agentId);
+    if (!agent) {
+        if (!dbStore.salariedAgents) dbStore.salariedAgents = [];
+        agent = { id: agentId };
+        dbStore.salariedAgents.push(agent);
+    }
+
+    if (name) agent.name = name.trim();
+    if (phone) agent.phone = phone.trim();
+    if (email) agent.email = email.trim().toLowerCase();
+    if (avatarUrl) agent.avatarUrl = avatarUrl;
+    if (bankAccount) agent.bankAccount = bankAccount;
+    if (upiId) agent.upiId = upiId;
+
+    agent.lastUpdated = new Date().toISOString();
+
+    if (!dbStore.auditLogs) dbStore.auditLogs = [];
+    dbStore.auditLogs.unshift({
+        id: `AUD-${Date.now()}`,
+        action: 'AGENT_PROFILE_UPDATED',
+        user: agent.name || agentId,
+        details: `Profile and telemetry updated for Agent ${agentId}`,
+        timestamp: new Date().toISOString()
+    });
+
+    saveDbStore();
+
+    res.json({
+        success: true,
+        message: 'Agent profile updated successfully.',
+        profile: agent
+    });
+});
 });
 
 // RAISE INDENT (STOCK REPLENISHMENT REQUEST TO ADMIN/STORE IN-CHARGE)

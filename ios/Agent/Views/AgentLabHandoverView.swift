@@ -377,9 +377,9 @@ struct AgentLabHandoverView: View {
 
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
-            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let list = json["orders"] as? [[String: Any]] {
-                let d = try JSONSerialization.data(withJSONObject: list)
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                let rawList = (json["roster"] as? [[String: Any]]) ?? (json["orders"] as? [[String: Any]]) ?? []
+                let d = try JSONSerialization.data(withJSONObject: rawList)
                 let parsed = try JSONDecoder().decode([AgentPickupOrder].self, from: d)
                 await MainActor.run {
                     self.collectedOrders = parsed.filter { $0.status == "SAMPLE_COLLECTED" }

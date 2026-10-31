@@ -36,6 +36,7 @@ struct AgentPickupOrder: Identifiable, Codable, Equatable {
     var arrivalPhoto: String?
     var samplePhotos: [String]?
     var reviewRequestSent: Bool?
+    var reviewStatus: String?
     var phleboVitals: PhleboVitalsRecord?
     var kitAssigned: Bool?
     var kitNotRequired: Bool?

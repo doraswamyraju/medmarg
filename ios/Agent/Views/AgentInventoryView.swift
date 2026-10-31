@@ -558,10 +558,9 @@ struct AgentInventoryView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
-                    usageBadgeCard(name: "EDTA", count: edtaUsedToday, color: Color.purple, icon: "cylinder.split.1x2.fill")
-                    usageBadgeCard(name: "Serum", count: sstUsedToday, color: Color.red, icon: "cylinder.split.1x2.fill")
-                    usageBadgeCard(name: "Fluoride", count: fluorideUsedToday, color: Color.gray, icon: "cylinder.split.1x2.fill")
-                    usageBadgeCard(name: "Urine", count: urineUsedToday, color: Color.orange, icon: "cup.and.saucer.fill")
+                    ForEach(usageItems, id: \.name) { u in
+                        usageBadgeCard(name: u.name, count: u.count, color: u.color, icon: u.icon)
+                    }
                 }
             }
         }
@@ -573,6 +572,26 @@ struct AgentInventoryView: View {
                 .stroke(MedMargTheme.slate200, lineWidth: 1)
         )
         .padding(.horizontal, 16)
+    }
+
+    private var usageItems: [(name: String, count: Int, color: Color, icon: String)] {
+        var list: [(name: String, count: Int, color: Color, icon: String)] = []
+        if inventoryList.contains(where: { $0.tubeColor == "red" || $0.name.lowercased().contains("sst") || $0.name.lowercased().contains("serum") }) || sstUsedToday > 0 {
+            list.append(("Serum SST", sstUsedToday, Color.red, "cylinder.split.1x2.fill"))
+        }
+        if inventoryList.contains(where: { $0.tubeColor == "purple" || $0.name.lowercased().contains("edta") }) || edtaUsedToday > 0 {
+            list.append(("EDTA", edtaUsedToday, Color.purple, "cylinder.split.1x2.fill"))
+        }
+        if inventoryList.contains(where: { $0.tubeColor == "grey" || $0.name.lowercased().contains("fluoride") }) || fluorideUsedToday > 0 {
+            list.append(("Fluoride", fluorideUsedToday, Color.gray, "cylinder.split.1x2.fill"))
+        }
+        if inventoryList.contains(where: { $0.tubeColor == "yellow" || $0.name.lowercased().contains("urine") }) || urineUsedToday > 0 {
+            list.append(("Urine", urineUsedToday, Color.orange, "cup.and.saucer.fill"))
+        }
+        if list.isEmpty {
+            list.append(("Supplies", completedOrdersCount, MedMargTheme.primaryTeal, "shippingbox.fill"))
+        }
+        return list
     }
 
     private func usageBadgeCard(name: String, count: Int, color: Color, icon: String) -> some View {

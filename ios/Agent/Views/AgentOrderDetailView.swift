@@ -44,6 +44,11 @@ struct AgentOrderDetailView: View {
         return s == "KIT_ASSIGNED" || s == "ENROUTE" || s == "EN_ROUTE" || s == "ARRIVED" || s == "IN_PROGRESS" || s == "SAMPLE_COLLECTED" || s == "TRANSFERRED_TO_LAB" || s == "DELIVERED" || s == "COMPLETED" || order.kitAssigned == true || order.kitNotRequired == true
     }
 
+    private var isOrderCompleted: Bool {
+        let s = (order.status ?? "").uppercased()
+        return s == "SAMPLE_COLLECTED" || s == "COMPLETED" || s == "DELIVERED" || s == "TRANSFERRED_TO_LAB"
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             // 1. Topbar with Back button
@@ -462,23 +467,23 @@ struct AgentOrderDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Next Action")
                 .font(.system(size: 11, weight: .black))
-                .foregroundColor(isKitAssessed ? MedMargTheme.primaryTeal : Color.orange)
+                .foregroundColor(isOrderCompleted ? Color(red: 0.0, green: 0.65, blue: 0.42) : (isKitAssessed ? MedMargTheme.primaryTeal : Color.orange))
 
             HStack(spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
-                        .fill((isKitAssessed ? MedMargTheme.primaryTeal : Color.orange).opacity(0.12))
+                        .fill((isOrderCompleted ? Color(red: 0.0, green: 0.65, blue: 0.42) : (isKitAssessed ? MedMargTheme.primaryTeal : Color.orange)).opacity(0.12))
                         .frame(width: 44, height: 44)
-                    Image(systemName: isKitAssessed ? "paperplane.fill" : "shippingbox.fill")
+                    Image(systemName: isOrderCompleted ? "checkmark.seal.fill" : (isKitAssessed ? "paperplane.fill" : "shippingbox.fill"))
                         .font(.system(size: 20))
-                        .foregroundColor(isKitAssessed ? MedMargTheme.primaryTeal : Color.orange)
+                        .foregroundColor(isOrderCompleted ? Color(red: 0.0, green: 0.65, blue: 0.42) : (isKitAssessed ? MedMargTheme.primaryTeal : Color.orange))
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(isKitAssessed ? "Start Trip to Doorstep" : "Review Collection Kit")
+                    Text(isOrderCompleted ? "Sample Collected & Stored" : (isKitAssessed ? "Start Trip to Doorstep" : "Review Collection Kit"))
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(MedMargTheme.slate900)
-                    Text(isKitAssessed ? "Kit supplies verified & reserved. Begin transit to customer doorstep." : "Verify required tubes and consumables before starting the trip.")
+                    Text(isOrderCompleted ? "Specimens sealed and stored in Cold Bag CB-88 (3.8°C). Ready for Lab Handover." : (isKitAssessed ? "Kit supplies verified & reserved. Begin transit to customer doorstep." : "Verify required tubes and consumables before starting the trip."))
                         .font(.system(size: 10))
                         .foregroundColor(MedMargTheme.slate500)
                         .lineLimit(2)
@@ -486,7 +491,17 @@ struct AgentOrderDetailView: View {
 
                 Spacer()
 
-                if !isKitAssessed {
+                if isOrderCompleted {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill").font(.system(size: 11))
+                        Text("Collected").font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundColor(Color(red: 0.0, green: 0.65, blue: 0.42))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(Color(red: 0.0, green: 0.65, blue: 0.42).opacity(0.12))
+                    .cornerRadius(8)
+                } else if !isKitAssessed {
                     Button(action: { showAssessKitModal = true }) {
                         HStack(spacing: 4) {
                             Image(systemName: "doc.text.fill").font(.system(size: 10))
@@ -516,7 +531,7 @@ struct AgentOrderDetailView: View {
             }
         }
         .padding(14)
-        .background(isKitAssessed ? Color(red: 0.94, green: 0.99, blue: 0.96) : Color(red: 1.0, green: 0.98, blue: 0.92))
+        .background(isOrderCompleted ? Color(red: 0.94, green: 0.99, blue: 0.96) : (isKitAssessed ? Color(red: 0.94, green: 0.99, blue: 0.96) : Color(red: 1.0, green: 0.98, blue: 0.92)))
         .cornerRadius(16)
         .overlay(RoundedRectangle(cornerRadius: 16).stroke((isKitAssessed ? MedMargTheme.primaryTeal : Color.orange).opacity(0.3), lineWidth: 1))
         .padding(.horizontal, 16)
@@ -739,38 +754,58 @@ struct AgentOrderDetailView: View {
                     }
                 }
 
-                // Action Column: Start Trip
-                VStack(alignment: .leading, spacing: 6) {
-                    Button(action: {
-                        startMissionTrip()
-                    }) {
+                // Action Column: Start Trip or Completed
+                if isOrderCompleted {
+                    VStack(alignment: .leading, spacing: 6) {
                         HStack(spacing: 6) {
-                            Image(systemName: isKitAssessed ? "paperplane.fill" : "lock.fill").font(.system(size: 11))
-                            Text(isKitAssessed ? "Start Trip" : "Assess Kit First").font(.system(size: 13, weight: .bold))
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(Color(red: 0.0, green: 0.65, blue: 0.42))
+                            Text("Visit Completed")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(Color(red: 0.0, green: 0.65, blue: 0.42))
                         }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .background(
-                            isKitAssessed ?
-                            LinearGradient(
-                                colors: [Color(red: 0.05, green: 0.72, blue: 0.45), Color(red: 0.0, green: 0.55, blue: 0.35)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ) :
-                            LinearGradient(
-                                colors: [Color.orange, Color.orange.opacity(0.8)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
+                        .frame(maxWidth: .infinity)
+                        .background(Color(red: 0.0, green: 0.65, blue: 0.42).opacity(0.12))
                         .cornerRadius(10)
-                    }
 
-                    Text(isKitAssessed ? "Use this after confirming kit is ready" : "Kit assessment or exemption required")
-                        .font(.system(size: 9))
-                        .foregroundColor(MedMargTheme.slate500)
-                        .lineLimit(2)
+                        Text("Sample Collected at Doorstep")
+                            .font(.system(size: 9))
+                            .foregroundColor(MedMargTheme.slate500)
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Button(action: {
+                            startMissionTrip()
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: isKitAssessed ? "paperplane.fill" : "lock.fill").font(.system(size: 11))
+                                Text(isKitAssessed ? "Start Trip" : "Assess Kit First").font(.system(size: 13, weight: .bold))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(
+                                isKitAssessed ?
+                                LinearGradient(
+                                    colors: [Color(red: 0.05, green: 0.72, blue: 0.45), Color(red: 0.0, green: 0.55, blue: 0.35)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ) :
+                                LinearGradient(
+                                    colors: [Color.orange, Color.orange.opacity(0.8)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .cornerRadius(10)
+                        }
+
+                        Text(isKitAssessed ? "Use this after confirming kit is ready" : "Kit assessment or exemption required")
+                            .font(.system(size: 9))
+                            .foregroundColor(MedMargTheme.slate500)
+                            .lineLimit(2)
+                    }
                 }
             }
         }
@@ -786,44 +821,74 @@ struct AgentOrderDetailView: View {
     // ==========================================
     private var bottomActionFooterBar: some View {
         HStack(spacing: 8) {
-            // Mark Not Reachable
-            Button(action: { showNotReachableAlert = true }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "slash.circle").font(.system(size: 11)).foregroundColor(.red)
-                    Text("Mark as Not Reachable").font(.system(size: 11, weight: .bold)).foregroundColor(.red)
+            if isOrderCompleted {
+                // Completed State: Review Status + Sample Collected Badge
+                HStack(spacing: 6) {
+                    Image(systemName: "star.fill")
+                        .foregroundColor(.orange)
+                        .font(.system(size: 12))
+                    Text(order.reviewStatus == "REVIEW_SUBMITTED" ? "Review Received ★ 5.0" : (order.reviewRequestSent == true ? "Review Request Dispatched" : "Doorstep Visit Completed"))
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(MedMargTheme.slate700)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 11)
-                .background(Color(red: 1.0, green: 0.94, blue: 0.94))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 12)
+                .background(MedMargTheme.slate100)
                 .cornerRadius(10)
-            }
 
-            // Reschedule
-            Button(action: { showRescheduleAlert = true }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "calendar.badge.clock").font(.system(size: 11)).foregroundColor(MedMargTheme.slate700)
-                    Text("Reschedule").font(.system(size: 11, weight: .bold)).foregroundColor(MedMargTheme.slate900)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 11)
-                .background(Color.white)
-                .cornerRadius(10)
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(MedMargTheme.slate200, lineWidth: 1))
-            }
+                Spacer()
 
-            // Start Trip
-            Button(action: {
-                startMissionTrip()
-            }) {
-                HStack(spacing: 4) {
-                    Image(systemName: isKitAssessed ? "paperplane.fill" : "lock.fill").font(.system(size: 11))
-                    Text(isKitAssessed ? "Start Trip" : "Assess Kit First").font(.system(size: 12, weight: .bold))
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 14, weight: .bold))
+                    Text("Sample Collected")
+                        .font(.system(size: 13, weight: .black))
                 }
                 .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 11)
-                .background(isKitAssessed ? MedMargTheme.primaryTeal : Color.orange)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color(red: 0.0, green: 0.65, blue: 0.42))
                 .cornerRadius(10)
+            } else {
+                // Mark Not Reachable
+                Button(action: { showNotReachableAlert = true }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "slash.circle").font(.system(size: 11)).foregroundColor(.red)
+                        Text("Mark as Not Reachable").font(.system(size: 11, weight: .bold)).foregroundColor(.red)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 11)
+                    .background(Color(red: 1.0, green: 0.94, blue: 0.94))
+                    .cornerRadius(10)
+                }
+
+                // Reschedule
+                Button(action: { showRescheduleAlert = true }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "calendar.badge.clock").font(.system(size: 11)).foregroundColor(MedMargTheme.slate700)
+                        Text("Reschedule").font(.system(size: 11, weight: .bold)).foregroundColor(MedMargTheme.slate900)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 11)
+                    .background(Color.white)
+                    .cornerRadius(10)
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(MedMargTheme.slate200, lineWidth: 1))
+                }
+
+                // Start Trip
+                Button(action: {
+                    startMissionTrip()
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: isKitAssessed ? "paperplane.fill" : "lock.fill").font(.system(size: 11))
+                        Text(isKitAssessed ? "Start Trip" : "Assess Kit First").font(.system(size: 12, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .background(isKitAssessed ? MedMargTheme.primaryTeal : Color.orange)
+                    .cornerRadius(10)
+                }
             }
         }
         .padding(.horizontal, 16)
