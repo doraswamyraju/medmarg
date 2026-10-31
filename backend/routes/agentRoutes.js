@@ -101,9 +101,26 @@ router.post('/pickup/update', (req, res) => {
 
 // ASSESS & ASSIGN KIT FROM IN-HAND INVENTORY TO ORDER
 router.post('/order/assign-kit', (req, res) => {
-    const { orderId, agentId = 'AG-01', kitItems = [] } = req.body;
+    const { orderId, agentId = 'AG-01', kitItems = [], kitNotRequired = false, reason = '' } = req.body;
     const order = (dbStore.orders || []).find(o => o.id === orderId);
     if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    if (kitNotRequired) {
+        order.kitAssigned = true;
+        order.kitNotRequired = true;
+        order.kitExemptionReason = reason || 'Kit not required / Provided by Patient or Clinic';
+        order.kitAssignedAt = new Date().toISOString();
+        if (order.status === 'BOOKED' || order.status === 'ASSIGNED') {
+            order.status = 'KIT_ASSIGNED';
+        }
+        order.lastUpdated = new Date().toISOString();
+        saveDbStore();
+        return res.json({
+            success: true,
+            message: 'Order marked as Kit Not Required. You can now start the trip.',
+            order
+        });
+    }
 
     if (!dbStore.agentInventory) dbStore.agentInventory = {};
     if (!dbStore.agentInventory[agentId]) {
@@ -151,8 +168,13 @@ router.post('/order/assign-kit', (req, res) => {
     });
 
     order.kitAssigned = true;
+    order.kitNotRequired = false;
     order.kitAssignedAt = new Date().toISOString();
     order.assignedKitItems = kitItems;
+    if (order.status === 'BOOKED' || order.status === 'ASSIGNED') {
+        order.status = 'KIT_ASSIGNED';
+    }
+    order.lastUpdated = new Date().toISOString();
     saveDbStore();
 
     res.json({

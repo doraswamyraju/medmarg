@@ -33,9 +33,16 @@ struct AgentOrderDetailView: View {
     @State private var showAssessKitModal: Bool = false
     @State private var showCollectionModal: Bool = false
     @State private var showPaymentModal: Bool = false
+    @State private var showOrderedTestsSheet: Bool = false
+    @State private var showAssessKitRequiredAlert: Bool = false
     @State private var showRescheduleAlert: Bool = false
     @State private var showNotReachableAlert: Bool = false
     @State private var actionBanner: String? = nil
+
+    private var isKitAssessed: Bool {
+        let s = (order.status ?? "").uppercased()
+        return s == "KIT_ASSIGNED" || s == "ENROUTE" || s == "EN_ROUTE" || s == "ARRIVED" || s == "IN_PROGRESS" || s == "SAMPLE_COLLECTED" || s == "TRANSFERRED_TO_LAB" || s == "DELIVERED" || s == "COMPLETED" || order.kitAssigned == true || order.kitNotRequired == true
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -94,6 +101,14 @@ struct AgentOrderDetailView: View {
             bottomActionFooterBar
         }
         .background(MedMargTheme.slate50.ignoresSafeArea())
+        .sheet(isPresented: $showOrderedTestsSheet) {
+            AgentOrderedTestsBottomSheet(
+                order: order,
+                onAssessKitTap: {
+                    showAssessKitModal = true
+                }
+            )
+        }
         .sheet(isPresented: $showFullScreenNavigation) {
             FullScreenInAppMapView(
                 order: order,
@@ -447,23 +462,23 @@ struct AgentOrderDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Next Action")
                 .font(.system(size: 11, weight: .black))
-                .foregroundColor(Color.orange)
+                .foregroundColor(isKitAssessed ? MedMargTheme.primaryTeal : Color.orange)
 
             HStack(spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.orange.opacity(0.12))
+                        .fill((isKitAssessed ? MedMargTheme.primaryTeal : Color.orange).opacity(0.12))
                         .frame(width: 44, height: 44)
-                    Image(systemName: "shippingbox.fill")
+                    Image(systemName: isKitAssessed ? "paperplane.fill" : "shippingbox.fill")
                         .font(.system(size: 20))
-                        .foregroundColor(Color.orange)
+                        .foregroundColor(isKitAssessed ? MedMargTheme.primaryTeal : Color.orange)
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Review Collection Kit")
+                    Text(isKitAssessed ? "Start Trip to Doorstep" : "Review Collection Kit")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(MedMargTheme.slate900)
-                    Text("Verify required tubes and consumables before starting the trip.")
+                    Text(isKitAssessed ? "Kit supplies verified & reserved. Begin transit to customer doorstep." : "Verify required tubes and consumables before starting the trip.")
                         .font(.system(size: 10))
                         .foregroundColor(MedMargTheme.slate500)
                         .lineLimit(2)
@@ -471,24 +486,39 @@ struct AgentOrderDetailView: View {
 
                 Spacer()
 
-                Button(action: { showAssessKitModal = true }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "doc.text.fill").font(.system(size: 10))
-                        Text("Review Kit").font(.system(size: 11, weight: .bold))
-                        Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold))
+                if !isKitAssessed {
+                    Button(action: { showAssessKitModal = true }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "doc.text.fill").font(.system(size: 10))
+                            Text("Review Kit").font(.system(size: 11, weight: .bold))
+                            Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(MedMargTheme.primaryTeal)
+                        .cornerRadius(8)
                     }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .background(MedMargTheme.primaryTeal)
-                    .cornerRadius(8)
+                } else {
+                    Button(action: { startMissionTrip() }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "paperplane.fill").font(.system(size: 10))
+                            Text("Start Trip").font(.system(size: 11, weight: .bold))
+                            Image(systemName: "chevron.right").font(.system(size: 8, weight: .bold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(Color(red: 0.05, green: 0.72, blue: 0.45))
+                        .cornerRadius(8)
+                    }
                 }
             }
         }
         .padding(14)
-        .background(Color(red: 1.0, green: 0.98, blue: 0.92))
+        .background(isKitAssessed ? Color(red: 0.94, green: 0.99, blue: 0.96) : Color(red: 1.0, green: 0.98, blue: 0.92))
         .cornerRadius(16)
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.orange.opacity(0.3), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke((isKitAssessed ? MedMargTheme.primaryTeal : Color.orange).opacity(0.3), lineWidth: 1))
         .padding(.horizontal, 16)
     }
 
@@ -496,58 +526,70 @@ struct AgentOrderDetailView: View {
     // 🧪 ORDERED TESTS / PACKAGE CARD
     // ==========================================
     private var orderedTestsCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("Ordered Tests / Package")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(MedMargTheme.slate900)
-                Spacer()
-                Text("View Details")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(MedMargTheme.primaryTeal)
-            }
-
-            HStack(spacing: 12) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(MedMargTheme.primaryTeal.opacity(0.1))
-                        .frame(width: 44, height: 44)
-                    Image(systemName: "shippingbox.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(MedMargTheme.primaryTeal)
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(order.items ?? "Extensive Full Body Health Checkup")
+        Button(action: { showOrderedTestsSheet = true }) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("Ordered Tests / Package")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundColor(MedMargTheme.slate900)
-                        .lineLimit(1)
-
-                    Text("24 Tests | Home Collection")
-                        .font(.system(size: 10))
-                        .foregroundColor(MedMargTheme.slate500)
-
-                    // Requirement Tags: Blood, Urine, Fasting Required
-                    HStack(spacing: 6) {
-                        tagPill(text: "Blood", icon: "drop.fill", color: Color.red)
-                        tagPill(text: "Urine", icon: "drop", color: Color.orange)
-                        tagPill(text: "Fasting Required", icon: "clock", color: Color(red: 0.8, green: 0.4, blue: 0.1))
+                    Spacer()
+                    HStack(spacing: 2) {
+                        Text("View Details")
+                            .font(.system(size: 11, weight: .bold))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 9, weight: .bold))
                     }
-                    .padding(.top, 2)
+                    .foregroundColor(MedMargTheme.primaryTeal)
                 }
 
-                Spacer()
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(MedMargTheme.primaryTeal.opacity(0.1))
+                            .frame(width: 44, height: 44)
+                        Image(systemName: "shippingbox.fill")
+                            .font(.system(size: 20))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                    }
 
-                Text("₹\(order.effectiveAmount)")
-                    .font(.system(size: 16, weight: .black))
-                    .foregroundColor(MedMargTheme.slate900)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(order.items ?? "Extensive Full Body Health Checkup")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(MedMargTheme.slate900)
+                            .lineLimit(1)
+
+                        Text("24 Tests | Home Collection")
+                            .font(.system(size: 10))
+                            .foregroundColor(MedMargTheme.slate500)
+
+                        // Requirement Tags: Blood, Urine, Fasting Required
+                        HStack(spacing: 6) {
+                            tagPill(text: "Blood", icon: "drop.fill", color: Color.red)
+                            tagPill(text: "Urine", icon: "drop", color: Color.orange)
+                            tagPill(text: "Fasting Required", icon: "clock", color: Color(red: 0.8, green: 0.4, blue: 0.1))
+                        }
+                        .padding(.top, 2)
+                    }
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("₹\(order.effectiveAmount)")
+                            .font(.system(size: 16, weight: .black))
+                            .foregroundColor(MedMargTheme.slate900)
+                        Text("View All >")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                    }
+                }
             }
+            .padding(14)
+            .background(Color.white)
+            .cornerRadius(16)
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(MedMargTheme.slate200, lineWidth: 1))
+            .padding(.horizontal, 16)
         }
-        .padding(14)
-        .background(Color.white)
-        .cornerRadius(16)
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(MedMargTheme.slate200, lineWidth: 1))
-        .padding(.horizontal, 16)
+        .buttonStyle(PlainButtonStyle())
     }
 
     private func tagPill(text: String, icon: String, color: Color) -> some View {
@@ -700,19 +742,24 @@ struct AgentOrderDetailView: View {
                 // Action Column: Start Trip
                 VStack(alignment: .leading, spacing: 6) {
                     Button(action: {
-                        updateOrderStatus(to: "ENROUTE")
-                        showFullScreenNavigation = true
+                        startMissionTrip()
                     }) {
                         HStack(spacing: 6) {
-                            Image(systemName: "paperplane.fill").font(.system(size: 11))
-                            Text("Start Trip").font(.system(size: 13, weight: .bold))
+                            Image(systemName: isKitAssessed ? "paperplane.fill" : "lock.fill").font(.system(size: 11))
+                            Text(isKitAssessed ? "Start Trip" : "Assess Kit First").font(.system(size: 13, weight: .bold))
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
                         .background(
+                            isKitAssessed ?
                             LinearGradient(
                                 colors: [Color(red: 0.05, green: 0.72, blue: 0.45), Color(red: 0.0, green: 0.55, blue: 0.35)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ) :
+                            LinearGradient(
+                                colors: [Color.orange, Color.orange.opacity(0.8)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -720,7 +767,7 @@ struct AgentOrderDetailView: View {
                         .cornerRadius(10)
                     }
 
-                    Text("Use this after confirming kit is ready")
+                    Text(isKitAssessed ? "Use this after confirming kit is ready" : "Kit assessment or exemption required")
                         .font(.system(size: 9))
                         .foregroundColor(MedMargTheme.slate500)
                         .lineLimit(2)
@@ -766,17 +813,16 @@ struct AgentOrderDetailView: View {
 
             // Start Trip
             Button(action: {
-                updateOrderStatus(to: "ENROUTE")
-                showFullScreenNavigation = true
+                startMissionTrip()
             }) {
                 HStack(spacing: 4) {
-                    Image(systemName: "paperplane.fill").font(.system(size: 11))
-                    Text("Start Trip").font(.system(size: 12, weight: .bold))
+                    Image(systemName: isKitAssessed ? "paperplane.fill" : "lock.fill").font(.system(size: 11))
+                    Text(isKitAssessed ? "Start Trip" : "Assess Kit First").font(.system(size: 12, weight: .bold))
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 11)
-                .background(MedMargTheme.primaryTeal)
+                .background(isKitAssessed ? MedMargTheme.primaryTeal : Color.orange)
                 .cornerRadius(10)
             }
         }
@@ -794,6 +840,27 @@ struct AgentOrderDetailView: View {
         } message: {
             Text("Reschedule window opened for Central Fleet Dispatcher coordination.")
         }
+        .alert("Kit Assessment Required", isPresented: $showAssessKitRequiredAlert) {
+            Button("Assess Kit Now") {
+                showAssessKitModal = true
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("You must assess and assign your collection kit or mark kit as not required before starting this trip.")
+        }
+    }
+
+    private func startMissionTrip() {
+        guard isKitAssessed else {
+            showAssessKitRequiredAlert = true
+            return
+        }
+        let now = Date()
+        let isoTime = ISO8601DateFormatter().string(from: now)
+        UserDefaults.standard.set(now.timeIntervalSince1970, forKey: "trip_start_\(order.id)")
+        order.tripStartedAt = isoTime
+        updateOrderStatus(to: "ENROUTE")
+        showFullScreenNavigation = true
     }
 
     private func callPatientPhone() {
@@ -812,11 +879,18 @@ struct AgentOrderDetailView: View {
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let payload: [String: Any] = [
+        let tripTime = UserDefaults.standard.double(forKey: "trip_start_\(order.id)")
+        let tripStartedStr = tripTime > 0 ? ISO8601DateFormatter().string(from: Date(timeIntervalSince1970: tripTime)) : order.tripStartedAt
+
+        var payload: [String: Any] = [
             "orderId": order.id,
             "status": status,
             "updatedAt": ISO8601DateFormatter().string(from: Date())
         ]
+        if let ts = tripStartedStr {
+            payload["tripStartedAt"] = ts
+        }
+
         req.httpBody = try? JSONSerialization.data(withJSONObject: payload)
         URLSession.shared.dataTask(with: req) { _, _, _ in
             DispatchQueue.main.async {
@@ -846,3 +920,4 @@ struct AgentOrderDetailView: View {
         }.resume()
     }
 }
+

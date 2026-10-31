@@ -194,3 +194,4 @@ class BarcodeScannerViewController: UIViewController, AVCaptureMetadataOutputObj
         }
     }
 }
+
