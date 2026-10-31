@@ -5,6 +5,7 @@ const { dbStore, saveDbStore } = require('../models/dataStore');
 // DEMO USERS DATABASE STORE
 const DEMO_USERS_DB = [
     { id: 'usr_admin', email: 'admin@medmarg.com', phone: '9999999999', password: 'password123', name: 'MedMarg Super Admin', role: 'ADMIN', organization: 'MedMarg Platform Governance & Central Command' },
+    { id: 'usr_agent', email: 'agent@medmarg.com', phone: '9777777777', password: 'agent123', name: 'Ramesh Kumar (Phlebo AG-01)', role: 'SALARIED_AGENT', organization: 'Tirupati Field Collection Fleet' },
     { id: 'usr_staff', email: 'staff@medmarg.com', phone: '9888888888', password: 'password123', name: 'MedMarg Operations Staff', role: 'STAFF', organization: 'MedMarg Central Operations Desk' },
     { id: 'usr_patient', email: 'patient@medmarg.com', phone: '9876543210', password: 'password123', name: 'Rahul Sharma (Patient)', role: 'PATIENT', organization: 'MedMarg Patient Portal (Tirupati)' },
     { id: 'usr_salaried', email: 'salaried@medmarg.com', phone: '9777777777', password: 'password123', name: 'Ramesh Kumar (Salaried Agent AG-01)', role: 'SALARIED_AGENT', organization: 'MedMarg In-House Fleet (Zone 1)' },
@@ -41,10 +42,19 @@ router.post('/login', (req, res) => {
         (u.email && u.email.toLowerCase() === cleanId) || 
         (u.phone && (u.phone === cleanId || u.phone.replace(/\D/g, '') === cleanId.replace(/\D/g, ''))) ||
         (u.id && u.id.toLowerCase() === cleanId) ||
+        (u.username && u.username.toLowerCase() === cleanId) ||
         (u.email && cleanId.includes(u.email.split('@')[0]))
     );
 
     if (foundUser) {
+        // STRICT PASSWORD CHECK: Reject if password doesn't match
+        if (foundUser.password && password && foundUser.password !== password) {
+            return res.status(401).json({
+                success: false,
+                error: 'Invalid password. Please check your credentials.'
+            });
+        }
+
         // Normalize role if freelancer
         let finalRole = foundUser.role;
         if (finalRole === 'FREELANCE_AGENT' || finalRole === 'FREELANCE' || finalRole === 'FREELANCER') {
@@ -61,59 +71,15 @@ router.post('/login', (req, res) => {
                 phone: foundUser.phone,
                 identifier: identifier,
                 role: finalRole,
-                agentType: 'FREELANCE',
                 organization: foundUser.organization || 'MedMarg Healthcare'
             }
         });
     }
 
-    // Dynamic Role Auto-Detection fallback
-    let detectedRole = 'PATIENT';
-    let name = 'Customer Patient';
-    let organization = 'MedMarg Healthcare Patient Portal';
-
-    if (cleanId.includes('admin') || cleanId === 'superadmin') {
-        detectedRole = 'ADMIN';
-        name = 'MedMarg Super Admin';
-        organization = 'MedMarg Platform Governance & Central Command';
-    } else if (cleanId.includes('staff') || cleanId.includes('ops')) {
-        detectedRole = 'STAFF';
-        name = 'MedMarg Operations Staff';
-        organization = 'MedMarg Central Operations Desk';
-    } else if (cleanId.includes('freelance') || cleanId.includes('gig') || cleanId.startsWith('fl') || cleanId.includes('fl-')) {
-        detectedRole = 'FREELANCER_AGENT';
-        name = 'Freelance Phlebotomist';
-        organization = 'MedMarg Freelance Phlebotomist Network';
-    } else if (cleanId.includes('salaried') || cleanId.includes('agent') || cleanId.includes('phlebo')) {
-        detectedRole = 'SALARIED_AGENT';
-        name = 'Ramesh Kumar (Salaried Agent AG-01)';
-        organization = 'MedMarg In-House Fleet (Zone 1)';
-    } else if (cleanId.includes('lab') || cleanId.includes('lal') || cleanId.includes('thyrocare')) {
-        detectedRole = 'DIAGNOSTIC_LAB';
-        name = 'MedMarg Central Pathology Hub';
-        organization = 'MedMarg Central Diagnostics';
-    } else if (cleanId.includes('scan') || cleanId.includes('aarthi') || cleanId.includes('mri')) {
-        detectedRole = 'SCAN_CENTER';
-        name = 'Aarthi Scans Operations';
-        organization = 'Aarthi Scans & Radiology Center';
-    } else if (cleanId.includes('dr') || cleanId.includes('doctor')) {
-        detectedRole = 'DOCTOR';
-        name = 'Dr. Ananya Sharma, MD';
-        organization = 'MedMarg Care Clinic';
-    }
-
-    return res.json({
-        success: true,
-        token: `jwt_medmarg_${Date.now()}`,
-        user: {
-            id: `usr_${Date.now()}`,
-            name,
-            email: cleanId.includes('@') ? cleanId : `${cleanId}@medmarg.com`,
-            phone: cleanId.match(/^[0-9]{10,12}$/) ? cleanId : '9876543210',
-            identifier,
-            role: detectedRole,
-            organization
-        }
+    // STRICT REJECTION: Do NOT auto-login arbitrary identifiers without registered user
+    return res.status(401).json({
+        success: false,
+        error: 'Account not found. Please verify your email or mobile number.'
     });
 });
 
