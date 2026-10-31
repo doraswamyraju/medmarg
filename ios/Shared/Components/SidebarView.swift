@@ -55,7 +55,7 @@ struct SidebarView: View {
                 // Sidebar Navigation Tabs with Accordion Show/Hide Inner Options
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("SUPER ADMIN MODULES")
+                        Text(sidebarSectionTitle)
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(MedMargTheme.slate500)
                             .padding(.horizontal, 20)
@@ -63,6 +63,10 @@ struct SidebarView: View {
 
                         if user.role == .admin {
                             adminAccordionModules
+                        } else if user.role == .collectionAgent {
+                            agentAccordionModules
+                        } else if user.role == .freelanceAgent {
+                            freelanceAccordionModules
                         } else {
                             patientAccordionModules
                         }
@@ -77,7 +81,13 @@ struct SidebarView: View {
                     // Profile Options Button
                     Button(action: {
                         showSidebar = false
-                        selectedTab = (user.role == .admin) ? 7 : 6
+                        if user.role == .admin {
+                            selectedTab = 7
+                        } else if user.role == .collectionAgent || user.role == .freelanceAgent {
+                            selectedTab = 4
+                        } else {
+                            selectedTab = 6
+                        }
                     }) {
                         HStack(spacing: 10) {
                             Image(systemName: "person.crop.circle.fill")
@@ -85,7 +95,7 @@ struct SidebarView: View {
                                 .foregroundColor(MedMargTheme.primaryTeal)
 
                             VStack(alignment: .leading, spacing: 1) {
-                                Text("Profile & Settings")
+                                Text(user.role == .collectionAgent ? "Terminal ID" : "Profile & Settings")
                                     .font(.system(size: 13, weight: .bold))
                                     .foregroundColor(MedMargTheme.slate900)
                                 Text("Account & Role Permissions")
@@ -127,6 +137,76 @@ struct SidebarView: View {
                 // Expand active tab by default when sidebar opens
                 expandedTabs.insert(selectedTab)
             }
+        }
+    }
+
+    private var sidebarSectionTitle: String {
+        switch user.role {
+        case .admin: return "SUPER ADMIN MODULES"
+        case .collectionAgent: return "PHLEBOTOMY FLEET TERMINAL"
+        case .freelanceAgent: return "GIG PHLEBOTOMIST NETWORK"
+        default: return "PATIENT SERVICES"
+        }
+    }
+
+    // ==========================================
+    // 🛵 DEDICATED SALARIED AGENT ACCORDION MODULES
+    // ==========================================
+    private var agentAccordionModules: some View {
+        Group {
+            accordionTab(index: 0, icon: "bicycle.circle.fill", title: "Assigned Pickups", subTabs: [
+                (0, "Live Today Roster"),
+                (1, "Sample Collected"),
+                (2, "Delivered to Lab")
+            ])
+            accordionTab(index: 1, icon: "archivebox.fill", title: "Supplies & Store", subTabs: [
+                (0, "In-Hand Field Kit"),
+                (1, "Warehouse Stock"),
+                (2, "Indent History")
+            ])
+            accordionTab(index: 2, icon: "target", title: "Shift & Daily Quota", subTabs: [
+                (0, "15 Sample Quota"),
+                (1, "On-Time Dispatch Rate"),
+                (2, "IoT Cold-Chain Log")
+            ])
+            accordionTab(index: 3, icon: "creditcard.fill", title: "Doorstep Payments", subTabs: [
+                (0, "Razorpay UPI QR POS"),
+                (1, "Collected Today"),
+                (2, "Cash Handover")
+            ])
+            accordionTab(index: 4, icon: "person.crop.circle.fill", title: "Fleet Terminal", subTabs: [
+                (0, "Agent Identity"),
+                (1, "Duty Shift Toggle"),
+                (2, "Device Telemetry")
+            ])
+        }
+    }
+
+    // ==========================================
+    // ⚡ DEDICATED FREELANCE AGENT ACCORDION MODULES
+    // ==========================================
+    private var freelanceAccordionModules: some View {
+        Group {
+            accordionTab(index: 0, icon: "bicycle.circle.fill", title: "Claimed Pickups", subTabs: [
+                (0, "Active Tasks"),
+                (1, "Sample Drop")
+            ])
+            accordionTab(index: 1, icon: "bolt.fill", title: "Broadcast Marketplace", subTabs: [
+                (0, "Nearby Broadcast Jobs"),
+                (1, "Claim Payout ₹180")
+            ])
+            accordionTab(index: 2, icon: "wallet.pass.fill", title: "Earnings & Cashout", subTabs: [
+                (0, "Instant UPI Cashout"),
+                (1, "Weekly Statement")
+            ])
+            accordionTab(index: 3, icon: "archivebox.fill", title: "Supplies & Store", subTabs: [
+                (0, "Allotted Consumables"),
+                (1, "Store Replenishment")
+            ])
+            accordionTab(index: 4, icon: "person.crop.circle.fill", title: "Gig Profile", subTabs: [
+                (0, "MLT Certifications"),
+                (1, "Payout Bank VPA")
+            ])
         }
     }
 

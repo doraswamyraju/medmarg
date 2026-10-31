@@ -244,32 +244,37 @@ struct CareSeekerHomeView: View {
     // 🏷️ 2. ACTIVE LIVE ORDER QUICK BANNER
     // ==========================================
     private func activeDispatchQuickBanner(order: LiveOrderModel) -> some View {
-        Button(action: { selectedTab = 3 }) {
+        let isEnroute = order.status.uppercased() == "ENROUTE" || order.status.uppercased() == "EN_ROUTE"
+        let title = isEnroute ? "Phlebotomist Enroute" : "Order Scheduled"
+        let badge = isEnroute ? "LIVE" : "CONFIRMED"
+        let badgeColor = isEnroute ? Color.red : MedMargTheme.primaryTeal
+
+        return Button(action: { selectedTab = 3 }) {
             HStack(spacing: 12) {
                 ZStack {
                     Circle()
                         .fill(MedMargTheme.amberGold.opacity(0.2))
                         .frame(width: 40, height: 40)
-                    Image(systemName: "location.fill.viewfinder")
+                    Image(systemName: isEnroute ? "location.fill.viewfinder" : "calendar.badge.clock")
                         .foregroundColor(MedMargTheme.amberGold)
                         .font(.system(size: 18))
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Text("Phlebotomist Enroute")
+                        Text(title)
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(MedMargTheme.slate900)
-                        Text("LIVE")
+                        Text(badge)
                             .font(.system(size: 9, weight: .black))
                             .foregroundColor(.white)
                             .padding(.horizontal, 4)
                             .padding(.vertical, 1)
-                            .background(Color.red)
+                            .background(badgeColor)
                             .cornerRadius(3)
                     }
 
-                    Text("Order #\(order.id) • OTP: \(order.handoverOtp)")
+                    Text("Order #\(order.id) • OTP: \(order.handoverOtp) • \(order.slot)")
                         .font(.system(size: 11))
                         .foregroundColor(MedMargTheme.slate500)
                 }
@@ -570,24 +575,27 @@ struct CareSeekerHomeView: View {
 
             if let activeDict = ordersArray.first(where: {
                 let st = ($0["status"] as? String)?.uppercased() ?? ""
-                return st == "ASSIGNED" || st == "ENROUTE" || st == "SAMPLE_COLLECTED" || st == "IN_LAB" || st == "COLLECTION_ASSIGNED"
+                return st == "BOOKED" || st == "CONFIRMED" || st == "ASSIGNED" || st == "ENROUTE" || st == "EN_ROUTE" || st == "SAMPLE_COLLECTED" || st == "IN_LAB" || st == "COLLECTION_ASSIGNED"
             }) {
                 let id = activeDict["id"] as? String ?? "MM-ORD"
                 let phlebo = activeDict["phleboName"] as? String ?? "Certified Phlebotomist"
                 let phleboPhone = activeDict["phleboPhone"] as? String ?? "+91 98765 11223"
-                let status = activeDict["status"] as? String ?? "ENROUTE"
+                let status = activeDict["status"] as? String ?? "BOOKED"
                 let otp = activeDict["handoverOtp"] as? String ?? "\(activeDict["otp"] as? String ?? "4821")"
                 let amt = activeDict["amount"] as? Int ?? (activeDict["totalAmount"] as? Int ?? 499)
+                let slot = activeDict["slot"] as? String ?? "Morning Slot"
+                let date = activeDict["date"] as? String ?? "Today"
+                let rawEta = activeDict["eta"] as? String ?? ""
 
                 let orderObj = LiveOrderModel(
                     id: id,
-                    date: "Today",
-                    slot: "Morning",
-                    address: "Tirupati, AP",
+                    date: date,
+                    slot: slot,
+                    address: activeDict["address"] as? String ?? "Tirupati, AP",
                     phleboName: phlebo,
                     phleboPhone: phleboPhone,
                     status: status,
-                    eta: "14 Mins",
+                    eta: rawEta.isEmpty ? slot : rawEta,
                     tempTelemetry: "3.8°C",
                     handoverOtp: otp,
                     items: [],

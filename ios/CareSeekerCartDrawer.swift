@@ -25,7 +25,7 @@ struct CareSeekerCartDrawer: View {
     let onAddToCart: (CatalogItem) -> Void
 
     @AppStorage("medmarg_preferred_lab_choice") private var savedPreferredLab: String = "medmarg_suggested"
-    @State private var rememberPreference: Bool = true
+    @AppStorage("medmarg_remember_lab_flag") private var rememberPreference: Bool = true
     @State private var inCartSearch: String = ""
 
     private var hasFasting: Bool {
@@ -125,6 +125,11 @@ struct CareSeekerCartDrawer: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { isOpen = false }
+                }
+            }
+            .onAppear {
+                if rememberPreference && !savedPreferredLab.isEmpty {
+                    selectedLabProvider = savedPreferredLab
                 }
             }
         }

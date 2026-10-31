@@ -266,11 +266,15 @@ struct CareSeekerOrdersView: View {
         switch status.uppercased() {
         case "COMPLETED", "DELIVERED":
             return (Color.green.opacity(0.12), Color(red: 0.05, green: 0.55, blue: 0.25), "COMPLETED")
-        case "ENROUTE":
-            return (Color.orange.opacity(0.12), Color.orange, "ENROUTE")
+        case "BOOKED", "CONFIRMED":
+            return (Color.blue.opacity(0.12), Color.blue, "SCHEDULED")
+        case "ASSIGNED":
+            return (Color.indigo.opacity(0.12), Color.indigo, "PHLEBO ASSIGNED")
+        case "ENROUTE", "EN_ROUTE":
+            return (Color.orange.opacity(0.12), Color.orange, "EN ROUTE")
         case "SAMPLE_COLLECTED":
             return (Color.purple.opacity(0.12), Color.purple, "SAMPLE COLLECTED")
-        case "IN_LAB":
+        case "IN_LAB", "LAB_PROCESSING":
             return (MedMargTheme.lightTeal, MedMargTheme.primaryTeal, "IN LAB")
         case "CANCELLED":
             return (Color.red.opacity(0.1), Color.red, "CANCELLED")

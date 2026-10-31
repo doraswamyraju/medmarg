@@ -82,14 +82,21 @@ struct CareSeekerTrackingView: View {
     }
 
     private var steps: [OrderStep] {
-        let status = currentOrder.status
+        let status = currentOrder.status.uppercased()
+        let isBooked = ["BOOKED", "CONFIRMED", "ASSIGNED", "ENROUTE", "EN_ROUTE", "SAMPLE_COLLECTED", "IN_LAB", "COMPLETED"].contains(status)
+        let isAssigned = ["ASSIGNED", "ENROUTE", "EN_ROUTE", "SAMPLE_COLLECTED", "IN_LAB", "COMPLETED"].contains(status)
+        let isEnroute = ["ENROUTE", "EN_ROUTE", "SAMPLE_COLLECTED", "IN_LAB", "COMPLETED"].contains(status)
+        let isCollected = ["SAMPLE_COLLECTED", "IN_LAB", "COMPLETED"].contains(status)
+        let isInLab = ["IN_LAB", "COMPLETED"].contains(status)
+        let isCompleted = status == "COMPLETED"
+
         return [
-            OrderStep(key: "BOOKED", label: "Order Booked", desc: "Confirmed by Lab Hub", done: true),
-            OrderStep(key: "ASSIGNED", label: "Phlebotomist Assigned", desc: "Vaccinated & Certified", done: true),
-            OrderStep(key: "ENROUTE", label: "Enroute to Doorstep", desc: currentOrder.eta.isEmpty ? "On the way" : "ETA: \(currentOrder.eta)", done: ["ENROUTE", "SAMPLE_COLLECTED", "IN_LAB", "COMPLETED"].contains(status)),
-            OrderStep(key: "SAMPLE_COLLECTED", label: "Sample Collected", desc: "Barcoded vacutainers", done: ["SAMPLE_COLLECTED", "IN_LAB", "COMPLETED"].contains(status)),
-            OrderStep(key: "IN_LAB", label: "Processing in Lab", desc: "NABL Certified Hub", done: ["IN_LAB", "COMPLETED"].contains(status)),
-            OrderStep(key: "COMPLETED", label: "Report Generated", desc: "PDF in Health Vault", done: status == "COMPLETED")
+            OrderStep(key: "BOOKED", label: "Order Booked", desc: "Confirmed for \(currentOrder.slot)", done: isBooked),
+            OrderStep(key: "ASSIGNED", label: "Phlebotomist Assigned", desc: currentOrder.phleboName.isEmpty ? "Assigning Certified Phlebo" : currentOrder.phleboName, done: isAssigned),
+            OrderStep(key: "ENROUTE", label: "Enroute to Doorstep", desc: isEnroute ? (currentOrder.eta.isEmpty ? "On the way" : "ETA: \(currentOrder.eta)") : "Dispatches at scheduled slot", done: isEnroute),
+            OrderStep(key: "SAMPLE_COLLECTED", label: "Sample Collected", desc: "Barcoded vacutainers", done: isCollected),
+            OrderStep(key: "IN_LAB", label: "Processing in Lab", desc: "NABL Certified Hub", done: isInLab),
+            OrderStep(key: "COMPLETED", label: "Report Generated", desc: "PDF in Health Vault", done: isCompleted)
         ]
     }
 
@@ -220,6 +227,18 @@ struct CareSeekerTrackingView: View {
                     let payStatus = dict["paymentStatus"] as? String ?? "PAID"
                     let itemsRaw = dict["items"] as? String ?? (dict["testName"] as? String ?? "Diagnostic Health Profile")
 
+                    let rawEta = dict["eta"] as? String ?? ""
+                    let etaDisplay: String
+                    if !rawEta.isEmpty {
+                        etaDisplay = rawEta
+                    } else if status == "COMPLETED" {
+                        etaDisplay = "Delivered"
+                    } else if status == "ENROUTE" || status == "EN_ROUTE" {
+                        etaDisplay = "25 Mins"
+                    } else {
+                        etaDisplay = slot
+                    }
+
                     return LiveOrderModel(
                         id: id,
                         date: date,
@@ -228,7 +247,7 @@ struct CareSeekerTrackingView: View {
                         phleboName: phleboName,
                         phleboPhone: phleboPhone,
                         status: status,
-                        eta: status == "COMPLETED" ? "Delivered" : "30 Mins",
+                        eta: etaDisplay,
                         tempTelemetry: "4.0°C (Controlled)",
                         handoverOtp: otp,
                         items: [LiveOrderItem(id: id, name: itemsRaw, price: amt)],
@@ -303,7 +322,7 @@ struct CareSeekerTrackingView: View {
                             .tracking(0.5)
                     }
 
-                    Text(currentOrder.status == "COMPLETED" ? "Sample Processed & Reports Ready" : "Phlebotomist Enroute to Your Doorstep")
+                    Text(heroHeadline(for: currentOrder.status))
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.white)
                         .lineLimit(2)
@@ -362,6 +381,25 @@ struct CareSeekerTrackingView: View {
         )
         .cornerRadius(22)
         .shadow(color: MedMargTheme.darkTeal.opacity(0.3), radius: 12, x: 0, y: 6)
+    }
+
+    private func heroHeadline(for status: String) -> String {
+        switch status.uppercased() {
+        case "COMPLETED":
+            return "Sample Processed & Reports Ready"
+        case "IN_LAB", "LAB_PROCESSING":
+            return "Sample Being Analyzed at Regional Hub"
+        case "SAMPLE_COLLECTED":
+            return "Sample Collected • Cold-Chain Transit"
+        case "ENROUTE", "EN_ROUTE":
+            return "Phlebotomist Enroute to Your Doorstep"
+        case "ASSIGNED":
+            return "Phlebotomist Assigned for Scheduled Slot"
+        case "BOOKED", "CONFIRMED":
+            return "Booking Confirmed • Scheduled for Doorstep Pickup"
+        default:
+            return "Phlebotomist Scheduled for Doorstep Pickup"
+        }
     }
 
     // ==========================================
