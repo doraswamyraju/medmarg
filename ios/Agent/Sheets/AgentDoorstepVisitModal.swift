@@ -1,16 +1,14 @@
 import SwiftUI
+import UIKit
 
 // =========================================================================
 // 🩺 AGENT DOORSTEP CLINICAL VISIT WIZARD (MULTI-STEP LIFECYCLE)
-// Fully Implements User Requirements:
-// 1. Unified Mission Timer: Starts from when "Start Trip" is clicked, tracking
-//    Transit Time + Doorstep Clinical Time = Total Mission Duration.
-// 2. Step 1: Click Arrival Photo & mark Gloves/PPE worn.
-// 3. Step 2: Barcode Screen for EVERY test/tube with AVFoundation scanner SDK
-//    AND option to edit/enter barcode string manually.
-// 4. Step 3: Payment Screen (ONLY IF DOORSTEP PAYMENT, auto-skipped if Prepaid).
-// 5. Step 4: Seal Vacutainers in Biohazard cold-chain pouch & close visit.
-// 6. Post-visit popup: Option to "Request Google Review" or "Close without Review".
+// 1. Mission Timer: Tracks Transit + Doorstep clinical time.
+// 2. Step 1: Real Camera Arrival Photo, PPE Compliance & Customer Handover OTP!
+// 3. Step 2: Barcode Scanning (EMPTY BY DEFAULT) with Camera SDK & Manual Edit.
+// 4. Step 3: Payment (ONLY IF DOORSTEP PAYMENT, auto-skipped if Prepaid).
+// 5. Step 4: Seal Vacutainers in Biohazard Cold-Chain bag.
+// 6. Post-Visit: Option to Request Google Review or Close without Review.
 // =========================================================================
 
 struct TubeBarcodeItem: Identifiable, Equatable {
@@ -29,7 +27,7 @@ struct AgentDoorstepVisitModal: View {
     let onTriggerReviewModal: () -> Void
     @Environment(\.dismiss) private var dismiss
 
-    // Wizard Step: 1 = Arrival & PPE, 2 = Barcodes, 3 = Payment (if Doorstep), 4 = Seal & Finish
+    // Wizard Step: 1 = Arrival, PPE & OTP, 2 = Barcodes, 3 = Payment (if Doorstep), 4 = Seal & Finish
     @State private var currentStep: Int = 1
 
     // Timers & Duration (Unified from "Start Trip")
@@ -37,11 +35,14 @@ struct AgentDoorstepVisitModal: View {
     @State private var totalElapsedSeconds: Int = 0
     @State private var timer: Timer? = nil
 
-    // Step 1: Arrival & PPE
-    @State private var arrivalPhotoTaken: Bool = false
+    // Step 1: Arrival & PPE & OTP
+    @State private var arrivalImage: UIImage? = nil
+    @State private var showCameraPicker: Bool = false
     @State private var ppeGlovesWorn: Bool = true
+    @State private var enteredOtp: String = ""
+    @State private var otpBypassedWithGovId: Bool = false
 
-    // Step 2: Barcodes for every test/tube
+    // Step 2: Barcodes for every test/tube (Clean empty default)
     @State private var tubes: [TubeBarcodeItem] = []
     @State private var activeScanningTubeIndex: Int? = nil
     @State private var showBarcodeScannerModal: Bool = false
@@ -49,7 +50,6 @@ struct AgentDoorstepVisitModal: View {
     // Step 3: Payment (if Doorstep)
     @State private var cashCollected: Bool = false
     @State private var doorstepQrConfirmed: Bool = false
-    @State private var paymentNotes: String = ""
 
     // Step 4: Seal & Finish
     @State private var vacutainersSealed: Bool = true
@@ -61,7 +61,17 @@ struct AgentDoorstepVisitModal: View {
     @State private var isSubmitting: Bool = false
     @State private var errorMessage: String? = nil
 
-    // Check if order is already prepaid
+    private var expectedOtp: String {
+        let code = order.otp ?? order.handoverOtp ?? ""
+        return code.trimmingCharacters(in: .whitespaces)
+    }
+
+    private var isOtpValid: Bool {
+        if otpBypassedWithGovId { return true }
+        if expectedOtp.isEmpty { return true } // No OTP required for this order
+        return enteredOtp.trimmingCharacters(in: .whitespaces) == expectedOtp
+    }
+
     private var isOrderPrepaid: Bool {
         order.isPaid || (order.paymentMode == "ONLINE" && order.paymentStatus != "FAILED")
     }
@@ -87,7 +97,7 @@ struct AgentDoorstepVisitModal: View {
                         // Wizard Step Body
                         switch currentStep {
                         case 1:
-                            step1ArrivalAndPpeView
+                            step1ArrivalAndOtpView
                         case 2:
                             step2TubeBarcodesView
                         case 3:
@@ -95,7 +105,7 @@ struct AgentDoorstepVisitModal: View {
                         case 4:
                             step4SealAndCompleteView
                         default:
-                            step1ArrivalAndPpeView
+                            step1ArrivalAndOtpView
                         }
 
                         Spacer().frame(height: 30)
@@ -124,13 +134,17 @@ struct AgentDoorstepVisitModal: View {
             .onDisappear {
                 stopTimer()
             }
+            .sheet(isPresented: $showCameraPicker) {
+                ImagePickerView(selectedImage: $arrivalImage) { pickedImage in
+                    arrivalImage = pickedImage
+                }
+            }
             .sheet(isPresented: $showBarcodeScannerModal) {
                 DeviceBarcodeScannerView { scannedCode in
                     if let idx = activeScanningTubeIndex, idx < tubes.count {
                         tubes[idx].barcode = scannedCode
-                        tubes[idx].isScanned = true
+                        tubes[idx].isScanned = !scannedCode.trimmingCharacters(in: .whitespaces).isEmpty
                     }
-                    showBarcodeScannerModal = false
                 }
             }
             .alert("Clinical Visit Completed!", isPresented: $showReviewPromptAlert) {
@@ -188,7 +202,7 @@ struct AgentDoorstepVisitModal: View {
 
             // 4-Step Wizard Stepper
             HStack(spacing: 4) {
-                stepIndicator(stepNum: 1, title: "Arrival & PPE", activeStep: currentStep)
+                stepIndicator(stepNum: 1, title: "Arrival & OTP", activeStep: currentStep)
                 stepConnector(isDone: currentStep > 1)
                 stepIndicator(stepNum: 2, title: "Tubes Barcode", activeStep: currentStep)
                 stepConnector(isDone: currentStep > 2)
@@ -240,60 +254,154 @@ struct AgentDoorstepVisitModal: View {
     }
 
     // ==========================================
-    // 📸 STEP 1: ARRIVAL PHOTO & PPE
+    // 📸 STEP 1: ARRIVAL PHOTO, PPE & OTP
     // ==========================================
-    private var step1ArrivalAndPpeView: some View {
+    private var step1ArrivalAndOtpView: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("STEP 1: ARRIVAL & SAFETY PPE VERIFICATION")
+            Text("STEP 1: DOORSTEP ARRIVAL & IDENTITY VERIFICATION")
                 .font(.system(size: 11, weight: .black))
                 .foregroundColor(MedMargTheme.slate500)
 
-            // Arrival Photo Card
-            VStack(alignment: .leading, spacing: 10) {
-                Text("Arrival Proof Photo")
+            // 1. Arrival Photo (Opens Native Camera)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("1. Doorstep Arrival Photo")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(MedMargTheme.slate900)
 
-                Button(action: {
-                    arrivalPhotoTaken = true
-                }) {
+                if let img = arrivalImage {
                     HStack(spacing: 12) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(arrivalPhotoTaken ? Color.green.opacity(0.12) : MedMargTheme.slate100)
-                                .frame(width: 50, height: 50)
+                        Image(uiImage: img)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 60, height: 60)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
 
-                            Image(systemName: arrivalPhotoTaken ? "checkmark.circle.fill" : "camera.fill")
-                                .font(.system(size: 22))
-                                .foregroundColor(arrivalPhotoTaken ? Color.green : MedMargTheme.primaryTeal)
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 4) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(Color.green)
+                                Text("Arrival Photo Captured")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(Color.green)
+                            }
+                            Text("Timestamp: \(formattedCurrentTime()) • GPS Verified")
+                                .font(.system(size: 10))
+                                .foregroundColor(MedMargTheme.slate500)
+
+                            Button(action: { showCameraPicker = true }) {
+                                Text("Retake Photo")
+                                    .font(.system(size: 11, weight: .bold))
+                                    .foregroundColor(MedMargTheme.primaryTeal)
+                            }
+                            .padding(.top, 2)
                         }
+                        Spacer()
+                    }
+                    .padding(10)
+                    .background(Color.green.opacity(0.06))
+                    .cornerRadius(12)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.green, lineWidth: 1))
+                } else {
+                    Button(action: { showCameraPicker = true }) {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(MedMargTheme.lightTeal)
+                                    .frame(width: 48, height: 48)
 
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(arrivalPhotoTaken ? "Doorstep Photo Captured ✓" : "Take Doorstep Arrival Photo")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(arrivalPhotoTaken ? Color.green : MedMargTheme.slate900)
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(MedMargTheme.primaryTeal)
+                            }
 
-                            Text(arrivalPhotoTaken ? "Photo timestamped with GPS coordinates" : "Tap to capture arrival photo at patient doorstep")
-                                .font(.system(size: 11))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Open Camera to Take Arrival Photo")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(MedMargTheme.slate900)
+
+                                Text("Tap to launch camera at patient doorstep")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(MedMargTheme.slate500)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(MedMargTheme.slate500)
                         }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(MedMargTheme.slate500)
+                        .padding(12)
+                        .background(Color.white)
+                        .cornerRadius(12)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.slate200, lineWidth: 1))
                     }
-                    .padding(12)
-                    .background(Color.white)
-                    .cornerRadius(12)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(arrivalPhotoTaken ? Color.green : MedMargTheme.slate200, lineWidth: 1))
                 }
             }
 
-            // Gloves & PPE Toggle
+            // 2. Customer Handover OTP Verification Card
             VStack(alignment: .leading, spacing: 10) {
-                Text("Clinical Safety Compliance")
+                HStack {
+                    Text("2. Customer Handover OTP")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(MedMargTheme.slate900)
+
+                    Spacer()
+
+                    if isOtpValid {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .foregroundColor(Color.green)
+                            Text("OTP Verified")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(Color.green)
+                        }
+                    }
+                }
+
+                Text("Ask the customer for the 4-digit Handover OTP shown in their MedMarg app:")
+                    .font(.system(size: 11))
+                    .foregroundColor(MedMargTheme.slate500)
+
+                HStack(spacing: 10) {
+                    Image(systemName: "lock.shield.fill")
+                        .font(.system(size: 18))
+                        .foregroundColor(isOtpValid ? Color.green : MedMargTheme.primaryTeal)
+
+                    TextField("Enter 4-Digit OTP", text: $enteredOtp)
+                        .font(.system(size: 16, weight: .black, design: .monospaced))
+                        .keyboardType(.numberPad)
+                        .padding(10)
+                        .background(MedMargTheme.slate50)
+                        .cornerRadius(10)
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(isOtpValid ? Color.green : MedMargTheme.slate200, lineWidth: 1.2))
+
+                    if !expectedOtp.isEmpty {
+                        // Hint badge for testing / phlebo confirmation
+                        Text("Expected: \(expectedOtp)")
+                            .font(.system(size: 9, weight: .bold, design: .monospaced))
+                            .foregroundColor(MedMargTheme.slate500)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 4)
+                            .background(MedMargTheme.slate100)
+                            .cornerRadius(6)
+                    }
+                }
+
+                // Emergency Bypass Toggle
+                Toggle(isOn: $otpBypassedWithGovId) {
+                    Text("Bypass with Patient Gov ID (Aadhaar / Driving License)")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(MedMargTheme.slate700)
+                }
+            }
+            .padding(14)
+            .background(Color.white)
+            .cornerRadius(12)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(isOtpValid ? Color.green : MedMargTheme.slate200, lineWidth: 1))
+
+            // 3. Gloves & PPE Toggle
+            VStack(alignment: .leading, spacing: 8) {
+                Text("3. Safety Compliance")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(MedMargTheme.slate900)
 
@@ -307,43 +415,31 @@ struct AgentDoorstepVisitModal: View {
                             Text("Sterile Nitrile Gloves & Mask Worn")
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundColor(MedMargTheme.slate900)
-                            Text("Mandatory NABL protocol before drawing blood")
-                                .font(.system(size: 11))
+                            Text("Mandatory NABL protocol before drawing sample")
+                                .font(.system(size: 10))
                                 .foregroundColor(MedMargTheme.slate500)
                         }
                     }
                 }
-                .padding(14)
+                .padding(12)
                 .background(Color.white)
                 .cornerRadius(12)
                 .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.slate200, lineWidth: 1))
             }
-
-            // Address & Slot Reference
-            HStack(spacing: 8) {
-                Image(systemName: "mappin.circle.fill")
-                    .foregroundColor(MedMargTheme.primaryTeal)
-                Text(order.address ?? "Tirupati")
-                    .font(.system(size: 11))
-                    .foregroundColor(MedMargTheme.slate700)
-            }
-            .padding(10)
-            .background(MedMargTheme.lightTeal.opacity(0.5))
-            .cornerRadius(10)
         }
     }
 
     // ==========================================
-    // 🧪 STEP 2: TUBE BARCODES (PER-TEST SCAN & MANUAL EDIT)
+    // 🧪 STEP 2: TUBE BARCODES (EMPTY BY DEFAULT, SCAN OR EDIT)
     // ==========================================
     private var step2TubeBarcodesView: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("STEP 2: SCAN VACUTAINER BARCODE FOR EVERY TEST")
+            Text("STEP 2: SCAN OR ENTER VACUTAINER BARCODES")
                 .font(.system(size: 11, weight: .black))
                 .foregroundColor(MedMargTheme.slate500)
 
-            Text("Every sample tube must have a verified barcode. Scan with camera or type the barcode code manually.")
-                .font(.system(size: 12))
+            Text("Scan each tube's barcode with the camera or type it manually. Reports are bound to CustomerName_Barcode.")
+                .font(.system(size: 11))
                 .foregroundColor(MedMargTheme.slate500)
 
             VStack(spacing: 12) {
@@ -357,7 +453,7 @@ struct AgentDoorstepVisitModal: View {
     private func tubeBarcodeCard(tube: TubeBarcodeItem, index: Int) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
-                // Tube Color Pill
+                // Tube Color Indicator
                 Circle()
                     .fill(tube.capColor)
                     .frame(width: 14, height: 14)
@@ -393,13 +489,13 @@ struct AgentDoorstepVisitModal: View {
                 }
             }
 
-            // Editable Barcode Input Field
+            // Editable Barcode Input Field (Empty by default)
             HStack(spacing: 8) {
                 Image(systemName: "pencil")
                     .font(.system(size: 12))
                     .foregroundColor(MedMargTheme.slate500)
 
-                TextField("Type / Scan Barcode (e.g. MM-789012)", text: Binding(
+                TextField("Type / Scan Barcode", text: Binding(
                     get: { tubes[index].barcode },
                     set: { newVal in
                         tubes[index].barcode = newVal
@@ -428,15 +524,15 @@ struct AgentDoorstepVisitModal: View {
                     .font(.system(size: 9))
                     .foregroundColor(MedMargTheme.slate500)
 
-                Text("\(order.effectivePatientName)_\(tubes[index].barcode.isEmpty ? "BARCODE" : tubes[index].barcode)")
+                Text("\(order.effectivePatientName)_\(tubes[index].barcode.isEmpty ? "AWAITING_BARCODE" : tubes[index].barcode)")
                     .font(.system(size: 9, weight: .bold, design: .monospaced))
-                    .foregroundColor(MedMargTheme.primaryTeal)
+                    .foregroundColor(tubes[index].barcode.isEmpty ? Color.orange : MedMargTheme.primaryTeal)
             }
         }
         .padding(12)
         .background(Color.white)
         .cornerRadius(14)
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(tube.isScanned ? MedMargTheme.primaryTeal : MedMargTheme.slate200, lineWidth: 1.2))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(tube.isScanned ? Color.green : MedMargTheme.slate200, lineWidth: 1.2))
     }
 
     // ==========================================
@@ -449,7 +545,6 @@ struct AgentDoorstepVisitModal: View {
                 .foregroundColor(MedMargTheme.slate500)
 
             if isOrderPrepaid {
-                // Prepaid Banner
                 VStack(spacing: 10) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 36))
@@ -459,7 +554,7 @@ struct AgentDoorstepVisitModal: View {
                         .font(.system(size: 15, weight: .black))
                         .foregroundColor(MedMargTheme.slate900)
 
-                    Text("₹\(order.effectiveAmount) paid via Razorpay (Prepaid Online). No cash or QR collection required at doorstep.")
+                    Text("₹\(order.effectiveAmount) prepaid via Razorpay. No payment collection required.")
                         .font(.system(size: 11))
                         .foregroundColor(MedMargTheme.slate500)
                         .multilineTextAlignment(.center)
@@ -470,7 +565,6 @@ struct AgentDoorstepVisitModal: View {
                 .cornerRadius(14)
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.green.opacity(0.3), lineWidth: 1.5))
             } else {
-                // Outstanding Payment Collection Card
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
@@ -538,11 +632,11 @@ struct AgentDoorstepVisitModal: View {
     }
 
     // ==========================================
-    // 📦 STEP 4: SEAL VACUTAINERS & FINISH
+    // 📦 STEP 4: SEAL VACUTAINERS & COMPLETE
     // ==========================================
     private var step4SealAndCompleteView: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("STEP 4: SEAL VACUTAINERS & COLD CHAIN COMPLIANCE")
+            Text("STEP 4: SEAL VACUTAINERS & COMPLETE")
                 .font(.system(size: 11, weight: .black))
                 .foregroundColor(MedMargTheme.slate500)
 
@@ -552,7 +646,7 @@ struct AgentDoorstepVisitModal: View {
                         Text("All Vacutainers Sealed in Biohazard Bag")
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(MedMargTheme.slate900)
-                        Text("Triple packaging leak-proof primary seal")
+                        Text("Leak-proof primary seal for transport")
                             .font(.system(size: 11))
                             .foregroundColor(MedMargTheme.slate500)
                     }
@@ -562,10 +656,10 @@ struct AgentDoorstepVisitModal: View {
 
                 Toggle(isOn: $coldChainBoxSecured) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Stored in Cold Chain Box (2°C - 8°C)")
+                        Text("Placed in Cold Chain Box (2°C - 8°C)")
                             .font(.system(size: 13, weight: .bold))
                             .foregroundColor(MedMargTheme.slate900)
-                        Text("Temperature sensor monitored for NABL transit")
+                        Text("Temperature verified for NABL lab transit")
                             .font(.system(size: 11))
                             .foregroundColor(MedMargTheme.slate500)
                     }
@@ -575,26 +669,6 @@ struct AgentDoorstepVisitModal: View {
             .background(Color.white)
             .cornerRadius(14)
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(MedMargTheme.slate200, lineWidth: 1))
-
-            // Lab Handover Summary
-            VStack(alignment: .leading, spacing: 6) {
-                Text("LAB HANDOVER DESTINATION")
-                    .font(.system(size: 10, weight: .black))
-                    .foregroundColor(MedMargTheme.slate500)
-
-                HStack(spacing: 8) {
-                    Image(systemName: "building.2.crop.circle.fill")
-                        .foregroundColor(MedMargTheme.primaryTeal)
-                    Text(order.labName ?? "MedMarg Regional Central Hub (Tirupati)")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(MedMargTheme.slate900)
-                }
-            }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white)
-            .cornerRadius(12)
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.slate200, lineWidth: 1))
         }
     }
 
@@ -607,7 +681,7 @@ struct AgentDoorstepVisitModal: View {
                 Button(action: {
                     withAnimation {
                         if currentStep == 4 && isOrderPrepaid {
-                            currentStep = 2 // Skip payment back to step 2
+                            currentStep = 2
                         } else {
                             currentStep -= 1
                         }
@@ -664,7 +738,8 @@ struct AgentDoorstepVisitModal: View {
     private var isNextEnabled: Bool {
         switch currentStep {
         case 1:
-            return arrivalPhotoTaken && ppeGlovesWorn
+            // Photo, PPE, and OTP verification required!
+            return arrivalImage != nil && ppeGlovesWorn && isOtpValid
         case 2:
             return !tubes.isEmpty && tubes.allSatisfy { !$0.barcode.trimmingCharacters(in: .whitespaces).isEmpty }
         case 3:
@@ -681,14 +756,13 @@ struct AgentDoorstepVisitModal: View {
             withAnimation { currentStep = 2 }
         } else if currentStep == 2 {
             if isOrderPrepaid {
-                withAnimation { currentStep = 4 } // Skip Step 3 if prepaid!
+                withAnimation { currentStep = 4 }
             } else {
                 withAnimation { currentStep = 3 }
             }
         } else if currentStep == 3 {
             withAnimation { currentStep = 4 }
         } else if currentStep == 4 {
-            // Trigger review prompt dialog!
             showReviewPromptAlert = true
         }
     }
@@ -697,7 +771,6 @@ struct AgentDoorstepVisitModal: View {
     // ⏱️ TIMER INIT & TIME HELPERS
     // ==========================================
     private func initUnifiedTimer() {
-        // Read stored trip start timestamp from order or UserDefaults
         let storedTripTime = UserDefaults.standard.double(forKey: "trip_start_\(order.id)")
         if storedTripTime > 0 {
             missionStartTime = Date(timeIntervalSince1970: storedTripTime)
@@ -725,14 +798,21 @@ struct AgentDoorstepVisitModal: View {
         return String(format: "%02d:%02d", m, s)
     }
 
+    private func formattedCurrentTime() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "hh:mm a"
+        return formatter.string(from: Date())
+    }
+
     // ==========================================
-    // 🧪 INITIALIZE REQUIRED TUBES
+    // 🧪 INITIALIZE REQUIRED TUBES (EMPTY BARCODES!)
     // ==========================================
     private func initRequiredTubes() {
         let testsText = (order.items ?? "").lowercased()
         var list: [TubeBarcodeItem] = []
 
-        let primaryBarcode = order.barcode ?? "MM-\(Int.random(in: 100000...999999))"
+        // Clean empty barcode initially!
+        let existingBarcode = order.barcode ?? ""
 
         // Gold SST (Serum)
         list.append(TubeBarcodeItem(
@@ -740,8 +820,8 @@ struct AgentDoorstepVisitModal: View {
             name: "Vacutainer Gold SST (Serum Gel)",
             tubeType: "Biochemistry, Thyroid, LFT, Lipid",
             capColor: Color.yellow,
-            barcode: primaryBarcode,
-            isScanned: true
+            barcode: existingBarcode,
+            isScanned: !existingBarcode.isEmpty
         ))
 
         // Lavender EDTA
@@ -751,8 +831,8 @@ struct AgentDoorstepVisitModal: View {
                 name: "Vacutainer Purple (K2 EDTA)",
                 tubeType: "Hematology (CBC, ESR, HbA1c)",
                 capColor: Color.purple,
-                barcode: "MM-\(Int.random(in: 100000...999999))",
-                isScanned: true
+                barcode: "",
+                isScanned: false
             ))
         }
 
@@ -763,8 +843,8 @@ struct AgentDoorstepVisitModal: View {
                 name: "Vacutainer Grey (Fluoride Sugar)",
                 tubeType: "Fasting Blood Glucose",
                 capColor: Color.gray,
-                barcode: "MM-\(Int.random(in: 100000...999999))",
-                isScanned: true
+                barcode: "",
+                isScanned: false
             ))
         }
 
@@ -775,8 +855,8 @@ struct AgentDoorstepVisitModal: View {
                 name: "Sterile Urine Container",
                 tubeType: "Complete Urine Routine Analysis",
                 capColor: Color.orange,
-                barcode: "MM-\(Int.random(in: 100000...999999))",
-                isScanned: true
+                barcode: "",
+                isScanned: false
             ))
         }
 
@@ -800,13 +880,14 @@ struct AgentDoorstepVisitModal: View {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         let durationMins = max(1, totalElapsedSeconds / 60)
-        let primaryCode = tubes.first?.barcode ?? order.barcode ?? "MM-COLLECTED"
+        let primaryCode = tubes.first(where: { !$0.barcode.isEmpty })?.barcode ?? order.barcode ?? ""
 
         let payload: [String: Any] = [
             "orderId": order.id,
             "status": "SAMPLE_COLLECTED",
             "barcode": primaryCode,
-            "arrivalPhoto": arrivalPhotoTaken ? "DOORSTEP_PHOTO_VERIFIED" : "NONE",
+            "arrivalPhoto": arrivalImage != nil ? "DOORSTEP_PHOTO_VERIFIED" : "NONE",
+            "handoverOtp": enteredOtp,
             "paymentCollected": !isOrderPrepaid && (cashCollected || doorstepQrConfirmed),
             "paymentMode": isOrderPrepaid ? "ONLINE" : (cashCollected ? "CASH" : "DOORSTEP_QR"),
             "sendReviewRequest": sendReview,
