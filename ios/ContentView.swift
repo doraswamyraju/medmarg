@@ -83,7 +83,7 @@ struct ContentView: View {
             username: "agent",
             email: "agent@medmarg.com",
             phone: "+91 97777 77777",
-            password: "password123",
+            password: "agent123",
             role: .collectionAgent,
             organization: "Tirupati Field Collection Fleet",
             status: "Active",

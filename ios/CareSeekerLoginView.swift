@@ -15,8 +15,8 @@ struct CareSeekerLoginView: View {
     @Binding var showCityPicker: Bool
 
     // Form States (Email or Phone Number)
-    @State private var emailOrPhoneInput: String = "patient@medmarg.com"
-    @State private var passwordInput: String = "password123"
+    @State private var emailOrPhoneInput: String = ""
+    @State private var passwordInput: String = ""
     @State private var isPasswordVisible: Bool = false
     @State private var rememberMe: Bool = true
     @State private var errorMessage: String = ""
@@ -54,77 +54,18 @@ struct CareSeekerLoginView: View {
 
     var body: some View {
         ZStack {
-            // Elegant Background with Soft Gradient
-            LinearGradient(
-                colors: [Color(red: 0.96, green: 0.98, blue: 0.98), Color(red: 0.92, green: 0.95, blue: 0.96)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // Background Hero Image covering top portion
+            heroBackgroundView
 
+            // Content ScrollView with floating bottom card
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 20) {
-                    Spacer().frame(height: 12)
+                VStack(spacing: 0) {
+                    heroTopOverlaySection
 
-                    // 1. Premium Logo Header & City Badge
-                    headerBrandSection
+                    Spacer().frame(height: 36)
 
-                    // 2. Role Selector Tabs (Patient, Phlebotomist, Freelancer, Admin)
-                    roleQuickSelectorSection
-
-                    // 3. Central Login Form Card (Card Elevation & Shadows)
-                    VStack(spacing: 18) {
-                        if !errorMessage.isEmpty {
-                            HStack(spacing: 8) {
-                                Image(systemName: "exclamationmark.circle.fill")
-                                    .foregroundColor(.red)
-                                Text(errorMessage)
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.red)
-                            }
-                            .padding(12)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.red.opacity(0.08))
-                            .cornerRadius(12)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.red.opacity(0.25), lineWidth: 1))
-                        }
-
-                        // Credentials Input Fields
-                        credentialForm
-
-                        // Biometric Login (Face ID / Touch ID)
-                        if isBiometricAvailable {
-                            biometricQuickLoginButton
-                        }
-
-                        // Divider
-                        HStack(spacing: 12) {
-                            Rectangle().frame(height: 1).foregroundColor(MedMargTheme.slate200)
-                            Text("OR CONNECT WITH")
-                                .font(.system(size: 10, weight: .black))
-                                .foregroundColor(MedMargTheme.slate500)
-                            Rectangle().frame(height: 1).foregroundColor(MedMargTheme.slate200)
-                        }
-                        .padding(.vertical, 4)
-
-                        // Social Authentication Buttons (Apple & Google)
-                        HStack(spacing: 12) {
-                            appleSignInButton
-                            googleSignInButton
-                        }
-                    }
-                    .padding(22)
-                    .background(Color.white)
-                    .cornerRadius(24)
-                    .shadow(color: Color(red: 0.05, green: 0.20, blue: 0.25).opacity(0.07), radius: 20, x: 0, y: 8)
-                    .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.white.opacity(0.8), lineWidth: 1.5))
-
-                    // 4. Trust Badges & Compliance Footer
-                    footerComplianceSection
-
-                    Spacer().frame(height: 30)
+                    slidingLoginCard
                 }
-                .padding(.horizontal, 20)
             }
         }
         .sheet(isPresented: $showPhoneCollectionSheet) {
@@ -135,6 +76,322 @@ struct CareSeekerLoginView: View {
         }
         .onAppear {
             checkBiometricAvailability()
+        }
+    }
+
+    private var heroBackgroundView: some View {
+        VStack(spacing: 0) {
+            GeometryReader { geo in
+                Image("hero")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: geo.size.width, height: 420)
+                    .clipped()
+                    .overlay(
+                        LinearGradient(
+                            colors: [
+                                Color.black.opacity(0.15),
+                                Color.clear,
+                                Color(red: 0.94, green: 0.97, blue: 0.98)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+            }
+            .frame(height: 380)
+
+            Spacer()
+        }
+        .ignoresSafeArea(edges: .top)
+    }
+
+    private var heroTopOverlaySection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            // MedMarg Brand Tag
+            HStack(spacing: 8) {
+                Image("logo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 38)
+
+                Spacer()
+
+                // City selector pill
+                Button(action: { showCityPicker = true }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "mappin.circle.fill")
+                            .font(.system(size: 11))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                        Text(currentCity.components(separatedBy: ",").first ?? currentCity)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(MedMargTheme.slate900)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.white.opacity(0.92))
+                    .cornerRadius(16)
+                    .shadow(color: Color.black.opacity(0.06), radius: 3)
+                }
+            }
+            .padding(.top, 10)
+
+            // Slogan & Tagline
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Every\nSample Builds\na Healthier\nTomorrow")
+                    .font(.system(size: 32, weight: .black, design: .rounded))
+                    .foregroundColor(MedMargTheme.slate900)
+                    .lineSpacing(2)
+
+                Rectangle()
+                    .fill(MedMargTheme.accentEmerald)
+                    .frame(width: 44, height: 3)
+                    .cornerRadius(1.5)
+                    .padding(.top, 4)
+            }
+            .padding(.top, 8)
+
+            // 3 Bullet Badges
+            VStack(alignment: .leading, spacing: 10) {
+                badgeFeatureRow(icon: "checkmark.shield", title: "Trusted", subtitle: "Diagnostics")
+                badgeFeatureRow(icon: "house", title: "At Your", subtitle: "Doorstep")
+                badgeFeatureRow(icon: "heart", title: "Healthier", subtitle: "Communities")
+            }
+            .padding(.top, 6)
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var slidingLoginCard: some View {
+        VStack(spacing: 18) {
+            // Drag Indicator
+            Capsule()
+                .fill(MedMargTheme.slate200)
+                .frame(width: 44, height: 4)
+                .padding(.top, 4)
+
+            // Heading: Welcome to MedMarg
+            VStack(spacing: 4) {
+                HStack(spacing: 4) {
+                    Text("Welcome to")
+                        .font(.system(size: 24, weight: .black, design: .rounded))
+                        .foregroundColor(MedMargTheme.slate900)
+                    Text("MedMarg")
+                        .font(.system(size: 24, weight: .black, design: .rounded))
+                        .foregroundColor(MedMargTheme.primaryTeal)
+                }
+
+                Text("One Platform. Better Health for Everyone.")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(MedMargTheme.slate500)
+            }
+            .padding(.top, 4)
+
+            // Social Buttons Side-by-Side (Google & Apple)
+            HStack(spacing: 12) {
+                appleSignInButton
+                googleSignInButton
+            }
+            .padding(.top, 6)
+
+            // OR Divider
+            HStack(spacing: 12) {
+                Rectangle().frame(height: 1).foregroundColor(MedMargTheme.slate200)
+                Text("OR")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(MedMargTheme.slate500)
+                Rectangle().frame(height: 1).foregroundColor(MedMargTheme.slate200)
+            }
+            .padding(.vertical, 2)
+
+            // Error Message if any
+            if !errorMessage.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .foregroundColor(.red)
+                    Text(errorMessage)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.red)
+                }
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.red.opacity(0.08))
+                .cornerRadius(10)
+            }
+
+            // Form Inputs
+            VStack(spacing: 12) {
+                // Email / Phone
+                HStack(spacing: 12) {
+                    Image(systemName: "envelope")
+                        .font(.system(size: 15))
+                        .foregroundColor(MedMargTheme.slate500)
+                    TextField("Email address", text: $emailOrPhoneInput)
+                        .font(.system(size: 14))
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 13)
+                .background(Color.white)
+                .cornerRadius(12)
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.slate200, lineWidth: 1))
+
+                // Password
+                VStack(alignment: .trailing, spacing: 6) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "lock")
+                            .font(.system(size: 15))
+                            .foregroundColor(MedMargTheme.slate500)
+
+                        if isPasswordVisible {
+                            TextField("Password", text: $passwordInput)
+                                .font(.system(size: 14))
+                        } else {
+                            SecureField("Password", text: $passwordInput)
+                                .font(.system(size: 14))
+                        }
+
+                        Button(action: { isPasswordVisible.toggle() }) {
+                            Image(systemName: isPasswordVisible ? "eye.slash" : "eye")
+                                .font(.system(size: 14))
+                                .foregroundColor(MedMargTheme.slate500)
+                        }
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 13)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.slate200, lineWidth: 1))
+
+                    Button("Forgot Password?") {
+                        errorMessage = "Password reset instructions sent to your registered contact."
+                    }
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(Color.blue)
+                    .padding(.top, 2)
+                }
+            }
+
+            // Primary Gradient Sign In Button
+            Button(action: handlePasswordLogin) {
+                HStack(spacing: 8) {
+                    if isAuthenticating {
+                        ProgressView().tint(.white)
+                    }
+                    Text(isAuthenticating ? "Verifying..." : "Sign In")
+                        .font(.system(size: 16, weight: .bold))
+                    Spacer()
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.95))
+                            .frame(width: 32, height: 32)
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                    }
+                }
+                .foregroundColor(.white)
+                .padding(.leading, 20)
+                .padding(.trailing, 12)
+                .padding(.vertical, 10)
+                .frame(maxWidth: .infinity)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.05, green: 0.45, blue: 0.95),
+                            Color(red: 0.0, green: 0.72, blue: 0.58)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(14)
+                .shadow(color: Color.blue.opacity(0.25), radius: 8, x: 0, y: 4)
+            }
+            .disabled(isAuthenticating)
+
+            // Face ID / Touch ID Button
+            Button(action: handleBiometricLogin) {
+                HStack(spacing: 12) {
+                    Image(systemName: "touchid")
+                        .font(.system(size: 22))
+                        .foregroundColor(Color.blue)
+                        .frame(width: 38, height: 38)
+                        .background(Color.blue.opacity(0.1))
+                        .clipShape(Circle())
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Login with Face ID / Touch ID")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(MedMargTheme.slate900)
+                        Text("Quick and Secure Access")
+                            .font(.system(size: 11))
+                            .foregroundColor(MedMargTheme.slate500)
+                    }
+
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(MedMargTheme.slate500)
+                }
+                .padding(12)
+                .background(Color(red: 0.96, green: 0.98, blue: 1.0))
+                .cornerRadius(14)
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.blue.opacity(0.15), lineWidth: 1))
+            }
+
+            // Create Account Link
+            HStack(spacing: 4) {
+                Text("New to MedMarg?")
+                    .font(.system(size: 12))
+                    .foregroundColor(MedMargTheme.slate700)
+                Button("Create an account") {
+                    errorMessage = "Account registration: enter mobile/email and click Sign In to auto-register."
+                }
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(Color.blue)
+            }
+            .padding(.top, 4)
+
+            // Terms & Privacy
+            Text("By continuing, you agree to our Terms of Service and Privacy Policy")
+                .font(.system(size: 10))
+                .foregroundColor(MedMargTheme.slate500)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 12)
+        }
+        .padding(22)
+        .background(Color.white)
+        .clipShape(RoundedCornerShape(radius: 32, corners: [.topLeft, .topRight]))
+        .shadow(color: Color.black.opacity(0.08), radius: 20, x: 0, y: -6)
+    }
+
+    private func badgeFeatureRow(icon: String, title: String, subtitle: String) -> some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle()
+                    .stroke(MedMargTheme.accentEmerald, lineWidth: 1.5)
+                    .frame(width: 26, height: 26)
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(MedMargTheme.accentEmerald)
+            }
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 11, weight: .black))
+                    .foregroundColor(MedMargTheme.slate900)
+                Text(subtitle)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(MedMargTheme.slate700)
+            }
         }
     }
 
@@ -1148,5 +1405,20 @@ struct CareSeekerLoginView: View {
             request.httpBody = try? JSONSerialization.data(withJSONObject: body)
             URLSession.shared.dataTask(with: request) { _, _, _ in }.resume()
         }
+    }
+}
+
+// Custom shape for specific corner radii
+struct RoundedCornerShape: Shape {
+    var radius: CGFloat = .infinity
+    var corners: UIRectCorner = .allCorners
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: corners,
+            cornerRadii: CGSize(width: radius, height: radius)
+        )
+        return Path(path.cgPath)
     }
 }

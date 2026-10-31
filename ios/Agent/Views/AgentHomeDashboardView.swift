@@ -92,6 +92,9 @@ struct AgentHomeDashboardView: View {
                             .padding(.top, 8)
                         }
 
+                        // Tirupati Temple Landscape Greeting Card (Reference Design 3)
+                        agentHeroGreetingCard
+
                         // Single Horizontal Row: Metric Counters (100% Live Telemetry)
                         AgentMetricCountersRow(
                             todayEarnings: quotaStats?.earningsToday ?? 0,
@@ -402,6 +405,70 @@ struct AgentHomeDashboardView: View {
         } else {
             activeVisitModalOrder = order
         }
+    }
+
+    private var agentHeroGreetingCard: some View {
+        ZStack(alignment: .bottomLeading) {
+            // Tirupati Temple Background Image
+            Image("temple")
+                .resizable()
+                .scaledToFill()
+                .frame(height: 140)
+                .clipped()
+                .overlay(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.85),
+                            Color.white.opacity(0.4),
+                            Color.white.opacity(0.95)
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+
+            HStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Good Morning,")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(MedMargTheme.slate700)
+
+                    Text(user.name.components(separatedBy: "(").first?.trimmingCharacters(in: .whitespaces) ?? user.name)
+                        .font(.system(size: 20, weight: .black, design: .rounded))
+                        .foregroundColor(MedMargTheme.slate900)
+
+                    HStack(spacing: 6) {
+                        Text("Phlebotomist")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+
+                        Circle()
+                            .fill(MedMargTheme.slate500)
+                            .frame(width: 3, height: 3)
+
+                        Text(quotaStats?.zone ?? "Zone A")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(MedMargTheme.slate500)
+                    }
+                }
+
+                Spacer()
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("Every Sample\nBuilds a\nHealthier Tomorrow")
+                        .font(.system(size: 10, weight: .bold, design: .serif))
+                        .foregroundColor(MedMargTheme.primaryTeal)
+                        .multilineTextAlignment(.trailing)
+                }
+            }
+            .padding(14)
+        }
+        .frame(height: 140)
+        .background(Color.white)
+        .cornerRadius(18)
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(MedMargTheme.slate200, lineWidth: 1))
+        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 3)
+        .padding(.horizontal, 16)
     }
 
     private var emptyPickupsCard: some View {

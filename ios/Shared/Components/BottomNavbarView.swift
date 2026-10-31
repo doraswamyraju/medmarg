@@ -7,6 +7,117 @@ struct BottomNavbarView: View {
     @Binding var showQuickCreateSheet: Bool
 
     var body: some View {
+        if userRole == .collectionAgent || userRole == .freelanceAgent {
+            agentGlassmorphicNavbar
+        } else {
+            standardBottomNavbar
+        }
+    }
+
+    // ==========================================
+    // 🔮 GLASSMORPHIC FLOATING PILL NAVBAR FOR AGENT
+    // Matches Reference Design 3: Dark frosted glass capsule
+    // Tabs: 0: Home, 7: Orders, 1: Inventory, 3: Payments, 4: Reports
+    // ==========================================
+    private var agentGlassmorphicNavbar: some View {
+        HStack(spacing: 0) {
+            agentGlassTab(index: 0, icon: "house.fill", title: "Home", isCenterBadge: true)
+            agentGlassTab(index: 7, icon: "list.clipboard.fill", title: "Orders")
+            agentGlassTab(index: 1, icon: "cube.box.fill", title: "Inventory")
+            agentGlassTab(index: 3, icon: "indianrupeesign.circle.fill", title: "Payments")
+            agentGlassTab(index: 4, icon: "chart.bar.xaxis", title: "Reports")
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(
+            Capsule()
+                .fill(Color(red: 0.08, green: 0.16, blue: 0.18).opacity(0.92))
+                .overlay(
+                    Capsule()
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.3),
+                                    Color.white.opacity(0.08),
+                                    Color.clear
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+                .shadow(color: Color.black.opacity(0.35), radius: 16, x: 0, y: 8)
+        )
+        .padding(.horizontal, 16)
+        .padding(.bottom, 6)
+    }
+
+    private func agentGlassTab(index: Int, icon: String, title: String, isCenterBadge: Bool = false) -> some View {
+        let isSelected = (selectedTab == index) || (index == 0 && (selectedTab != 7 && selectedTab != 1 && selectedTab != 3 && selectedTab != 4))
+        
+        return Button(action: {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                selectedTab = index
+            }
+        }) {
+            VStack(spacing: 4) {
+                if isSelected {
+                    // Glowing Active Capsule or Icon
+                    ZStack {
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color(red: 0.0, green: 0.85, blue: 0.55).opacity(0.35),
+                                        Color(red: 0.0, green: 0.65, blue: 0.45).opacity(0.2)
+                                    ],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .frame(width: 52, height: 34)
+                            .overlay(Capsule().stroke(Color(red: 0.0, green: 0.95, blue: 0.65).opacity(0.6), lineWidth: 1))
+
+                        Image(systemName: icon)
+                            .font(.system(size: 16, weight: .black))
+                            .foregroundColor(Color(red: 0.2, green: 1.0, blue: 0.7))
+                    }
+
+                    Text(title)
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(Color(red: 0.2, green: 1.0, blue: 0.7))
+
+                    // Small indicator dot
+                    Circle()
+                        .fill(Color(red: 0.0, green: 0.95, blue: 0.65))
+                        .frame(width: 4, height: 4)
+                        .shadow(color: Color(red: 0.0, green: 0.95, blue: 0.65), radius: 4)
+                } else {
+                    VStack(spacing: 4) {
+                        Image(systemName: icon)
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(Color.white.opacity(0.6))
+                            .frame(height: 34)
+
+                        Text(title)
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(Color.white.opacity(0.6))
+
+                        Circle()
+                            .fill(Color.clear)
+                            .frame(width: 4, height: 4)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    // ==========================================
+    // 📱 STANDARD PORTAL BOTTOM NAVBAR (CUSTOMER & ADMIN)
+    // ==========================================
+    private var standardBottomNavbar: some View {
         VStack(spacing: 4) {
             // Drag Handle Bar to Open Dedicated Bottom Sheet Menu
             Button(action: {
@@ -25,84 +136,13 @@ struct BottomNavbarView: View {
             }
 
             HStack(spacing: 0) {
-                if userRole == .collectionAgent {
-                    // ==========================================
-                    // 🛵 SALARIED FLEET PHLEBOTOMIST DEDICATED 5-ELEMENT BOTTOM NAVBAR
-                    // 0: Pickups (CENTER LIVE ACTION), 1: Store/Inventory, 2: Shift Quota, 3: Payments, 4: Profile
-                    // ==========================================
-                    // Tab 1: Live Supplies / Inventory
-                    bottomNavTab(index: 1, icon: "archivebox.fill", title: "Supplies")
-
-                    // Tab 2: Shift Quota
-                    bottomNavTab(index: 2, icon: "target", title: "Quota")
-
-                    // Tab 0: Pickups (PROMINENT CENTER ACTION BUTTON)
-                    Button(action: { selectedTab = 0 }) {
-                        VStack(spacing: 2) {
-                            ZStack {
-                                Circle()
-                                    .fill(LinearGradient(colors: [MedMargTheme.primaryTeal, MedMargTheme.darkTeal], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                    .frame(width: 44, height: 44)
-                                    .shadow(color: MedMargTheme.primaryTeal.opacity(0.4), radius: 6, x: 0, y: 2)
-
-                                Image(systemName: "bicycle.circle.fill")
-                                    .font(.system(size: 22, weight: .bold))
-                                    .foregroundColor(.white)
-                            }
-
-                            Text("Pickups")
-                                .font(.system(size: 10, weight: .black))
-                                .foregroundColor(selectedTab == 0 ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-
-                    // Tab 3: Payments / POS Ledger
-                    bottomNavTab(index: 3, icon: "creditcard.fill", title: "Payments")
-
-                    // Tab 4: Agent Profile
-                    bottomNavTab(index: 4, icon: "person.crop.circle.fill", title: "Terminal")
-                } else if userRole == .freelanceAgent {
-                    // ==========================================
-                    // ⚡ FREELANCE GIG PHLEBOTOMIST DEDICATED BOTTOM NAVBAR
-                    // 0: Claimed Pickups, 1: Broadcast Marketplace, 2: Wallet/Cashout, 3: Supplies, 4: Terminal
-                    // ==========================================
-                    bottomNavTab(index: 1, icon: "bolt.fill", title: "Marketplace")
-                    bottomNavTab(index: 2, icon: "wallet.pass.fill", title: "Wallet")
-
-                    Button(action: { selectedTab = 0 }) {
-                        VStack(spacing: 2) {
-                            ZStack {
-                                Circle()
-                                    .fill(LinearGradient(colors: [Color.orange, Color.red], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                    .frame(width: 44, height: 44)
-                                    .shadow(color: Color.orange.opacity(0.4), radius: 6, x: 0, y: 2)
-
-                                Image(systemName: "bicycle.circle.fill")
-                                    .font(.system(size: 22, weight: .bold))
-                                    .foregroundColor(.white)
-                            }
-
-                            Text("My Tasks")
-                                .font(.system(size: 10, weight: .black))
-                                .foregroundColor(selectedTab == 0 ? Color.orange : MedMargTheme.slate700)
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-
-                    bottomNavTab(index: 3, icon: "archivebox.fill", title: "Supplies")
-                    bottomNavTab(index: 4, icon: "person.crop.circle.fill", title: "Profile")
-                } else if userRole == .admin {
+                if userRole == .admin {
                     // ==========================================
                     // 🛡️ SUPER ADMIN DEDICATED 5-ELEMENT BOTTOM NAVBAR
                     // ==========================================
-                    // 1. Tests (Tab 1)
                     bottomNavTab(index: 1, icon: "flask.fill", title: "Tests")
-
-                    // 2. Labs (Tab 2)
                     bottomNavTab(index: 2, icon: "building.2.fill", title: "Labs")
 
-                    // 3. ➕ Quick Create Action Button (DISTINCT HIGHLIGHTED CENTER BUTTON)
                     Button(action: { showQuickCreateSheet = true }) {
                         VStack(spacing: 2) {
                             ZStack {
@@ -123,24 +163,13 @@ struct BottomNavbarView: View {
                         .frame(maxWidth: .infinity)
                     }
 
-                    // 4. Hospitals (Tab 3)
                     bottomNavTab(index: 3, icon: "cross.case.fill", title: "Hospitals")
-
-                    // 5. Agents (Tab 5)
                     bottomNavTab(index: 5, icon: "car.fill", title: "Agents")
                 } else {
-                    // ==========================================
-                    // 📱 PATIENT / CARE SEEKER 5 CORE TABS
-                    // 1: Tests, 7: Orders, 3: Track (CENTER), 4: Reports, 5: Offers
-                    // (Profile is accessible via Topbar avatar)
-                    // ==========================================
-                    // Tab 1: Tests Matrix
+                    // Customer
                     bottomNavTab(index: 1, icon: "flask.fill", title: "Tests")
-
-                    // Tab 7: Orders Desk
                     bottomNavTab(index: 7, icon: "bag.fill", title: "Orders")
 
-                    // Tab 3: Track (ALWAYS CENTER HIGHLIGHTED ACTION BUTTON)
                     Button(action: { selectedTab = 3 }) {
                         VStack(spacing: 2) {
                             ZStack {
@@ -153,7 +182,6 @@ struct BottomNavbarView: View {
                                     .font(.system(size: 19, weight: .bold))
                                     .foregroundColor(.white)
 
-                                // Glowing LIVE Indicator Badge
                                 Circle()
                                     .fill(Color.red)
                                     .frame(width: 8, height: 8)
@@ -168,10 +196,7 @@ struct BottomNavbarView: View {
                         .frame(maxWidth: .infinity)
                     }
 
-                    // Tab 4: Health Vault Reports
                     bottomNavTab(index: 4, icon: "doc.text.fill", title: "Reports")
-
-                    // Tab 5: Offers Zone & Promos
                     bottomNavTab(index: 5, icon: "tag.fill", title: "Offers")
                 }
             }
@@ -184,7 +209,6 @@ struct BottomNavbarView: View {
             DragGesture(minimumDistance: 15, coordinateSpace: .local)
                 .onEnded { value in
                     if value.translation.height < -20 {
-                        // Swipe Up detected -> open dedicated bottom sheet menu
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                             showBottomSheetMenu = true
                         }
