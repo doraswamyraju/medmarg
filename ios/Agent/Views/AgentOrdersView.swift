@@ -27,6 +27,8 @@ struct AgentOrdersView: View {
     @State private var showDatePickerModal: Bool = false
 
     // Sheets & Workflow Modals
+    @State private var selectedOrderDetail: AgentPickupOrder? = nil
+    @State private var showTrackNavigateView: Bool = false
     @State private var activeVisitModalOrder: AgentPickupOrder? = nil
     @State private var activeAssessKitOrder: AgentPickupOrder? = nil
     @State private var activeDoorstepQrOrder: AgentPickupOrder? = nil
@@ -200,6 +202,29 @@ struct AgentOrdersView: View {
                     actionBanner = "Doorstep QR Payment Recorded for #\(order.id)"
                 }
             }
+        }
+        .fullScreenCover(item: $selectedOrderDetail) { order in
+            AgentOrderDetailView(
+                order: order,
+                onBack: {
+                    selectedOrderDetail = nil
+                    Task { await fetchLiveRoster() }
+                },
+                onOrderUpdated: {
+                    Task { await fetchLiveRoster() }
+                }
+            )
+        }
+        .fullScreenCover(isPresented: $showTrackNavigateView) {
+            AgentTrackNavigateView(
+                user: user,
+                selectedTab: $selectedTab,
+                showSidebar: $showSidebar,
+                onSelectOrder: { order in
+                    showTrackNavigateView = false
+                    selectedOrderDetail = order
+                }
+            )
         }
     }
 
@@ -521,7 +546,7 @@ struct AgentOrdersView: View {
                             .foregroundColor(MedMargTheme.slate500)
                             .lineLimit(1)
 
-                        Button(action: { openAppleMaps(for: order.address) }) {
+                        Button(action: { showTrackNavigateView = true }) {
                             HStack(spacing: 2) {
                                 Image(systemName: "map.fill")
                                     .font(.system(size: 9))
@@ -566,7 +591,7 @@ struct AgentOrdersView: View {
         .overlay(RoundedRectangle(cornerRadius: 18).stroke(MedMargTheme.slate200, lineWidth: 1))
         .shadow(color: Color.black.opacity(0.02), radius: 6, x: 0, y: 2)
         .onTapGesture {
-            activeVisitModalOrder = order
+            selectedOrderDetail = order
         }
     }
 
@@ -604,7 +629,7 @@ struct AgentOrdersView: View {
                 .cornerRadius(10)
             }
         } else if status == "ENROUTE" || status == "EN_ROUTE" {
-            Button(action: { openAppleMaps(for: order.address) }) {
+            Button(action: { showTrackNavigateView = true }) {
                 HStack(spacing: 4) {
                     Image(systemName: "map.fill")
                         .font(.system(size: 11))
@@ -908,3 +933,4 @@ struct AgentOrdersView: View {
         .padding(.vertical, 32)
     }
 }
+
