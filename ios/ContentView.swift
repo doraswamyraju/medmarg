@@ -766,6 +766,8 @@ struct ContentView: View {
             case 0:
                 CareSeekerHomeView(
                     selectedTab: $selectedTab,
+                    user: user,
+                    currentCity: currentCity,
                     onAddToCart: { item in
                         addToCartFromCatalog(item)
                     },
@@ -819,6 +821,8 @@ struct ContentView: View {
             default:
                 CareSeekerHomeView(
                     selectedTab: $selectedTab,
+                    user: user,
+                    currentCity: currentCity,
                     onAddToCart: { item in
                         addToCartFromCatalog(item)
                     },

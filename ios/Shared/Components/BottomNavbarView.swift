@@ -166,37 +166,44 @@ struct BottomNavbarView: View {
                     bottomNavTab(index: 3, icon: "cross.case.fill", title: "Hospitals")
                     bottomNavTab(index: 5, icon: "car.fill", title: "Agents")
                 } else {
+                    bottomNavTab(index: 0, icon: "house.fill", title: "Home")
                     bottomNavTab(index: 1, icon: "flask.fill", title: "Tests")
-                    bottomNavTab(index: 7, icon: "bag.fill", title: "Orders")
 
-                    Button(action: { selectedTab = 3 }) {
+                    // Center Elevated Action Button: Live Sample Tracking & Radar (Image 3)
+                    Button(action: {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                            selectedTab = 3
+                        }
+                    }) {
                         VStack(spacing: 2) {
                             ZStack {
                                 Circle()
-                                    .fill(LinearGradient(colors: [MedMargTheme.primaryTeal, MedMargTheme.accentEmerald], startPoint: .topLeading, endPoint: .bottomTrailing))
-                                    .frame(width: 42, height: 42)
-                                    .shadow(color: MedMargTheme.accentEmerald.opacity(0.4), radius: 6, x: 0, y: 2)
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [MedMargTheme.primaryTeal, MedMargTheme.darkTeal],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        )
+                                    )
+                                    .frame(width: 46, height: 46)
+                                    .shadow(color: MedMargTheme.primaryTeal.opacity(0.45), radius: 8, x: 0, y: 4)
 
-                                Image(systemName: "location.fill.viewfinder")
-                                    .font(.system(size: 19, weight: .bold))
+                                Image(systemName: "viewfinder")
+                                    .font(.system(size: 20, weight: .black))
                                     .foregroundColor(.white)
-
-                                Circle()
-                                    .fill(Color.red)
-                                    .frame(width: 8, height: 8)
-                                    .overlay(Circle().stroke(Color.white, lineWidth: 1.5))
-                                    .offset(x: 12, y: -12)
                             }
+                            .offset(y: -10)
 
                             Text("Track")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(selectedTab == 3 ? MedMargTheme.primaryTeal : MedMargTheme.slate700)
+                                .font(.system(size: 10, weight: selectedTab == 3 ? .black : .bold))
+                                .foregroundColor(selectedTab == 3 ? MedMargTheme.primaryTeal : MedMargTheme.slate500)
+                                .offset(y: -8)
                         }
                         .frame(maxWidth: .infinity)
                     }
 
+                    bottomNavTab(index: 7, icon: "bag.fill", title: "Orders")
                     bottomNavTab(index: 4, icon: "doc.text.fill", title: "Reports")
-                    bottomNavTab(index: 5, icon: "tag.fill", title: "Offers")
                 }
             }
             .padding(.bottom, 6)
