@@ -27,16 +27,11 @@ d:\MedMarg\
 
 ---
 
-### How to Update the Live Server (Standard Fast-Update Command):
-Whenever changes are pushed to GitHub, run this single block on your VPS terminal (`root@srv875579:~#`):
+### How to Update the Live Server (Canonical Zero-Data-Loss Command):
+Whenever changes are pushed to GitHub, run this single data-preserving command on your VPS terminal (`root@srv875579:~#`):
 
 ```bash
-cd /var/www/medmarg
-git reset --hard
-git clean -fd
-git pull origin main
-cd web && npm run build
-pm2 restart medmarg-web medmarg-api
+cd /var/www/medmarg && mkdir -p /var/www/medmarg_data_backup && cp -r backend/data/*.json /var/www/medmarg_data_backup/ 2>/dev/null || true && git fetch origin main && git merge origin/main && cp -r /var/www/medmarg_data_backup/*.json backend/data/ 2>/dev/null || true && cd /var/www/medmarg/web && npm install --legacy-peer-deps && npm run build && cd /var/www/medmarg/backend && npm install --legacy-peer-deps && pm2 restart medmarg-api --update-env || PORT=5080 pm2 start server.js --name "medmarg-api" && pm2 restart medmarg-web 2>/dev/null || true && pm2 save
 ```
 
 ---

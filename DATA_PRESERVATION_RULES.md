@@ -32,3 +32,10 @@ This policy strictly governs any developer, AI coding agent, or automation scrip
 4. **Automated Rolling Backups**:
    - The backup engine creates timestamped copies in `backend/data/backups/`.
    - Administrators can trigger manual snapshots and 1-click restorations from the Admin Web Dashboard.
+
+## Canonical Production VPS Deployment Command
+Whenever updating the live production VPS (`147.93.107.21`), developers and agents MUST execute this exact one-liner to back up data stores before git merge, restore them immediately, and safely restart services:
+
+```bash
+cd /var/www/medmarg && mkdir -p /var/www/medmarg_data_backup && cp -r backend/data/*.json /var/www/medmarg_data_backup/ 2>/dev/null || true && git fetch origin main && git merge origin/main && cp -r /var/www/medmarg_data_backup/*.json backend/data/ 2>/dev/null || true && cd /var/www/medmarg/web && npm install --legacy-peer-deps && npm run build && cd /var/www/medmarg/backend && npm install --legacy-peer-deps && pm2 restart medmarg-api --update-env || PORT=5080 pm2 start server.js --name "medmarg-api" && pm2 restart medmarg-web 2>/dev/null || true && pm2 save
+```

@@ -216,25 +216,10 @@ Super Admin JWT tokens grant access to all endpoints, including dedicated admin 
   3. Eliminates cross-origin (CORS) preflight latencies since API and Frontend run on the exact same origin.
   4. Simplifies PM2 process management to just **1 active process**.
 
-### 6.3 Standard VPS Deployment Commands
+### 6.3 Canonical Zero-Data-Loss VPS Deployment Commands
 ```bash
-# 1. Update repo
-cd /var/www/medmarg
-git reset --hard
-git clean -fd
-git pull origin main
-
-# 2. Build React Frontend
-cd /var/www/medmarg/web
-npm install --legacy-peer-deps
-npm run build
-
-# 3. Start Unified Backend
-cd /var/www/medmarg/backend
-npm install --legacy-peer-deps
-pm2 delete medmarg-api 2>/dev/null || true
-PORT=5080 pm2 start server.js --name "medmarg-api"
-pm2 save
+# Production one-liner with automatic data store backup, git merge, and PM2 update:
+cd /var/www/medmarg && mkdir -p /var/www/medmarg_data_backup && cp -r backend/data/*.json /var/www/medmarg_data_backup/ 2>/dev/null || true && git fetch origin main && git merge origin/main && cp -r /var/www/medmarg_data_backup/*.json backend/data/ 2>/dev/null || true && cd /var/www/medmarg/web && npm install --legacy-peer-deps && npm run build && cd /var/www/medmarg/backend && npm install --legacy-peer-deps && pm2 restart medmarg-api --update-env || PORT=5080 pm2 start server.js --name "medmarg-api" && pm2 restart medmarg-web 2>/dev/null || true && pm2 save
 ```
 
 ### 6.4 Crash Loop Prevention & Safety Architecture
