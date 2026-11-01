@@ -11,6 +11,7 @@ const EMPTY_CATALOG = {
     tests: [],
     profiles: [],
     packages: [],
+    categories: [],
     lastSynced: null
 };
 
@@ -22,14 +23,15 @@ export function getCatalogState() {
 export async function saveCatalogState(state) {
     // 1. PRIMARY: Always persist to Central Backend Server First
     try {
-        if (state && (state.tests || state.profiles || state.packages)) {
+        if (state && (state.tests || state.profiles || state.packages || state.categories)) {
             const res = await fetch(`${API_BASE}/api/v1/catalog/sync-full`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     tests: state.tests || [],
                     profiles: state.profiles || [],
-                    packages: state.packages || []
+                    packages: state.packages || [],
+                    categories: state.categories || []
                 })
             });
 
@@ -47,6 +49,98 @@ export async function saveCatalogState(state) {
         return { success: false, error: `Connection failed: ${err.message}` };
     }
     return { success: true };
+}
+
+/**
+ * Fetch discovery categories from server
+ */
+export async function fetchCategories() {
+    try {
+        const res = await fetch(`${API_BASE}/api/v1/catalog/categories`);
+        if (res.ok) {
+            const data = await res.json();
+            return data.categories || [];
+        }
+    } catch (e) {
+        console.error('[CatalogStore] Failed to fetch categories:', e);
+    }
+    return [];
+}
+
+/**
+ * Resolve composition of package/profile: finds overlaps, unique investigations, price totals
+ */
+export function resolvePackageComposition(profileCodes = [], testCodes = [], allProfiles = [], allTests = []) {
+    const selectedProfiles = allProfiles.filter(p => profileCodes.includes(p.code));
+    const selectedDirectTests = allTests.filter(t => testCodes.includes(t.code));
+
+    const testUsage = new Map(); // testCode -> Array of string sources
+
+    testCodes.forEach(code => {
+        const upper = (code || '').trim().toUpperCase();
+        if (!testUsage.has(upper)) testUsage.set(upper, []);
+        testUsage.get(upper).push('Direct Single Test');
+    });
+
+    selectedProfiles.forEach(prof => {
+        (prof.tests || []).forEach(testCode => {
+            const upper = (testCode || '').trim().toUpperCase();
+            if (!testUsage.has(upper)) testUsage.set(upper, []);
+            testUsage.get(upper).push(`Profile: ${prof.name} (${prof.code})`);
+        });
+    });
+
+    const overlaps = [];
+    testUsage.forEach((sources, code) => {
+        if (sources.length > 1) {
+            const tObj = allTests.find(t => t.code === code);
+            overlaps.push({
+                testCode: code,
+                testName: tObj ? tObj.name : code,
+                sources
+            });
+        }
+    });
+
+    const resolvedInvestigations = Array.from(testUsage.keys()).map(code => {
+        const found = allTests.find(t => t.code === code);
+        return found || { code, name: code, sampleType: 'SERUM', fasting: 'NO', price: 299, mrp: 499 };
+    });
+
+    const directTestsPriceSum = selectedDirectTests.reduce((sum, t) => sum + (Number(t.price) || 0), 0);
+    const directTestsMrpSum = selectedDirectTests.reduce((sum, t) => sum + (Number(t.mrp) || 0), 0);
+    const profilesPriceSum = selectedProfiles.reduce((sum, p) => sum + (Number(p.price) || 0), 0);
+    const profilesMrpSum = selectedProfiles.reduce((sum, p) => sum + (Number(p.mrp) || 0), 0);
+
+    const sampleSet = new Set();
+    resolvedInvestigations.forEach(t => {
+        if (t.sampleType) {
+            t.sampleType.split(',').forEach(s => sampleSet.add(s.trim().toUpperCase()));
+        }
+    });
+    const aggregatedSamples = Array.from(sampleSet);
+    if (aggregatedSamples.length === 0) aggregatedSamples.push('SERUM');
+
+    const requiresFasting = resolvedInvestigations.some(t => t.fasting === 'YES');
+
+    return {
+        selectedProfiles,
+        selectedDirectTests,
+        resolvedInvestigations,
+        totalUniqueTestsCount: resolvedInvestigations.length,
+        hasOverlaps: overlaps.length > 0,
+        overlaps,
+        priceBreakdown: {
+            directTestsPriceSum,
+            directTestsMrpSum,
+            profilesPriceSum,
+            profilesMrpSum,
+            componentTotalOfferSum: directTestsPriceSum + profilesPriceSum,
+            componentTotalMrpSum: directTestsMrpSum + profilesMrpSum
+        },
+        aggregatedSamples,
+        fasting: requiresFasting ? 'YES' : 'NO'
+    };
 }
 
 /**

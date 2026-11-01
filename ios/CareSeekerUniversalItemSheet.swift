@@ -174,7 +174,7 @@ struct CareSeekerUniversalItemSheet: View {
     }
 
     private func biomarkersDescriptionSection(item: CatalogItem) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Clinical Information & Parameters")
                 .font(.system(size: 13, weight: .bold))
                 .foregroundColor(MedMargTheme.slate900)
@@ -190,11 +190,33 @@ struct CareSeekerUniversalItemSheet: View {
                     .foregroundColor(MedMargTheme.slate700)
             }
 
+            // Package Specific: Included Profiles
+            if item.isPackage, let profiles = item.profiles, !profiles.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Included Diagnostic Profiles (\(profiles.count)):")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(MedMargTheme.darkTeal)
+
+                    ForEach(profiles, id: \.self) { p in
+                        HStack(spacing: 6) {
+                            Image(systemName: "rectangle.stack.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(Color.purple)
+                            Text(p)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(MedMargTheme.slate800)
+                        }
+                    }
+                }
+                .padding(.top, 4)
+            }
+
+            // Included Single Tests
             if let tests = item.tests, !tests.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Included Tests & Biomarkers:")
+                    Text(item.isPackage ? "Included Single Tests (\(tests.count)):" : "Included Biomarkers & Tests (\(tests.count)):")
                         .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(MedMargTheme.slate900)
+                        .foregroundColor(MedMargTheme.primaryTeal)
 
                     ForEach(tests, id: \.self) { t in
                         HStack(spacing: 6) {
@@ -208,6 +230,20 @@ struct CareSeekerUniversalItemSheet: View {
                     }
                 }
                 .padding(.top, 4)
+            }
+
+            // Package Savings Banner
+            if item.isPackage && item.mrp > item.price {
+                HStack {
+                    Image(systemName: "sparkles")
+                        .foregroundColor(MedMargTheme.amberGold)
+                    Text("Bundle Savings: ₹\(item.mrp - item.price) (\(item.calculatedDiscount)% OFF standard single tests)")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(MedMargTheme.darkTeal)
+                }
+                .padding(10)
+                .background(MedMargTheme.amberLight.opacity(0.5))
+                .cornerRadius(8)
             }
         }
         .padding(14)

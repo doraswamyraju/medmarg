@@ -17,22 +17,210 @@ router.get('/summary', (req, res) => {
         totalTests: catalogState.tests.length,
         totalProfiles: catalogState.profiles.length,
         totalPackages: catalogState.packages.length,
+        totalCategories: (catalogState.categories || []).length,
         lastSynced: catalogState.lastSynced
     });
 });
 
-// GET TESTS (With Search, Filter by Fasting & Sample Type)
+// GET DISCOVERY CATEGORIES (With Item Counts)
+router.get('/categories', (req, res) => {
+    const categories = (catalogState.categories || []).map(cat => {
+        const testCount = catalogState.tests.filter(t => (t.categoryIds || []).includes(cat.id)).length;
+        const profileCount = catalogState.profiles.filter(p => (p.categoryIds || []).includes(cat.id)).length;
+        const packageCount = catalogState.packages.filter(pkg => (pkg.categoryIds || []).includes(cat.id)).length;
+        return {
+            ...cat,
+            testCount,
+            profileCount,
+            packageCount,
+            totalItems: testCount + profileCount + packageCount
+        };
+    });
+
+    // Sort by displayOrder
+    categories.sort((a, b) => (a.displayOrder || 99) - (b.displayOrder || 99));
+
+    res.json({
+        success: true,
+        total: categories.length,
+        categories
+    });
+});
+
+// CREATE / UPDATE DISCOVERY CATEGORY
+router.post('/categories', (req, res) => {
+    const { id, name, description, icon, displayOrder, isFeatured, active } = req.body;
+
+    if (!name) {
+        return res.status(400).json({ error: 'Category Name is required.' });
+    }
+
+    if (!Array.isArray(catalogState.categories)) {
+        catalogState.categories = [];
+    }
+
+    const catId = id || `CAT_${name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, '_')}`;
+    const existingIndex = catalogState.categories.findIndex(c => c.id === catId);
+
+    const categoryItem = {
+        id: catId,
+        name: name.trim(),
+        description: description || `Diagnostic tests and packages for ${name.trim()}.`,
+        icon: icon || 'square.grid.2x2.fill',
+        displayOrder: Number(displayOrder) || (catalogState.categories.length + 1),
+        isFeatured: isFeatured !== undefined ? Boolean(isFeatured) : true,
+        active: active !== undefined ? Boolean(active) : true
+    };
+
+    if (existingIndex >= 0) {
+        catalogState.categories[existingIndex] = { ...catalogState.categories[existingIndex], ...categoryItem };
+    } else {
+        catalogState.categories.push(categoryItem);
+    }
+    saveCatalogData();
+
+    res.status(201).json({
+        success: true,
+        message: existingIndex >= 0 ? 'Category updated successfully.' : 'Category created successfully.',
+        category: categoryItem
+    });
+});
+
+// DELETE / DEACTIVATE DISCOVERY CATEGORY
+router.delete('/categories/:id', (req, res) => {
+    const { id } = req.params;
+    if (!catalogState.categories) return res.status(404).json({ error: 'No categories found' });
+
+    const idx = catalogState.categories.findIndex(c => c.id === id);
+    if (idx === 0 && catalogState.categories.length <= 1) {
+        return res.status(400).json({ error: 'Cannot delete the only remaining discovery category.' });
+    }
+
+    if (idx >= 0) {
+        const removed = catalogState.categories.splice(idx, 1)[0];
+        // Clean up references in tests, profiles, packages
+        catalogState.tests.forEach(t => {
+            if (Array.isArray(t.categoryIds)) t.categoryIds = t.categoryIds.filter(cid => cid !== id);
+        });
+        catalogState.profiles.forEach(p => {
+            if (Array.isArray(p.categoryIds)) p.categoryIds = p.categoryIds.filter(cid => cid !== id);
+        });
+        catalogState.packages.forEach(pkg => {
+            if (Array.isArray(pkg.categoryIds)) pkg.categoryIds = pkg.categoryIds.filter(cid => cid !== id);
+        });
+        saveCatalogData();
+        return res.json({ success: true, message: `Category ${removed.name} deleted successfully.` });
+    }
+
+    res.status(404).json({ error: 'Category not found.' });
+});
+
+// RESOLVE COMPOSITION HELPER (Inspects Tests + Profiles, Duplicates, Overlaps, Aggregated Specs)
+router.get('/resolve-composition', (req, res) => {
+    const profileCodes = (req.query.profiles ? req.query.profiles.split(',') : []).map(c => c.trim().toUpperCase()).filter(Boolean);
+    const directTestCodes = (req.query.tests ? req.query.tests.split(',') : []).map(c => c.trim().toUpperCase()).filter(Boolean);
+
+    // Resolve profiles
+    const selectedProfiles = catalogState.profiles.filter(p => profileCodes.includes(p.code));
+    
+    // Resolve direct tests
+    const selectedDirectTests = catalogState.tests.filter(t => directTestCodes.includes(t.code));
+
+    // Map test appearances
+    const testUsage = new Map(); // testCode -> array of sources ['Direct Test', 'Profile: LIPID']
+
+    directTestCodes.forEach(code => {
+        if (!testUsage.has(code)) testUsage.set(code, []);
+        testUsage.get(code).push('Direct Single Test');
+    });
+
+    selectedProfiles.forEach(prof => {
+        (prof.tests || []).forEach(testCode => {
+            const upper = testCode.trim().toUpperCase();
+            if (!testUsage.has(upper)) testUsage.set(upper, []);
+            testUsage.get(upper).push(`Profile: ${prof.name} (${prof.code})`);
+        });
+    });
+
+    // Detect overlaps
+    const overlaps = [];
+    testUsage.forEach((sources, code) => {
+        if (sources.length > 1) {
+            const testObj = catalogState.tests.find(t => t.code === code);
+            overlaps.push({
+                testCode: code,
+                testName: testObj ? testObj.name : code,
+                sources
+            });
+        }
+    });
+
+    // Unique list of all resolved test codes
+    const allUniqueTestCodes = Array.from(testUsage.keys());
+    const resolvedInvestigations = allUniqueTestCodes.map(code => {
+        const found = catalogState.tests.find(t => t.code === code);
+        return found || { code, name: code, sampleType: 'SERUM', fasting: 'NO', price: 299, mrp: 499 };
+    });
+
+    // Component Price Breakdown
+    const directTestsPriceSum = selectedDirectTests.reduce((sum, t) => sum + (Number(t.price) || 0), 0);
+    const directTestsMrpSum = selectedDirectTests.reduce((sum, t) => sum + (Number(t.mrp) || 0), 0);
+    const profilesPriceSum = selectedProfiles.reduce((sum, p) => sum + (Number(p.price) || 0), 0);
+    const profilesMrpSum = selectedProfiles.reduce((sum, p) => sum + (Number(p.mrp) || 0), 0);
+    const componentTotalOfferSum = directTestsPriceSum + profilesPriceSum;
+    const componentTotalMrpSum = directTestsMrpSum + profilesMrpSum;
+
+    // Aggregated sample types
+    const sampleSet = new Set();
+    resolvedInvestigations.forEach(t => {
+        if (t.sampleType) {
+            t.sampleType.split(',').forEach(s => sampleSet.add(s.trim()));
+        }
+    });
+    const aggregatedSamples = Array.from(sampleSet);
+    if (aggregatedSamples.length === 0) aggregatedSamples.push('SERUM');
+
+    const requiresFasting = resolvedInvestigations.some(t => t.fasting === 'YES');
+
+    res.json({
+        success: true,
+        selectedProfiles,
+        selectedDirectTests,
+        resolvedInvestigations,
+        totalUniqueTestsCount: resolvedInvestigations.length,
+        hasOverlaps: overlaps.length > 0,
+        overlaps,
+        priceBreakdown: {
+            directTestsPriceSum,
+            directTestsMrpSum,
+            profilesPriceSum,
+            profilesMrpSum,
+            componentTotalOfferSum,
+            componentTotalMrpSum
+        },
+        aggregatedSamples,
+        fasting: requiresFasting ? 'YES' : 'NO'
+    });
+});
+
+// GET TESTS (With Search, Filter by Fasting, Sample Type & Category)
 router.get('/tests', (req, res) => {
-    const { q, fasting, sample, limit, page } = req.query;
+    const { q, fasting, sample, categoryId, limit, page } = req.query;
     let list = catalogState.tests;
+
+    if (categoryId) {
+        list = list.filter(t => (t.categoryIds || []).includes(categoryId));
+    }
 
     if (q) {
         const query = q.toLowerCase();
-        list = list.filter(t => 
-            (t.name && t.name.toLowerCase().includes(query)) ||
-            (t.code && t.code.toLowerCase().includes(query)) ||
-            (t.sampleType && t.sampleType.toLowerCase().includes(query))
-        );
+        list = list.filter(t => {
+            const aliasStr = Array.isArray(t.aliasNames) ? t.aliasNames.join(' ') : (t.aliasNames || '');
+            return (t.name && t.name.toLowerCase().includes(query)) ||
+                (t.code && t.code.toLowerCase().includes(query)) ||
+                (t.sampleType && t.sampleType.toLowerCase().includes(query)) ||
+                aliasStr.toLowerCase().includes(query);
+        });
     }
 
     if (fasting) {
@@ -65,12 +253,14 @@ router.post('/tests', async (req, res) => {
         serialNo, 
         code, 
         name, 
+        aliasNames,
         sampleType, 
         fasting, 
         mrp, 
         price, 
         tatHours, 
         description, 
+        categoryIds,
         labPricing, 
         tierPricing 
     } = req.body;
@@ -82,14 +272,29 @@ router.post('/tests', async (req, res) => {
     const testCode = code.trim().toUpperCase();
     const existingIndex = catalogState.tests.findIndex(t => t.code === testCode || (id && t.id === id));
 
+    let parsedAliases = [];
+    if (Array.isArray(aliasNames)) {
+        parsedAliases = aliasNames.map(a => a.trim()).filter(Boolean);
+    } else if (typeof aliasNames === 'string' && aliasNames.trim()) {
+        parsedAliases = aliasNames.split(',').map(a => a.trim()).filter(Boolean);
+    } else if (existingIndex >= 0 && catalogState.tests[existingIndex].aliasNames) {
+        parsedAliases = catalogState.tests[existingIndex].aliasNames;
+    }
+
+    const finalCategoryIds = Array.isArray(categoryIds) && categoryIds.length > 0
+        ? categoryIds
+        : (existingIndex >= 0 && catalogState.tests[existingIndex].categoryIds ? catalogState.tests[existingIndex].categoryIds : ['CAT_POPULAR']);
+
     const testItem = {
         id: id || (existingIndex >= 0 ? catalogState.tests[existingIndex].id : `TEST_${catalogState.tests.length + 1}`),
         serialNo: serialNo || (existingIndex >= 0 ? catalogState.tests[existingIndex].serialNo : catalogState.tests.length + 1),
         code: testCode,
         name: name.trim(),
+        aliasNames: parsedAliases,
         sampleType: (sampleType || 'SERUM').trim().toUpperCase(),
         fasting: (fasting || 'NO').trim().toUpperCase(),
         category: 'Individual Test',
+        categoryIds: finalCategoryIds,
         mrp: Number(mrp) || 499,
         price: Number(price) || 299,
         tatHours: Number(tatHours) || 24,
@@ -120,10 +325,14 @@ router.post('/tests', async (req, res) => {
     });
 });
 
-// GET PROFILES (With Search & Filter)
+// GET PROFILES (With Search, Filter & Resolved Tests)
 router.get('/profiles', (req, res) => {
-    const { q, fasting, sample } = req.query;
+    const { q, fasting, sample, categoryId } = req.query;
     let list = catalogState.profiles;
+
+    if (categoryId) {
+        list = list.filter(p => (p.categoryIds || []).includes(categoryId));
+    }
 
     if (q) {
         const query = q.toLowerCase();
@@ -138,10 +347,21 @@ router.get('/profiles', (req, res) => {
         list = list.filter(p => p.fasting === fasting.toUpperCase());
     }
 
+    // Populate tests details
+    const populated = list.map(prof => {
+        const testDetails = (prof.tests || []).map(code => 
+            catalogState.tests.find(t => t.code === code) || { code, name: code, sampleType: 'SERUM', fasting: 'NO', price: 299, mrp: 499 }
+        );
+        return {
+            ...prof,
+            testDetails
+        };
+    });
+
     res.json({
         success: true,
-        total: list.length,
-        profiles: list
+        total: populated.length,
+        profiles: populated
     });
 });
 
@@ -161,6 +381,7 @@ router.post('/profiles', async (req, res) => {
         tests = [], 
         selectedTests = [],
         testCount,
+        categoryIds,
         labPricing, 
         tierPricing 
     } = req.body;
@@ -176,6 +397,10 @@ router.post('/profiles', async (req, res) => {
         ? tests 
         : (Array.isArray(selectedTests) ? selectedTests : (existingIndex >= 0 ? catalogState.profiles[existingIndex].tests || [] : []));
 
+    const finalCategoryIds = Array.isArray(categoryIds) && categoryIds.length > 0
+        ? categoryIds
+        : (existingIndex >= 0 && catalogState.profiles[existingIndex].categoryIds ? catalogState.profiles[existingIndex].categoryIds : ['CAT_POPULAR']);
+
     const profItem = {
         id: id || (existingIndex >= 0 ? catalogState.profiles[existingIndex].id : `PROF_${catalogState.profiles.length + 1}`),
         serialNo: serialNo || (existingIndex >= 0 ? catalogState.profiles[existingIndex].serialNo : catalogState.profiles.length + 1),
@@ -184,6 +409,7 @@ router.post('/profiles', async (req, res) => {
         sampleType: (sampleType || 'SERUM').trim().toUpperCase(),
         fasting: (fasting || 'NO').trim().toUpperCase(),
         category: 'Diagnostic Profile',
+        categoryIds: finalCategoryIds,
         mrp: Number(mrp) || 1499,
         price: Number(price) || 899,
         tatHours: Number(tatHours) || 24,
@@ -217,7 +443,23 @@ router.post('/profiles', async (req, res) => {
 
 // GET PACKAGES (Custom Bundles combining Tests & Profiles)
 router.get('/packages', (req, res) => {
-    const populated = catalogState.packages.map(pkg => {
+    const { categoryId, q } = req.query;
+    let list = catalogState.packages;
+
+    if (categoryId) {
+        list = list.filter(pkg => (pkg.categoryIds || []).includes(categoryId));
+    }
+
+    if (q) {
+        const query = q.toLowerCase();
+        list = list.filter(pkg => 
+            (pkg.name && pkg.name.toLowerCase().includes(query)) ||
+            (pkg.code && pkg.code.toLowerCase().includes(query)) ||
+            (pkg.tagline && pkg.tagline.toLowerCase().includes(query))
+        );
+    }
+
+    const populated = list.map(pkg => {
         const profileDetails = (pkg.profiles || []).map(code => 
             catalogState.profiles.find(p => p.code === code) || { code, name: code }
         );
@@ -225,10 +467,21 @@ router.get('/packages', (req, res) => {
             catalogState.tests.find(t => t.code === code) || { code, name: code }
         );
 
+        // Resolve investigations inside profiles
+        const testCodeSet = new Set(pkg.tests || []);
+        profileDetails.forEach(p => {
+            (p.tests || []).forEach(tc => testCodeSet.add(tc));
+        });
+        const resolvedInvestigations = Array.from(testCodeSet).map(tc => 
+            catalogState.tests.find(t => t.code === tc) || { code: tc, name: tc }
+        );
+
         return {
             ...pkg,
             profileDetails,
-            testDetails
+            testDetails,
+            resolvedInvestigations,
+            resolvedCount: resolvedInvestigations.length
         };
     });
 
@@ -247,6 +500,7 @@ router.post('/packages', (req, res) => {
         code, 
         tagline, 
         category, 
+        categoryIds,
         mrp, 
         price, 
         selectedProfiles, 
@@ -269,6 +523,12 @@ router.post('/packages', (req, res) => {
     const referencedProfiles = catalogState.profiles.filter(p => profileCodes.includes(p.code));
     const referencedTests = catalogState.tests.filter(t => testCodes.includes(t.code));
 
+    // Resolve unique tests inside package
+    const uniqueTestCodes = new Set(testCodes);
+    referencedProfiles.forEach(p => {
+        (p.tests || []).forEach(tc => uniqueTestCodes.add(tc));
+    });
+
     const sampleSet = new Set();
     [...referencedProfiles, ...referencedTests].forEach(item => {
         if (item.sampleType) {
@@ -283,12 +543,17 @@ router.post('/packages', (req, res) => {
 
     const existingIndex = catalogState.packages.findIndex(p => (id && p.id === id) || p.code === pkgCode);
 
+    const finalCategoryIds = Array.isArray(categoryIds) && categoryIds.length > 0
+        ? categoryIds
+        : (existingIndex >= 0 && catalogState.packages[existingIndex].categoryIds ? catalogState.packages[existingIndex].categoryIds : ['CAT_POPULAR', 'CAT_WELLNESS']);
+
     const savedPackage = {
         id: id || (existingIndex >= 0 ? catalogState.packages[existingIndex].id : `PKG_${Date.now()}`),
         name: name.trim(),
         code: pkgCode,
         tagline: tagline || 'Custom Curated Health Assessment Bundle',
         category: category || 'Wellness Checkup',
+        categoryIds: finalCategoryIds,
         mrp: Number(mrp) || Number(price) * 2,
         price: Number(price),
         discountPercent: mrp ? Math.round(((mrp - price) / mrp) * 100) : 50,
@@ -299,10 +564,11 @@ router.post('/packages', (req, res) => {
         popular: true,
         profiles: profileCodes,
         tests: testCodes,
-        testCount: profileCodes.length * 8 + testCodes.length,
+        testCount: uniqueTestCodes.size || (profileCodes.length * 8 + testCodes.length),
         description: description || `Comprehensive health package combining ${profileCodes.length} profiles and ${testCodes.length} clinical tests.`,
         labPricing: labPricing || (existingIndex >= 0 ? catalogState.packages[existingIndex].labPricing : null),
-        tierPricing: tierPricing || (existingIndex >= 0 ? catalogState.packages[existingIndex].tierPricing : null)
+        tierPricing: tierPricing || (existingIndex >= 0 ? catalogState.packages[existingIndex].tierPricing : null),
+        active: true
     };
 
     if (existingIndex >= 0) {

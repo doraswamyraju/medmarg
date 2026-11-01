@@ -5,6 +5,23 @@ import Combine
 // =============================================================
 // 🧪 MEDMARG UNIFIED MASTER CATALOG ITEM MODEL
 // =============================================================
+struct CatalogCategory: Identifiable, Codable, Equatable {
+    let id: String
+    var name: String
+    var description: String?
+    var icon: String?
+    var displayOrder: Int?
+    var isFeatured: Bool?
+    var active: Bool?
+    var totalItems: Int?
+}
+
+struct CategoriesApiResponse: Codable {
+    var success: Bool?
+    var total: Int?
+    var categories: [CatalogCategory]?
+}
+
 struct CatalogItem: Identifiable, Codable, Equatable {
     let id: String
     var serialNo: Int?
@@ -13,6 +30,7 @@ struct CatalogItem: Identifiable, Codable, Equatable {
     var sampleType: String?
     var fasting: String?
     var category: String?
+    var categoryIds: [String]?
     var mrp: Int
     var price: Int
     var tatHours: Int?
@@ -102,6 +120,7 @@ class CatalogStore: ObservableObject {
     @Published var profiles: [CatalogItem] = []
     @Published var packages: [CatalogItem] = []
     @Published var allItems: [CatalogItem] = []
+    @Published var categories: [CatalogCategory] = []
 
     @Published var isLoading: Bool = false
     @Published var isOnlineSynced: Bool = false
@@ -112,7 +131,18 @@ class CatalogStore: ObservableObject {
 
     private let userDefaultsKey = "medmarg_cached_catalog_v3"
 
+    private let defaultCategories: [CatalogCategory] = [
+        CatalogCategory(id: "CAT_POPULAR", name: "Popular Tests", description: "Frequently booked routine screenings", icon: "flame.fill", displayOrder: 1, isFeatured: true, active: true, totalItems: 3),
+        CatalogCategory(id: "CAT_DIABETES", name: "Diabetes Care", description: "HbA1c & Blood Sugar Monitoring", icon: "drop.fill", displayOrder: 2, isFeatured: true, active: true, totalItems: 2),
+        CatalogCategory(id: "CAT_HEART", name: "Heart Health", description: "Lipid profile & cardiovascular markers", icon: "heart.fill", displayOrder: 3, isFeatured: true, active: true, totalItems: 2),
+        CatalogCategory(id: "CAT_THYROID", name: "Thyroid Care", description: "TSH, T3, T4 hormonal evaluations", icon: "cross.case.fill", displayOrder: 4, isFeatured: true, active: true, totalItems: 1),
+        CatalogCategory(id: "CAT_WOMEN", name: "Women's Health", description: "Hormonal, iron & bone profiles", icon: "figure.stand.dress", displayOrder: 5, isFeatured: true, active: true, totalItems: 2),
+        CatalogCategory(id: "CAT_SENIOR", name: "Senior Citizen", description: "Geriatric vital screening", icon: "figure.walk", displayOrder: 6, isFeatured: true, active: true, totalItems: 2),
+        CatalogCategory(id: "CAT_WELLNESS", name: "Full Body Checkups", description: "Comprehensive preventive checkups", icon: "shield.lefthalf.filled", displayOrder: 7, isFeatured: true, active: true, totalItems: 1)
+    ]
+
     init() {
+        self.categories = defaultCategories
         loadInitialCatalog()
         syncWithBackend()
     }
@@ -226,6 +256,7 @@ class CatalogStore: ObservableObject {
         var fetchedPackages: [CatalogItem] = []
         var fetchedProfiles: [CatalogItem] = []
         var fetchedTests: [CatalogItem] = []
+        var fetchedCategories: [CatalogCategory] = []
 
         // 1. Packages
         if let url = URL(string: "\(backendBaseURL)/api/v1/catalog/packages") {
@@ -260,9 +291,24 @@ class CatalogStore: ObservableObject {
             }.resume()
         }
 
+        // 4. Discovery Categories
+        if let url = URL(string: "\(backendBaseURL)/api/v1/catalog/categories") {
+            dispatchGroup.enter()
+            URLSession.shared.dataTask(with: url) { data, _, _ in
+                defer { dispatchGroup.leave() }
+                if let d = data, let res = try? JSONDecoder().decode(CategoriesApiResponse.self, from: d) {
+                    fetchedCategories = res.categories ?? []
+                }
+            }.resume()
+        }
+
         dispatchGroup.notify(queue: .main) { [weak self] in
             guard let self = self else { return }
             self.isLoading = false
+
+            if !fetchedCategories.isEmpty {
+                self.categories = fetchedCategories
+            }
 
             if !fetchedTests.isEmpty || !fetchedProfiles.isEmpty || !fetchedPackages.isEmpty {
                 let finalPackages = fetchedPackages.isEmpty ? self.packages : fetchedPackages

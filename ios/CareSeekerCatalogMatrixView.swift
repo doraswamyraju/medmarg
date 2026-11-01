@@ -13,6 +13,7 @@ struct CareSeekerCatalogMatrixView: View {
 
     @State private var searchQuery: String = ""
     @State private var catalogSubTab: String = "ALL" // ALL, PACKAGES, PROFILES, TESTS
+    @State private var selectedCategoryId: String = "ALL"
     @State private var fastingFilter: String = "ALL" // ALL, YES, NO
     @State private var sampleFilter: String = "ALL"  // ALL, SERUM, EDTA, URINE, PLASMA
     @State private var selectedLabFilter: String = "ALL"
@@ -27,6 +28,14 @@ struct CareSeekerCatalogMatrixView: View {
         }
 
         return items.filter { item in
+            // Category Filter
+            if selectedCategoryId != "ALL" {
+                let catIds = item.categoryIds ?? []
+                if !catIds.contains(selectedCategoryId) {
+                    return false
+                }
+            }
+
             // Search Query
             if !searchQuery.isEmpty {
                 let q = searchQuery.lowercased()
@@ -34,7 +43,8 @@ struct CareSeekerCatalogMatrixView: View {
                 let codeMatch = item.code.lowercased().contains(q)
                 let descMatch = item.description?.lowercased().contains(q) ?? false
                 let catMatch = item.category?.lowercased().contains(q) ?? false
-                if !nameMatch && !codeMatch && !descMatch && !catMatch { return false }
+                let aliasMatch = item.aliasNames?.contains(where: { $0.lowercased().contains(q) }) ?? false
+                if !nameMatch && !codeMatch && !descMatch && !catMatch && !aliasMatch { return false }
             }
 
             // Fasting Filter
@@ -102,7 +112,7 @@ struct CareSeekerCatalogMatrixView: View {
     // 🔍 1. SEARCH & FILTERS SECTION (PREMIUM BORDER HIGHLIGHT)
     // ==========================================
     private var searchAndFiltersSection: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
             HStack(spacing: 10) {
                 ZStack {
                     Circle()
@@ -113,7 +123,7 @@ struct CareSeekerCatalogMatrixView: View {
                         .font(.system(size: 14, weight: .bold))
                 }
 
-                TextField("Search from 913+ tests (e.g. Thyroid, CBC, HbA1c, Vitamin D, Lipid, Liver)...", text: $searchQuery)
+                TextField("Search from 913+ tests, profiles & packages...", text: $searchQuery)
                     .font(.system(size: 13, weight: .medium))
 
                 if !searchQuery.isEmpty {
@@ -141,8 +151,14 @@ struct CareSeekerCatalogMatrixView: View {
                         lineWidth: 1.5
                     )
             )
+            .padding(.horizontal, 16)
+
+            // Product Type Switcher (All | Packages | Profiles | Tests)
+            subTabsPillsBar
+
+            // Discovery Categories Carousel
+            discoveryCategoriesRow
         }
-        .padding(.horizontal, 16)
     }
 
     // ==========================================
@@ -151,7 +167,7 @@ struct CareSeekerCatalogMatrixView: View {
     private var subTabsPillsBar: some View {
         HStack(spacing: 8) {
             subTabButton(key: "ALL", label: "All Tests", icon: "square.grid.2x2.fill")
-            subTabButton(key: "PACKAGES", label: "Full Body", icon: "cube.box.fill")
+            subTabButton(key: "PACKAGES", label: "Packages", icon: "cube.box.fill")
             subTabButton(key: "PROFILES", label: "Profiles", icon: "rectangle.stack.fill")
             subTabButton(key: "TESTS", label: "Single Tests", icon: "flask.fill")
         }
@@ -172,6 +188,52 @@ struct CareSeekerCatalogMatrixView: View {
             .foregroundColor(catalogSubTab == key ? .white : MedMargTheme.slate700)
             .cornerRadius(10)
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(catalogSubTab == key ? MedMargTheme.primaryTeal : MedMargTheme.slate200, lineWidth: 1))
+        }
+    }
+
+    // ==========================================
+    // 🏷️ DISCOVERY CATEGORIES ROW
+    // ==========================================
+    private var discoveryCategoriesRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                categoryPill(
+                    id: "ALL",
+                    name: "All Categories",
+                    icon: "square.grid.2x2.fill"
+                )
+
+                ForEach(catalogStore.categories.filter { $0.active ?? true }) { cat in
+                    categoryPill(
+                        id: cat.id,
+                        name: cat.name,
+                        icon: cat.icon ?? "tag.fill"
+                    )
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 2)
+        }
+    }
+
+    private func categoryPill(id: String, name: String, icon: String) -> some View {
+        let isSel = selectedCategoryId == id
+        return Button(action: { selectedCategoryId = id }) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(.system(size: 11, weight: .bold))
+                Text(name)
+                    .font(.system(size: 11, weight: isSel ? .bold : .semibold))
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(isSel ? MedMargTheme.darkTeal : Color.white)
+            .foregroundColor(isSel ? .white : MedMargTheme.slate700)
+            .cornerRadius(18)
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(isSel ? MedMargTheme.darkTeal : MedMargTheme.slate200, lineWidth: 1)
+            )
         }
     }
 
