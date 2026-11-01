@@ -22,14 +22,21 @@ router.get('/summary', (req, res) => {
     });
 });
 
-// GET DISCOVERY CATEGORIES (With Item Counts)
+// GET DISCOVERY CATEGORIES (With Item Counts & Group Filtering)
 router.get('/categories', (req, res) => {
-    const categories = (catalogState.categories || []).map(cat => {
+    const { group } = req.query;
+    let list = catalogState.categories || [];
+    if (group && group !== 'ALL') {
+        list = list.filter(c => (c.group || 'CONDITION') === group);
+    }
+
+    const categories = list.map(cat => {
         const testCount = catalogState.tests.filter(t => (t.categoryIds || []).includes(cat.id)).length;
         const profileCount = catalogState.profiles.filter(p => (p.categoryIds || []).includes(cat.id)).length;
         const packageCount = catalogState.packages.filter(pkg => (pkg.categoryIds || []).includes(cat.id)).length;
         return {
             ...cat,
+            group: cat.group || 'CONDITION',
             testCount,
             profileCount,
             packageCount,
@@ -49,7 +56,7 @@ router.get('/categories', (req, res) => {
 
 // CREATE / UPDATE DISCOVERY CATEGORY
 router.post('/categories', (req, res) => {
-    const { id, name, description, icon, imageUrl, color, displayOrder, isFeatured, active } = req.body;
+    const { id, name, group, description, icon, imageUrl, color, displayOrder, isFeatured, active } = req.body;
 
     if (!name) {
         return res.status(400).json({ error: 'Category Name is required.' });
@@ -65,6 +72,7 @@ router.post('/categories', (req, res) => {
     const categoryItem = {
         id: catId,
         name: name.trim(),
+        group: group || (existingIndex >= 0 ? catalogState.categories[existingIndex].group || 'CONDITION' : 'CONDITION'),
         description: description || `Diagnostic tests and packages for ${name.trim()}.`,
         icon: icon || 'square.grid.2x2.fill',
         imageUrl: imageUrl !== undefined ? imageUrl : (existingIndex >= 0 ? catalogState.categories[existingIndex].imageUrl || '' : ''),

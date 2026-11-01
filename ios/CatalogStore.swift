@@ -8,6 +8,7 @@ import Combine
 struct CatalogCategory: Identifiable, Codable, Equatable {
     let id: String
     var name: String
+    var group: String?
     var description: String?
     var icon: String?
     var imageUrl: String?
@@ -134,13 +135,13 @@ class CatalogStore: ObservableObject {
     private let userDefaultsKey = "medmarg_cached_catalog_v3"
 
     private let defaultCategories: [CatalogCategory] = [
-        CatalogCategory(id: "CAT_POPULAR", name: "Popular Tests", description: "Frequently booked routine screenings", icon: "flame.fill", displayOrder: 1, isFeatured: true, active: true, totalItems: 3),
-        CatalogCategory(id: "CAT_DIABETES", name: "Diabetes Care", description: "HbA1c & Blood Sugar Monitoring", icon: "drop.fill", displayOrder: 2, isFeatured: true, active: true, totalItems: 2),
-        CatalogCategory(id: "CAT_HEART", name: "Heart Health", description: "Lipid profile & cardiovascular markers", icon: "heart.fill", displayOrder: 3, isFeatured: true, active: true, totalItems: 2),
-        CatalogCategory(id: "CAT_THYROID", name: "Thyroid Care", description: "TSH, T3, T4 hormonal evaluations", icon: "cross.case.fill", displayOrder: 4, isFeatured: true, active: true, totalItems: 1),
-        CatalogCategory(id: "CAT_WOMEN", name: "Women's Health", description: "Hormonal, iron & bone profiles", icon: "figure.stand.dress", displayOrder: 5, isFeatured: true, active: true, totalItems: 2),
-        CatalogCategory(id: "CAT_SENIOR", name: "Senior Citizen", description: "Geriatric vital screening", icon: "figure.walk", displayOrder: 6, isFeatured: true, active: true, totalItems: 2),
-        CatalogCategory(id: "CAT_WELLNESS", name: "Full Body Checkups", description: "Comprehensive preventive checkups", icon: "shield.lefthalf.filled", displayOrder: 7, isFeatured: true, active: true, totalItems: 1)
+        CatalogCategory(id: "CAT_POPULAR", name: "Popular Tests", group: "CURATED", description: "Frequently booked routine screenings", icon: "flame.fill", color: "#F59E0B", displayOrder: 1, isFeatured: true, active: true, totalItems: 3),
+        CatalogCategory(id: "CAT_DIABETES", name: "Diabetes Care", group: "CONDITION", description: "HbA1c & Blood Sugar Monitoring", icon: "drop.fill", color: "#EF4444", displayOrder: 2, isFeatured: true, active: true, totalItems: 2),
+        CatalogCategory(id: "CAT_HEART", name: "Heart Health", group: "CONDITION", description: "Lipid profile & cardiovascular markers", icon: "heart.fill", color: "#DC2626", displayOrder: 3, isFeatured: true, active: true, totalItems: 2),
+        CatalogCategory(id: "CAT_THYROID", name: "Thyroid Care", group: "CONDITION", description: "TSH, T3, T4 hormonal evaluations", icon: "cross.fill", color: "#006B70", displayOrder: 4, isFeatured: true, active: true, totalItems: 1),
+        CatalogCategory(id: "CAT_WOMEN", name: "Women's Health", group: "CONDITION", description: "Hormonal, iron & bone profiles", icon: "figure.dress.line.vertical.figure", color: "#EC4899", displayOrder: 5, isFeatured: true, active: true, totalItems: 2),
+        CatalogCategory(id: "CAT_SENIOR", name: "Senior Citizen", group: "DEMOGRAPHIC", description: "Geriatric vital screening", icon: "figure.seated.side.right", color: "#7C3AED", displayOrder: 6, isFeatured: true, active: true, totalItems: 2),
+        CatalogCategory(id: "CAT_WELLNESS", name: "Full Body Checkups", group: "GOAL", description: "Comprehensive preventive checkups", icon: "shield.checkerboard", color: "#059669", displayOrder: 7, isFeatured: true, active: true, totalItems: 1)
     ]
 
     init() {

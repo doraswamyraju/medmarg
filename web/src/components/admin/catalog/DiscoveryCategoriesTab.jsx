@@ -30,9 +30,22 @@ import {
   Baby,
   Thermometer,
   Crosshair,
-  UserCheck
+  UserCheck,
+  Users,
+  Target
 } from 'lucide-react';
 import { API_BASE, safeFetch } from '../../../data/apiConfig';
+
+// 6 Core Taxonomy Groups
+export const TAXONOMY_GROUPS = [
+  { key: 'ALL', label: 'All Dimensions', icon: Tag, badge: 'ALL' },
+  { key: 'CLINICAL', label: 'Clinical Specialties', icon: FlaskConical, badge: '🔬 CLINICAL', description: 'Laboratory disciplines & diagnostic specialties' },
+  { key: 'CONDITION', label: 'Health Concerns', icon: Crosshair, badge: '🩺 CONCERNS', description: 'Patient symptoms, disorders & disease monitoring' },
+  { key: 'ORGAN', label: 'Body Organs & Systems', icon: Heart, badge: '🫀 ORGANS', description: 'Anatomical organ and physiological system browsing' },
+  { key: 'DEMOGRAPHIC', label: 'Demographics & Life Stages', icon: Users, badge: '👥 DEMOGRAPHICS', description: 'Age cohorts, gender and maternal care' },
+  { key: 'GOAL', label: 'Health Goals', icon: Shield, badge: '🎯 GOALS', description: 'Preventive intent, annual checkups & fitness routines' },
+  { key: 'CURATED', label: 'Curated Campaigns', icon: Sparkles, badge: '⭐ CURATED', description: 'Front-page highlights, bestsellers & seasonal promotions' }
+];
 
 // Curated medical icon presets with SF Symbol equivalents for iOS and Lucide icon components for Web
 export const CATEGORY_ICON_PRESETS = [
@@ -77,6 +90,7 @@ export default function DiscoveryCategoriesTab({
   saveCatalogState = () => {}
 }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState('ALL');
   const [editingCategory, setEditingCategory] = useState(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showLinkItemsModal, setShowLinkItemsModal] = useState(false);
@@ -84,12 +98,15 @@ export default function DiscoveryCategoriesTab({
   const [linkSearchTerm, setLinkSearchTerm] = useState('');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageTab, setImageTab] = useState('PRESET'); // 'PRESET' | 'UPLOAD' | 'URL'
+  const [customGroupInput, setCustomGroupInput] = useState('');
+  const [isCustomGroup, setIsCustomGroup] = useState(false);
   const fileInputRef = useRef(null);
 
   // Category Form
   const [categoryForm, setCategoryForm] = useState({
     id: '',
     name: '',
+    group: 'CONDITION',
     description: '',
     icon: 'flame.fill',
     imageUrl: '',
@@ -112,6 +129,7 @@ export default function DiscoveryCategoriesTab({
     setCategoryForm({
       id: '',
       name: '',
+      group: selectedGroup !== 'ALL' ? selectedGroup : 'CONDITION',
       description: '',
       icon: 'flame.fill',
       imageUrl: '',
@@ -120,15 +138,21 @@ export default function DiscoveryCategoriesTab({
       isFeatured: true,
       active: true
     });
+    setIsCustomGroup(false);
+    setCustomGroupInput('');
     setImageTab('PRESET');
     setShowCategoryModal(true);
   };
 
   const handleOpenEdit = (cat) => {
     setEditingCategory(cat);
+    const isStandard = ['CLINICAL', 'CONDITION', 'ORGAN', 'DEMOGRAPHIC', 'GOAL', 'CURATED'].includes(cat.group);
+    setIsCustomGroup(!isStandard && Boolean(cat.group));
+    setCustomGroupInput(!isStandard ? (cat.group || '') : '');
     setCategoryForm({
       id: cat.id || '',
       name: cat.name || '',
+      group: cat.group || 'CONDITION',
       description: cat.description || '',
       icon: cat.icon || 'flame.fill',
       imageUrl: cat.imageUrl || '',
@@ -161,7 +185,6 @@ export default function DiscoveryCategoriesTab({
     reader.onload = async () => {
       const base64Data = reader.result;
       
-      // Try uploading to backend /api/v1/catalog/categories/upload-image
       try {
         const res = await safeFetch(`${API_BASE}/api/v1/catalog/categories/upload-image`, {
           method: 'POST',
@@ -175,7 +198,6 @@ export default function DiscoveryCategoriesTab({
         if (res && res.imageUrl) {
           setCategoryForm(prev => ({ ...prev, imageUrl: res.imageUrl }));
         } else {
-          // Fallback to storing direct base64 data URL
           setCategoryForm(prev => ({ ...prev, imageUrl: base64Data }));
         }
       } catch (err) {
@@ -196,10 +218,12 @@ export default function DiscoveryCategoriesTab({
     }
 
     const catId = editingCategory?.id || categoryForm.id?.trim() || `CAT_${categoryForm.name.trim().toUpperCase().replace(/[^A-Z0-9]/g, '_')}`;
+    const effectiveGroup = isCustomGroup ? (customGroupInput.trim().toUpperCase() || 'CUSTOM') : categoryForm.group;
 
     const newCategory = {
       id: catId,
       name: categoryForm.name.trim(),
+      group: effectiveGroup,
       description: categoryForm.description.trim(),
       icon: categoryForm.icon || 'square.grid.2x2.fill',
       imageUrl: categoryForm.imageUrl?.trim() || '',
@@ -221,7 +245,6 @@ export default function DiscoveryCategoriesTab({
       updatedList.push(newCategory);
     }
 
-    // Sort by displayOrder
     updatedList.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
     setCategories(updatedList);
@@ -229,7 +252,6 @@ export default function DiscoveryCategoriesTab({
     setCatalog(updatedCatalog);
     saveCatalogState(updatedCatalog);
 
-    // Persist to backend server API
     try {
       await safeFetch(`${API_BASE}/api/v1/catalog/categories`, {
         method: 'POST',
@@ -262,7 +284,6 @@ export default function DiscoveryCategoriesTab({
     const updatedList = categories.filter(c => c.id !== cat.id);
     setCategories(updatedList);
 
-    // Clean up categoryIds from tests, profiles, packages
     const cleanItem = (item) => ({
       ...item,
       categoryIds: (item.categoryIds || []).filter(cid => cid !== cat.id)
@@ -335,7 +356,6 @@ export default function DiscoveryCategoriesTab({
     }
   };
 
-  // Counts of items linked to category
   const getLinkedCounts = (catId) => {
     const testsCount = (catalog.tests || []).filter(t => (t.categoryIds || []).includes(catId)).length;
     const profilesCount = (catalog.profiles || []).filter(p => (p.categoryIds || []).includes(catId)).length;
@@ -348,14 +368,18 @@ export default function DiscoveryCategoriesTab({
     };
   };
 
+  // Filter by both Search Query and Taxonomy Dimension Group
   const filteredCategories = categories.filter(c => {
     const q = searchTerm.toLowerCase();
-    return !q || c.name.toLowerCase().includes(q) || (c.description && c.description.toLowerCase().includes(q)) || c.id.toLowerCase().includes(q);
+    const matchesSearch = !q || c.name.toLowerCase().includes(q) || (c.description && c.description.toLowerCase().includes(q)) || c.id.toLowerCase().includes(q);
+    const matchesGroup = selectedGroup === 'ALL' || (c.group || 'CONDITION') === selectedGroup;
+    return matchesSearch && matchesGroup;
   });
 
-  // Current Icon Component for form preview
-  const currentPreset = CATEGORY_ICON_PRESETS.find(p => p.sfSymbol === categoryForm.icon) || CATEGORY_ICON_PRESETS[0];
-  const CurrentIconComp = currentPreset.icon;
+  const getGroupBadge = (groupKey) => {
+    const found = TAXONOMY_GROUPS.find(g => g.key === groupKey);
+    return found ? found.badge : (groupKey || 'CONCERNS');
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -376,14 +400,14 @@ export default function DiscoveryCategoriesTab({
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
             <Tag size={20} color="#006B70" />
             <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#0F172A', margin: 0 }}>
-              Discovery Categories, Icons & Banners
+              Discovery Categories & Taxonomy Hub
             </h3>
             <span style={{ fontSize: '0.72rem', backgroundColor: '#CCFBF1', color: '#006B70', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: '800' }}>
-              CUSTOMER APP BROWSE
+              6 TAXONOMY DIMENSIONS
             </span>
           </div>
           <p style={{ fontSize: '0.85rem', color: '#334155', margin: 0, lineHeight: 1.5 }}>
-            Categories provide flexible, high-converting customer browsing pathways on iOS and Web. Assign Single Tests, Diagnostic Profiles, and Health Packages to one or more categories without duplicating clinical data or altering pricing.
+            Organize catalog items across 6 complementary browsing pathways: <strong>Clinical Specialties</strong> (Lab disciplines), <strong>Health Concerns</strong> (Symptoms/conditions), <strong>Body Organs & Systems</strong>, <strong>Demographics</strong> (Age/gender), <strong>Health Goals</strong> (Preventive/Annual), and <strong>Curated Campaigns</strong>.
           </p>
         </div>
 
@@ -408,6 +432,52 @@ export default function DiscoveryCategoriesTab({
         </button>
       </div>
 
+      {/* 6-DIMENSION TAXONOMY PILLS BAR */}
+      <div style={{ display: 'flex', gap: '0.45rem', overflowX: 'auto', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.85rem', flexWrap: 'wrap' }}>
+        {TAXONOMY_GROUPS.map(grp => {
+          const isSel = selectedGroup === grp.key;
+          const GrpIcon = grp.icon;
+          const count = grp.key === 'ALL' 
+            ? categories.length 
+            : categories.filter(c => (c.group || 'CONDITION') === grp.key).length;
+
+          return (
+            <button
+              key={grp.key}
+              onClick={() => setSelectedGroup(grp.key)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.55rem 0.95rem',
+                borderRadius: '10px',
+                border: isSel ? 'none' : '1px solid #CBD5E1',
+                backgroundColor: isSel ? '#006B70' : '#FFFFFF',
+                color: isSel ? '#FFFFFF' : '#475569',
+                fontWeight: isSel ? '800' : '600',
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                boxShadow: isSel ? '0 4px 12px rgba(0, 107, 112, 0.2)' : 'none',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <GrpIcon size={14} color={isSel ? '#FDE68A' : '#64748B'} />
+              <span>{grp.label}</span>
+              <span style={{
+                backgroundColor: isSel ? 'rgba(255,255,255,0.25)' : '#F1F5F9',
+                color: isSel ? '#FFFFFF' : '#64748B',
+                fontSize: '0.72rem',
+                padding: '0.1rem 0.45rem',
+                borderRadius: '12px',
+                fontWeight: '800'
+              }}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Search & Stats Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ position: 'relative', width: '340px' }}>
@@ -430,7 +500,7 @@ export default function DiscoveryCategoriesTab({
         </div>
 
         <div style={{ fontSize: '0.82rem', color: '#64748B', fontWeight: '600' }}>
-          Showing <strong>{filteredCategories.length}</strong> of <strong>{categories.length}</strong> Categories
+          Showing <strong>{filteredCategories.length}</strong> of <strong>{categories.length}</strong> Categories {selectedGroup !== 'ALL' && `in ${selectedGroup}`}
         </div>
       </div>
 
@@ -442,6 +512,7 @@ export default function DiscoveryCategoriesTab({
           const IconComponent = preset.icon;
           const themeColor = cat.color || preset.defaultColor || '#006B70';
           const hasImage = Boolean(cat.imageUrl);
+          const groupBadge = getGroupBadge(cat.group);
 
           return (
             <div
@@ -494,13 +565,16 @@ export default function DiscoveryCategoriesTab({
                 )}
 
                 {/* Badges Overlay */}
-                <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '0.35rem' }}>
+                <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '0.35rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <span style={{ backgroundColor: '#F0FDFA', color: '#006B70', fontSize: '0.66rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid #CCFBF1' }}>
+                    {groupBadge}
+                  </span>
                   {cat.isFeatured && (
-                    <span style={{ backgroundColor: '#FEF3C7', color: '#B45309', fontSize: '0.68rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                      <Sparkles size={11} /> FEATURED
+                    <span style={{ backgroundColor: '#FEF3C7', color: '#B45309', fontSize: '0.66rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1px solid #FDE68A', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <Sparkles size={10} /> FEATURED
                     </span>
                   )}
-                  <span style={{ backgroundColor: cat.active ? '#DCFCE7' : '#F1F5F9', color: cat.active ? '#15803D' : '#64748B', fontSize: '0.68rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: '6px', border: `1px solid ${cat.active ? '#BBF7D0' : '#E2E8F0'}` }}>
+                  <span style={{ backgroundColor: cat.active ? '#DCFCE7' : '#F1F5F9', color: cat.active ? '#15803D' : '#64748B', fontSize: '0.66rem', fontWeight: '800', padding: '0.2rem 0.5rem', borderRadius: '6px', border: `1px solid ${cat.active ? '#BBF7D0' : '#E2E8F0'}` }}>
                     {cat.active ? 'ACTIVE' : 'DRAFT'}
                   </span>
                 </div>
@@ -619,7 +693,7 @@ export default function DiscoveryCategoriesTab({
         })}
       </div>
 
-      {/* MODAL 1: CREATE / EDIT CATEGORY (ICON PRESETS + IMAGE UPLOAD + THEME COLOR) */}
+      {/* MODAL 1: CREATE / EDIT CATEGORY (TAXONOMY GROUP + ICONS + IMAGE UPLOAD + COLORS) */}
       {showCategoryModal && (
         <div style={{
           position: 'fixed',
@@ -646,10 +720,10 @@ export default function DiscoveryCategoriesTab({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid #E2E8F0', paddingBottom: '0.75rem' }}>
               <div>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#0F172A', margin: 0 }}>
-                  {editingCategory ? `Edit Category: ${editingCategory.name}` : 'Create New Discovery Category'}
+                  {editingCategory ? `Edit Category: ${editingCategory.name}` : 'Create Discovery Category'}
                 </h3>
                 <p style={{ fontSize: '0.78rem', color: '#64748B', margin: '0.2rem 0 0 0' }}>
-                  Configure visual icon, banner image, color theme, and display hierarchy for customer apps.
+                  Assign to a taxonomy dimension, visual icon, card banner, and hierarchy for customer mobile discovery.
                 </p>
               </div>
               <button
@@ -662,6 +736,64 @@ export default function DiscoveryCategoriesTab({
 
             <form onSubmit={handleSaveCategory} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               
+              {/* Taxonomy Dimension / Group Dropdown */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: '#334155', marginBottom: '0.35rem' }}>
+                  Taxonomy Dimension / Group *
+                </label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <select
+                    value={isCustomGroup ? '__CUSTOM__' : categoryForm.group}
+                    onChange={(e) => {
+                      if (e.target.value === '__CUSTOM__') {
+                        setIsCustomGroup(true);
+                      } else {
+                        setIsCustomGroup(false);
+                        setCategoryForm({ ...categoryForm, group: e.target.value });
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: '10px',
+                      border: '1px solid #CBD5E1',
+                      fontSize: '0.88rem',
+                      fontWeight: '700',
+                      backgroundColor: '#FFFFFF',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="CLINICAL">🔬 Clinical Specialties (Hematology, Biochemistry, Immunology, Microbiology, Molecular)</option>
+                    <option value="CONDITION">🩺 Health Concerns & Conditions (Diabetes, Heart, Fever, Thyroid, Kidney, Liver, Allergy)</option>
+                    <option value="ORGAN">🫀 Body Organs & Systems (Heart, Liver, Kidney, Lungs, Thyroid, Bone, Digestive, Full Body)</option>
+                    <option value="DEMOGRAPHIC">👥 Demographic Collections (Children, Adults, Seniors, Women, Men, Pregnancy)</option>
+                    <option value="GOAL">🎯 Health Goals (Preventive, Annual Checkups, Routine Monitoring, Fitness, Rx)</option>
+                    <option value="CURATED">⭐ Curated Collections & Campaigns (Popular Tests, Bestsellers, Affordable, Seasonal)</option>
+                    <option value="__CUSTOM__">➕ + Custom Taxonomy Dimension...</option>
+                  </select>
+                </div>
+
+                {isCustomGroup && (
+                  <input
+                    type="text"
+                    required
+                    placeholder="Enter custom dimension name (e.g. OCCUPATIONAL_HEALTH, GENOMICS)..."
+                    value={customGroupInput}
+                    onChange={(e) => setCustomGroupInput(e.target.value)}
+                    style={{
+                      marginTop: '0.5rem',
+                      width: '100%',
+                      padding: '0.6rem 0.85rem',
+                      borderRadius: '8px',
+                      border: '1.5px solid #006B70',
+                      fontSize: '0.85rem',
+                      fontWeight: '700',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                )}
+              </div>
+
               {/* Basic Fields */}
               <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
                 <div>
@@ -671,7 +803,7 @@ export default function DiscoveryCategoriesTab({
                   <input
                     type="text"
                     required
-                    placeholder="e.g. Heart Health, Diabetes Care, Women's Health"
+                    placeholder="e.g. Heart Health, Diabetes Care, Hematology"
                     value={categoryForm.name}
                     onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
                     style={{
