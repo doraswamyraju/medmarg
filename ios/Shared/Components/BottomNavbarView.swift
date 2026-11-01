@@ -26,8 +26,8 @@ struct BottomNavbarView: View {
             agentGlassTab(index: 0, icon: "house.fill", title: "Home")
             agentGlassTab(index: 7, icon: "list.clipboard.fill", title: "Orders")
             agentGlassTab(index: 1, icon: "cube.box.fill", title: "Inventory")
-            agentGlassTab(index: 3, icon: "indianrupeesign.circle.fill", title: "Payments")
-            agentGlassTab(index: 4, icon: "chart.bar.xaxis", title: "Reports")
+            agentGlassTab(index: 3, icon: "indianrupeesign.circle.fill", title: userRole == .freelanceAgent ? "Wallet" : "Payments")
+            agentGlassTab(index: 4, icon: userRole == .freelanceAgent ? "person.crop.circle" : "chart.bar.xaxis", title: userRole == .freelanceAgent ? "Profile" : "Reports")
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)

@@ -239,7 +239,7 @@ struct ContentView: View {
                             case .collectionAgent:
                                 AgentDashboardView(user: user, onLogout: logout, selectedTab: $selectedTab, showSidebar: $showSidebar)
                             case .freelanceAgent:
-                                AgentDashboardView(user: user, onLogout: logout, selectedTab: $selectedTab, showSidebar: $showSidebar)
+                                FreelanceDashboardView(user: user, onLogout: logout, selectedTab: $selectedTab, showSidebar: $showSidebar)
                             }
                         }
 

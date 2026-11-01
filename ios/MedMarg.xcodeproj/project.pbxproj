@@ -21,6 +21,18 @@
 		B2000062 /* AgentInventoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000062 /* AgentInventoryView.swift */; };
 		B2000063 /* AgentProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000063 /* AgentProfileView.swift */; };
 		B2000064 /* AgentChangePasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000064 /* AgentChangePasswordView.swift */; };
+		B3000001 /* FreelanceDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000001 /* FreelanceDashboardView.swift */; };
+		B3000002 /* FreelanceWalletPayoutSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000002 /* FreelanceWalletPayoutSheet.swift */; };
+		B3000003 /* FreelanceAssessAssignKitModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000003 /* FreelanceAssessAssignKitModal.swift */; };
+		B3000004 /* FreelanceBroadcastCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000004 /* FreelanceBroadcastCard.swift */; };
+		B3000005 /* FreelanceMetricCountersRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000005 /* FreelanceMetricCountersRow.swift */; };
+		B3000006 /* FreelanceShortcutsGrid.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000006 /* FreelanceShortcutsGrid.swift */; };
+		B3000007 /* FreelanceProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000007 /* FreelanceProfileView.swift */; };
+		B3000008 /* FreelanceWalletPayoutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000008 /* FreelanceWalletPayoutView.swift */; };
+		B3000009 /* FreelanceOrdersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000009 /* FreelanceOrdersView.swift */; };
+		B3000010 /* FreelanceInventoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000010 /* FreelanceInventoryView.swift */; };
+		B3000011 /* FreelanceHomeDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000011 /* FreelanceHomeDashboardView.swift */; };
+		B3000012 /* FreelanceBroadcastJobsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000012 /* FreelanceBroadcastJobsView.swift */; };
 		B2000041 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000041 /* LocationManager.swift */; };
 		B2000042 /* AgentTopbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000042 /* AgentTopbarView.swift */; };
 		B2000043 /* AgentMetricCountersRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000043 /* AgentMetricCountersRow.swift */; };
@@ -92,6 +104,18 @@
 		F2000062 /* AgentInventoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/Views/AgentInventoryView.swift"; sourceTree = "<group>"; };
 		F2000063 /* AgentProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/Views/AgentProfileView.swift"; sourceTree = "<group>"; };
 		F2000064 /* AgentChangePasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/Views/AgentChangePasswordView.swift"; sourceTree = "<group>"; };
+		F3000001 /* FreelanceDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/FreelanceDashboardView.swift"; sourceTree = "<group>"; };
+		F3000002 /* FreelanceWalletPayoutSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/Sheets/FreelanceWalletPayoutSheet.swift"; sourceTree = "<group>"; };
+		F3000003 /* FreelanceAssessAssignKitModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/Sheets/FreelanceAssessAssignKitModal.swift"; sourceTree = "<group>"; };
+		F3000004 /* FreelanceBroadcastCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/Components/FreelanceBroadcastCard.swift"; sourceTree = "<group>"; };
+		F3000005 /* FreelanceMetricCountersRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/Components/FreelanceMetricCountersRow.swift"; sourceTree = "<group>"; };
+		F3000006 /* FreelanceShortcutsGrid.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/Components/FreelanceShortcutsGrid.swift"; sourceTree = "<group>"; };
+		F3000007 /* FreelanceProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/Views/FreelanceProfileView.swift"; sourceTree = "<group>"; };
+		F3000008 /* FreelanceWalletPayoutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/Views/FreelanceWalletPayoutView.swift"; sourceTree = "<group>"; };
+		F3000009 /* FreelanceOrdersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/Views/FreelanceOrdersView.swift"; sourceTree = "<group>"; };
+		F3000010 /* FreelanceInventoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/Views/FreelanceInventoryView.swift"; sourceTree = "<group>"; };
+		F3000011 /* FreelanceHomeDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/Views/FreelanceHomeDashboardView.swift"; sourceTree = "<group>"; };
+		F3000012 /* FreelanceBroadcastJobsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/Views/FreelanceBroadcastJobsView.swift"; sourceTree = "<group>"; };
 		F2000041 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/LocationManager.swift"; sourceTree = "<group>"; };
 		F2000042 /* AgentTopbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/Components/AgentTopbarView.swift"; sourceTree = "<group>"; };
 		F2000043 /* AgentMetricCountersRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/Components/AgentMetricCountersRow.swift"; sourceTree = "<group>"; };
@@ -225,6 +249,18 @@
 				F2000062 /* AgentInventoryView.swift */,
 				F2000063 /* AgentProfileView.swift */,
 				F2000064 /* AgentChangePasswordView.swift */,
+				F3000001 /* FreelanceDashboardView.swift */,
+				F3000002 /* FreelanceWalletPayoutSheet.swift */,
+				F3000003 /* FreelanceAssessAssignKitModal.swift */,
+				F3000004 /* FreelanceBroadcastCard.swift */,
+				F3000005 /* FreelanceMetricCountersRow.swift */,
+				F3000006 /* FreelanceShortcutsGrid.swift */,
+				F3000007 /* FreelanceProfileView.swift */,
+				F3000008 /* FreelanceWalletPayoutView.swift */,
+				F3000009 /* FreelanceOrdersView.swift */,
+				F3000010 /* FreelanceInventoryView.swift */,
+				F3000011 /* FreelanceHomeDashboardView.swift */,
+				F3000012 /* FreelanceBroadcastJobsView.swift */,
 				F2000037 /* GoogleSignInManager.swift */,
 				F2000038 /* NotificationManager.swift */,
 				F2000039 /* CareSeekerOrdersView.swift */,
@@ -368,6 +404,18 @@
 				B2000062 /* AgentInventoryView.swift in Sources */,
 				B2000063 /* AgentProfileView.swift in Sources */,
 				B2000064 /* AgentChangePasswordView.swift in Sources */,
+				B3000001 /* FreelanceDashboardView.swift in Sources */,
+				B3000002 /* FreelanceWalletPayoutSheet.swift in Sources */,
+				B3000003 /* FreelanceAssessAssignKitModal.swift in Sources */,
+				B3000004 /* FreelanceBroadcastCard.swift in Sources */,
+				B3000005 /* FreelanceMetricCountersRow.swift in Sources */,
+				B3000006 /* FreelanceShortcutsGrid.swift in Sources */,
+				B3000007 /* FreelanceProfileView.swift in Sources */,
+				B3000008 /* FreelanceWalletPayoutView.swift in Sources */,
+				B3000009 /* FreelanceOrdersView.swift in Sources */,
+				B3000010 /* FreelanceInventoryView.swift in Sources */,
+				B3000011 /* FreelanceHomeDashboardView.swift in Sources */,
+				B3000012 /* FreelanceBroadcastJobsView.swift in Sources */,
 				B2000037 /* GoogleSignInManager.swift in Sources */,
 				B2000038 /* NotificationManager.swift in Sources */,
 				B2000039 /* CareSeekerOrdersView.swift in Sources */,

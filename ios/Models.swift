@@ -15,8 +15,12 @@ struct MedMargTheme {
     static let cyanBlue = Color(red: 0.02, green: 0.71, blue: 0.83)         // #06B6D4
     static let purpleClinic = Color(red: 0.55, green: 0.36, blue: 0.96)     // #8B5CF6
     static let slate900 = Color(red: 0.06, green: 0.09, blue: 0.16)         // #0F172A
+    static let slate800 = Color(red: 0.12, green: 0.16, blue: 0.23)         // #1E293B
     static let slate700 = Color(red: 0.20, green: 0.25, blue: 0.33)         // #334155
+    static let slate600 = Color(red: 0.28, green: 0.34, blue: 0.43)         // #475569
     static let slate500 = Color(red: 0.39, green: 0.45, blue: 0.55)         // #64748B
+    static let slate400 = Color(red: 0.58, green: 0.64, blue: 0.72)         // #94A3B8
+    static let slate300 = Color(red: 0.80, green: 0.84, blue: 0.88)         // #CBD5E1
     static let slate200 = Color(red: 0.89, green: 0.91, blue: 0.94)         // #E2E8F0
     static let slate100 = Color(red: 0.95, green: 0.96, blue: 0.98)         // #F1F5F9
     static let slate50 = Color(red: 0.97, green: 0.98, blue: 0.99)          // #F8FAFC

@@ -186,7 +186,7 @@ router.post('/order/assign-kit', (req, res) => {
 });
 
 // BROADCAST JOBS FOR FREELANCERS
-router.get('/broadcast-jobs', (req, res) => {
+const getBroadcastJobsHandler = (req, res) => {
     const jobs = [
         {
             id: 'BJ-901',
@@ -218,9 +218,12 @@ router.get('/broadcast-jobs', (req, res) => {
         }
     ];
     res.json({ success: true, jobs });
-});
+};
 
-router.post('/broadcast-jobs/claim', (req, res) => {
+router.get('/broadcast-jobs', getBroadcastJobsHandler);
+router.get('/jobs/broadcast', getBroadcastJobsHandler);
+
+const claimBroadcastJobHandler = (req, res) => {
     const { jobId, agentName } = req.body;
     const newOrder = {
         id: `MM-${Math.floor(8000 + Math.random() * 1000)}`,
@@ -236,6 +239,12 @@ router.post('/broadcast-jobs/claim', (req, res) => {
     dbStore.orders.unshift(newOrder);
     saveDbStore();
     res.json({ success: true, message: 'Job successfully claimed!', order: newOrder });
+};
+
+router.post('/broadcast-jobs/claim', claimBroadcastJobHandler);
+router.post('/jobs/:id/claim', (req, res) => {
+    req.body.jobId = req.params.id;
+    claimBroadcastJobHandler(req, res);
 });
 
 // AGENT CONSUMABLES INVENTORY (LIVE SYNCED WITH ADMIN & STORE IN-CHARGE)
@@ -621,9 +630,12 @@ router.get('/payments/:agentId', (req, res) => {
     });
 });
 
-// AGENT WALLET & EARNINGS
+// AGENT & FREELANCER WALLET & EARNINGS
 router.get('/wallet', (req, res) => {
-    const wallet = {
+    const agentId = (req.query.agentId || req.query.freelancerId || '').trim();
+    const fl = (dbStore.freelancers || []).find(f => f.id === agentId || f.phone === agentId || f.email === agentId);
+
+    let wallet = {
         totalLifetimeEarnings: 18450,
         todayEarnings: 2450,
         availableCashoutBalance: 4850,
@@ -631,25 +643,41 @@ router.get('/wallet', (req, res) => {
         targetTrips: 12,
         distancePayout: 650,
         tipsBonus: 300,
+        inventoryCredits: 2000,
         recentPayouts: [
             { id: 'PO-108', date: 'Yesterday 06:30 PM', amount: 3200, method: 'UPI (9876543210@upi)', status: 'SETTLED' },
             { id: 'PO-107', date: '04 Oct 2026', amount: 4500, method: 'Bank Transfer (HDFC ***412)', status: 'SETTLED' }
         ]
     };
+
+    if (fl) {
+        wallet.inventoryCredits = fl.walletBalance || 2000;
+        if (fl.payoutPending !== undefined && fl.payoutPending > 0) {
+            wallet.availableCashoutBalance = fl.payoutPending;
+        }
+    }
     res.json({ success: true, wallet });
 });
 
 router.post('/wallet/payout', (req, res) => {
-    const { amount, method, vpaOrAccount } = req.body;
+    const { amount, method, vpaOrAccount, agentId } = req.body;
+    const reqAmount = Number(amount) || 0;
     const payoutReceipt = {
         id: `PO-${Date.now()}`,
-        amount: Number(amount) || 0,
+        amount: reqAmount,
         method: method || 'UPI',
         vpaOrAccount: vpaOrAccount || 'upi@bank',
         status: 'PROCESSING',
         requestedAt: new Date().toISOString(),
         expectedCredit: 'Within 15-30 Minutes'
     };
+    if (agentId) {
+        const fl = (dbStore.freelancers || []).find(f => f.id === agentId);
+        if (fl && fl.payoutPending) {
+            fl.payoutPending = Math.max(0, fl.payoutPending - reqAmount);
+            saveDbStore();
+        }
+    }
     res.json({ success: true, message: 'Payout request received and queued for dispatch.', payout: payoutReceipt });
 });
 
