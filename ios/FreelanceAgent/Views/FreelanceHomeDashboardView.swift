@@ -15,13 +15,14 @@ struct FreelanceHomeDashboardView: View {
     // Live Server States
     @State private var rosterOrders: [AgentPickupOrder] = []
     @State private var broadcastGigs: [FreelanceBroadcastJobItem] = []
-    @State private var todayEarnings: Int = 2450
-    @State private var completedCount: Int = 1
+    @State private var todayEarnings: Int = 0
+    @State private var completedCount: Int = 0
     @State private var partnerRating: String = "5.0 ★"
     @State private var isLoading: Bool = true
     @State private var isRefreshing: Bool = false
     @State private var isOnDuty: Bool = true
     @State private var showNotificationCenter: Bool = false
+    @State private var unreadNotificationCount: Int = 0
     @State private var actionBanner: String? = nil
 
     // Sheets & Workflow Modals
@@ -64,7 +65,7 @@ struct FreelanceHomeDashboardView: View {
                 agentId: effectiveAgentId,
                 isOnDuty: $isOnDuty,
                 locationManager: AgentLocationManager.shared,
-                unreadNotificationCount: 0,
+                unreadNotificationCount: unreadNotificationCount,
                 onToggleDuty: { _ in },
                 onLogoTap: { selectedTab = 0 },
                 onSidebarTap: { withAnimation { showSidebar.toggle() } },
@@ -241,6 +242,9 @@ struct FreelanceHomeDashboardView: View {
                     Task { await fetchAllData() }
                 }
             )
+        }
+        .sheet(isPresented: $showNotificationCenter) {
+            NotificationCenterSheet(isPresented: $showNotificationCenter)
         }
     }
 
@@ -498,8 +502,8 @@ struct FreelanceHomeDashboardView: View {
     }
 
     private func fetchAllData() async {
-        // Fetch roster orders
-        if let url = URL(string: "http://localhost:8080/api/v1/agent/roster?agentId=\(effectiveAgentId)") {
+        // 1. Fetch roster orders
+        if let url = URL(string: "https://medmarg.com/api/v1/agent/roster?agentId=\(effectiveAgentId)") {
             if let (data, _) = try? await URLSession.shared.data(from: url),
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let arr = (json["roster"] as? [[String: Any]]) ?? (json["orders"] as? [[String: Any]]) {
@@ -551,8 +555,8 @@ struct FreelanceHomeDashboardView: View {
             }
         }
 
-        // Fetch broadcast jobs
-        if let url = URL(string: "http://localhost:8080/api/v1/agent/broadcast-jobs") {
+        // 2. Fetch broadcast jobs (100% Live)
+        if let url = URL(string: "https://medmarg.com/api/v1/agent/broadcast-jobs") {
             if let (data, _) = try? await URLSession.shared.data(from: url),
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let arr = json["jobs"] as? [[String: Any]] {
@@ -579,17 +583,29 @@ struct FreelanceHomeDashboardView: View {
             }
         }
 
-        // Fetch wallet stats
-        if let url = URL(string: "http://localhost:8080/api/v1/agent/wallet?agentId=\(effectiveAgentId)") {
+        // 3. Fetch wallet stats (100% Live)
+        if let url = URL(string: "https://medmarg.com/api/v1/agent/wallet?agentId=\(effectiveAgentId)") {
             if let (data, _) = try? await URLSession.shared.data(from: url),
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let w = json["wallet"] as? [String: Any] {
-                let earned = w["todayEarnings"] as? Int ?? 2450
-                let trips = w["completedTripsToday"] as? Int ?? 1
+                let earned = w["todayEarnings"] as? Int ?? 0
+                let trips = w["completedTripsToday"] as? Int ?? 0
                 await MainActor.run {
                     self.todayEarnings = earned
                     self.completedCount = trips
                     self.isLoading = false
+                }
+            }
+        }
+
+        // 4. Fetch unread notifications
+        if let notifUrl = URL(string: "https://medmarg.com/api/v1/notifications/user-stream?userId=\(effectiveAgentId)") {
+            if let (notifData, _) = try? await URLSession.shared.data(from: notifUrl),
+               let notifJson = try? JSONSerialization.jsonObject(with: notifData) as? [String: Any],
+               let notifs = notifJson["notifications"] as? [[String: Any]] {
+                let unread = notifs.filter { ($0["read"] as? Bool) != true && ($0["isRead"] as? Bool) != true }.count
+                await MainActor.run {
+                    self.unreadNotificationCount = unread
                 }
             }
         }

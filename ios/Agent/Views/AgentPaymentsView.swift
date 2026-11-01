@@ -36,6 +36,8 @@ struct AgentPaymentsView: View {
     @State private var showDateRangeMenu: Bool = false
     @State private var selectedOrderDetail: AgentPickupOrder? = nil
     @State private var showDownloadToast: Bool = false
+    @State private var showNotificationCenter: Bool = false
+    @State private var unreadNotificationCount: Int = 0
 
     private var effectiveAgentId: String {
         user.username.isEmpty ? (user.id.isEmpty ? "AG-01" : user.id) : user.username
@@ -118,10 +120,11 @@ struct AgentPaymentsView: View {
                 agentId: effectiveAgentId,
                 isOnDuty: .constant(true),
                 locationManager: AgentLocationManager.shared,
+                unreadNotificationCount: unreadNotificationCount,
                 onToggleDuty: { _ in },
                 onLogoTap: { selectedTab = 0 },
                 onSidebarTap: { withAnimation { showSidebar.toggle() } },
-                onNotificationTap: { },
+                onNotificationTap: { showNotificationCenter = true },
                 onProfileTap: { selectedTab = 4 },
                 onLogoutTap: { }
             )
@@ -185,6 +188,9 @@ struct AgentPaymentsView: View {
                     Task { await fetchLivePaymentsData() }
                 }
             )
+        }
+        .sheet(isPresented: $showNotificationCenter) {
+            NotificationCenterSheet(isPresented: $showNotificationCenter)
         }
         .overlay(alignment: .top) {
             if showDownloadToast {
@@ -714,6 +720,18 @@ struct AgentPaymentsView: View {
             }
         } catch {
             await MainActor.run { self.isLoading = false }
+        }
+
+        // Fetch unread notifications
+        if let notifUrl = URL(string: "https://medmarg.com/api/v1/notifications/user-stream?userId=\(effectiveAgentId)") {
+            if let (notifData, _) = try? await URLSession.shared.data(from: notifUrl),
+               let notifJson = try? JSONSerialization.jsonObject(with: notifData) as? [String: Any],
+               let notifs = notifJson["notifications"] as? [[String: Any]] {
+                let unread = notifs.filter { ($0["read"] as? Bool) != true && ($0["isRead"] as? Bool) != true }.count
+                await MainActor.run {
+                    self.unreadNotificationCount = unread
+                }
+            }
         }
     }
 

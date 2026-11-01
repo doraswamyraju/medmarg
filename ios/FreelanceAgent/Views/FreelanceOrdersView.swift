@@ -26,6 +26,8 @@ struct FreelanceOrdersView: View {
     @State private var activeDoorstepQrOrder: AgentPickupOrder? = nil
     @State private var showLabHandoverSheet: Bool = false
     @State private var showBroadcastGigsSheet: Bool = false
+    @State private var showNotificationCenter: Bool = false
+    @State private var unreadNotificationCount: Int = 0
     @State private var actionBanner: String? = nil
 
     private var effectiveAgentId: String {
@@ -83,11 +85,11 @@ struct FreelanceOrdersView: View {
                 agentId: effectiveAgentId,
                 isOnDuty: .constant(true),
                 locationManager: AgentLocationManager.shared,
-                unreadNotificationCount: 0,
+                unreadNotificationCount: unreadNotificationCount,
                 onToggleDuty: { _ in },
                 onLogoTap: { selectedTab = 0 },
                 onSidebarTap: { withAnimation { showSidebar.toggle() } },
-                onNotificationTap: { },
+                onNotificationTap: { showNotificationCenter = true },
                 onProfileTap: { selectedTab = 4 },
                 onLogoutTap: { }
             )
@@ -209,6 +211,9 @@ struct FreelanceOrdersView: View {
                     Task { await fetchLiveRoster() }
                 }
             )
+        }
+        .sheet(isPresented: $showNotificationCenter) {
+            NotificationCenterSheet(isPresented: $showNotificationCenter)
         }
     }
 
@@ -559,6 +564,18 @@ struct FreelanceOrdersView: View {
             }
         } catch {
             await MainActor.run { self.isLoading = false }
+        }
+
+        // Fetch unread notifications
+        if let notifUrl = URL(string: "https://medmarg.com/api/v1/notifications/user-stream?userId=\(effectiveAgentId)") {
+            if let (notifData, _) = try? await URLSession.shared.data(from: notifUrl),
+               let notifJson = try? JSONSerialization.jsonObject(with: notifData) as? [String: Any],
+               let notifs = notifJson["notifications"] as? [[String: Any]] {
+                let unread = notifs.filter { ($0["read"] as? Bool) != true && ($0["isRead"] as? Bool) != true }.count
+                await MainActor.run {
+                    self.unreadNotificationCount = unread
+                }
+            }
         }
     }
 }

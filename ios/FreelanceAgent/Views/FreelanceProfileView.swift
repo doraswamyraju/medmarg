@@ -25,6 +25,10 @@ struct FreelanceProfileView: View {
     @State private var kycStatus: String = "VERIFIED"
     @State private var assignedZone: String = "Tirupati District (Open Broadcast)"
     @State private var bankAccount: String = "HDFC Bank (A/C: ****4321)"
+    @State private var bankName: String = "HDFC Bank"
+    @State private var accountNumber: String = "50100492814321"
+    @State private var ifscCode: String = "HDFC0001824"
+    @State private var accountHolderName: String = "Doraswamy Raju"
     @State private var upiVpa: String = "9876543210@upi"
     @State private var avatarUrl: String = ""
 
@@ -34,6 +38,9 @@ struct FreelanceProfileView: View {
     @State private var selectedUiImage: UIImage? = nil
     @State private var isUploadingPhoto: Bool = false
     @State private var showChangePassword: Bool = false
+    @State private var showEditPayoutSheet: Bool = false
+    @State private var showNotificationCenter: Bool = false
+    @State private var unreadNotificationCount: Int = 0
     @State private var showCopiedToast: Bool = false
     @State private var actionBanner: String? = nil
 
@@ -50,11 +57,11 @@ struct FreelanceProfileView: View {
                     agentId: effectiveAgentId,
                     isOnDuty: .constant(true),
                     locationManager: AgentLocationManager.shared,
-                    unreadNotificationCount: 0,
+                    unreadNotificationCount: unreadNotificationCount,
                     onToggleDuty: { _ in },
                     onLogoTap: { selectedTab = 0 },
                     onSidebarTap: { withAnimation { showSidebar.toggle() } },
-                    onNotificationTap: { },
+                    onNotificationTap: { showNotificationCenter = true },
                     onProfileTap: { },
                     onLogoutTap: onLogout
                 )
@@ -114,6 +121,28 @@ struct FreelanceProfileView: View {
             }
             .sheet(isPresented: $showChangePassword) {
                 AgentChangePasswordView(user: user)
+            }
+            .sheet(isPresented: $showEditPayoutSheet) {
+                EditPayoutDetailsSheet(
+                    agentId: effectiveAgentId,
+                    currentUpi: upiVpa,
+                    currentBankName: bankName,
+                    currentAccountNo: accountNumber,
+                    currentIfsc: ifscCode,
+                    currentHolderName: accountHolderName,
+                    onDetailsUpdated: { newUpi, newBank, newAcc, newIfsc, newHolder in
+                        self.upiVpa = newUpi
+                        self.bankName = newBank
+                        self.accountNumber = newAcc
+                        self.ifscCode = newIfsc
+                        self.accountHolderName = newHolder
+                        self.bankAccount = "\(newBank) • **** \(newAcc.suffix(4))"
+                        self.actionBanner = "Payout details updated successfully!"
+                    }
+                )
+            }
+            .sheet(isPresented: $showNotificationCenter) {
+                NotificationCenterSheet(isPresented: $showNotificationCenter)
             }
         }
     }
@@ -332,9 +361,20 @@ struct FreelanceProfileView: View {
     // ==========================================
     private var payoutAccountsCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("SETTLEMENT & PAYOUT SETTINGS")
-                .font(.system(size: 11, weight: .black))
-                .foregroundColor(MedMargTheme.slate500)
+            HStack {
+                Text("SETTLEMENT & PAYOUT SETTINGS")
+                    .font(.system(size: 11, weight: .black))
+                    .foregroundColor(MedMargTheme.slate500)
+                Spacer()
+                Button(action: { showEditPayoutSheet = true }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "pencil")
+                        Text("Edit Details")
+                    }
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(MedMargTheme.primaryTeal)
+                }
+            }
 
             HStack(spacing: 12) {
                 Image(systemName: "indianrupeesign.circle.fill")
@@ -453,13 +493,29 @@ struct FreelanceProfileView: View {
                     self.email = p["email"] as? String ?? user.email
                     self.phleboId = p["phleboId"] as? String ?? effectiveAgentId
                     self.rating = p["rating"] as? Double ?? 5.0
-                    self.totalCollections = p["totalCollections"] as? Int ?? 128
+                    self.totalCollections = p["totalCollections"] as? Int ?? 0
                     self.avatarUrl = p["avatarUrl"] as? String ?? ""
+                    if let bankAcc = p["bankAccount"] as? String { self.bankAccount = bankAcc }
+                    if let bName = p["bankName"] as? String { self.bankName = bName }
+                    if let accNo = p["accountNumber"] as? String { self.accountNumber = accNo }
+                    if let ifsc = p["ifscCode"] as? String { self.ifscCode = ifsc }
+                    if let holder = p["accountHolderName"] as? String { self.accountHolderName = holder }
+                    if let upi = p["upiVpa"] as? String ?? p["upiId"] as? String { self.upiVpa = upi }
                     self.isLoading = false
                 }
             }
         } catch {
             await MainActor.run { self.isLoading = false }
+        }
+
+        // Fetch unread notifications count
+        if let notifUrl = URL(string: "https://medmarg.com/api/v1/notifications/user-stream?userId=\(effectiveAgentId)") {
+            if let (notifData, _) = try? await URLSession.shared.data(from: notifUrl),
+               let notifJson = try? JSONSerialization.jsonObject(with: notifData) as? [String: Any],
+               let items = notifJson["notifications"] as? [[String: Any]] {
+                let unread = items.filter { !($0["isRead"] as? Bool ?? false) }.count
+                await MainActor.run { self.unreadNotificationCount = unread }
+            }
         }
     }
 

@@ -12,16 +12,18 @@ struct FreelanceWalletPayoutView: View {
     @Binding var showSidebar: Bool
 
     // Live Wallet Data
-    @State private var availableCashout: Int = 4850
-    @State private var totalLifetimeEarnings: Int = 18450
-    @State private var todayEarnings: Int = 2450
-    @State private var completedTripsToday: Int = 6
-    @State private var distancePayout: Int = 650
-    @State private var tipsBonus: Int = 300
-    @State private var inventoryCredits: Int = 2000
+    @State private var availableCashout: Int = 0
+    @State private var totalLifetimeEarnings: Int = 0
+    @State private var todayEarnings: Int = 0
+    @State private var completedTripsToday: Int = 0
+    @State private var distancePayout: Int = 0
+    @State private var tipsBonus: Int = 0
+    @State private var inventoryCredits: Int = 0
     @State private var recentPayouts: [AgentWalletPayoutTxn] = []
     @State private var isLoading: Bool = true
     @State private var showPayoutSheet: Bool = false
+    @State private var showNotificationCenter: Bool = false
+    @State private var unreadNotificationCount: Int = 0
     @State private var showStatementToast: Bool = false
     @State private var toastMessage: String? = nil
 
@@ -37,11 +39,11 @@ struct FreelanceWalletPayoutView: View {
                 agentId: effectiveAgentId,
                 isOnDuty: .constant(true),
                 locationManager: AgentLocationManager.shared,
-                unreadNotificationCount: 0,
+                unreadNotificationCount: unreadNotificationCount,
                 onToggleDuty: { _ in },
                 onLogoTap: { selectedTab = 0 },
                 onSidebarTap: { withAnimation { showSidebar.toggle() } },
-                onNotificationTap: { },
+                onNotificationTap: { showNotificationCenter = true },
                 onProfileTap: { selectedTab = 4 },
                 onLogoutTap: { }
             )
@@ -121,6 +123,9 @@ struct FreelanceWalletPayoutView: View {
                     }
                 }
             )
+        }
+        .sheet(isPresented: $showNotificationCenter) {
+            NotificationCenterSheet(isPresented: $showNotificationCenter)
         }
     }
 
@@ -468,13 +473,13 @@ struct FreelanceWalletPayoutView: View {
             let (data, _) = try await URLSession.shared.data(from: url)
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let w = json["wallet"] as? [String: Any] {
-                let cashout = w["availableCashoutBalance"] as? Int ?? 4850
-                let total = w["totalLifetimeEarnings"] as? Int ?? 18450
-                let today = w["todayEarnings"] as? Int ?? 2450
-                let trips = w["completedTripsToday"] as? Int ?? 6
-                let dist = w["distancePayout"] as? Int ?? 650
-                let tips = w["tipsBonus"] as? Int ?? 300
-                let creds = w["inventoryCredits"] as? Int ?? 2000
+                let cashout = w["availableCashoutBalance"] as? Int ?? 0
+                let total = w["totalLifetimeEarnings"] as? Int ?? 0
+                let today = w["todayEarnings"] as? Int ?? 0
+                let trips = w["completedTripsToday"] as? Int ?? 0
+                let dist = w["distancePayout"] as? Int ?? 0
+                let tips = w["tipsBonus"] as? Int ?? 0
+                let creds = w["inventoryCredits"] as? Int ?? 0
 
                 var payouts: [AgentWalletPayoutTxn] = []
                 if let arr = w["recentPayouts"] as? [[String: Any]] {
@@ -503,6 +508,18 @@ struct FreelanceWalletPayoutView: View {
             }
         } catch {
             await MainActor.run { self.isLoading = false }
+        }
+
+        // Fetch unread notifications
+        if let notifUrl = URL(string: "https://medmarg.com/api/v1/notifications/user-stream?userId=\(effectiveAgentId)") {
+            if let (notifData, _) = try? await URLSession.shared.data(from: notifUrl),
+               let notifJson = try? JSONSerialization.jsonObject(with: notifData) as? [String: Any],
+               let notifs = notifJson["notifications"] as? [[String: Any]] {
+                let unread = notifs.filter { ($0["read"] as? Bool) != true && ($0["isRead"] as? Bool) != true }.count
+                await MainActor.run {
+                    self.unreadNotificationCount = unread
+                }
+            }
         }
     }
 }

@@ -33,6 +33,7 @@
 		B3000010 /* FreelanceInventoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000010 /* FreelanceInventoryView.swift */; };
 		B3000011 /* FreelanceHomeDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000011 /* FreelanceHomeDashboardView.swift */; };
 		B3000012 /* FreelanceBroadcastJobsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000012 /* FreelanceBroadcastJobsView.swift */; };
+		B3000013 /* EditPayoutDetailsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3000013 /* EditPayoutDetailsSheet.swift */; };
 		B2000041 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000041 /* LocationManager.swift */; };
 		B2000042 /* AgentTopbarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000042 /* AgentTopbarView.swift */; };
 		B2000043 /* AgentMetricCountersRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2000043 /* AgentMetricCountersRow.swift */; };
@@ -116,6 +117,7 @@
 		F3000010 /* FreelanceInventoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/Views/FreelanceInventoryView.swift"; sourceTree = "<group>"; };
 		F3000011 /* FreelanceHomeDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/Views/FreelanceHomeDashboardView.swift"; sourceTree = "<group>"; };
 		F3000012 /* FreelanceBroadcastJobsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/Views/FreelanceBroadcastJobsView.swift"; sourceTree = "<group>"; };
+		F3000013 /* EditPayoutDetailsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FreelanceAgent/Sheets/EditPayoutDetailsSheet.swift"; sourceTree = "<group>"; };
 		F2000041 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/LocationManager.swift"; sourceTree = "<group>"; };
 		F2000042 /* AgentTopbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/Components/AgentTopbarView.swift"; sourceTree = "<group>"; };
 		F2000043 /* AgentMetricCountersRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Agent/Components/AgentMetricCountersRow.swift"; sourceTree = "<group>"; };
@@ -261,6 +263,7 @@
 				F3000010 /* FreelanceInventoryView.swift */,
 				F3000011 /* FreelanceHomeDashboardView.swift */,
 				F3000012 /* FreelanceBroadcastJobsView.swift */,
+				F3000013 /* EditPayoutDetailsSheet.swift */,
 				F2000037 /* GoogleSignInManager.swift */,
 				F2000038 /* NotificationManager.swift */,
 				F2000039 /* CareSeekerOrdersView.swift */,
@@ -416,6 +419,7 @@
 				B3000010 /* FreelanceInventoryView.swift in Sources */,
 				B3000011 /* FreelanceHomeDashboardView.swift in Sources */,
 				B3000012 /* FreelanceBroadcastJobsView.swift in Sources */,
+				B3000013 /* EditPayoutDetailsSheet.swift in Sources */,
 				B2000037 /* GoogleSignInManager.swift in Sources */,
 				B2000038 /* NotificationManager.swift in Sources */,
 				B2000039 /* CareSeekerOrdersView.swift in Sources */,
