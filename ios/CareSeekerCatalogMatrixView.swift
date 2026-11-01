@@ -11,11 +11,12 @@ struct CareSeekerCatalogMatrixView: View {
     let onOpenDetail: (CatalogItem) -> Void
     let cartItemIds: Set<String>
 
-    // View Modes: "DISCOVERY" (Image 2 style) or "ALL_CATALOG" (Detailed Matrix)
+    // View Modes: "DISCOVERY" or "ALL_CATALOG" (Detailed Matrix)
     @State private var viewMode: String = "DISCOVERY" 
     @State private var searchQuery: String = ""
     @State private var catalogSubTab: String = "ALL" // ALL, PACKAGES, PROFILES, TESTS
     @State private var selectedCategoryId: String = "ALL"
+    @State private var selectedTaxonomyFilter: String = "ALL" // ALL, ORGAN, CONDITION, DEMOGRAPHIC, GOAL, CLINICAL, CURATED
     @State private var fastingFilter: String = "ALL" // ALL, YES, NO
     @State private var sampleFilter: String = "ALL"  // ALL, SERUM, EDTA, URINE, PLASMA
     @State private var showAllCategoriesSheet: String? = nil // nil or group filter
@@ -82,54 +83,79 @@ struct CareSeekerCatalogMatrixView: View {
             MedMargTheme.slate50
                 .ignoresSafeArea()
 
-            // Main Content Area
+            // Main Content Area (No duplicate topbar; ContentView already renders global TopbarView)
             VStack(spacing: 0) {
-                // Persistent Top App Bar
-                discoveryTopAppBar
-
                 if viewMode == "DISCOVERY" && searchQuery.isEmpty {
-                    // Modern Discovery View (Image 2 style)
+                    // Modern Multi-Category Discovery Portal
                     ScrollView(showsIndicators: false) {
-                        VStack(spacing: 20) {
+                        VStack(spacing: 22) {
                             
                             // 1. Header Title & Subtitle + View Switcher
                             discoveryHeaderTitleRow
                                 .padding(.horizontal, 16)
-                                .padding(.top, 14)
+                                .padding(.top, 12)
 
-                            // 2. Recently Searched / Seen Tests Bar
+                            // 2. Recently Searched / Viewed Biomarkers
                             recentlySearchedBar
                                 .padding(.horizontal, 16)
 
-                            // 3. 4 Quick Service Hub Cards
+                            // 3. Quick 4 Service Hub Cards
                             quickServiceHubCards
                                 .padding(.horizontal, 16)
 
-                            // 4. Test Categories Grid (Image 1 & 2)
-                            testCategoriesSection
+                            // 4. 6-Dimension Taxonomy Navigator Bar
+                            taxonomyDimensionPillsRow
                                 .padding(.horizontal, 16)
 
-                            // 5. Popular Health Packages Carousel
-                            popularPackagesCarouselSection
+                            // 5. Category 1: Body Organs & Systems (ORGAN)
+                            if selectedTaxonomyFilter == "ALL" || selectedTaxonomyFilter == "ORGAN" {
+                                bodyOrgansSection
+                                    .padding(.horizontal, 16)
+                            }
 
-                            // 6. Featured Biomarker Tests List
-                            featuredTestsSection
-                                .padding(.horizontal, 16)
+                            // 6. Category 2: Health Concerns & Conditions (CONDITION)
+                            if selectedTaxonomyFilter == "ALL" || selectedTaxonomyFilter == "CONDITION" {
+                                healthConcernsSection
+                                    .padding(.horizontal, 16)
+                            }
 
-                            // Padding for floating search bar and bottom navbar
+                            // 7. Category 3: Curated Popular Health Packages (CURATED)
+                            if selectedTaxonomyFilter == "ALL" || selectedTaxonomyFilter == "CURATED" {
+                                popularPackagesCarouselSection
+                            }
+
+                            // 8. Category 4: Demographic Collections (DEMOGRAPHIC)
+                            if selectedTaxonomyFilter == "ALL" || selectedTaxonomyFilter == "DEMOGRAPHIC" {
+                                demographicsSection
+                                    .padding(.horizontal, 16)
+                            }
+
+                            // 9. Category 5: Health Goals & Intent (GOAL)
+                            if selectedTaxonomyFilter == "ALL" || selectedTaxonomyFilter == "GOAL" {
+                                healthGoalsSection
+                                    .padding(.horizontal, 16)
+                            }
+
+                            // 10. Category 6: Clinical Specialties & Featured Biomarkers (CLINICAL)
+                            if selectedTaxonomyFilter == "ALL" || selectedTaxonomyFilter == "CLINICAL" {
+                                clinicalSpecialtiesAndFeaturedSection
+                                    .padding(.horizontal, 16)
+                            }
+
+                            // Safe spacing for bottom floating search bar and bottom navigation
                             Spacer().frame(height: 100)
                         }
                     }
                 } else {
-                    // Detailed Catalog Matrix View (100% Comprehensive)
+                    // Detailed Catalog Matrix View (100% Comprehensive with lab comparison)
                     catalogMatrixView
                 }
             }
 
-            // Floating Search Bar With Outer Glow (Fixed above bottom navbar)
+            // Floating Search Bar With Ambient Teal Outer Glow (Above bottom nav)
             floatingGlowSearchBar
                 .padding(.horizontal, 16)
-                .padding(.bottom, 12)
+                .padding(.bottom, 10)
         }
         .sheet(isPresented: Binding(
             get: { showAllCategoriesSheet != nil },
@@ -145,87 +171,10 @@ struct CareSeekerCatalogMatrixView: View {
     }
 
     // =========================================================================
-    // 🌟 1. DISCOVERY TOP APP BAR (BRAND, NOTIFICATION BADGE, PROFILE AVATAR)
-    // =========================================================================
-    private var discoveryTopAppBar: some View {
-        HStack(alignment: .center, spacing: 12) {
-            // Hamburger Menu
-            Button(action: {}) {
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(MedMargTheme.slate800)
-                    .frame(width: 36, height: 36)
-                    .background(Color.white)
-                    .clipShape(Circle())
-                    .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
-            }
-
-            // MedMarg Brand Logo & Tagline
-            HStack(spacing: 6) {
-                Image(systemName: "cross.case.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(MedMargTheme.primaryTeal)
-
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Medmarg")
-                        .font(.system(size: 17, weight: .black, design: .rounded))
-                        .foregroundColor(MedMargTheme.primaryTeal)
-                    Text("Your Health. Our Care.")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(MedMargTheme.slate500)
-                }
-            }
-
-            Spacer()
-
-            // Notifications Bell with Badge (3)
-            ZStack(alignment: .topTrailing) {
-                Button(action: {}) {
-                    Image(systemName: "bell")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(MedMargTheme.slate700)
-                        .frame(width: 36, height: 36)
-                        .background(Color.white)
-                        .clipShape(Circle())
-                        .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
-                }
-
-                Text("3")
-                    .font(.system(size: 9, weight: .black))
-                    .foregroundColor(.white)
-                    .frame(width: 16, height: 16)
-                    .background(Color.red)
-                    .clipShape(Circle())
-                    .offset(x: 4, y: -2)
-            }
-
-            // User Profile Avatar with dropdown arrow
-            HStack(spacing: 3) {
-                ZStack {
-                    Circle()
-                        .fill(MedMargTheme.lightTeal)
-                        .frame(width: 34, height: 34)
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 15))
-                        .foregroundColor(MedMargTheme.primaryTeal)
-                }
-
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(MedMargTheme.slate500)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(Color.white)
-        .shadow(color: Color.black.opacity(0.03), radius: 4, x: 0, y: 2)
-    }
-
-    // =========================================================================
-    // 📝 2. HEADER TITLE & SUBTITLE + VIEW TOGGLE SWITCHER
+    // 📝 1. HEADER TITLE & SUBTITLE + VIEW TOGGLE SWITCHER
     // =========================================================================
     private var discoveryHeaderTitleRow: some View {
-        HStack(alignment: .bottom) {
+        HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("Tests & Packages")
                     .font(.system(size: 22, weight: .black, design: .rounded))
@@ -250,8 +199,8 @@ struct CareSeekerCatalogMatrixView: View {
                     Text(viewMode == "DISCOVERY" ? "All Matrix" : "Discovery")
                         .font(.system(size: 11, weight: .bold))
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 7)
                 .background(MedMargTheme.lightTeal)
                 .foregroundColor(MedMargTheme.darkTeal)
                 .cornerRadius(12)
@@ -261,7 +210,7 @@ struct CareSeekerCatalogMatrixView: View {
     }
 
     // =========================================================================
-    // 🕒 3. RECENTLY SEARCHED / SEEN TESTS ROW (HORIZONTAL CHIPS)
+    // 🕒 2. RECENTLY SEARCHED / SEEN TESTS ROW (HORIZONTAL CHIPS)
     // =========================================================================
     private var recentlySearchedBar: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -280,6 +229,7 @@ struct CareSeekerCatalogMatrixView: View {
                     ForEach(recentSearches, id: \.self) { search in
                         Button(action: {
                             searchQuery = search
+                            viewMode = "ALL_CATALOG"
                         }) {
                             HStack(spacing: 4) {
                                 Image(systemName: "magnifyingglass")
@@ -290,10 +240,11 @@ struct CareSeekerCatalogMatrixView: View {
                                     .foregroundColor(MedMargTheme.slate800)
                             }
                             .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
+                            .padding(.vertical, 6)
                             .background(Color.white)
                             .cornerRadius(14)
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(MedMargTheme.slate200, lineWidth: 1))
+                            .shadow(color: Color.black.opacity(0.02), radius: 2, x: 0, y: 1)
                         }
                     }
                 }
@@ -302,24 +253,22 @@ struct CareSeekerCatalogMatrixView: View {
     }
 
     // =========================================================================
-    // 🩸 4. QUICK SERVICE HUB CARDS (ROW OF 4)
+    // 🩸 3. QUICK SERVICE HUB CARDS (ROW OF 4)
     // =========================================================================
     private var quickServiceHubCards: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-            // Card 1: Blood Tests
             hubCard(
                 title: "Blood Tests",
                 subtitle: "500+ Single Tests",
                 icon: "drop.fill",
                 iconColor: Color.red,
-                bgColor: Color.red.opacity(0.06),
+                bgColor: Color.red.opacity(0.08),
                 action: {
                     catalogSubTab = "TESTS"
                     viewMode = "ALL_CATALOG"
                 }
             )
 
-            // Card 2: Health Packages
             hubCard(
                 title: "Health Packages",
                 subtitle: "Curated Profiles",
@@ -332,26 +281,24 @@ struct CareSeekerCatalogMatrixView: View {
                 }
             )
 
-            // Card 3: Diagnostic Scans
             hubCard(
                 title: "Diagnostic Scans",
                 subtitle: "X-Ray, CT, MRI & more",
                 icon: "viewfinder",
                 iconColor: Color.blue,
-                bgColor: Color.blue.opacity(0.06),
+                bgColor: Color.blue.opacity(0.08),
                 action: {
                     catalogSubTab = "ALL"
                     viewMode = "ALL_CATALOG"
                 }
             )
 
-            // Card 4: Popular Tests
             hubCard(
                 title: "Popular Tests",
                 subtitle: "Most Booked",
                 icon: "flame.fill",
                 iconColor: Color.orange,
-                bgColor: Color.orange.opacity(0.06),
+                bgColor: Color.orange.opacity(0.08),
                 action: {
                     selectedCategoryId = "CAT_POPULAR"
                     viewMode = "ALL_CATALOG"
@@ -366,7 +313,7 @@ struct CareSeekerCatalogMatrixView: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
                         .fill(bgColor)
-                        .frame(width: 40, height: 40)
+                        .frame(width: 42, height: 42)
 
                     Image(systemName: icon)
                         .font(.system(size: 18, weight: .bold))
@@ -393,21 +340,61 @@ struct CareSeekerCatalogMatrixView: View {
     }
 
     // =========================================================================
-    // 🩺 5. TEST CATEGORIES SECTION (GRID / CAROUSEL MATCHING IMAGE 1 & 2)
+    // 🧭 4. 6-DIMENSION TAXONOMY PILLS BAR
     // =========================================================================
-    private var testCategoriesSection: some View {
+    private var taxonomyDimensionPillsRow: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                let dimensions = [
+                    ("ALL", "All Dimensions", "square.grid.2x2.fill"),
+                    ("ORGAN", "🫀 Body Organs", "heart.fill"),
+                    ("CONDITION", "🩺 Health Concerns", "cross.fill"),
+                    ("CURATED", "⭐ Curated Packages", "sparkles"),
+                    ("DEMOGRAPHIC", "👥 Demographics", "person.2.fill"),
+                    ("GOAL", "🎯 Health Goals", "target"),
+                    ("CLINICAL", "🔬 Clinical Specialties", "flask.fill")
+                ]
+
+                ForEach(dimensions, id: \.0) { key, label, icon in
+                    let isSel = selectedTaxonomyFilter == key
+                    Button(action: {
+                        withAnimation { selectedTaxonomyFilter = key }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: icon)
+                                .font(.system(size: 10, weight: .bold))
+                            Text(label)
+                                .font(.system(size: 11, weight: isSel ? .bold : .semibold))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(isSel ? MedMargTheme.darkTeal : Color.white)
+                        .foregroundColor(isSel ? .white : MedMargTheme.slate700)
+                        .cornerRadius(14)
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(isSel ? MedMargTheme.darkTeal : MedMargTheme.slate200, lineWidth: 1))
+                        .shadow(color: isSel ? MedMargTheme.darkTeal.opacity(0.2) : Color.clear, radius: 4, x: 0, y: 2)
+                    }
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // 🫀 5. CATEGORY 1: BODY ORGANS & SYSTEMS (IMAGE 1 TILES)
+    // =========================================================================
+    private var bodyOrgansSection: some View {
         VStack(spacing: 12) {
-            // Header Row: "Test Categories" + "View All >"
             HStack {
-                Text("Test Categories")
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
-                    .foregroundColor(MedMargTheme.slate900)
+                HStack(spacing: 5) {
+                    Text("🫀")
+                    Text("Body Organs & Systems")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(MedMargTheme.slate900)
+                }
 
                 Spacer()
 
-                Button(action: {
-                    showAllCategoriesSheet = "ALL"
-                }) {
+                Button(action: { showAllCategoriesSheet = "ORGAN" }) {
                     HStack(spacing: 3) {
                         Text("View All")
                             .font(.system(size: 12, weight: .bold))
@@ -418,46 +405,57 @@ struct CareSeekerCatalogMatrixView: View {
                 }
             }
 
-            // 2-Row Horizontal Scroll or Grid of Categories
-            let activeCategories = catalogStore.categories.filter { $0.active ?? true }
-            let displayCategories = activeCategories.prefix(12)
+            let organCategories = catalogStore.categories.filter { ($0.group ?? "CONDITION") == "ORGAN" && ($0.active ?? true) }
+            let displayOrgans = organCategories.isEmpty ? catalogStore.categories.prefix(8) : organCategories.prefix(8)
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 14) {
-                ForEach(displayCategories) { cat in
-                    categoryAvatarCell(cat: cat)
-                }
-
-                // "More View All" Tile
-                Button(action: {
-                    showAllCategoriesSheet = "ALL"
-                }) {
-                    VStack(spacing: 6) {
-                        ZStack {
-                            Circle()
-                                .fill(MedMargTheme.slate100)
-                                .frame(width: 52, height: 52)
-                            Image(systemName: "ellipsis")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(MedMargTheme.slate600)
-                        }
-
-                        Text("More")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(MedMargTheme.slate800)
-                            .lineLimit(1)
-
-                        Text("View All")
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundColor(MedMargTheme.slate500)
-                    }
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 12) {
+                ForEach(displayOrgans) { cat in
+                    categoryTileCell(cat: cat)
                 }
             }
         }
     }
 
-    private func categoryAvatarCell(cat: CatalogCategory) -> some View {
+    // =========================================================================
+    // 🩺 6. CATEGORY 2: HEALTH CONCERNS & CONDITIONS
+    // =========================================================================
+    private var healthConcernsSection: some View {
+        VStack(spacing: 12) {
+            HStack {
+                HStack(spacing: 5) {
+                    Text("🩺")
+                    Text("Health Concerns & Conditions")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(MedMargTheme.slate900)
+                }
+
+                Spacer()
+
+                Button(action: { showAllCategoriesSheet = "CONDITION" }) {
+                    HStack(spacing: 3) {
+                        Text("View All")
+                            .font(.system(size: 12, weight: .bold))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .bold))
+                    }
+                    .foregroundColor(MedMargTheme.primaryTeal)
+                }
+            }
+
+            let conditionCategories = catalogStore.categories.filter { ($0.group ?? "CONDITION") == "CONDITION" && ($0.active ?? true) }
+            let displayConditions = conditionCategories.isEmpty ? catalogStore.categories.prefix(8) : conditionCategories.prefix(8)
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 4), spacing: 12) {
+                ForEach(displayConditions) { cat in
+                    categoryTileCell(cat: cat)
+                }
+            }
+        }
+    }
+
+    private func categoryTileCell(cat: CatalogCategory) -> some View {
         let themeColor = (cat.color != nil && !cat.color!.isEmpty) ? Color(hex: cat.color!) : MedMargTheme.primaryTeal
-        let totalItems = cat.totalItems ?? 12
+        let totalItems = cat.totalItems ?? 14
 
         return Button(action: {
             selectedCategoryId = cat.id
@@ -465,7 +463,7 @@ struct CareSeekerCatalogMatrixView: View {
         }) {
             VStack(spacing: 5) {
                 ZStack {
-                    Circle()
+                    RoundedRectangle(cornerRadius: 14)
                         .fill(themeColor.opacity(0.12))
                         .frame(width: 52, height: 52)
 
@@ -478,7 +476,7 @@ struct CareSeekerCatalogMatrixView: View {
                                     .resizable()
                                     .scaledToFill()
                                     .frame(width: 32, height: 32)
-                                    .clipShape(Circle())
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
                             default:
                                 Image(systemName: cat.icon ?? "cross.fill")
                                     .font(.system(size: 20, weight: .bold))
@@ -505,14 +503,17 @@ struct CareSeekerCatalogMatrixView: View {
     }
 
     // =========================================================================
-    // 🎁 6. POPULAR HEALTH PACKAGES CAROUSEL (IMAGE 2)
+    // 🎁 7. CATEGORY 3: POPULAR HEALTH PACKAGES CAROUSEL (IMAGE 2)
     // =========================================================================
     private var popularPackagesCarouselSection: some View {
         VStack(spacing: 12) {
             HStack {
-                Text("Popular Health Packages")
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
-                    .foregroundColor(MedMargTheme.slate900)
+                HStack(spacing: 5) {
+                    Text("⭐")
+                    Text("Popular Health Packages")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(MedMargTheme.slate900)
+                }
 
                 Spacer()
 
@@ -562,23 +563,21 @@ struct CareSeekerCatalogMatrixView: View {
                     )
                     .frame(height: 100)
 
-                // Package Visual Graphic
                 HStack {
                     Spacer()
                     Image(systemName: "cross.vial.fill")
-                        .font(.system(size: 48))
+                        .font(.system(size: 46))
                         .foregroundColor(MedMargTheme.primaryTeal.opacity(0.18))
                         .padding(.trailing, 10)
                         .padding(.top, 14)
                 }
 
-                // Badge
                 Text(pkg.code == "LIPID" ? "Most Booked" : (pkg.name.contains("Women") ? "Women's Health" : "Best Seller"))
                     .font(.system(size: 10, weight: .black))
                     .foregroundColor(MedMargTheme.darkTeal)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(Color.white.opacity(0.9))
+                    .background(Color.white.opacity(0.92))
                     .cornerRadius(6)
                     .padding(8)
             }
@@ -589,7 +588,7 @@ struct CareSeekerCatalogMatrixView: View {
                     .foregroundColor(MedMargTheme.slate900)
                     .lineLimit(1)
 
-                Text(pkg.description ?? "\(pkg.testCount ?? 85) Tests | Complete Health Screening")
+                Text(pkg.description ?? "\(pkg.testCount ?? 85) Tests | Full Vital Screening")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(MedMargTheme.slate500)
                     .lineLimit(2)
@@ -617,7 +616,6 @@ struct CareSeekerCatalogMatrixView: View {
 
                     Spacer()
 
-                    // Quick Add Button
                     Button(action: { onAddToCart(pkg) }) {
                         HStack(spacing: 3) {
                             Image(systemName: isInCart ? "checkmark" : "plus")
@@ -644,14 +642,160 @@ struct CareSeekerCatalogMatrixView: View {
     }
 
     // =========================================================================
-    // 🧪 7. FEATURED TESTS SECTION (IMAGE 2)
+    // 👥 8. CATEGORY 4: DEMOGRAPHIC COLLECTIONS (CHILDREN, SENIORS, WOMEN, MEN)
     // =========================================================================
-    private var featuredTestsSection: some View {
+    private var demographicsSection: some View {
         VStack(spacing: 10) {
             HStack {
-                Text("Featured Tests")
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                HStack(spacing: 5) {
+                    Text("👥")
+                    Text("By Age & Life Stage")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(MedMargTheme.slate900)
+                }
+
+                Spacer()
+
+                Button(action: { showAllCategoriesSheet = "DEMOGRAPHIC" }) {
+                    HStack(spacing: 3) {
+                        Text("View All")
+                            .font(.system(size: 12, weight: .bold))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .bold))
+                    }
+                    .foregroundColor(MedMargTheme.primaryTeal)
+                }
+            }
+
+            let demoList = [
+                ("CAT_DEMO_CHILD", "Children (0-14 yrs)", "figure.and.child.holdinghands", Color.teal, "Growth & pediatric CBC"),
+                ("CAT_DEMO_ADULT", "Adults (18-59 yrs)", "person.fill", Color.blue, "Active vitality & lifestyle"),
+                ("CAT_SENIOR", "Senior Citizens (60+)", "figure.seated.side.right", Color.purple, "Geriatric vitals & arthritis"),
+                ("CAT_DEMO_PREG", "Pregnancy & Maternity", "heart.fill", Color.pink, "Antenatal & trimesters")
+            ]
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                ForEach(demoList, id: \.0) { id, title, icon, color, desc in
+                    Button(action: {
+                        selectedCategoryId = id
+                        viewMode = "ALL_CATALOG"
+                    }) {
+                        HStack(spacing: 10) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(color.opacity(0.12))
+                                    .frame(width: 38, height: 38)
+                                Image(systemName: icon)
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(color)
+                            }
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(title)
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(MedMargTheme.slate900)
+                                    .lineLimit(1)
+                                Text(desc)
+                                    .font(.system(size: 9, weight: .medium))
+                                    .foregroundColor(MedMargTheme.slate500)
+                                    .lineLimit(1)
+                            }
+                            Spacer()
+                        }
+                        .padding(9)
+                        .background(Color.white)
+                        .cornerRadius(12)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.slate200, lineWidth: 1))
+                    }
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // 🎯 9. CATEGORY 5: HEALTH GOALS & INTENT (PREVENTIVE, ANNUAL, FITNESS)
+    // =========================================================================
+    private var healthGoalsSection: some View {
+        VStack(spacing: 10) {
+            HStack {
+                HStack(spacing: 5) {
+                    Text("🎯")
+                    Text("Health Goals & Intent")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(MedMargTheme.slate900)
+                }
+
+                Spacer()
+
+                Button(action: { showAllCategoriesSheet = "GOAL" }) {
+                    HStack(spacing: 3) {
+                        Text("View All")
+                            .font(.system(size: 12, weight: .bold))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .bold))
+                    }
+                    .foregroundColor(MedMargTheme.primaryTeal)
+                }
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    goalCard(title: "Preventive Screening", icon: "shield.checkerboard", color: Color.green, subtitle: "Catch risks early")
+                    goalCard(title: "Master Annual Checkup", icon: "calendar.badge.clock", color: MedMargTheme.primaryTeal, subtitle: "80+ vital biomarkers")
+                    goalCard(title: "Routine Monitoring", icon: "waveform.path.ecg", color: Color.blue, subtitle: "BP & Sugar checks")
+                    goalCard(title: "Fitness & Recovery", icon: "flame.fill", color: Color.orange, subtitle: "Protein & vitamins")
+                    goalCard(title: "Doctor-Prescribed (Rx)", icon: "stethoscope", color: Color.purple, subtitle: "Fast Rx booking")
+                }
+            }
+        }
+    }
+
+    private func goalCard(title: String, icon: String, color: Color, subtitle: String) -> some View {
+        Button(action: {
+            catalogSubTab = "PACKAGES"
+            viewMode = "ALL_CATALOG"
+        }) {
+            VStack(alignment: .leading, spacing: 6) {
+                ZStack {
+                    Circle()
+                        .fill(color.opacity(0.12))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: icon)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(color)
+                }
+
+                Text(title)
+                    .font(.system(size: 12, weight: .bold))
                     .foregroundColor(MedMargTheme.slate900)
+                    .lineLimit(1)
+
+                Text(subtitle)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(MedMargTheme.slate500)
+                    .lineLimit(1)
+            }
+            .padding(10)
+            .frame(width: 150, alignment: .leading)
+            .background(Color.white)
+            .cornerRadius(14)
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(MedMargTheme.slate200, lineWidth: 1))
+            .shadow(color: Color.black.opacity(0.02), radius: 4, x: 0, y: 2)
+        }
+    }
+
+    // =========================================================================
+    // 🔬 10. CATEGORY 6: CLINICAL SPECIALTIES & FEATURED BIOMARKERS
+    // =========================================================================
+    private var clinicalSpecialtiesAndFeaturedSection: some View {
+        VStack(spacing: 12) {
+            HStack {
+                HStack(spacing: 5) {
+                    Text("🔬")
+                    Text("Clinical Specialties & Biomarkers")
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(MedMargTheme.slate900)
+                }
 
                 Spacer()
 
@@ -669,6 +813,36 @@ struct CareSeekerCatalogMatrixView: View {
                 }
             }
 
+            // Clinical Specialties Quick Chips
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    let clinicalDisciplines = [
+                        ("CAT_CLIN_HEM", "Hematology"),
+                        ("CAT_CLIN_BIO", "Biochemistry"),
+                        ("CAT_CLIN_HORM", "Thyroid & Hormones"),
+                        ("CAT_CLIN_IMM", "Immunology"),
+                        ("CAT_CLIN_MICRO", "Microbiology"),
+                        ("CAT_CLIN_MOL", "Molecular RT-PCR")
+                    ]
+
+                    ForEach(clinicalDisciplines, id: \.0) { id, name in
+                        Button(action: {
+                            selectedCategoryId = id
+                            viewMode = "ALL_CATALOG"
+                        }) {
+                            Text(name)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(MedMargTheme.primaryTeal)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(MedMargTheme.lightTeal)
+                                .cornerRadius(12)
+                        }
+                    }
+                }
+            }
+
+            // Featured Tests Rows
             let featuredTests = catalogStore.tests.prefix(4)
             ForEach(featuredTests) { test in
                 featuredTestRow(test: test)
@@ -680,7 +854,6 @@ struct CareSeekerCatalogMatrixView: View {
         let isInCart = cartItemIds.contains(test.id) || cartItemIds.contains(test.code)
 
         return HStack(spacing: 12) {
-            // Icon
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(Color.red.opacity(0.1))
@@ -727,11 +900,10 @@ struct CareSeekerCatalogMatrixView: View {
     }
 
     // =========================================================================
-    // ✨ 8. FLOATING SEARCH BAR WITH OUTER GLOW (FIXED ABOVE BOTTOM NAVBAR)
+    // ✨ 11. FLOATING SEARCH BAR WITH AMBIENT TEAL OUTER GLOW
     // =========================================================================
     private var floatingGlowSearchBar: some View {
         HStack(spacing: 10) {
-            // Search Icon
             Image(systemName: "magnifyingglass")
                 .foregroundColor(MedMargTheme.primaryTeal)
                 .font(.system(size: 15, weight: .bold))
@@ -739,6 +911,11 @@ struct CareSeekerCatalogMatrixView: View {
             TextField("Search for tests, packages, scans or health concerns...", text: $searchQuery)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(MedMargTheme.slate900)
+                .onSubmit {
+                    if !searchQuery.isEmpty {
+                        viewMode = "ALL_CATALOG"
+                    }
+                }
 
             if !searchQuery.isEmpty {
                 Button(action: { searchQuery = "" }) {
@@ -748,10 +925,7 @@ struct CareSeekerCatalogMatrixView: View {
                 }
             }
 
-            // Voice Search Mic Button
-            Button(action: {
-                showVoiceSearchAlert = true
-            }) {
+            Button(action: { showVoiceSearchAlert = true }) {
                 Image(systemName: "mic.fill")
                     .font(.system(size: 14))
                     .foregroundColor(MedMargTheme.primaryTeal)
@@ -778,11 +952,10 @@ struct CareSeekerCatalogMatrixView: View {
     }
 
     // =========================================================================
-    // 📊 9. DETAILED CATALOG MATRIX VIEW (100% PARITY WITH WEB)
+    // 📊 12. DETAILED CATALOG MATRIX VIEW (100% PARITY WITH WEB)
     // =========================================================================
     private var catalogMatrixView: some View {
         VStack(spacing: 0) {
-            // Top switch back to Discovery + Filters
             VStack(spacing: 8) {
                 HStack {
                     Button(action: {
@@ -834,7 +1007,6 @@ struct CareSeekerCatalogMatrixView: View {
         }
     }
 
-    // SubTabs Pills Bar
     private var subTabsPillsBar: some View {
         HStack(spacing: 8) {
             subTabButton(key: "ALL", label: "All Tests", icon: "square.grid.2x2.fill")
@@ -862,7 +1034,6 @@ struct CareSeekerCatalogMatrixView: View {
         }
     }
 
-    // Discovery Categories Row
     private var discoveryCategoriesRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
@@ -932,7 +1103,6 @@ struct CareSeekerCatalogMatrixView: View {
         }
     }
 
-    // Filter Chips Row (Fasting & Samples)
     private var filterChipsRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
@@ -977,7 +1147,6 @@ struct CareSeekerCatalogMatrixView: View {
         }
     }
 
-    // Streamlined Diagnostic Test Card
     private func matrixItemCard(item: CatalogItem) -> some View {
         let isInCart = cartItemIds.contains(item.id) || cartItemIds.contains(item.code)
         let savingsPct = item.mrp > item.price ? Int(round(Double(item.mrp - item.price) / Double(item.mrp) * 100.0)) : 0
@@ -1104,13 +1273,12 @@ struct CareSeekerCatalogMatrixView: View {
     }
 
     // =========================================================================
-    // 🗂️ 10. ALL 24 CATEGORIES BOTTOM SHEET (IMAGE 1 GRID)
+    // 🗂️ 13. ALL 24 CATEGORIES BOTTOM SHEET (IMAGE 1 GRID)
     // =========================================================================
     private var allCategoriesSheetView: some View {
         NavigationView {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
-                    // Header Description
                     Text("Browse diagnostic tests, profiles & health packages across 24 anatomical organs, clinical specialties & demographic collections.")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(MedMargTheme.slate600)
@@ -1118,10 +1286,17 @@ struct CareSeekerCatalogMatrixView: View {
                         .padding(.horizontal, 16)
                         .padding(.top, 8)
 
-                    // 4-Column Grid of All Categories
+                    let targetGroup = showAllCategoriesSheet ?? "ALL"
+                    let list = catalogStore.categories.filter { cat in
+                        if targetGroup != "ALL" {
+                            return (cat.group ?? "CONDITION") == targetGroup && (cat.active ?? true)
+                        }
+                        return cat.active ?? true
+                    }
+
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 16) {
-                        ForEach(catalogStore.categories.filter { $0.active ?? true }) { cat in
-                            categoryAvatarCell(cat: cat)
+                        ForEach(list) { cat in
+                            categoryTileCell(cat: cat)
                         }
                     }
                     .padding(.horizontal, 16)
