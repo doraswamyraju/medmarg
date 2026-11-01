@@ -10,6 +10,8 @@ struct CatalogCategory: Identifiable, Codable, Equatable {
     var name: String
     var description: String?
     var icon: String?
+    var imageUrl: String?
+    var color: String?
     var displayOrder: Int?
     var isFeatured: Bool?
     var active: Bool?

@@ -49,7 +49,7 @@ router.get('/categories', (req, res) => {
 
 // CREATE / UPDATE DISCOVERY CATEGORY
 router.post('/categories', (req, res) => {
-    const { id, name, description, icon, displayOrder, isFeatured, active } = req.body;
+    const { id, name, description, icon, imageUrl, color, displayOrder, isFeatured, active } = req.body;
 
     if (!name) {
         return res.status(400).json({ error: 'Category Name is required.' });
@@ -67,6 +67,8 @@ router.post('/categories', (req, res) => {
         name: name.trim(),
         description: description || `Diagnostic tests and packages for ${name.trim()}.`,
         icon: icon || 'square.grid.2x2.fill',
+        imageUrl: imageUrl !== undefined ? imageUrl : (existingIndex >= 0 ? catalogState.categories[existingIndex].imageUrl || '' : ''),
+        color: color || (existingIndex >= 0 ? catalogState.categories[existingIndex].color || '#006B70' : '#006B70'),
         displayOrder: Number(displayOrder) || (catalogState.categories.length + 1),
         isFeatured: isFeatured !== undefined ? Boolean(isFeatured) : true,
         active: active !== undefined ? Boolean(active) : true
@@ -84,6 +86,45 @@ router.post('/categories', (req, res) => {
         message: existingIndex >= 0 ? 'Category updated successfully.' : 'Category created successfully.',
         category: categoryItem
     });
+});
+
+// UPLOAD CATEGORY IMAGE
+router.post('/categories/upload-image', (req, res) => {
+    const { image, filename } = req.body;
+    if (!image) {
+        return res.status(400).json({ error: 'Image data is required' });
+    }
+
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const uploadDir = path.join(__dirname, '../uploads/categories');
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+
+        const safeName = (filename || `cat_${Date.now()}.png`).replace(/[^a-zA-Z0-9_.-]/g, '_');
+        const filePath = path.join(uploadDir, safeName);
+
+        // Strip data header if present
+        const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+        fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+
+        const publicUrl = `/uploads/categories/${safeName}`;
+        res.json({
+            success: true,
+            imageUrl: publicUrl,
+            message: 'Category image uploaded successfully'
+        });
+    } catch (err) {
+        console.error('Error saving category image:', err);
+        // Fallback: return raw data URI so it still works if disk write fails
+        res.json({
+            success: true,
+            imageUrl: image,
+            message: 'Image cached as data URL'
+        });
+    }
 });
 
 // DELETE / DEACTIVATE DISCOVERY CATEGORY

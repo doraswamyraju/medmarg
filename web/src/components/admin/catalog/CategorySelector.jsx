@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Tag, Plus, Check, X, Sparkles } from 'lucide-react';
+import { CATEGORY_ICON_PRESETS } from './DiscoveryCategoriesTab';
+import { API_BASE } from '../../../data/apiConfig';
 
 /**
  * CategorySelector
@@ -45,7 +47,7 @@ export default function CategorySelector({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <Tag size={16} color="#006B70" />
-          <span style={{ fontSize: '0.875rem', fontWeight: '700', color: '#1E293B' }}>
+          <span style={{ fontSize: '0.875rem', fontWeight: '800', color: '#1E293B' }}>
             Discovery Categories ({selectedCategoryIds.length} Assigned)
           </span>
         </div>
@@ -61,11 +63,11 @@ export default function CategorySelector({
               border: 'none',
               color: '#006B70',
               fontSize: '0.8rem',
-              fontWeight: '700',
+              fontWeight: '800',
               cursor: 'pointer'
             }}
           >
-            <Plus size={14} /> New Category
+            <Plus size={14} /> + New Category
           </button>
         )}
       </div>
@@ -127,6 +129,11 @@ export default function CategorySelector({
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
         {categories.map(cat => {
           const isSelected = selectedCategoryIds.includes(cat.id);
+          const preset = CATEGORY_ICON_PRESETS?.find(p => p.sfSymbol === cat.icon) || { icon: Tag };
+          const IconComp = preset.icon || Tag;
+          const themeColor = cat.color || '#006B70';
+          const hasImage = Boolean(cat.imageUrl);
+
           return (
             <button
               key={cat.id}
@@ -135,19 +142,31 @@ export default function CategorySelector({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.35rem',
-                padding: '0.4rem 0.75rem',
+                gap: '0.4rem',
+                padding: '0.4rem 0.8rem',
                 borderRadius: '20px',
-                border: isSelected ? '1.5px solid #006B70' : '1px solid #CBD5E1',
-                backgroundColor: isSelected ? '#E6F4F1' : '#FFFFFF',
-                color: isSelected ? '#006B70' : '#475569',
+                border: isSelected ? `1.5px solid ${themeColor}` : '1px solid #CBD5E1',
+                backgroundColor: isSelected ? `${themeColor}18` : '#FFFFFF',
+                color: isSelected ? themeColor : '#475569',
                 fontSize: '0.8rem',
-                fontWeight: isSelected ? '700' : '500',
+                fontWeight: isSelected ? '800' : '600',
                 cursor: 'pointer',
-                transition: 'all 0.15s ease'
+                transition: 'all 0.15s ease',
+                boxShadow: isSelected ? `0 2px 8px ${themeColor}25` : 'none'
               }}
             >
-              {isSelected ? <Check size={14} color="#006B70" /> : <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#94A3B8' }} />}
+              {isSelected ? (
+                <Check size={14} color={themeColor} strokeWidth={3} />
+              ) : hasImage ? (
+                <img
+                  src={cat.imageUrl.startsWith('/uploads') ? `${API_BASE}${cat.imageUrl}` : cat.imageUrl}
+                  alt=""
+                  style={{ width: '14px', height: '14px', borderRadius: '50%', objectFit: 'cover' }}
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              ) : (
+                <IconComp size={13} color={themeColor} />
+              )}
               {cat.name}
             </button>
           );
@@ -156,4 +175,3 @@ export default function CategorySelector({
     </div>
   );
 }
-

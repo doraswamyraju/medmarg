@@ -200,14 +200,18 @@ struct CareSeekerCatalogMatrixView: View {
                 categoryPill(
                     id: "ALL",
                     name: "All Categories",
-                    icon: "square.grid.2x2.fill"
+                    icon: "square.grid.2x2.fill",
+                    imageUrl: nil,
+                    colorHex: nil
                 )
 
                 ForEach(catalogStore.categories.filter { $0.active ?? true }) { cat in
                     categoryPill(
                         id: cat.id,
                         name: cat.name,
-                        icon: cat.icon ?? "tag.fill"
+                        icon: cat.icon ?? "tag.fill",
+                        imageUrl: cat.imageUrl,
+                        colorHex: cat.color
                     )
                 }
             }
@@ -216,23 +220,45 @@ struct CareSeekerCatalogMatrixView: View {
         }
     }
 
-    private func categoryPill(id: String, name: String, icon: String) -> some View {
+    private func categoryPill(id: String, name: String, icon: String, imageUrl: String? = nil, colorHex: String? = nil) -> some View {
         let isSel = selectedCategoryId == id
+        let themeColor = (colorHex != nil && !colorHex!.isEmpty) ? Color(hex: colorHex!) : MedMargTheme.primaryTeal
+
         return Button(action: { selectedCategoryId = id }) {
-            HStack(spacing: 5) {
-                Image(systemName: icon)
-                    .font(.system(size: 11, weight: .bold))
+            HStack(spacing: 6) {
+                if let imgUrl = imageUrl, !imgUrl.isEmpty,
+                   let fullUrl = URL(string: imgUrl.hasPrefix("http") ? imgUrl : "\(catalogStore.backendBaseURL)\(imgUrl)") {
+                    AsyncImage(url: fullUrl) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 14, height: 14)
+                                .clipShape(Circle())
+                        default:
+                            Image(systemName: icon)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(isSel ? .white : themeColor)
+                        }
+                    }
+                } else {
+                    Image(systemName: icon)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(isSel ? .white : themeColor)
+                }
+
                 Text(name)
                     .font(.system(size: 11, weight: isSel ? .bold : .semibold))
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(isSel ? MedMargTheme.darkTeal : Color.white)
+            .background(isSel ? themeColor : Color.white)
             .foregroundColor(isSel ? .white : MedMargTheme.slate700)
             .cornerRadius(18)
             .overlay(
                 RoundedRectangle(cornerRadius: 18)
-                    .stroke(isSel ? MedMargTheme.darkTeal : MedMargTheme.slate200, lineWidth: 1)
+                    .stroke(isSel ? themeColor : MedMargTheme.slate200, lineWidth: 1)
             )
         }
     }

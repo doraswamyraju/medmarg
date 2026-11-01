@@ -1021,7 +1021,7 @@ export default function CatalogManagementTab({
             { key: 'TESTS', label: 'Single Tests Master', icon: FlaskConical, count: catalog.tests?.length ?? 0 },
             { key: 'PROFILES', label: 'Diagnostic Profiles', icon: Layers, count: catalog.profiles?.length ?? 0 },
             { key: 'PACKAGES', label: 'Health Packages', icon: Package, count: catalog.packages?.length ?? 0 },
-            { key: 'CATEGORIES', label: 'Discovery Categories', icon: Tag, count: categories.length }
+            { key: 'CATEGORIES', label: 'Categories & Browse Icons', icon: Tag, count: categories.length }
           ].map(st => {
             const isSel = testsSubTab === st.key;
             const IconC = st.icon;
@@ -1106,6 +1106,18 @@ export default function CatalogManagementTab({
               style={{ padding: '0.6rem 1.2rem', backgroundColor: '#D97706', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 12px rgba(217,119,6,0.2)' }}
             >
               <Plus size={16} /> Visual Package Builder
+            </button>
+          )}
+          {testsSubTab === 'CATEGORIES' && (
+            <button 
+              onClick={() => {
+                if (window._openNewCategoryModal) {
+                  window._openNewCategoryModal();
+                }
+              }}
+              style={{ padding: '0.6rem 1.2rem', backgroundColor: '#006B70', color: '#FFF', border: 'none', borderRadius: '10px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 4px 12px rgba(0,107,112,0.2)' }}
+            >
+              <PlusCircle size={16} /> + Add Category
             </button>
           )}
         </div>
