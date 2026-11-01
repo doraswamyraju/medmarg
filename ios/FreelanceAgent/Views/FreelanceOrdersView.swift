@@ -31,7 +31,7 @@ struct FreelanceOrdersView: View {
     @State private var actionBanner: String? = nil
 
     private var effectiveAgentId: String {
-        user.username.isEmpty ? (user.id.isEmpty ? "AG-01" : user.id) : user.username
+        user.username.isEmpty ? (user.id.isEmpty ? "FL-502" : user.id) : user.username
     }
 
     private var claimedCount: Int {

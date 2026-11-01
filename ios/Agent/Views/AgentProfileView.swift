@@ -850,6 +850,9 @@ struct AgentProfileView: View {
         guard let jpegData = image.jpegData(compressionQuality: 0.6) else { return }
         let base64 = "data:image/jpeg;base64," + jpegData.base64EncodedString()
         UserDefaults.standard.set(base64, forKey: "agent_avatar_\(effectiveAgentId)")
+        UserDefaults.standard.set(base64, forKey: "agent_avatar_AG-01")
+        UserDefaults.standard.set(base64, forKey: "agent_avatar_current")
+        NotificationCenter.default.post(name: NSNotification.Name("AgentAvatarUpdated"), object: nil)
 
         guard let url = URL(string: "https://medmarg.com/api/v1/agent/profile/update") else { return }
         var req = URLRequest(url: url)

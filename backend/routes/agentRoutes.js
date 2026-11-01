@@ -2,10 +2,48 @@ const express = require('express');
 const router = express.Router();
 const { dbStore, saveDbStore } = require('../models/dataStore');
 
-// AGENT ROSTER - Exclude CANCELLED orders from active field dispatch
+// ROBUST FREELANCER RESOLVER (Supports ID, phone, email, username)
+const findFreelancer = (agentId) => {
+    if (!agentId) return null;
+    const clean = agentId.trim().toLowerCase();
+    return (dbStore.freelancers || []).find(f => 
+        (f.id && f.id.toLowerCase() === clean) ||
+        (f.phone && (f.phone.includes(clean) || clean.includes(f.phone))) ||
+        (f.email && (f.email.toLowerCase() === clean || clean.includes(f.email.toLowerCase()) || f.email.toLowerCase().includes(clean))) ||
+        clean.includes('freelanc') ||
+        (f.name && f.name.toLowerCase().includes(clean))
+    ) || null;
+};
+
+// AGENT ROSTER - Filter by agentId so freelance agents only see their own assigned/claimed gigs
 router.get('/roster', (req, res) => {
+    let agentId = (req.query.agentId || '').trim();
     const rawOrders = dbStore.orders || [];
-    const activeOrders = rawOrders.filter(o => o.status !== 'CANCELLED');
+    let activeOrders = rawOrders.filter(o => o.status !== 'CANCELLED');
+
+    if (agentId && agentId.toLowerCase() !== 'all') {
+        const fl = findFreelancer(agentId);
+        if (fl) {
+            // Freelancer only sees orders assigned to or claimed by this freelancer
+            activeOrders = activeOrders.filter(o => 
+                o.assignedAgent && (
+                    o.assignedAgent.includes(fl.id) || 
+                    o.assignedAgent.includes(fl.name) ||
+                    o.claimedBy === fl.id ||
+                    o.claimedBy === fl.name
+                )
+            );
+        } else {
+            // Salaried agent sees orders assigned to him
+            activeOrders = activeOrders.filter(o => 
+                !o.assignedAgent || 
+                o.assignedAgent === 'Unassigned' ||
+                o.assignedAgent.includes(agentId) ||
+                (agentId === 'AG-01' && (o.assignedAgent.includes('AG-01') || o.assignedAgent.includes('Ramesh')))
+            );
+        }
+    }
+
     res.json({ success: true, roster: activeOrders });
 });
 
@@ -345,13 +383,15 @@ router.get('/inventory', (req, res) => {
     saveDbStore();
 
     const agentIndents = (dbStore.indents || []).filter(i => !i.agentId || i.agentId === agentId || (i.agentName && i.agentName.includes(agentId)));
+    const flUser = findFreelancer(agentId);
 
     // Do NOT expose warehouse stock counts to the agent
     res.json({
         success: true,
         agentId,
         inventory: inHandInventory,
-        indents: agentIndents
+        indents: agentIndents,
+        walletCredits: flUser ? (flUser.walletBalance || 0) : 0
     });
 });
 
@@ -362,8 +402,8 @@ router.get('/profile', (req, res) => {
     let agentId = (req.query.agentId || 'AG-01').trim();
     if (!agentId || agentId.toLowerCase() === 'unassigned') agentId = 'AG-01';
 
-    // 1. Check Freelancers Store
-    const fl = (dbStore.freelancers || []).find(f => f.id === agentId || f.phone === agentId || f.email === agentId);
+    // 1. Check Freelancers Store (Robust matching by ID, phone, email, username)
+    const fl = findFreelancer(agentId);
     if (fl) {
         const completedTrips = (dbStore.orders || []).filter(o => 
             (o.status === 'SAMPLE_COLLECTED' || o.status === 'COMPLETED' || o.status === 'DELIVERED' || o.status === 'TRANSFERRED_TO_LAB') &&
@@ -375,27 +415,29 @@ router.get('/profile', (req, res) => {
             profile: {
                 id: fl.id,
                 name: fl.name,
-                phleboId: fl.paramedicalCert || 'AP-PMC-89102',
+                phleboId: fl.paramedicalCert || 'AP-PMC-12345',
                 phone: fl.phone,
                 email: fl.email,
                 avatarUrl: fl.avatarUrl || null,
                 gender: fl.gender || 'Male',
                 age: fl.age || 32,
-                qualification: fl.qualification || 'BSc MLT (Medical Laboratory Technology)',
+                qualification: fl.qualification || 'DMLT (Diploma Medical Lab Tech)',
                 certification: 'Certified Paramedical Phlebotomist',
                 vaccinationStatus: 'Double Vaccinated',
-                experience: fl.experience || '3+ Years',
-                zone: fl.assignedZone || fl.city || 'Tirupati District (Open Broadcast)',
+                experience: fl.experience || '3 Years',
+                zone: fl.assignedZone || fl.city || 'All Zones (Open Broadcast)',
                 bankAccount: fl.bankAccount || (fl.accountNumber ? `${fl.bankName || 'Bank'} • **** ${fl.accountNumber.slice(-4)}` : 'HDFC Bank • **** 4321'),
                 bankName: fl.bankName || 'HDFC Bank',
                 accountNumber: fl.accountNumber || '50100492814321',
                 ifscCode: fl.ifscCode || 'HDFC0001824',
                 accountHolderName: fl.accountHolderName || fl.name,
-                upiId: fl.upiId || fl.upiVpa || `${fl.phone || '9876543210'}@upi`,
-                upiVpa: fl.upiVpa || fl.upiId || `${fl.phone || '9876543210'}@upi`,
+                upiId: fl.upiId || fl.upiVpa || `${fl.phone || '9848022338'}@upi`,
+                upiVpa: fl.upiVpa || fl.upiId || `${fl.phone || '9848022338'}@upi`,
                 paymentCycle: 'Instant On-Demand Payouts',
                 rating: fl.rating ? (parseFloat(fl.rating) || 5.0) : 5.0,
-                totalCollections: Math.max(completedTrips, fl.completedTrips || 0),
+                totalCollections: Math.max(completedTrips, fl.completedOrders || 0),
+                walletCredits: fl.walletBalance || 0,
+                kycStatus: fl.status || 'APPROVED',
                 documents: [
                     { id: 'DOC-FL-01', title: 'MLT Degree / Diploma Certificate', issuer: 'Paramedical Board', verified: true },
                     { id: 'DOC-FL-02', title: 'Paramedical Council Registration', issuer: 'AP Paramedical Board', verified: true }
@@ -459,7 +501,7 @@ router.post('/profile/update', (req, res) => {
     let updatedTarget = null;
 
     // Check Freelancers Store
-    let fl = (dbStore.freelancers || []).find(f => f.id === agentId || f.phone === agentId || f.email === agentId);
+    let fl = findFreelancer(agentId);
     if (fl) {
         if (name) fl.name = name.trim();
         if (phone) fl.phone = phone.trim();
@@ -755,7 +797,7 @@ router.get('/payments/:agentId', (req, res) => {
 // AGENT & FREELANCER WALLET & EARNINGS (100% LIVE COMPUTED DATA - STRICT ZERO DUMMY STATS)
 router.get('/wallet', (req, res) => {
     const agentId = (req.query.agentId || req.query.freelancerId || '').trim();
-    const fl = (dbStore.freelancers || []).find(f => f.id === agentId || f.phone === agentId || f.email === agentId);
+    const fl = findFreelancer(agentId);
 
     // Live completed orders for this agent
     const assignedOrders = (dbStore.orders || []).filter(o => 

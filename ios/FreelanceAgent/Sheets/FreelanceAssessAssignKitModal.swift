@@ -11,7 +11,7 @@ struct FreelanceAssessAssignKitModal: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var liveInventory: [AgentInventoryItem] = []
-    @State private var walletCredits: Int = 2000
+    @State private var walletCredits: Int = 0
     @State private var isLoading: Bool = true
     @State private var isSubmitting: Bool = false
     @State private var errorMessage: String? = nil
@@ -190,7 +190,7 @@ struct FreelanceAssessAssignKitModal: View {
 
     private func fetchFreelancerInventory() {
         Task {
-            guard let url = URL(string: "https://medmarg.com/api/v1/agent/inventory?agentId=\(order.assignedAgent ?? "AG-01")") else { return }
+            guard let url = URL(string: "https://medmarg.com/api/v1/agent/inventory?agentId=\(order.assignedAgent ?? "FL-502")") else { return }
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -209,8 +209,10 @@ struct FreelanceAssessAssignKitModal: View {
                             minThreshold: d["minThreshold"] as? Int ?? 5
                         )
                     }
+                    let creds = json["walletCredits"] as? Int ?? 0
                     await MainActor.run {
                         self.liveInventory = mapped
+                        self.walletCredits = creds
                         self.isLoading = false
                     }
                 }
@@ -230,7 +232,7 @@ struct FreelanceAssessAssignKitModal: View {
 
             let body: [String: Any] = [
                 "orderId": order.id,
-                "agentId": order.assignedAgent ?? "AG-01",
+                "agentId": order.assignedAgent ?? "FL-502",
                 "kitNotRequired": false
             ]
             req.httpBody = try? JSONSerialization.data(withJSONObject: body)
@@ -262,7 +264,7 @@ struct FreelanceAssessAssignKitModal: View {
 
             let body: [String: Any] = [
                 "orderId": order.id,
-                "agentId": order.assignedAgent ?? "AG-01",
+                "agentId": order.assignedAgent ?? "FL-502",
                 "kitNotRequired": true
             ]
             req.httpBody = try? JSONSerialization.data(withJSONObject: body)

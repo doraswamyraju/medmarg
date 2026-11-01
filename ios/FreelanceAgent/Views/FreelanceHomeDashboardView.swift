@@ -35,7 +35,7 @@ struct FreelanceHomeDashboardView: View {
     @State private var showTrackNavigateView: Bool = false
 
     private var effectiveAgentId: String {
-        user.username.isEmpty ? (user.id.isEmpty ? "AG-01" : user.id) : user.username
+        user.username.isEmpty ? (user.id.isEmpty ? "FL-502" : user.id) : user.username
     }
 
     private var nextAssignedOrder: AgentPickupOrder? {

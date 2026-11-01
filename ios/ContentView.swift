@@ -102,11 +102,11 @@ struct ContentView: View {
             createdAt: "30-Aug-2026"
         ),
         UserProfile(
-            id: "usr_freelance",
-            name: "Siva Phlebo (Freelance MLT)",
+            id: "FL-502",
+            name: "Doraswamy Raju",
             username: "freelance",
-            email: "freelance@medmarg.com",
-            phone: "+91 96666 66666",
+            email: "freelancer@medmarg.com",
+            phone: "+91 98480 22338",
             password: "password123",
             role: .freelanceAgent,
             organization: "MedMarg Gig Phlebotomist Network (Tirupati)",
@@ -114,11 +114,11 @@ struct ContentView: View {
             createdAt: "30-Aug-2026"
         ),
         UserProfile(
-            id: "usr_freelancer",
-            name: "Siva Phlebo (Freelance MLT)",
+            id: "FL-502",
+            name: "Doraswamy Raju",
             username: "freelancer",
             email: "freelancer@medmarg.com",
-            phone: "+91 96666 66666",
+            phone: "+91 98480 22338",
             password: "password123",
             role: .freelanceAgent,
             organization: "MedMarg Gig Phlebotomist Network (Tirupati)",

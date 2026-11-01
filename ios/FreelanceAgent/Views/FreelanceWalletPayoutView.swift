@@ -28,7 +28,7 @@ struct FreelanceWalletPayoutView: View {
     @State private var toastMessage: String? = nil
 
     private var effectiveAgentId: String {
-        user.username.isEmpty ? (user.id.isEmpty ? "AG-01" : user.id) : user.username
+        user.username.isEmpty ? (user.id.isEmpty ? "FL-502" : user.id) : user.username
     }
 
     var body: some View {

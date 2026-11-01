@@ -13,7 +13,7 @@ struct FreelanceInventoryView: View {
 
     // Live State
     @State private var items: [AgentInventoryItem] = []
-    @State private var walletCredits: Int = 2000
+    @State private var walletCredits: Int = 0
     @State private var isLoading: Bool = true
     @State private var searchQuery: String = ""
     @State private var selectedFilterCategory: String = "ALL" // "ALL", "LOW_STOCK", "OUT_OF_STOCK"
@@ -26,7 +26,7 @@ struct FreelanceInventoryView: View {
     @State private var actionBanner: String? = nil
 
     private var effectiveAgentId: String {
-        user.username.isEmpty ? (user.id.isEmpty ? "AG-01" : user.id) : user.username
+        user.username.isEmpty ? (user.id.isEmpty ? "FL-502" : user.id) : user.username
     }
 
     private var totalItemsCount: Int { items.count }
@@ -432,8 +432,10 @@ struct FreelanceInventoryView: View {
                         minThreshold: d["minThreshold"] as? Int ?? 5
                     )
                 }
+                let creds = json["walletCredits"] as? Int ?? 0
                 await MainActor.run {
                     self.items = mapped
+                    self.walletCredits = creds
                     self.isLoading = false
                 }
             }

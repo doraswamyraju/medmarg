@@ -16,20 +16,20 @@ struct FreelanceProfileView: View {
     // Live Server Profile States
     @State private var phleboId: String = "FL-502"
     @State private var name: String = "Doraswamy Raju"
-    @State private var phone: String = "+91 98765 43210"
-    @State private var email: String = "doraswamy.raju@medmarg.in"
+    @State private var phone: String = "+91 98480 22338"
+    @State private var email: String = "freelancer@medmarg.com"
     @State private var rating: Double = 5.0
-    @State private var totalCollections: Int = 128
-    @State private var qualification: String = "BSc MLT (Medical Laboratory Technology)"
-    @State private var paramedicalCouncilNo: String = "AP-PMC-89102"
-    @State private var kycStatus: String = "VERIFIED"
-    @State private var assignedZone: String = "Tirupati District (Open Broadcast)"
+    @State private var totalCollections: Int = 0
+    @State private var qualification: String = "DMLT (Diploma Medical Lab Tech)"
+    @State private var paramedicalCouncilNo: String = "AP-PMC-12345"
+    @State private var kycStatus: String = "APPROVED"
+    @State private var assignedZone: String = "All Zones (Open Broadcast)"
     @State private var bankAccount: String = "HDFC Bank (A/C: ****4321)"
     @State private var bankName: String = "HDFC Bank"
     @State private var accountNumber: String = "50100492814321"
     @State private var ifscCode: String = "HDFC0001824"
     @State private var accountHolderName: String = "Doraswamy Raju"
-    @State private var upiVpa: String = "9876543210@upi"
+    @State private var upiVpa: String = "9848022338@upi"
     @State private var avatarUrl: String = ""
 
     // UI & Action States
@@ -482,6 +482,9 @@ struct FreelanceProfileView: View {
     }
 
     private func fetchProfileData() async {
+        // First check locally cached avatar
+        loadCachedAvatar()
+
         guard let url = URL(string: "https://medmarg.com/api/v1/agent/profile?agentId=\(effectiveAgentId)") else { return }
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
@@ -492,9 +495,23 @@ struct FreelanceProfileView: View {
                     self.phone = p["phone"] as? String ?? user.phone
                     self.email = p["email"] as? String ?? user.email
                     self.phleboId = p["phleboId"] as? String ?? effectiveAgentId
+                    self.paramedicalCouncilNo = p["phleboId"] as? String ?? "AP-PMC-12345"
+                    self.qualification = p["qualification"] as? String ?? "DMLT (Diploma Medical Lab Tech)"
+                    self.assignedZone = p["zone"] as? String ?? "All Zones (Open Broadcast)"
+                    self.kycStatus = p["kycStatus"] as? String ?? "APPROVED"
                     self.rating = p["rating"] as? Double ?? 5.0
                     self.totalCollections = p["totalCollections"] as? Int ?? 0
-                    self.avatarUrl = p["avatarUrl"] as? String ?? ""
+                    if let av = p["avatarUrl"] as? String, !av.isEmpty {
+                        self.avatarUrl = av
+                        let clean = av.contains(",") ? String(av.split(separator: ",")[1]) : av
+                        if let d = Data(base64Encoded: clean, options: .ignoreUnknownCharacters),
+                           let uiImg = UIImage(data: d) {
+                            self.selectedUiImage = uiImg
+                            UserDefaults.standard.set(av, forKey: "agent_avatar_\(effectiveAgentId)")
+                            UserDefaults.standard.set(av, forKey: "agent_avatar_FL-502")
+                            UserDefaults.standard.set(av, forKey: "agent_avatar_current")
+                        }
+                    }
                     if let bankAcc = p["bankAccount"] as? String { self.bankAccount = bankAcc }
                     if let bName = p["bankName"] as? String { self.bankName = bName }
                     if let accNo = p["accountNumber"] as? String { self.accountNumber = accNo }
@@ -519,9 +536,29 @@ struct FreelanceProfileView: View {
         }
     }
 
+    private func loadCachedAvatar() {
+        let keys = ["agent_avatar_\(effectiveAgentId)", "agent_avatar_FL-502", "agent_avatar_current"]
+        for k in keys {
+            if let b64 = UserDefaults.standard.string(forKey: k), !b64.isEmpty {
+                let clean = b64.contains(",") ? String(b64.split(separator: ",")[1]) : b64
+                if let d = Data(base64Encoded: clean, options: .ignoreUnknownCharacters),
+                   let uiImg = UIImage(data: d) {
+                    self.selectedUiImage = uiImg
+                    return
+                }
+            }
+        }
+    }
+
     private func uploadAvatar(_ image: UIImage) {
         guard let imageData = image.jpegData(compressionQuality: 0.6) else { return }
         let base64 = imageData.base64EncodedString()
+        let dataUri = "data:image/jpeg;base64,\(base64)"
+        UserDefaults.standard.set(dataUri, forKey: "agent_avatar_\(effectiveAgentId)")
+        UserDefaults.standard.set(dataUri, forKey: "agent_avatar_FL-502")
+        UserDefaults.standard.set(dataUri, forKey: "agent_avatar_current")
+        NotificationCenter.default.post(name: NSNotification.Name("AgentAvatarUpdated"), object: nil)
+        selectedUiImage = image
         isUploadingPhoto = true
 
         Task {
@@ -532,7 +569,7 @@ struct FreelanceProfileView: View {
 
             let body: [String: Any] = [
                 "agentId": effectiveAgentId,
-                "avatarUrl": "data:image/jpeg;base64,\(base64)"
+                "avatarUrl": dataUri
             ]
             req.httpBody = try? JSONSerialization.data(withJSONObject: body)
 

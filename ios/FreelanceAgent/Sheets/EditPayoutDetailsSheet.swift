@@ -275,3 +275,4 @@ struct EditPayoutDetailsSheet: View {
         }
     }
 }
+

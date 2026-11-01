@@ -6,6 +6,7 @@ import SwiftUI
 // =========================================================================
 
 struct FreelanceShortcutsGrid: View {
+    var creditsSubtitle: String = "Redeem Kit"
     let onClaimGigsTap: () -> Void
     let onInventoryTap: () -> Void
     let onBarcodeScanTap: () -> Void
@@ -63,7 +64,7 @@ struct FreelanceShortcutsGrid: View {
                             Text("Kit & Credits")
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundColor(MedMargTheme.slate900)
-                            Text("₹2,000 Wallet")
+                            Text(creditsSubtitle)
                                 .font(.system(size: 10))
                                 .foregroundColor(MedMargTheme.slate500)
                         }

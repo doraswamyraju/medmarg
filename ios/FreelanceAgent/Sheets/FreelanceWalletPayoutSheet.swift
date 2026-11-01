@@ -44,6 +44,30 @@ struct FreelanceWalletPayoutSheet: View {
                     Button("Cancel") { dismiss() }
                 }
             }
+            .onAppear {
+                fetchProfilePayoutDetails()
+            }
+        }
+    }
+
+    private func fetchProfilePayoutDetails() {
+        Task {
+            guard let url = URL(string: "https://medmarg.com/api/v1/agent/profile?agentId=\(agentId)") else { return }
+            if let (data, _) = try? await URLSession.shared.data(from: url),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let p = json["profile"] as? [String: Any] {
+                await MainActor.run {
+                    if let upi = p["upiVpa"] as? String ?? p["upiId"] as? String, !upi.isEmpty {
+                        self.upiVpa = upi
+                    }
+                    if let bank = p["bankAccount"] as? String, !bank.isEmpty {
+                        self.bankAccount = bank
+                    }
+                    if let ifsc = p["ifscCode"] as? String, !ifsc.isEmpty {
+                        self.ifscCode = ifsc
+                    }
+                }
+            }
         }
     }
 
