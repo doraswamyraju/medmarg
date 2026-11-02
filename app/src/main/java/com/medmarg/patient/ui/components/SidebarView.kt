@@ -217,6 +217,130 @@ fun SidebarView(
                         },
                         onSelectSubTab = { sub -> onNavigateTab(7, sub) }
                     )
+                } else if (user.role == UserRole.COLLECTION_AGENT) {
+                    // Salaried Agent Modules (1-on-1 with iOS Agent Sidebar)
+                    AccordionTabItem(
+                        index = 0,
+                        icon = Icons.Default.Home,
+                        title = "Agent Home",
+                        subTabs = listOf(0 to "Dashboard Overview", 1 to "Assigned Pickups"),
+                        isExpanded = expandedTabs.contains(0),
+                        onToggle = {
+                            expandedTabs = if (expandedTabs.contains(0)) expandedTabs - 0 else expandedTabs + 0
+                            onNavigateTab(0, 0)
+                        },
+                        onSelectSubTab = { sub -> onNavigateTab(0, sub) }
+                    )
+                    AccordionTabItem(
+                        index = 7,
+                        icon = Icons.Default.Assignment,
+                        title = "Pickups & Orders",
+                        subTabs = listOf(0 to "Today's Roster", 1 to "En Route Orders"),
+                        isExpanded = expandedTabs.contains(7),
+                        onToggle = {
+                            expandedTabs = if (expandedTabs.contains(7)) expandedTabs - 7 else expandedTabs + 7
+                            onNavigateTab(7, 0)
+                        },
+                        onSelectSubTab = { sub -> onNavigateTab(7, sub) }
+                    )
+                    AccordionTabItem(
+                        index = 1,
+                        icon = Icons.Default.Inventory2,
+                        title = "Cold Bag & Inventory",
+                        subTabs = listOf(0 to "My Supplies", 1 to "Raise Indent"),
+                        isExpanded = expandedTabs.contains(1),
+                        onToggle = {
+                            expandedTabs = if (expandedTabs.contains(1)) expandedTabs - 1 else expandedTabs + 1
+                            onNavigateTab(1, 0)
+                        },
+                        onSelectSubTab = { sub -> onNavigateTab(1, sub) }
+                    )
+                    AccordionTabItem(
+                        index = 3,
+                        icon = Icons.Default.CurrencyRupee,
+                        title = "Payments Ledger",
+                        subTabs = listOf(0 to "Doorstep QR Collections", 1 to "Cash Summary"),
+                        isExpanded = expandedTabs.contains(3),
+                        onToggle = {
+                            expandedTabs = if (expandedTabs.contains(3)) expandedTabs - 3 else expandedTabs + 3
+                            onNavigateTab(3, 0)
+                        },
+                        onSelectSubTab = { sub -> onNavigateTab(3, sub) }
+                    )
+                    AccordionTabItem(
+                        index = 4,
+                        icon = Icons.Default.BarChart,
+                        title = "Shift Quota & Profile",
+                        subTabs = listOf(0 to "My Performance", 1 to "Vehicle & Telemetry"),
+                        isExpanded = expandedTabs.contains(4),
+                        onToggle = {
+                            expandedTabs = if (expandedTabs.contains(4)) expandedTabs - 4 else expandedTabs + 4
+                            onNavigateTab(4, 0)
+                        },
+                        onSelectSubTab = { sub -> onNavigateTab(4, sub) }
+                    )
+                } else if (user.role == UserRole.FREELANCE_AGENT) {
+                    // Freelance Agent Modules (1-on-1 with iOS Freelance Sidebar)
+                    AccordionTabItem(
+                        index = 0,
+                        icon = Icons.Default.Home,
+                        title = "Freelance Home",
+                        subTabs = listOf(0 to "Workdesk Overview"),
+                        isExpanded = expandedTabs.contains(0),
+                        onToggle = {
+                            expandedTabs = if (expandedTabs.contains(0)) expandedTabs - 0 else expandedTabs + 0
+                            onNavigateTab(0, 0)
+                        },
+                        onSelectSubTab = { sub -> onNavigateTab(0, sub) }
+                    )
+                    AccordionTabItem(
+                        index = 7,
+                        icon = Icons.Default.Bolt,
+                        title = "Gigs & Broadcasts",
+                        subTabs = listOf(0 to "My Assigned Gigs", 1 to "Available Broadcasts"),
+                        isExpanded = expandedTabs.contains(7),
+                        onToggle = {
+                            expandedTabs = if (expandedTabs.contains(7)) expandedTabs - 7 else expandedTabs + 7
+                            onNavigateTab(7, 0)
+                        },
+                        onSelectSubTab = { sub -> onNavigateTab(7, sub) }
+                    )
+                    AccordionTabItem(
+                        index = 1,
+                        icon = Icons.Default.Inventory2,
+                        title = "Kit & Supplies",
+                        subTabs = listOf(0 to "Consumables Inventory"),
+                        isExpanded = expandedTabs.contains(1),
+                        onToggle = {
+                            expandedTabs = if (expandedTabs.contains(1)) expandedTabs - 1 else expandedTabs + 1
+                            onNavigateTab(1, 0)
+                        },
+                        onSelectSubTab = { sub -> onNavigateTab(1, sub) }
+                    )
+                    AccordionTabItem(
+                        index = 3,
+                        icon = Icons.Default.AccountBalanceWallet,
+                        title = "Wallet & Instant Payouts",
+                        subTabs = listOf(0 to "Withdraw Funds", 1 to "Payout History"),
+                        isExpanded = expandedTabs.contains(3),
+                        onToggle = {
+                            expandedTabs = if (expandedTabs.contains(3)) expandedTabs - 3 else expandedTabs + 3
+                            onNavigateTab(3, 0)
+                        },
+                        onSelectSubTab = { sub -> onNavigateTab(3, sub) }
+                    )
+                    AccordionTabItem(
+                        index = 4,
+                        icon = Icons.Default.Person,
+                        title = "MLT Profile & Credentials",
+                        subTabs = listOf(0 to "KYC Verification"),
+                        isExpanded = expandedTabs.contains(4),
+                        onToggle = {
+                            expandedTabs = if (expandedTabs.contains(4)) expandedTabs - 4 else expandedTabs + 4
+                            onNavigateTab(4, 0)
+                        },
+                        onSelectSubTab = { sub -> onNavigateTab(4, sub) }
+                    )
                 } else {
                     // Patient Accordion Modules (Matching iOS patientAccordionModules exactly)
                     AccordionTabItem(

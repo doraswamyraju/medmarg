@@ -179,6 +179,87 @@ fun BottomSheetMenuView(
                             onNavigateTab(tab, sub)
                         }
                     )
+                } else if (user?.role == UserRole.COLLECTION_AGENT) {
+                    // Salaried Fleet Agent Modules
+                    BottomSheetModuleCard(
+                        tabIndex = 0,
+                        icon = Icons.Default.Home,
+                        title = "Agent Home Dashboard",
+                        description = "Shift Quota, Greeting & Next Assigned Pickup",
+                        subTabs = listOf(0 to "Overview"),
+                        onCardClick = { tab, sub ->
+                            onDismissRequest()
+                            onNavigateTab(tab, sub)
+                        }
+                    )
+                    BottomSheetModuleCard(
+                        tabIndex = 7,
+                        icon = Icons.Default.Assignment,
+                        title = "Pickups & Orders Roster",
+                        description = "Patient Doorstep Visits, Barcode Scanning & ETA",
+                        subTabs = listOf(0 to "All Orders", 1 to "En Route"),
+                        onCardClick = { tab, sub ->
+                            onDismissRequest()
+                            onNavigateTab(tab, sub)
+                        }
+                    )
+                    BottomSheetModuleCard(
+                        tabIndex = 1,
+                        icon = Icons.Default.Inventory2,
+                        title = "Cold Bag & Inventory",
+                        description = "EDTA/SST Tubes, Needles, Swabs & Warehouse Indents",
+                        subTabs = listOf(0 to "Consumables Bag", 1 to "Raise Indent"),
+                        onCardClick = { tab, sub ->
+                            onDismissRequest()
+                            onNavigateTab(tab, sub)
+                        }
+                    )
+                    BottomSheetModuleCard(
+                        tabIndex = 3,
+                        icon = Icons.Default.CurrencyRupee,
+                        title = "Collections & Payments",
+                        description = "Doorstep QR (UPI) & Cash Handover Ledger",
+                        subTabs = listOf(0 to "Today's Collections"),
+                        onCardClick = { tab, sub ->
+                            onDismissRequest()
+                            onNavigateTab(tab, sub)
+                        }
+                    )
+                } else if (user?.role == UserRole.FREELANCE_AGENT) {
+                    // Freelance Phlebotomist Modules
+                    BottomSheetModuleCard(
+                        tabIndex = 0,
+                        icon = Icons.Default.Home,
+                        title = "Freelance Home",
+                        description = "Live Gig Telemetry, Earnings & Quick Workdesk",
+                        subTabs = listOf(0 to "Overview"),
+                        onCardClick = { tab, sub ->
+                            onDismissRequest()
+                            onNavigateTab(tab, sub)
+                        }
+                    )
+                    BottomSheetModuleCard(
+                        tabIndex = 7,
+                        icon = Icons.Default.Bolt,
+                        title = "Available Gigs & Broadcasts",
+                        description = "Claim Open Patient Visits with High Payouts",
+                        subTabs = listOf(0 to "My Gigs", 1 to "Broadcasts"),
+                        onCardClick = { tab, sub ->
+                            onDismissRequest()
+                            onNavigateTab(tab, sub)
+                        }
+                    )
+                    BottomSheetModuleCard(
+                        tabIndex = 3,
+                        icon = Icons.Default.AccountBalanceWallet,
+                        title = "Gig Wallet & Instant Payouts",
+                        description = "Withdraw Balance Directly to Bank or UPI",
+                        subTabs = listOf(0 to "Withdraw Funds", 1 to "History"),
+                        onCardClick = { tab, sub ->
+                            onDismissRequest()
+                            onNavigateTab(tab, sub)
+                        }
+                    )
                 } else {
                     // Patient Modules (Matching iOS patientBottomSheetModules exactly)
                     BottomSheetModuleCard(

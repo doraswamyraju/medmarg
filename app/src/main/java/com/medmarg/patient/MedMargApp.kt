@@ -23,7 +23,9 @@ import com.medmarg.patient.model.CartItem
 import com.medmarg.patient.model.CatalogItem
 import com.medmarg.patient.model.UserProfile
 import com.medmarg.patient.model.UserRole
+import com.medmarg.patient.ui.agent.*
 import com.medmarg.patient.ui.components.*
+import com.medmarg.patient.ui.freelance.*
 import com.medmarg.patient.ui.screens.*
 import com.medmarg.patient.ui.theme.*
 import kotlinx.coroutines.launch
@@ -138,30 +140,32 @@ fun MedMargApp() {
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
-                TopbarView(
-                    user = user,
-                    onMenuClick = { showSidebar = true },
-                    onNotificationClick = { showNotificationCenter = true },
-                    onLogoutClick = {
-                        loggedInUser = null
-                        selectedTab = 0
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Signed out of MedMarg")
+                if (user.role != UserRole.COLLECTION_AGENT && user.role != UserRole.FREELANCE_AGENT) {
+                    TopbarView(
+                        user = user,
+                        onMenuClick = { showSidebar = true },
+                        onNotificationClick = { showNotificationCenter = true },
+                        onLogoutClick = {
+                            loggedInUser = null
+                            selectedTab = 0
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Signed out of MedMarg")
+                            }
                         }
-                    }
-                )
+                    )
+                }
             },
             bottomBar = {
                 Column {
-                    // Floating Cart Bar (Sticky when cart has items)
-                    if (cartItems.isNotEmpty() && selectedTab != 2) {
+                    // Floating Cart Bar (Sticky when cart has items & user is Patient)
+                    if (user.role == UserRole.PATIENT && cartItems.isNotEmpty() && selectedTab != 2) {
                         FloatingCartBar(
                             cartItems = cartItems,
                             onCheckoutClick = { showCartSheet = true }
                         )
                     }
 
-                    // 5-Tab Navigation Bar with Drag Handle Bar
+                    // Bottom Navigation Bar
                     BottomNavbarView(
                         selectedTab = selectedTab,
                         onTabSelected = { selectedTab = it },
@@ -177,92 +181,133 @@ fun MedMargApp() {
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                // Main Tab Routing
-                when (selectedTab) {
-                    0 -> HomeScreen(
-                        onNavigateToTab = { selectedTab = it },
-                        onSelectItem = { selectedDetailItem = it },
-                        onOpenPrescription = {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Prescription Upload Camera Opened")
-                            }
-                        }
-                    )
-                    1 -> DiagnosticsScreen(
-                        onSelectItem = { selectedDetailItem = it },
-                        onAddToCart = { item ->
-                            cartItems.add(
-                                CartItem(
-                                    id = "cart_${System.currentTimeMillis()}",
-                                    title = item.name,
-                                    subtitle = "${item.displayItemType} • ${item.displaySample}",
-                                    price = item.price,
-                                    mrp = if (item.mrp > 0) item.mrp else item.price + 500,
-                                    type = item.displayItemType
-                                )
+                // Role-Based Screen Routing (Parity with iOS ContentView)
+                when (user.role) {
+                    UserRole.COLLECTION_AGENT -> {
+                        AgentDashboardScreen(
+                            user = user,
+                            onLogout = {
+                                loggedInUser = null
+                                selectedTab = 0
+                            },
+                            selectedTab = selectedTab,
+                            onTabSelected = { selectedTab = it },
+                            onOpenSidebar = { showSidebar = true },
+                            onOpenNotifications = { showNotificationCenter = true }
+                        )
+                    }
+                    UserRole.FREELANCE_AGENT -> {
+                        FreelanceDashboardScreen(
+                            user = user,
+                            onLogout = {
+                                loggedInUser = null
+                                selectedTab = 0
+                            },
+                            selectedTab = selectedTab,
+                            onTabSelected = { selectedTab = it },
+                            onOpenSidebar = { showSidebar = true },
+                            onOpenNotifications = { showNotificationCenter = true }
+                        )
+                    }
+                    UserRole.ADMIN -> {
+                        AdminDashboardScreen(
+                            onSwitchRole = { showRoleSwitchSheet = true }
+                        )
+                    }
+                    UserRole.DOCTOR -> {
+                        DoctorDashboardScreen(
+                            onSwitchRole = { showRoleSwitchSheet = true }
+                        )
+                    }
+                    else -> {
+                        // Patient Main Tab Routing
+                        when (selectedTab) {
+                            0 -> HomeScreen(
+                                onNavigateToTab = { selectedTab = it },
+                                onSelectItem = { selectedDetailItem = it },
+                                onOpenPrescription = {
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Prescription Upload Camera Opened")
+                                    }
+                                }
                             )
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Added ${item.name} to Cart")
-                            }
-                        }
-                    )
-                    2 -> TrackScreen()
-                    3 -> HealthLockerScreen()
-                    4 -> ProfileScreen(
-                        user = user,
-                        onOpenLocationPicker = { showLocationSheet = true },
-                        onSwitchRole = { showRoleSwitchSheet = true },
-                        onLogout = {
-                            loggedInUser = null
-                            selectedTab = 0
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Signed out")
-                            }
-                        }
-                    )
-                    5 -> DoctorsScreen(
-                        onBookDoctor = { doctor ->
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Consultation slot selected with ${doctor.name}")
-                            }
-                        }
-                    )
-                    6 -> PharmacyScreen(
-                        onAddToCart = { med, isGeneric ->
-                            val finalPrice = if (isGeneric && med.genericAlternative != null) med.genericAlternative.discountedPrice else med.price
-                            val finalTitle = if (isGeneric && med.genericAlternative != null) "${med.genericAlternative.name} (Generic substitute)" else med.name
-                            cartItems.add(
-                                CartItem(
-                                    id = "med_${med.id}",
-                                    title = finalTitle,
-                                    subtitle = "${med.composition} • ${med.packSize}",
-                                    price = finalPrice,
-                                    mrp = med.mrp,
-                                    type = "Pharmacy"
-                                )
+                            1 -> DiagnosticsScreen(
+                                onSelectItem = { selectedDetailItem = it },
+                                onAddToCart = { item ->
+                                    cartItems.add(
+                                        CartItem(
+                                            id = "cart_${System.currentTimeMillis()}",
+                                            title = item.name,
+                                            subtitle = "${item.displayItemType} • ${item.displaySample}",
+                                            price = item.price,
+                                            mrp = if (item.mrp > 0) item.mrp else item.price + 500,
+                                            type = item.displayItemType
+                                        )
+                                    )
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Added ${item.name} to Cart")
+                                    }
+                                }
                             )
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Added $finalTitle to Cart")
-                            }
-                        }
-                    )
-                    7 -> ScansScreen(
-                        onSelectScanCenter = { scan, center ->
-                            cartItems.add(
-                                CartItem(
-                                    id = "scan_${scan.id}",
-                                    title = scan.name,
-                                    subtitle = "${scan.modality} • ${scan.bodyPart} • ${center.centerName}",
-                                    price = center.price,
-                                    mrp = center.originalPrice,
-                                    type = "Radiology Scan"
-                                )
+                            2 -> TrackScreen()
+                            3 -> HealthLockerScreen()
+                            4 -> ProfileScreen(
+                                user = user,
+                                onOpenLocationPicker = { showLocationSheet = true },
+                                onSwitchRole = { showRoleSwitchSheet = true },
+                                onLogout = {
+                                    loggedInUser = null
+                                    selectedTab = 0
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Signed out")
+                                    }
+                                }
                             )
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Added ${scan.name} (${center.centerName}) to Cart")
-                            }
+                            5 -> DoctorsScreen(
+                                onBookDoctor = { doctor ->
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Consultation slot selected with ${doctor.name}")
+                                    }
+                                }
+                            )
+                            6 -> PharmacyScreen(
+                                onAddToCart = { med, isGeneric ->
+                                    val finalPrice = if (isGeneric && med.genericAlternative != null) med.genericAlternative.discountedPrice else med.price
+                                    val finalTitle = if (isGeneric && med.genericAlternative != null) "${med.genericAlternative.name} (Generic substitute)" else med.name
+                                    cartItems.add(
+                                        CartItem(
+                                            id = "med_${med.id}",
+                                            title = finalTitle,
+                                            subtitle = "${med.composition} • ${med.packSize}",
+                                            price = finalPrice,
+                                            mrp = med.mrp,
+                                            type = "Pharmacy"
+                                        )
+                                    )
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Added $finalTitle to Cart")
+                                    }
+                                }
+                            )
+                            7 -> ScansScreen(
+                                onSelectScanCenter = { scan, center ->
+                                    cartItems.add(
+                                        CartItem(
+                                            id = "scan_${scan.id}",
+                                            title = scan.name,
+                                            subtitle = "${scan.modality} • ${scan.bodyPart} • ${center.centerName}",
+                                            price = center.price,
+                                            mrp = center.originalPrice,
+                                            type = "Radiology Scan"
+                                        )
+                                    )
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Added ${scan.name} (${center.centerName}) to Cart")
+                                    }
+                                }
+                            )
                         }
-                    )
+                    }
                 }
 
                 // Universal Item Details Sheet (With Smart Package Upgrades & Highlighted Savings)

@@ -31,6 +31,195 @@ fun BottomNavbarView(
     onOpenMenuSheet: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    if (userRole == UserRole.COLLECTION_AGENT || userRole == UserRole.FREELANCE_AGENT) {
+        // ==========================================
+        // 🔮 GLASSMORPHIC FLOATING PILL NAVBAR FOR AGENTS (1-on-1 WITH IOS)
+        // ==========================================
+        AgentGlassmorphicNavbar(
+            selectedTab = selectedTab,
+            onTabSelected = onTabSelected,
+            userRole = userRole,
+            modifier = modifier
+        )
+    } else {
+        StandardBottomNavbar(
+            selectedTab = selectedTab,
+            onTabSelected = onTabSelected,
+            userRole = userRole,
+            onOpenMenuSheet = onOpenMenuSheet,
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
+private fun AgentGlassmorphicNavbar(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
+    userRole: UserRole,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(16.dp, shape = RoundedCornerShape(32.dp), spotColor = Color.Black.copy(alpha = 0.5f))
+                .clip(RoundedCornerShape(32.dp))
+                .background(Color(0xFF142428).copy(alpha = 0.96f))
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        listOf(
+                            Color.White.copy(alpha = 0.25f),
+                            Color.White.copy(alpha = 0.08f),
+                            Color.Transparent
+                        )
+                    ),
+                    shape = RoundedCornerShape(32.dp)
+                )
+                .padding(horizontal = 8.dp, vertical = 8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                AgentGlassTab(
+                    index = 0,
+                    selectedIndex = selectedTab,
+                    icon = Icons.Default.Home,
+                    title = "Home",
+                    onClick = { onTabSelected(0) }
+                )
+
+                AgentGlassTab(
+                    index = 7,
+                    selectedIndex = selectedTab,
+                    icon = Icons.Default.Assignment,
+                    title = if (userRole == UserRole.FREELANCE_AGENT) "Gigs" else "Orders",
+                    onClick = { onTabSelected(7) }
+                )
+
+                AgentGlassTab(
+                    index = 1,
+                    selectedIndex = selectedTab,
+                    icon = Icons.Default.Inventory2,
+                    title = if (userRole == UserRole.FREELANCE_AGENT) "Kit" else "Inventory",
+                    onClick = { onTabSelected(1) }
+                )
+
+                AgentGlassTab(
+                    index = 3,
+                    selectedIndex = selectedTab,
+                    icon = Icons.Default.CurrencyRupee,
+                    title = if (userRole == UserRole.FREELANCE_AGENT) "Wallet" else "Payments",
+                    onClick = { onTabSelected(3) }
+                )
+
+                AgentGlassTab(
+                    index = 4,
+                    selectedIndex = selectedTab,
+                    icon = if (userRole == UserRole.FREELANCE_AGENT) Icons.Default.Person else Icons.Default.BarChart,
+                    title = if (userRole == UserRole.FREELANCE_AGENT) "Profile" else "Quota",
+                    onClick = { onTabSelected(4) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AgentGlassTab(
+    index: Int,
+    selectedIndex: Int,
+    icon: ImageVector,
+    title: String,
+    onClick: () -> Unit
+) {
+    val isSelected = selectedIndex == index || (index == 0 && (selectedIndex != 7 && selectedIndex != 1 && selectedIndex != 3 && selectedIndex != 4))
+
+    Column(
+        modifier = Modifier
+            .clickable { onClick() }
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        if (isSelected) {
+            // Glowing Active Pill
+            Box(
+                modifier = Modifier
+                    .size(width = 48.dp, height = 30.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color(0xFF00DB8B).copy(alpha = 0.25f))
+                    .border(1.dp, Color(0xFF00F29D).copy(alpha = 0.6f), RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = Color(0xFF33FFAA),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = title,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF33FFAA)
+            )
+
+            // Small indicator dot
+            Box(
+                modifier = Modifier
+                    .size(3.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF00F29D))
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(width = 48.dp, height = 30.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = PureWhite.copy(alpha = 0.6f),
+                    modifier = Modifier.size(17.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(2.dp))
+
+            Text(
+                text = title,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Medium,
+                color = PureWhite.copy(alpha = 0.6f)
+            )
+
+            Spacer(modifier = Modifier.height(3.dp))
+        }
+    }
+}
+
+@Composable
+private fun StandardBottomNavbar(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
+    userRole: UserRole,
+    onOpenMenuSheet: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Surface(
         modifier = modifier
             .fillMaxWidth()

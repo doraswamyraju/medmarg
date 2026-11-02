@@ -48,6 +48,7 @@ fun LoginScreen(
         UserProfile("usr_doc", "Dr. Ananya Sharma, MD", "doctor", "doctor@medmarg.com", "+91 98765 11111", "password123", UserRole.DOCTOR, "MedMarg Care Clinic, Tirupati"),
         UserProfile("usr_admin", "MedMarg Super Admin", "admin", "admin@medmarg.com", "+91 98765 00000", "password123", UserRole.ADMIN, "MedMarg Central Governance"),
         UserProfile("usr_agent", "Ramesh Kumar (Phlebo AG-01)", "agent", "agent@medmarg.com", "+91 98765 55555", "password123", UserRole.COLLECTION_AGENT, "Tirupati Field Collection Fleet"),
+        UserProfile("usr_freelance", "Vikram Reddy (MLT GIG-02)", "freelance", "freelance@medmarg.com", "+91 98765 66666", "password123", UserRole.FREELANCE_AGENT, "Independent Phlebotomy Partner"),
         UserProfile("usr_pharma", "MedPlus Generic Chemist", "pharmacy", "pharmacy@medmarg.com", "+91 98765 44444", "password123", UserRole.PHARMACY, "Generic Pharmacy Hub, Tirupati"),
         UserProfile("usr_scan", "Aarthi Scans & Radiology", "scans", "scans@medmarg.com", "+91 98765 33333", "password123", UserRole.SCAN_CENTER, "Siemens 3.0T MRI Center, Tirupati")
     )

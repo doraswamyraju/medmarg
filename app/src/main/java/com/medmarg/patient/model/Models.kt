@@ -10,7 +10,8 @@ enum class UserRole(val displayName: String, val badgeColorHex: Long) {
     DIAGNOSTIC_LAB("Diagnostic Lab Partner", 0xFF2563EB),
     SCAN_CENTER("Radiology & Scan Center", 0xFF06B6D4),
     PHARMACY("Generic Pharmacy Partner", 0xFF10B981),
-    COLLECTION_AGENT("Collection Agent (Fleet)", 0xFFF59E0B)
+    COLLECTION_AGENT("Salaried Fleet Agent", 0xFFF59E0B),
+    FREELANCE_AGENT("Freelance Phlebotomist (Gig)", 0xFFEA580C)
 }
 
 data class UserProfile(
