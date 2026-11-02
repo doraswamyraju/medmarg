@@ -233,3 +233,4 @@ private fun PerformanceItem(title: String, value: String, color: Color) {
         Text(value, fontSize = 14.sp, fontWeight = FontWeight.Black, color = color)
     }
 }
+

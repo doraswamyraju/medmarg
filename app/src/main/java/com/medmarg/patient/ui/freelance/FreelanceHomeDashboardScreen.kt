@@ -498,3 +498,4 @@ private fun FreelanceShortcutItem(
         }
     }
 }
+

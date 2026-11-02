@@ -161,3 +161,4 @@ private fun CredentialRow(label: String, value: String) {
         Text(value, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Slate900)
     }
 }
+
