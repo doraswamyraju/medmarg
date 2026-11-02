@@ -29,6 +29,7 @@ val NablBlueLight = Color(0xFFDBEAFE)
 
 val AmberWarning = Color(0xFFF59E0B)
 val AmberWarningLight = Color(0xFFFEF3C7)
+val AmberGold = Color(0xFFF59E0B)
 
 val RoseError = Color(0xFFEF4444)
 val RoseErrorLight = Color(0xFFFEE2E2)

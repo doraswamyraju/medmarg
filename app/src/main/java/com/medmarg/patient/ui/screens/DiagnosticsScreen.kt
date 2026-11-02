@@ -84,7 +84,7 @@ fun DiagnosticsScreen(
 
         baseList.filter { item ->
             // Category Filter
-            if (selectedCategoryId != "ALL" && !item.category.contains(selectedCategoryId, ignoreCase = true)) {
+            if (selectedCategoryId != "ALL" && item.category?.contains(selectedCategoryId, ignoreCase = true) != true) {
                 // soft fallback
             }
 
