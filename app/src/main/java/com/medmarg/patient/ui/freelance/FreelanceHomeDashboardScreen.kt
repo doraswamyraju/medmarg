@@ -110,7 +110,7 @@ fun FreelanceHomeDashboardScreen(
     val collectedAwaitingHandover = rosterOrders.filter { it.status == "SAMPLE_COLLECTED" }
 
     val todayEarnings = rosterOrders.filter { it.status == "SAMPLE_COLLECTED" || it.status == "COMPLETED" || it.status == "DELIVERED" }
-        .sumOf { 350 } // Standard gig payout calculation
+        .sumOf { 350.toInt() } // Standard gig payout calculation
 
     val completedGigsCount = rosterOrders.count { it.status == "SAMPLE_COLLECTED" || it.status == "COMPLETED" || it.status == "DELIVERED" }
 

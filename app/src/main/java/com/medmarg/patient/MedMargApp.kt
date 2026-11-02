@@ -223,8 +223,25 @@ fun MedMargApp() {
                         // Patient Main Tab Routing
                         when (selectedTab) {
                             0 -> HomeScreen(
+                                user = user,
+                                currentCity = "Tirupati",
                                 onNavigateToTab = { selectedTab = it },
                                 onSelectItem = { selectedDetailItem = it },
+                                onAddToCart = { item ->
+                                    cartItems.add(
+                                        CartItem(
+                                            id = "cart_${System.currentTimeMillis()}",
+                                            title = item.name,
+                                            subtitle = "${item.displayItemType} • ${item.displaySample}",
+                                            price = item.price,
+                                            mrp = if (item.mrp > 0) item.mrp else item.price + 500,
+                                            type = item.displayItemType
+                                        )
+                                    )
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Added ${item.name} to Cart")
+                                    }
+                                },
                                 onOpenPrescription = {
                                     coroutineScope.launch {
                                         snackbarHostState.showSnackbar("Prescription Upload Camera Opened")
