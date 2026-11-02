@@ -134,6 +134,7 @@ struct ContentView: View {
     @State private var isPasswordVisible: Bool = false
     @State private var loggedInUser: UserProfile? = nil
     @State private var currentCity: String = "Tirupati, Andhra Pradesh"
+    @State private var currentAddress: String = "Air Bypass Road, Tirupati"
     
     // Google Sign-In & Missing Phone Number Verification State (VR Here workflow)
     @State private var showGooglePhoneSheet: Bool = false
@@ -217,6 +218,10 @@ struct ContentView: View {
                                     } else {
                                         selectedTab = 6
                                     }
+                                },
+                                currentAddress: currentAddress,
+                                onLocationTap: {
+                                    showAddressModal = true
                                 }
                             )
                         }
@@ -321,7 +326,9 @@ struct ContentView: View {
                 .sheet(isPresented: $showAddressModal) {
                     CareSeekerAddressModal(
                         isOpen: $showAddressModal,
-                        onSaveAddress: { _ in }
+                        onSaveAddress: { newAddr in
+                            currentAddress = "\(newAddr.address), \(newAddr.city)"
+                        }
                     )
                 }
                 .sheet(item: $selectedDetailItem) { item in
@@ -768,6 +775,7 @@ struct ContentView: View {
                     selectedTab: $selectedTab,
                     user: user,
                     currentCity: currentCity,
+                    currentAddress: currentAddress,
                     onAddToCart: { item in
                         addToCartFromCatalog(item)
                     },

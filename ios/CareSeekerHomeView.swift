@@ -10,6 +10,7 @@ struct CareSeekerHomeView: View {
     @Binding var selectedTab: Int
     var user: UserProfile? = nil
     var currentCity: String = "Tirupati"
+    var currentAddress: String = "Air Bypass Road, Tirupati"
     @ObservedObject var healthKit = HealthKitManager.shared
     let onAddToCart: (CatalogItem) -> Void
     let onOpenPrescriptionModal: () -> Void
@@ -32,6 +33,12 @@ struct CareSeekerHomeView: View {
             return name
         }
         return "Ravi Kumar"
+    }
+
+    private var cityShortName: String {
+        let parts = currentCity.components(separatedBy: ",")
+        let first = parts.first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return first.isEmpty ? "Tirupati" : first
     }
 
     var body: some View {
@@ -98,54 +105,50 @@ struct CareSeekerHomeView: View {
     // =========================================================================
     private var scenicCityHeroSection: some View {
         ZStack(alignment: .bottom) {
-            // Scenic Background with subtle Temple Gopuram & Mountain Silhouette
-            ZStack {
+            // Scenic Background with Real Tirupati Temple & Hills Image
+            ZStack(alignment: .topTrailing) {
                 LinearGradient(
                     colors: [
                         Color(red: 0.82, green: 0.93, blue: 0.98),
                         Color(red: 0.90, green: 0.96, blue: 0.95),
                         Color.white
                     ],
-                    startPoint: .top,
-                    endPoint: .bottom
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
                 )
 
-                // Artistic Temple Gopuram & Hills graphic in top right
-                HStack {
-                    Spacer()
-                    VStack(alignment: .trailing, spacing: 0) {
-                        ZStack(alignment: .bottomTrailing) {
-                            // Mountain range backdrop
-                            Image(systemName: "mountain.2.fill")
-                                .font(.system(size: 110))
-                                .foregroundColor(Color(red: 0.40, green: 0.65, blue: 0.75).opacity(0.20))
-                                .offset(x: 10, y: 10)
-
-                            // Temple Gopuram Tower Silhouette
-                            VStack(spacing: 2) {
-                                Image(systemName: "triangle.fill")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(Color(red: 0.70, green: 0.55, blue: 0.25).opacity(0.45))
-                                Rectangle()
-                                    .fill(Color(red: 0.70, green: 0.55, blue: 0.25).opacity(0.35))
-                                    .frame(width: 28, height: 16)
-                                Rectangle()
-                                    .fill(Color(red: 0.70, green: 0.55, blue: 0.25).opacity(0.35))
-                                    .frame(width: 36, height: 18)
-                                Rectangle()
-                                    .fill(Color(red: 0.70, green: 0.55, blue: 0.25).opacity(0.35))
-                                    .frame(width: 44, height: 20)
-                                Rectangle()
-                                    .fill(Color(red: 0.70, green: 0.55, blue: 0.25).opacity(0.35))
-                                    .frame(width: 52, height: 24)
-                            }
-                            .offset(x: -16, y: -4)
-                        }
-                    }
-                }
-                .padding(.trailing, 4)
+                // Real Scenic Tirupati Temple Image
+                Image(uiImage: MedMargAssets.templeImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 270, height: 195)
+                    .clipped()
+                    .mask(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .clear, location: 0.0),
+                                .init(color: .black.opacity(0.3), location: 0.2),
+                                .init(color: .black.opacity(0.85), location: 0.55),
+                                .init(color: .black, location: 1.0)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .overlay(
+                        LinearGradient(
+                            stops: [
+                                .init(color: .clear, location: 0.0),
+                                .init(color: Color.white.opacity(0.35), location: 0.6),
+                                .init(color: Color.white, location: 1.0)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
             }
             .frame(height: 195)
+            .clipped()
 
             // Content Overlay (Greeting + Search Bar)
             VStack(alignment: .leading, spacing: 14) {
@@ -163,7 +166,7 @@ struct CareSeekerHomeView: View {
                         Text("Your health partner in")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(MedMargTheme.slate600)
-                        Text(currentCity)
+                        Text(cityShortName)
                             .font(.system(size: 12, weight: .bold))
                             .foregroundColor(MedMargTheme.primaryTeal)
                     }
@@ -272,7 +275,7 @@ struct CareSeekerHomeView: View {
 
                 // 2. Diabetes
                 quickCategoryTile(
-                    title: "Diabetes\nCare",
+                    title: "Diabetes",
                     icon: "drop.fill",
                     iconColor: Color.red,
                     bgColor: Color(red: 0.99, green: 0.92, blue: 0.92),
@@ -405,16 +408,17 @@ struct CareSeekerHomeView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                // Center: Family Graphic
-                ZStack {
-                    Circle()
-                        .fill(Color.white.opacity(0.6))
-                        .frame(width: 80, height: 80)
-
-                    Image(systemName: "figure.2.and.child.holdinghands")
-                        .font(.system(size: 42, weight: .bold))
-                        .foregroundColor(MedMargTheme.primaryTeal)
-                }
+                // Center: Real Smiling Indian Family Photo (Father, Mother, Daughter)
+                Image(uiImage: MedMargAssets.heroImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 95, height: 105)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.white, lineWidth: 2)
+                    )
+                    .shadow(color: Color.black.opacity(0.08), radius: 6, x: 0, y: 3)
 
                 // Right Column: 4 Feature Value Badges
                 VStack(alignment: .leading, spacing: 8) {
