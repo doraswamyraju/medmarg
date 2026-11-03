@@ -42,19 +42,9 @@ fun MedMargApp() {
         CatalogStore.initialize(context)
     }
 
-    // Authenticated User State (Matches iOS login/logout workflow)
+    // Authenticated User State (Starts at Login Screen matching iOS ContentView.swift)
     var loggedInUser by remember {
-        mutableStateOf<UserProfile?>(
-            UserProfile(
-                id = "usr_pat",
-                name = "Rahul Sharma",
-                username = "patient",
-                email = "patient@medmarg.com",
-                phone = "+91 98765 43210",
-                role = UserRole.PATIENT,
-                organization = "Air Bypass Road, Tirupati - 517501"
-            )
-        )
+        mutableStateOf<UserProfile?>(null)
     }
 
     // Navigation State: 0: Home, 1: Labs & Tests, 2: Track, 3: Reports, 4: Profile, 5: Doctors, 6: Pharmacy, 7: Scans
@@ -97,40 +87,10 @@ fun MedMargApp() {
             onLoginSuccess = { user ->
                 loggedInUser = user
                 coroutineScope.launch {
-                    snackbarHostState.showSnackbar("Welcome back, ${user.name}!")
+                    snackbarHostState.showSnackbar("Welcome, ${user.name}!")
                 }
-            },
-            onGoogleSignInClicked = {
-                val googleUser = UserProfile(
-                    id = "usr_g_12345",
-                    name = "Rahul Sharma",
-                    username = "rahul_google",
-                    email = "rahul.patient@gmail.com",
-                    phone = "",
-                    role = UserRole.PATIENT,
-                    organization = "MedMarg Patient Portal"
-                )
-                loggedInUser = googleUser
-                showGooglePhoneSheet = true
             }
         )
-
-        // Google Phone Prompt Sheet
-        if (showGooglePhoneSheet) {
-            loggedInUser?.let { user ->
-                GooglePhoneSheet(
-                    tempUser = user,
-                    onDismissRequest = { showGooglePhoneSheet = false },
-                    onConfirmPhone = { phone ->
-                        loggedInUser = user.copy(phone = phone)
-                        showGooglePhoneSheet = false
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Phone verified: $phone")
-                        }
-                    }
-                )
-            }
-        }
     } else {
         // ==========================================
         // 🏥 MAIN MEDMARG LOGGED-IN WORKSPACE
