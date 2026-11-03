@@ -83,16 +83,23 @@ struct CareSeekerTrackingView: View {
 
     private var steps: [OrderStep] {
         let status = currentOrder.status.uppercased()
-        let isBooked = ["BOOKED", "CONFIRMED", "ASSIGNED", "ENROUTE", "EN_ROUTE", "SAMPLE_COLLECTED", "IN_LAB", "COMPLETED"].contains(status)
+        let isBooked = ["BOOKED", "CONFIRMED", "PENDING_DISPATCH", "ASSIGNED", "ENROUTE", "EN_ROUTE", "SAMPLE_COLLECTED", "IN_LAB", "COMPLETED"].contains(status)
         let isAssigned = ["ASSIGNED", "ENROUTE", "EN_ROUTE", "SAMPLE_COLLECTED", "IN_LAB", "COMPLETED"].contains(status)
         let isEnroute = ["ENROUTE", "EN_ROUTE", "SAMPLE_COLLECTED", "IN_LAB", "COMPLETED"].contains(status)
         let isCollected = ["SAMPLE_COLLECTED", "IN_LAB", "COMPLETED"].contains(status)
         let isInLab = ["IN_LAB", "COMPLETED"].contains(status)
         let isCompleted = status == "COMPLETED"
 
+        let phleboDisplay: String
+        if currentOrder.phleboName.isEmpty || currentOrder.phleboName.uppercased() == "UNASSIGNED" {
+            phleboDisplay = "Assigning Certified Phlebotomist"
+        } else {
+            phleboDisplay = currentOrder.phleboName
+        }
+
         return [
             OrderStep(key: "BOOKED", label: "Order Booked", desc: "Confirmed for \(currentOrder.slot)", done: isBooked),
-            OrderStep(key: "ASSIGNED", label: "Phlebotomist Assigned", desc: currentOrder.phleboName.isEmpty ? "Assigning Certified Phlebo" : currentOrder.phleboName, done: isAssigned),
+            OrderStep(key: "ASSIGNED", label: "Phlebotomist Assigned", desc: phleboDisplay, done: isAssigned),
             OrderStep(key: "ENROUTE", label: "Enroute to Doorstep", desc: isEnroute ? (currentOrder.eta.isEmpty ? "On the way" : "ETA: \(currentOrder.eta)") : "Dispatches at scheduled slot", done: isEnroute),
             OrderStep(key: "SAMPLE_COLLECTED", label: "Sample Collected", desc: "Barcoded vacutainers", done: isCollected),
             OrderStep(key: "IN_LAB", label: "Processing in Lab", desc: "NABL Certified Hub", done: isInLab),
@@ -194,7 +201,7 @@ struct CareSeekerTrackingView: View {
 
     private func fetchLiveOrders() {
         isLoading = true
-        guard let url = URL(string: "https://medmarg.com/api/v1/admin/orders") else {
+        guard let url = URL(string: "https://medmarg.com/api/v1/patient/orders") else {
             isLoading = false
             return
         }
@@ -208,7 +215,7 @@ struct CareSeekerTrackingView: View {
                     return
                 }
 
-                // Filter for active tracking states: BOOKED, ASSIGNED, ENROUTE, SAMPLE_COLLECTED, IN_LAB
+                // Filter for active tracking states
                 let activeOrders = ordersArray.filter { dict in
                     let status = (dict["status"] as? String)?.uppercased() ?? ""
                     return status != "CANCELLED" && status != "COMPLETED" && status != "DELIVERED"
@@ -216,16 +223,43 @@ struct CareSeekerTrackingView: View {
 
                 let parsed: [LiveOrderModel] = activeOrders.compactMap { dict in
                     let id = dict["id"] as? String ?? "ORD"
-                    let date = dict["date"] as? String ?? "Today"
+                    let date = dict["date"] as? String ?? (dict["createdAt"] as? String ?? "Today")
                     let slot = dict["slot"] as? String ?? "Morning Slot"
-                    let address = dict["address"] as? String ?? "Tirupati, AP"
-                    let phleboName = dict["phleboName"] as? String ?? "Certified Phlebotomist"
+                    let address = dict["address"] as? String ?? (dict["patientAddress"] as? String ?? "Tirupati, AP")
+                    let phleboName = dict["phleboName"] as? String ?? (dict["assignedAgent"] as? String ?? "Certified Phlebotomist")
                     let phleboPhone = dict["phleboPhone"] as? String ?? "+91 98765 11223"
                     let status = (dict["status"] as? String)?.uppercased() ?? "BOOKED"
-                    let otp = dict["handoverOtp"] as? String ?? "\(dict["otp"] as? String ?? "3921")"
-                    let amt = dict["amount"] as? Int ?? (dict["totalAmount"] as? Int ?? 499)
+                    let otp = dict["handoverOtp"] as? String ?? "\(dict["otp"] as? String ?? "1793")"
+                    let amt = dict["amount"] as? Int ?? (dict["totalAmount"] as? Int ?? 400)
                     let payStatus = dict["paymentStatus"] as? String ?? "PAID"
-                    let itemsRaw = dict["items"] as? String ?? (dict["testName"] as? String ?? "Diagnostic Health Profile")
+                    let tempTelemetry = dict["tempTelemetry"] as? String ?? "3.8°C (Optimal Cold-Chain)"
+
+                    // Extract items list
+                    var parsedItems: [LiveOrderItem] = []
+                    if let itemsArr = dict["items"] as? [[String: Any]], !itemsArr.isEmpty {
+                        parsedItems = itemsArr.enumerated().map { (idx, itm) in
+                            LiveOrderItem(
+                                id: "\(id)-\(idx)",
+                                name: itm["name"] as? String ?? "Diagnostic Test",
+                                price: itm["price"] as? Int ?? amt
+                            )
+                        }
+                    } else if let detailsArr = dict["itemsDetails"] as? [[String: Any]], !detailsArr.isEmpty {
+                        parsedItems = detailsArr.enumerated().map { (idx, itm) in
+                            LiveOrderItem(
+                                id: "\(id)-\(idx)",
+                                name: itm["name"] as? String ?? "Diagnostic Test",
+                                price: itm["price"] as? Int ?? amt
+                            )
+                        }
+                    } else if let itemsStrArr = dict["items"] as? [String], !itemsStrArr.isEmpty {
+                        parsedItems = itemsStrArr.enumerated().map { (idx, name) in
+                            LiveOrderItem(id: "\(id)-\(idx)", name: name, price: amt)
+                        }
+                    } else {
+                        let singleName = dict["items"] as? String ?? (dict["testName"] as? String ?? "Diagnostic Health Profile")
+                        parsedItems = [LiveOrderItem(id: id, name: singleName, price: amt)]
+                    }
 
                     let rawEta = dict["eta"] as? String ?? ""
                     let etaDisplay: String
@@ -235,6 +269,8 @@ struct CareSeekerTrackingView: View {
                         etaDisplay = "Delivered"
                     } else if status == "ENROUTE" || status == "EN_ROUTE" {
                         etaDisplay = "25 Mins"
+                    } else if status == "PENDING_DISPATCH" {
+                        etaDisplay = "Dispatching Soon"
                     } else {
                         etaDisplay = slot
                     }
@@ -248,9 +284,9 @@ struct CareSeekerTrackingView: View {
                         phleboPhone: phleboPhone,
                         status: status,
                         eta: etaDisplay,
-                        tempTelemetry: "4.0°C (Controlled)",
+                        tempTelemetry: tempTelemetry,
                         handoverOtp: otp,
-                        items: [LiveOrderItem(id: id, name: itemsRaw, price: amt)],
+                        items: parsedItems,
                         totalAmount: amt,
                         paymentStatus: payStatus
                     )
@@ -395,6 +431,8 @@ struct CareSeekerTrackingView: View {
             return "Phlebotomist Enroute to Your Doorstep"
         case "ASSIGNED":
             return "Phlebotomist Assigned for Scheduled Slot"
+        case "PENDING_DISPATCH":
+            return "Booking Confirmed • Dispatching Certified Phlebotomist"
         case "BOOKED", "CONFIRMED":
             return "Booking Confirmed • Scheduled for Doorstep Pickup"
         default:

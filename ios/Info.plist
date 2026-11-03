@@ -12,6 +12,8 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundleDisplayName</key>
+	<string>MedMarg</string>
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
@@ -46,6 +48,8 @@
 	<string>MedMarg uses background location to broadcast live sample collection transit tracking to patients and lab dispatch desks.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>MedMarg uses your camera to scan vacutainer barcodes and capture sample collection verification photos.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>MedMarg requires photo library access to upload doctor prescriptions and attach diagnostic reports.</string>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UISupportedInterfaceOrientations</key>

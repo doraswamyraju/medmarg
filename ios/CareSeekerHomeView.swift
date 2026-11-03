@@ -54,6 +54,10 @@ struct CareSeekerHomeView: View {
                         .padding(.horizontal, 16)
                 }
 
+                // 2b. Smart Device & Apple Health Live Vitals Telemetry Card
+                liveHealthKitVitalsSection
+                    .padding(.horizontal, 16)
+
                 // 3. Quick Health Categories Row (6 Square Tiles)
                 quickCategoriesRow
                     .padding(.horizontal, 16)
@@ -97,6 +101,9 @@ struct CareSeekerHomeView: View {
         }
         .onAppear {
             checkActiveOrder()
+            if healthKit.isAuthorized {
+                healthKit.fetchAllVitalsFromAppleHealth()
+            }
         }
     }
 
@@ -215,7 +222,7 @@ struct CareSeekerHomeView: View {
         let badge = isEnroute ? "LIVE" : "CONFIRMED"
         let badgeColor = isEnroute ? Color.red : MedMargTheme.primaryTeal
 
-        return Button(action: { selectedTab = 7 }) {
+        return Button(action: { selectedTab = 3 }) {
             HStack(spacing: 12) {
                 ZStack {
                     Circle()
@@ -256,6 +263,165 @@ struct CareSeekerHomeView: View {
             .cornerRadius(14)
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(MedMargTheme.amberGold.opacity(0.5), lineWidth: 1.5))
         }
+    }
+
+    // =========================================================================
+    // 🫀 2B. LIVE SMART DEVICE & HEALTHKIT VITALS SUMMARY CARD
+    // =========================================================================
+    private var liveHealthKitVitalsSection: some View {
+        VStack(spacing: 12) {
+            // Header Bar with Live Sync indicator
+            HStack {
+                HStack(spacing: 8) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.red.opacity(0.12))
+                            .frame(width: 34, height: 34)
+                        Image(systemName: "heart.fill")
+                            .font(.system(size: 15))
+                            .foregroundColor(.red)
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text("Smart Device & Health Vitals")
+                                .font(.system(size: 14, weight: .black))
+                                .foregroundColor(MedMargTheme.slate900)
+                            Circle()
+                                .fill(healthKit.isAuthorized ? Color.green : Color.orange)
+                                .frame(width: 7, height: 7)
+                        }
+
+                        Text(healthKit.isAuthorized ? "Live Sync from Apple Health & Smart Monitors" : "Connect Apple Watch / Health App")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(MedMargTheme.slate500)
+                    }
+                }
+
+                Spacer()
+
+                Button(action: {
+                    if !healthKit.isAuthorized {
+                        healthKit.requestAuthorization { _ in
+                            healthKit.fetchAllVitalsFromAppleHealth()
+                        }
+                    } else {
+                        healthKit.fetchAllVitalsFromAppleHealth()
+                    }
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: healthKit.isSyncing ? "arrow.triangle.2.circlepath" : "antenna.radiowaves.left.and.right")
+                            .font(.system(size: 10, weight: .bold))
+                            .rotationEffect(.degrees(healthKit.isSyncing ? 360 : 0))
+                        Text(healthKit.isAuthorized ? "Synced" : "Sync Now")
+                            .font(.system(size: 10, weight: .bold))
+                    }
+                    .foregroundColor(MedMargTheme.primaryTeal)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(MedMargTheme.lightTeal)
+                    .cornerRadius(20)
+                }
+            }
+
+            // 4 Key Biomarkers Grid (Heart Rate, SpO2, Blood Pressure, Blood Glucose)
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                vitalSummaryCard(
+                    title: "Heart Rate",
+                    value: "\(Int(healthKit.heartRate))",
+                    unit: "BPM",
+                    status: healthKit.heartRate >= 60 && healthKit.heartRate <= 100 ? "Normal" : "Review",
+                    icon: "heart.fill",
+                    color: .red
+                )
+
+                vitalSummaryCard(
+                    title: "Blood Oxygen",
+                    value: String(format: "%.1f", healthKit.bloodOxygen),
+                    unit: "SpO2 %",
+                    status: healthKit.bloodOxygen >= 95 ? "Optimal" : "Low",
+                    icon: "lungs.fill",
+                    color: Color(red: 0.05, green: 0.55, blue: 0.95)
+                )
+
+                vitalSummaryCard(
+                    title: "Blood Pressure",
+                    value: "\(Int(healthKit.systolicBP))/\(Int(healthKit.diastolicBP))",
+                    unit: "mmHg",
+                    status: healthKit.systolicBP <= 120 && healthKit.diastolicBP <= 80 ? "Target" : "Elevated",
+                    icon: "gauge.with.needle",
+                    color: Color(red: 0.55, green: 0.25, blue: 0.85)
+                )
+
+                vitalSummaryCard(
+                    title: "Blood Glucose",
+                    value: "\(Int(healthKit.bloodGlucose))",
+                    unit: "mg/dL",
+                    status: healthKit.bloodGlucose <= 100 ? "Fasting Normal" : "Borderline",
+                    icon: "drop.fill",
+                    color: Color(red: 0.95, green: 0.55, blue: 0.1)
+                )
+            }
+
+            // View Detailed Trends & Correlated Tests Button
+            Button(action: {
+                withAnimation {
+                    selectedTab = 2 // Tab 2 is CareSeekerVitalsView
+                }
+            }) {
+                HStack(spacing: 6) {
+                    Text("View Detailed Vitals Trends & Correlated Tests")
+                        .font(.system(size: 11, weight: .bold))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 10, weight: .bold))
+                }
+                .foregroundColor(MedMargTheme.primaryTeal)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(MedMargTheme.slate50)
+                .cornerRadius(10)
+            }
+        }
+        .padding(14)
+        .background(Color.white)
+        .cornerRadius(18)
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(MedMargTheme.slate200, lineWidth: 1))
+        .shadow(color: Color.black.opacity(0.03), radius: 8, x: 0, y: 2)
+    }
+
+    private func vitalSummaryCard(title: String, value: String, unit: String, status: String, icon: String, color: Color) -> some View {
+        HStack(spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(color.opacity(0.12))
+                    .frame(width: 36, height: 36)
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(color)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(MedMargTheme.slate500)
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(value)
+                        .font(.system(size: 16, weight: .black, design: .rounded))
+                        .foregroundColor(MedMargTheme.slate900)
+                    Text(unit)
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundColor(MedMargTheme.slate500)
+                }
+                Text(status)
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundColor(color)
+            }
+
+            Spacer()
+        }
+        .padding(10)
+        .background(MedMargTheme.slate50)
+        .cornerRadius(12)
     }
 
     // =========================================================================
@@ -864,6 +1030,7 @@ struct CareSeekerHomeView: View {
     }
 
     private func checkActiveOrder() {
+        // 1. Initial check from UserDefaults
         if let dict = UserDefaults.standard.dictionary(forKey: "medmarg_last_created_order") as? [String: Any],
            let id = dict["id"] as? String {
             self.activeLiveOrder = LiveOrderModel(
@@ -871,8 +1038,8 @@ struct CareSeekerHomeView: View {
                 date: dict["date"] as? String ?? "Today",
                 slot: dict["slot"] as? String ?? "07:00 AM - 08:00 AM",
                 address: dict["address"] as? String ?? "",
-                phleboName: dict["phleboName"] as? String ?? "Ramesh Babu",
-                phleboPhone: dict["phleboPhone"] as? String ?? "+91 9876543210",
+                phleboName: dict["phleboName"] as? String ?? "Ramesh Kumar (AG-01)",
+                phleboPhone: dict["phleboPhone"] as? String ?? "+91 98480 22334",
                 status: dict["status"] as? String ?? "BOOKED",
                 eta: dict["eta"] as? String ?? "25 mins",
                 tempTelemetry: "4.2°C",
@@ -882,5 +1049,62 @@ struct CareSeekerHomeView: View {
                 paymentStatus: "PAID"
             )
         }
+
+        // 2. Live sync from backend API
+        guard let url = URL(string: "https://medmarg.com/api/v1/patient/orders") else { return }
+        var req = URLRequest(url: url)
+        req.httpMethod = "GET"
+        req.timeoutInterval = 5.0
+
+        URLSession.shared.dataTask(with: req) { data, _, _ in
+            guard let d = data,
+                  let json = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+                  let rawOrders = json["orders"] as? [[String: Any]] else { return }
+
+            let userPhoneDigits = user?.phone.components(separatedBy: CharacterSet.decimalDigits.inverted).joined() ?? ""
+            let userNameLower = (user?.name ?? "").lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+
+            // Find first active order (not completed)
+            let matched = rawOrders.first { ord in
+                let status = (ord["status"] as? String ?? "").uppercased()
+                let isComplete = status == "COMPLETED" || status == "CANCELLED"
+                if isComplete { return false }
+
+                let ordPhone = (ord["phone"] as? String ?? ord["patientPhone"] as? String ?? "")
+                let ordPhoneDigits = ordPhone.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+                let ordPatient = (ord["patientName"] as? String ?? ord["careSeekerName"] as? String ?? "").lowercased()
+
+                if !userPhoneDigits.isEmpty && (ordPhoneDigits.hasSuffix(userPhoneDigits) || userPhoneDigits.hasSuffix(ordPhoneDigits)) {
+                    return true
+                }
+                if !userNameLower.isEmpty && (ordPatient.contains(userNameLower) || userNameLower.contains(ordPatient)) {
+                    return true
+                }
+                return userPhoneDigits.isEmpty && userNameLower.isEmpty
+            } ?? rawOrders.first(where: {
+                let s = ($0["status"] as? String ?? "").uppercased()
+                return s != "COMPLETED" && s != "CANCELLED"
+            })
+
+            if let ord = matched, let id = ord["id"] as? String {
+                DispatchQueue.main.async {
+                    self.activeLiveOrder = LiveOrderModel(
+                        id: id,
+                        date: ord["date"] as? String ?? ord["createdAt"] as? String ?? "Today",
+                        slot: ord["slot"] as? String ?? "07:30 AM - 08:30 AM",
+                        address: ord["address"] as? String ?? "Plot 42, Air Bypass Road, Tirupati",
+                        phleboName: ord["phleboName"] as? String ?? ord["assignedAgent"] as? String ?? "Ramesh Kumar (AG-01)",
+                        phleboPhone: ord["phleboPhone"] as? String ?? "+91 98765 11223",
+                        status: (ord["status"] as? String ?? "ASSIGNED").uppercased(),
+                        eta: ord["eta"] as? String ?? "In Transit",
+                        tempTelemetry: ord["tempTelemetry"] as? String ?? "3.8°C",
+                        handoverOtp: ord["otp"] as? String ?? ord["handoverOtp"] as? String ?? "1793",
+                        items: [],
+                        totalAmount: ord["totalAmount"] as? Int ?? ord["amount"] as? Int ?? 400,
+                        paymentStatus: ord["paymentStatus"] as? String ?? "PAID"
+                    )
+                }
+            }
+        }.resume()
     }
 }

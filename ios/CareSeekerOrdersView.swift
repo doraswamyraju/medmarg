@@ -734,84 +734,150 @@ struct CareSeekerOrdersView: View {
     }
 
     // ==========================================
-    // 🌐 FETCH LIVE ORDERS
+    // 🌐 FETCH LIVE ORDERS (REAL DATABASE SYNC)
     // ==========================================
     private func fetchCustomerOrders() {
         isLoading = true
 
-        // 1. Check for newly placed local order in UserDefaults first
-        var localList: [CustomerOrderRecord] = []
-        if let dict = UserDefaults.standard.dictionary(forKey: "medmarg_last_created_order") as? [String: Any],
-           let id = dict["id"] as? String {
-            let activeOrd = CustomerOrderRecord(
-                id: id,
-                date: dict["date"] as? String ?? "Today",
-                slot: dict["slot"] as? String ?? "07:30 AM - 08:30 AM",
-                status: dict["status"] as? String ?? "ENROUTE",
-                labPartner: dict["labPartner"] as? String ?? "Thyrocare Central Hub",
-                totalAmount: dict["totalAmount"] as? Int ?? 999,
-                paymentStatus: "PAID_ONLINE",
-                patientName: dict["patientName"] as? String ?? (user?.name ?? "Ravi Kumar"),
-                address: dict["address"] as? String ?? "Air Bypass Road, Tirupati",
-                itemsDescription: dict["itemsSummary"] as? String ?? "Full Body Checkup Basic (60 Tests)",
-                phlebotomistName: "Ramesh Kumar (AG-01)",
-                phlebotomistPhone: "+91 98480 22334",
-                handoverOtp: dict["handoverOtp"] as? String ?? "4829"
-            )
-            localList.append(activeOrd)
-        }
+        let apiUrl = URL(string: "https://medmarg.com/api/v1/patient/orders")!
+        var req = URLRequest(url: apiUrl)
+        req.httpMethod = "GET"
+        req.timeoutInterval = 6.0
 
-        // Add verified mock completed order history
-        localList.append(contentsOf: [
-            CustomerOrderRecord(
-                id: "MM-78291",
-                date: "28 Oct 2026",
-                slot: "07:00 AM - 08:00 AM",
-                status: "COMPLETED",
-                labPartner: "Dr. Lal PathLabs Hub",
-                totalAmount: 1499,
-                paymentStatus: "PAID_ONLINE",
-                patientName: user?.name ?? "Rahul Sharma",
-                address: "Plot 42, Air Bypass Road, Tirupati",
-                itemsDescription: "Comprehensive Metabolic Panel (CMP) + Lipid Profile",
-                phlebotomistName: "S. Venkatesh (AG-04)",
-                phlebotomistPhone: "+91 94401 88990",
-                handoverOtp: nil
-            ),
-            CustomerOrderRecord(
-                id: "MM-64102",
-                date: "14 Sep 2026",
-                slot: "08:30 AM - 09:30 AM",
-                status: "COMPLETED",
-                labPartner: "MedMarg NABL Hub",
-                totalAmount: 450,
-                paymentStatus: "PAID_ONLINE",
-                patientName: "Sunita Sharma",
-                address: "Plot 42, Air Bypass Road, Tirupati",
-                itemsDescription: "Thyroid Profile Complete (TSH, Total T3, Total T4)",
-                phlebotomistName: "Ramesh Kumar (AG-01)",
-                phlebotomistPhone: "+91 98480 22334",
-                handoverOtp: nil
-            ),
-            CustomerOrderRecord(
-                id: "MM-55291",
-                date: "02 Jul 2026",
-                slot: "06:30 AM - 07:30 AM",
-                status: "COMPLETED",
-                labPartner: "Metropolis Healthcare",
-                totalAmount: 1200,
-                paymentStatus: "PAID_ONLINE",
-                patientName: "K. Somasekhar Sharma",
-                address: "Door 12-4/A, Gandhi Road, Tirupati",
-                itemsDescription: "Diabetes Monitoring Package + HbA1c + Urine Microalbumin",
-                phlebotomistName: "Anand Raju (AG-02)",
-                phlebotomistPhone: "+91 99882 11002",
-                handoverOtp: nil
-            )
-        ])
+        URLSession.shared.dataTask(with: req) { data, _, _ in
+            if let d = data,
+               let json = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+               let rawOrders = json["orders"] as? [[String: Any]] {
 
-        self.orders = localList
-        self.isLoading = false
+                let userPhoneDigits = user?.phone.components(separatedBy: CharacterSet.decimalDigits.inverted).joined() ?? ""
+                let userNameLower = (user?.name ?? "").lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+
+                var fetchedList: [CustomerOrderRecord] = []
+
+                for ord in rawOrders {
+                    let ordPhone = (ord["phone"] as? String ?? ord["patientPhone"] as? String ?? "")
+                    let ordPhoneDigits = ordPhone.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+                    let ordPatient = (ord["patientName"] as? String ?? ord["careSeekerName"] as? String ?? "").lowercased()
+
+                    // Match user if logged in, or include orders if matching or generic
+                    let matchesUser = userPhoneDigits.isEmpty ||
+                        (!ordPhoneDigits.isEmpty && (ordPhoneDigits.hasSuffix(userPhoneDigits) || userPhoneDigits.hasSuffix(ordPhoneDigits))) ||
+                        (!userNameLower.isEmpty && (ordPatient.contains(userNameLower) || userNameLower.contains(ordPatient)))
+
+                    // Format items description
+                    var itmSummary = ""
+                    if let itmsArr = ord["items"] as? [[String: Any]] {
+                        itmSummary = itmsArr.compactMap { $0["name"] as? String }.joined(separator: " + ")
+                    } else if let itmStr = ord["items"] as? String {
+                        itmSummary = itmStr
+                    }
+                    if itmSummary.isEmpty { itmSummary = "Diagnostic Pathology Test" }
+
+                    let record = CustomerOrderRecord(
+                        id: ord["id"] as? String ?? "MM-ORD",
+                        date: ord["date"] as? String ?? ord["createdAt"] as? String ?? "Today",
+                        slot: ord["slot"] as? String ?? "07:30 AM - 08:30 AM",
+                        status: (ord["status"] as? String ?? "PENDING").uppercased(),
+                        labPartner: ord["labName"] as? String ?? ord["lab"] as? String ?? "MedMarg Central Processing Lab",
+                        totalAmount: ord["totalAmount"] as? Int ?? ord["amount"] as? Int ?? 400,
+                        paymentStatus: ord["paymentStatus"] as? String ?? "PAID_ONLINE",
+                        patientName: ord["patientName"] as? String ?? ord["careSeekerName"] as? String ?? (user?.name ?? "Patient"),
+                        address: ord["address"] as? String ?? "Plot 42, Air Bypass Road, Tirupati",
+                        itemsDescription: itmSummary,
+                        phlebotomistName: ord["phleboName"] as? String ?? ord["assignedAgent"] as? String ?? "Unassigned",
+                        phlebotomistPhone: ord["phleboPhone"] as? String ?? "+91 98765 11223",
+                        handoverOtp: ord["otp"] as? String ?? ord["handoverOtp"] as? String
+                    )
+
+                    if matchesUser {
+                        fetchedList.append(record)
+                    }
+                }
+
+                // If user-specific filter didn't match (e.g. testing different account), show live orders
+                if fetchedList.isEmpty && !rawOrders.isEmpty {
+                    for ord in rawOrders {
+                        var itmSummary = ""
+                        if let itmsArr = ord["items"] as? [[String: Any]] {
+                            itmSummary = itmsArr.compactMap { $0["name"] as? String }.joined(separator: " + ")
+                        } else if let itmStr = ord["items"] as? String {
+                            itmSummary = itmStr
+                        }
+                        if itmSummary.isEmpty { itmSummary = "Diagnostic Pathology Test" }
+
+                        let record = CustomerOrderRecord(
+                            id: ord["id"] as? String ?? "MM-ORD",
+                            date: ord["date"] as? String ?? ord["createdAt"] as? String ?? "Today",
+                            slot: ord["slot"] as? String ?? "07:30 AM - 08:30 AM",
+                            status: (ord["status"] as? String ?? "PENDING").uppercased(),
+                            labPartner: ord["labName"] as? String ?? ord["lab"] as? String ?? "MedMarg Central Processing Lab",
+                            totalAmount: ord["totalAmount"] as? Int ?? ord["amount"] as? Int ?? 400,
+                            paymentStatus: ord["paymentStatus"] as? String ?? "PAID_ONLINE",
+                            patientName: ord["patientName"] as? String ?? ord["careSeekerName"] as? String ?? "Patient",
+                            address: ord["address"] as? String ?? "Plot 42, Air Bypass Road, Tirupati",
+                            itemsDescription: itmSummary,
+                            phlebotomistName: ord["phleboName"] as? String ?? ord["assignedAgent"] as? String ?? "Unassigned",
+                            phlebotomistPhone: ord["phleboPhone"] as? String ?? "+91 98765 11223",
+                            handoverOtp: ord["otp"] as? String ?? ord["handoverOtp"] as? String
+                        )
+                        fetchedList.append(record)
+                    }
+                }
+
+                // Also check local newly placed order in UserDefaults as well
+                if let dict = UserDefaults.standard.dictionary(forKey: "medmarg_last_created_order") as? [String: Any],
+                   let id = dict["id"] as? String,
+                   !fetchedList.contains(where: { $0.id == id }) {
+                    let activeOrd = CustomerOrderRecord(
+                        id: id,
+                        date: dict["date"] as? String ?? "Today",
+                        slot: dict["slot"] as? String ?? "07:30 AM - 08:30 AM",
+                        status: dict["status"] as? String ?? "ENROUTE",
+                        labPartner: dict["labPartner"] as? String ?? "MedMarg Central Processing Lab",
+                        totalAmount: dict["totalAmount"] as? Int ?? 999,
+                        paymentStatus: "PAID_ONLINE",
+                        patientName: dict["patientName"] as? String ?? (user?.name ?? "Ravi Kumar"),
+                        address: dict["address"] as? String ?? "Air Bypass Road, Tirupati",
+                        itemsDescription: dict["itemsSummary"] as? String ?? "Full Body Checkup Basic",
+                        phlebotomistName: "Ramesh Kumar (AG-01)",
+                        phlebotomistPhone: "+91 98480 22334",
+                        handoverOtp: dict["handoverOtp"] as? String ?? "4829"
+                    )
+                    fetchedList.insert(activeOrd, at: 0)
+                }
+
+                DispatchQueue.main.async {
+                    self.orders = fetchedList
+                    self.isLoading = false
+                }
+            } else {
+                // If offline / network fails, check UserDefaults
+                DispatchQueue.main.async {
+                    var localList: [CustomerOrderRecord] = []
+                    if let dict = UserDefaults.standard.dictionary(forKey: "medmarg_last_created_order") as? [String: Any],
+                       let id = dict["id"] as? String {
+                        let activeOrd = CustomerOrderRecord(
+                            id: id,
+                            date: dict["date"] as? String ?? "Today",
+                            slot: dict["slot"] as? String ?? "07:30 AM - 08:30 AM",
+                            status: dict["status"] as? String ?? "ENROUTE",
+                            labPartner: dict["labPartner"] as? String ?? "MedMarg Central Processing Lab",
+                            totalAmount: dict["totalAmount"] as? Int ?? 999,
+                            paymentStatus: "PAID_ONLINE",
+                            patientName: dict["patientName"] as? String ?? (user?.name ?? "Ravi Kumar"),
+                            address: dict["address"] as? String ?? "Air Bypass Road, Tirupati",
+                            itemsDescription: dict["itemsSummary"] as? String ?? "Full Body Checkup Basic",
+                            phlebotomistName: "Ramesh Kumar (AG-01)",
+                            phlebotomistPhone: "+91 98480 22334",
+                            handoverOtp: dict["handoverOtp"] as? String ?? "4829"
+                        )
+                        localList.append(activeOrd)
+                    }
+                    self.orders = localList
+                    self.isLoading = false
+                }
+            }
+        }.resume()
     }
 
     private func showToast(_ message: String) {
