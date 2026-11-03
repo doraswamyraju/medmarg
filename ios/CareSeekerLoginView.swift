@@ -28,6 +28,16 @@ struct CareSeekerLoginView: View {
     @State private var isBiometricAvailable: Bool = false
     @State private var isAuthenticating: Bool = false
 
+    // Patient Registration Modal Sheet
+    @State private var showPatientSignupSheet: Bool = false
+    @State private var signupName: String = ""
+    @State private var signupPhone: String = ""
+    @State private var signupEmail: String = ""
+    @State private var signupPassword: String = ""
+    @State private var signupCity: String = "Tirupati"
+    @State private var signupErrorMessage: String = ""
+    @State private var isSigningUp: Bool = false
+
     // Phone Collection Modal Sheet (For First-Time OAuth without Phone)
     @State private var showPhoneCollectionSheet: Bool = false
     @State private var pendingOAuthUser: UserProfile? = nil
@@ -69,6 +79,9 @@ struct CareSeekerLoginView: View {
                     slidingLoginCard
                 }
             }
+        }
+        .sheet(isPresented: $showPatientSignupSheet) {
+            patientSignupModalSheet
         }
         .sheet(isPresented: $showPhoneCollectionSheet) {
             phoneCollectionModalSheet
@@ -369,7 +382,12 @@ struct CareSeekerLoginView: View {
                     .font(.system(size: 12))
                     .foregroundColor(MedMargTheme.slate700)
                 Button("Create an account") {
-                    errorMessage = "Account registration: enter mobile/email and click Sign In to auto-register."
+                    signupErrorMessage = ""
+                    signupName = ""
+                    signupPhone = ""
+                    signupEmail = ""
+                    signupPassword = ""
+                    showPatientSignupSheet = true
                 }
                 .font(.system(size: 12, weight: .bold))
                 .foregroundColor(Color.blue)
@@ -437,6 +455,206 @@ struct CareSeekerLoginView: View {
             .background(Color.white)
             .cornerRadius(12)
             .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.slate200, lineWidth: 1))
+        }
+    }
+
+    // ==========================================
+    // 👤 PATIENT SIGNUP MODAL SHEET
+    // ==========================================
+    private var patientSignupModalSheet: some View {
+        NavigationStack {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 18) {
+                    // Header Brand Badge
+                    VStack(spacing: 8) {
+                        ZStack {
+                            Circle()
+                                .fill(MedMargTheme.lightTeal)
+                                .frame(width: 58, height: 58)
+                            Image(systemName: "person.crop.circle.badge.plus")
+                                .font(.system(size: 26, weight: .bold))
+                                .foregroundColor(MedMargTheme.primaryTeal)
+                        }
+
+                        VStack(spacing: 4) {
+                            Text("Create Patient Account")
+                                .font(.system(size: 20, weight: .black, design: .rounded))
+                                .foregroundColor(MedMargTheme.slate900)
+
+                            Text("Sign up to book diagnostic tests, track live sample collection & access certified lab reports.")
+                                .font(.system(size: 12))
+                                .foregroundColor(MedMargTheme.slate500)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 10)
+                        }
+                    }
+                    .padding(.top, 10)
+
+                    if !signupErrorMessage.isEmpty {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .foregroundColor(.red)
+                            Text(signupErrorMessage)
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.red)
+                        }
+                        .padding(10)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.red.opacity(0.08))
+                        .cornerRadius(10)
+                    }
+
+                    // Form Fields
+                    VStack(spacing: 12) {
+                        // Full Name
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Full Name *")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate700)
+                            HStack(spacing: 10) {
+                                Image(systemName: "person")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(MedMargTheme.slate500)
+                                TextField("e.g. Rahul Sharma", text: $signupName)
+                                    .font(.system(size: 14))
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 12)
+                            .background(MedMargTheme.slate50)
+                            .cornerRadius(10)
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(MedMargTheme.slate200, lineWidth: 1))
+                        }
+
+                        // Mobile Number
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Mobile Number (10 digits) *")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate700)
+                            HStack(spacing: 8) {
+                                Text("+91")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(MedMargTheme.slate700)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 12)
+                                    .background(MedMargTheme.slate200.opacity(0.5))
+                                    .cornerRadius(8)
+                                TextField("9876543210", text: $signupPhone)
+                                    .keyboardType(.numberPad)
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 12)
+                                    .background(MedMargTheme.slate50)
+                                    .cornerRadius(10)
+                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(MedMargTheme.slate200, lineWidth: 1))
+                            }
+                        }
+
+                        // Email Address
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Email Address (Optional)")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate700)
+                            HStack(spacing: 10) {
+                                Image(systemName: "envelope")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(MedMargTheme.slate500)
+                                TextField("e.g. rahul@gmail.com", text: $signupEmail)
+                                    .font(.system(size: 14))
+                                    .autocapitalization(.none)
+                                    .disableAutocorrection(true)
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 12)
+                            .background(MedMargTheme.slate50)
+                            .cornerRadius(10)
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(MedMargTheme.slate200, lineWidth: 1))
+                        }
+
+                        // Password
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("Create Password (min. 6 characters) *")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate700)
+                            HStack(spacing: 10) {
+                                Image(systemName: "lock")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(MedMargTheme.slate500)
+                                SecureField("Enter password", text: $signupPassword)
+                                    .font(.system(size: 14))
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 12)
+                            .background(MedMargTheme.slate50)
+                            .cornerRadius(10)
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(MedMargTheme.slate200, lineWidth: 1))
+                        }
+
+                        // City
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text("City *")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(MedMargTheme.slate700)
+                            HStack(spacing: 10) {
+                                Image(systemName: "mappin.and.ellipse")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(MedMargTheme.slate500)
+                                TextField("Tirupati", text: $signupCity)
+                                    .font(.system(size: 14))
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 12)
+                            .background(MedMargTheme.slate50)
+                            .cornerRadius(10)
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(MedMargTheme.slate200, lineWidth: 1))
+                        }
+                    }
+
+                    // Sign Up Button
+                    Button(action: handlePatientSignup) {
+                        HStack(spacing: 8) {
+                            if isSigningUp {
+                                ProgressView().tint(.white)
+                            }
+                            Text(isSigningUp ? "Creating Account..." : "Create Account & Sign In")
+                                .font(.system(size: 15, weight: .bold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.vertical, 14)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.05, green: 0.45, blue: 0.95),
+                                    Color(red: 0.0, green: 0.72, blue: 0.58)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(12)
+                        .shadow(color: Color.blue.opacity(0.2), radius: 6, x: 0, y: 3)
+                    }
+                    .disabled(isSigningUp)
+                    .padding(.top, 4)
+
+                    // Switch back to Login
+                    Button(action: { showPatientSignupSheet = false }) {
+                        Text("Already registered? Sign In")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(MedMargTheme.primaryTeal)
+                    }
+                    .padding(.bottom, 16)
+                }
+                .padding(20)
+            }
+            .navigationTitle("Patient Registration")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Close") { showPatientSignupSheet = false }
+                        .font(.system(size: 14, weight: .semibold))
+                }
+            }
         }
     }
 
@@ -715,6 +933,100 @@ struct CareSeekerLoginView: View {
     // ==========================================
     private func cleanDigitsOnly(_ str: String) -> String {
         return str.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+    }
+
+    private func handlePatientSignup() {
+        signupErrorMessage = ""
+        let name = signupName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let phoneDigits = cleanDigitsOnly(signupPhone)
+        let email = signupEmail.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let pass = signupPassword.trimmingCharacters(in: .whitespacesAndNewlines)
+        let city = signupCity.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !name.isEmpty else {
+            signupErrorMessage = "Please enter your full name."
+            return
+        }
+        guard phoneDigits.count >= 10 else {
+            signupErrorMessage = "Please enter a valid 10-digit mobile number."
+            return
+        }
+        guard pass.count >= 6 else {
+            signupErrorMessage = "Password must be at least 6 characters long."
+            return
+        }
+
+        isSigningUp = true
+
+        let fullPhone = "+91 \(phoneDigits.suffix(10))"
+        let finalEmail = !email.isEmpty ? email : "\(phoneDigits.suffix(10))@medmarg.com"
+
+        guard let url = URL(string: "https://medmarg.com/api/v1/auth/signup-patient") else {
+            createLocalPatientAndLogin(name: name, phone: fullPhone, email: finalEmail, pass: pass, city: city)
+            return
+        }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.timeoutInterval = 6.0
+        let payload: [String: Any] = [
+            "name": name,
+            "phone": String(phoneDigits.suffix(10)),
+            "email": finalEmail,
+            "password": pass,
+            "city": city.isEmpty ? "Tirupati" : city
+        ]
+        req.httpBody = try? JSONSerialization.data(withJSONObject: payload, options: [])
+
+        URLSession.shared.dataTask(with: req) { data, _, _ in
+            DispatchQueue.main.async {
+                self.isSigningUp = false
+                if let d = data,
+                   let json = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+                   let success = json["success"] as? Bool, success,
+                   let uData = json["user"] as? [String: Any] {
+                    let newPatient = UserProfile(
+                        id: uData["id"] as? String ?? "usr_\(Date().timeIntervalSince1970)",
+                        name: uData["name"] as? String ?? name,
+                        username: uData["username"] as? String ?? finalEmail.components(separatedBy: "@").first ?? "patient",
+                        email: uData["email"] as? String ?? finalEmail,
+                        phone: uData["phone"] as? String ?? fullPhone,
+                        password: pass,
+                        role: .patient,
+                        organization: uData["organization"] as? String ?? "MedMarg Healthcare Patient Portal",
+                        status: "Active",
+                        createdAt: "Today"
+                    )
+                    self.showPatientSignupSheet = false
+                    self.loggedInUser = newPatient
+                } else if let d = data,
+                          let json = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+                          let err = json["error"] as? String {
+                    self.signupErrorMessage = err
+                } else {
+                    self.createLocalPatientAndLogin(name: name, phone: fullPhone, email: finalEmail, pass: pass, city: city)
+                }
+            }
+        }.resume()
+    }
+
+    private func createLocalPatientAndLogin(name: String, phone: String, email: String, pass: String, city: String) {
+        let newPatient = UserProfile(
+            id: "usr_pat_\(Int(Date().timeIntervalSince1970))",
+            name: name,
+            username: email.components(separatedBy: "@").first ?? "patient",
+            email: email,
+            phone: phone,
+            password: pass,
+            role: .patient,
+            organization: "MedMarg Healthcare Patient Portal (\(city.isEmpty ? "Tirupati" : city))",
+            status: "Active",
+            createdAt: "Today"
+        )
+        self.isSigningUp = false
+        self.showPatientSignupSheet = false
+        self.loggedInUser = newPatient
     }
 
     private func handlePasswordLogin() {

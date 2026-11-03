@@ -256,6 +256,146 @@ router.post('/reset-password', (req, res) => {
     });
 });
 
+// PUBLIC PATIENT / CUSTOMER SIGNUP ENDPOINT
+const handlePatientSignup = (req, res) => {
+    const {
+        name,
+        email,
+        phone,
+        password,
+        city,
+        fullAddress,
+        pincode,
+        age,
+        gender
+    } = req.body;
+
+    if (!name || (!phone && !email) || !password) {
+        return res.status(400).json({
+            success: false,
+            error: 'Full Name, Mobile Number or Email, and Password are required.'
+        });
+    }
+
+    const cleanName = name.trim();
+    const cleanPhone = phone ? phone.trim().replace(/[^0-9]/g, '') : '';
+    const cleanEmail = email ? email.trim().toLowerCase() : (cleanPhone ? `${cleanPhone}@medmarg.com` : '');
+    const cleanPassword = password.trim();
+
+    if (cleanPhone && cleanPhone.length < 10) {
+        return res.status(400).json({
+            success: false,
+            error: 'Please enter a valid 10-digit mobile number.'
+        });
+    }
+
+    if (cleanPassword.length < 6) {
+        return res.status(400).json({
+            success: false,
+            error: 'Password must be at least 6 characters long.'
+        });
+    }
+
+    if (!dbStore.customers) dbStore.customers = [];
+    if (!dbStore.users) dbStore.users = [];
+
+    // Check duplicate in customers and users
+    const existingCust = dbStore.customers.find(c =>
+        (cleanEmail && c.email && c.email.toLowerCase() === cleanEmail) ||
+        (cleanPhone && c.phone && c.phone.replace(/[^0-9]/g, '').slice(-10) === cleanPhone.slice(-10))
+    );
+
+    const existingUser = dbStore.users.find(u =>
+        (cleanEmail && u.email && u.email.toLowerCase() === cleanEmail) ||
+        (cleanPhone && u.phone && u.phone.replace(/[^0-9]/g, '').slice(-10) === cleanPhone.slice(-10))
+    );
+
+    if (existingCust || existingUser) {
+        return res.status(409).json({
+            success: false,
+            error: 'An account with this mobile number or email already exists. Please sign in.'
+        });
+    }
+
+    const customerId = `CUST-${Math.floor(1000 + Math.random() * 9000)}`;
+    const formattedPhone = cleanPhone.length === 10 ? `+91 ${cleanPhone}` : (phone.trim());
+
+    const newCustomer = {
+        id: customerId,
+        name: cleanName,
+        phone: formattedPhone,
+        email: cleanEmail,
+        city: city || 'Tirupati',
+        picture: '',
+        avatarUrl: '',
+        abhaId: `ABHA-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`,
+        memberSince: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        age: Number(age) || 30,
+        gender: gender || 'Verified',
+        bloodGroup: 'O+',
+        chronicConditions: 'None',
+        allergies: 'None',
+        locations: [
+            {
+                id: `LOC-${Date.now()}`,
+                label: 'Primary Location',
+                fullAddress: fullAddress || 'Air Bypass Road, Tirupati',
+                pincode: pincode || '517501',
+                isPrimary: true
+            }
+        ],
+        familyMembers: [],
+        orderHistory: []
+    };
+
+    const newUser = {
+        id: customerId,
+        name: cleanName,
+        username: cleanEmail ? cleanEmail.split('@')[0] : cleanPhone,
+        email: cleanEmail,
+        phone: formattedPhone,
+        password: cleanPassword,
+        role: 'PATIENT',
+        organization: 'MedMarg Healthcare Patient Portal',
+        status: 'Active',
+        createdAt: new Date().toISOString()
+    };
+
+    dbStore.customers.unshift(newCustomer);
+    dbStore.users.push(newUser);
+
+    if (!dbStore.auditLogs) dbStore.auditLogs = [];
+    dbStore.auditLogs.unshift({
+        id: `AUD-${Date.now()}`,
+        action: 'PATIENT_SELF_SIGNUP',
+        user: cleanName,
+        details: `Registered new patient account ID ${customerId} (Phone: ${formattedPhone}, Email: ${cleanEmail})`,
+        timestamp: new Date().toISOString()
+    });
+
+    saveDbStore();
+
+    return res.status(201).json({
+        success: true,
+        message: 'Patient account created successfully! Welcome to MedMarg.',
+        token: `jwt_medmarg_${Date.now()}`,
+        user: {
+            id: newUser.id,
+            name: newUser.name,
+            username: newUser.username,
+            email: newUser.email,
+            phone: newUser.phone,
+            identifier: newUser.phone || newUser.email,
+            role: 'PATIENT',
+            organization: newUser.organization
+        },
+        customer: newCustomer
+    });
+};
+
+router.post('/signup-patient', handlePatientSignup);
+router.post('/signup', handlePatientSignup);
+
 // PUBLIC FREELANCER AGENT SIGNUP ENDPOINT
 router.post('/signup-freelancer', (req, res) => {
     const { 

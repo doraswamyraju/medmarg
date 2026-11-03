@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,12 +26,15 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.medmarg.patient.R
 import com.medmarg.patient.data.CatalogStore
 import com.medmarg.patient.model.CatalogItem
 import com.medmarg.patient.model.UserProfile
@@ -216,45 +220,54 @@ private fun ScenicCityHeroSection(
                 )
         )
 
-        // Subtle Hills & Gopuram Tower Silhouette Graphic (Top Right)
+        // Real Scenic Tirupati Temple Image (Blended seamlessly into gradient, matching iOS 1-on-1)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 16.dp, end = 12.dp),
+                .height(205.dp),
             horizontalArrangement = Arrangement.End
         ) {
             Box(
                 modifier = Modifier
-                    .size(width = 110.dp, height = 90.dp)
-                    .clip(RoundedCornerShape(bottomStart = 24.dp))
-                    .background(Color(0xFF66A6BF).copy(alpha = 0.15f)),
-                contentAlignment = Alignment.BottomCenter
+                    .width(260.dp)
+                    .fillMaxHeight()
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(width = 14.dp, height = 8.dp)
-                            .background(Color(0xFFB38C40).copy(alpha = 0.4f), RoundedCornerShape(2.dp))
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(width = 24.dp, height = 10.dp)
-                            .background(Color(0xFFB38C40).copy(alpha = 0.35f), RoundedCornerShape(2.dp))
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(width = 34.dp, height = 12.dp)
-                            .background(Color(0xFFB38C40).copy(alpha = 0.35f), RoundedCornerShape(2.dp))
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(width = 44.dp, height = 14.dp)
-                            .background(Color(0xFFB38C40).copy(alpha = 0.35f), RoundedCornerShape(2.dp))
-                    )
-                }
+                Image(
+                    painter = painterResource(id = R.drawable.temple),
+                    contentDescription = "Tirupati Temple Skyline",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(bottomStart = 24.dp))
+                )
+                // Left fading gradient to blend with left greeting & background
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.horizontalGradient(
+                                colors = listOf(
+                                    Color(0xFFD1EDF9),
+                                    Color(0xFFD1EDF9).copy(alpha = 0.5f),
+                                    Color.Transparent
+                                )
+                            )
+                        )
+                )
+                // Bottom fading gradient
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.White.copy(alpha = 0.35f),
+                                    Slate50
+                                )
+                            )
+                        )
+                )
             }
         }
 
@@ -612,21 +625,17 @@ private fun HeroFamilyPromoBanner(
 
                 Spacer(modifier = Modifier.width(8.dp))
 
-                // Center: Family Icon Container
-                Box(
+                // Center: Real Smiling Indian Family Photo (Hero Image, matching iOS 1-on-1)
+                Image(
+                    painter = painterResource(id = R.drawable.hero),
+                    contentDescription = "MedMarg Family Care",
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .size(76.dp)
-                        .clip(CircleShape)
-                        .background(PureWhite.copy(alpha = 0.6f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.FamilyRestroom,
-                        contentDescription = null,
-                        tint = MedTealPrimary,
-                        modifier = Modifier.size(42.dp)
-                    )
-                }
+                        .size(width = 95.dp, height = 105.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .border(2.dp, PureWhite, RoundedCornerShape(16.dp))
+                        .shadow(4.dp, RoundedCornerShape(16.dp))
+                )
 
                 Spacer(modifier = Modifier.width(8.dp))
 
