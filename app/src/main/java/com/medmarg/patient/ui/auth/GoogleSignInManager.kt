@@ -43,6 +43,7 @@ data class GoogleAuthUser(
 
 object GoogleSignInManager {
     // MedMarg Google OAuth Client IDs & Custom URL Schemes
+    const val ANDROID_CLIENT_ID = "836240579937-1fn0bvct8lt5f0ikmbdaeb8plt58b5o8.apps.googleusercontent.com"
     const val WEB_CLIENT_ID = "836240579937-e35j4q9nn1t43dl3hjdva2lt7evo0jcf.apps.googleusercontent.com"
     const val CLIENT_ID = "836240579937-8tgsbq9sujeunh772eosbrl9l4ccj44o.apps.googleusercontent.com"
     const val CUSTOM_SCHEME = "com.googleusercontent.apps.836240579937-8tgsbq9sujeunh772eosbrl9l4ccj44o"
