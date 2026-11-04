@@ -103,8 +103,9 @@ object GoogleSignInManager {
         val gsoLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult()
         ) { result ->
-            if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-                val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            val data = result.data
+            if (data != null) {
+                val task = GoogleSignIn.getSignedInAccountFromIntent(data)
                 try {
                     val account = task.getResult(ApiException::class.java)
                     val email = account?.email?.trim().orEmpty()
@@ -127,14 +128,29 @@ object GoogleSignInManager {
                         return@rememberLauncherForActivityResult
                     }
                 } catch (e: ApiException) {
-                    if (e.statusCode == 12501) {
-                        // User cancelled / dismissed the Google sheet -> Do nothing
-                        return@rememberLauncherForActivityResult
+                    when (e.statusCode) {
+                        12501 -> {
+                            // User intentionally cancelled / dismissed the Google sheet -> Do nothing
+                            return@rememberLauncherForActivityResult
+                        }
+                        10 -> {
+                            // DEVELOPER_ERROR: Debug SHA-1 not registered in Google Cloud Console
+                            onError("DEVELOPER_ERROR_10")
+                            return@rememberLauncherForActivityResult
+                        }
+                        else -> {
+                            // Other Google API failure (Network, Timeout, etc.)
+                            onError("Google Sign-In failed (Code ${e.statusCode}: ${e.message ?: "Authentication error"})")
+                            return@rememberLauncherForActivityResult
+                        }
                     }
-                } catch (_: Exception) {}
+                } catch (e: Exception) {
+                    onError("Google Sign-In error: ${e.localizedMessage ?: "Unknown error"}")
+                    return@rememberLauncherForActivityResult
+                }
 
                 // Failsafe: Extract the chosen account directly from result.data extras
-                val selectedEmail = extractEmailFromIntent(result.data)
+                val selectedEmail = extractEmailFromIntent(data)
                     ?: GoogleSignIn.getLastSignedInAccount(context)?.email
                 if (!selectedEmail.isNullOrBlank() && selectedEmail.contains("@")) {
                     onGoogleAuthenticated(buildAccountFromEmail(selectedEmail))
@@ -143,7 +159,11 @@ object GoogleSignInManager {
 
                 if (isEmulator) {
                     onGoogleAuthenticated(createFallbackUser("gid_sim_${System.currentTimeMillis() / 1000}"))
+                    return@rememberLauncherForActivityResult
                 }
+            } else if (result.resultCode == Activity.RESULT_CANCELED) {
+                // User dismissed sheet without picking
+                return@rememberLauncherForActivityResult
             }
         }
 
