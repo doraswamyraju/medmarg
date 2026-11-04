@@ -33,3 +33,4 @@ fun CustomerTopbarLogo(
             .clickable { onClick() }
     )
 }
+
