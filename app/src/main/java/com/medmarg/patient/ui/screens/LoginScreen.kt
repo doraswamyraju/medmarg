@@ -410,7 +410,21 @@ fun LoginScreen(
         showPhoneCollectionSheet = true
     }
 
-    // Google Sign-In Handler (1:1 with iOS handleGoogleSignIn)
+    // Native Android Google Sign-In Launcher (Pops native Google sheet, zero browser, immediate return)
+    val launchGoogleSignIn = GoogleSignInManager.rememberGoogleSignInLauncher(
+        onGoogleAuthenticated = { googleUser ->
+            isGoogleVerifying = false
+            handleGoogleUserAuthenticated(googleUser)
+        },
+        onError = { errorMsg ->
+            isGoogleVerifying = false
+            if (!errorMsg.contains("cancel", ignoreCase = true)) {
+                errorMessage = errorMsg
+            }
+        }
+    )
+
+    // Google Sign-In Handler (Invokes Native Android Google Picker)
     fun handleGoogleSignIn() {
         if (onGoogleSignInClicked != null) {
             onGoogleSignInClicked.invoke()
@@ -418,18 +432,7 @@ fun LoginScreen(
         }
         errorMessage = ""
         infoMessage = ""
-        isGoogleVerifying = true
-        GoogleSignInManager.startGoogleSignIn(context) { result ->
-            isGoogleVerifying = false
-            result.onSuccess { gUser ->
-                handleGoogleUserAuthenticated(gUser)
-            }.onFailure { err ->
-                val msg = err.localizedMessage ?: "Google Sign-In was cancelled or failed."
-                if (!msg.contains("canceled", ignoreCase = true) && !msg.contains("cancelled", ignoreCase = true)) {
-                    errorMessage = "Google Sign-In: $msg"
-                }
-            }
-        }
+        launchGoogleSignIn()
     }
 
     // Password Login Handler (1:1 with iOS handlePasswordLogin)
