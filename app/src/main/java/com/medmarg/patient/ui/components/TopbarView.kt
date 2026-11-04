@@ -12,6 +12,8 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.medmarg.patient.R
+import com.medmarg.patient.data.NotificationStore
 import com.medmarg.patient.model.UserProfile
 import com.medmarg.patient.ui.theme.*
 
@@ -96,8 +99,9 @@ fun TopbarView(
                         color = Slate500,
                         maxLines = 1
                     )
+                    val displayName = user.name.substringBefore(" (").trim().ifEmpty { "Patient" }
                     Text(
-                        text = user.name,
+                        text = displayName,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = Slate900,
@@ -121,7 +125,8 @@ fun TopbarView(
                 }
             }
 
-            // 3. Notification Bell Icon with Unread Red Dot
+            // 3. Notification Bell Icon with Unread Red Dot (Only when unread > 0)
+            val unreadCount by NotificationStore.unreadCount.collectAsState()
             Box(
                 modifier = Modifier
                     .size(38.dp)
@@ -136,14 +141,16 @@ fun TopbarView(
                     tint = Slate700,
                     modifier = Modifier.size(18.dp)
                 )
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(RoseError)
-                        .align(Alignment.TopEnd)
-                        .offset(x = (-4).dp, y = 4.dp)
-                )
+                if (unreadCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(RoseError)
+                            .align(Alignment.TopEnd)
+                            .offset(x = (-4).dp, y = 4.dp)
+                    )
+                }
             }
 
             // 4. Logout Power Action Button (Matching iOS red button)

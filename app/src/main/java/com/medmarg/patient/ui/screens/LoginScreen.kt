@@ -238,6 +238,20 @@ fun LoginScreen(
 
     fun cleanDigitsOnly(str: String): String = str.filter { it.isDigit() }
 
+    fun deriveNameFromEmail(email: String): String {
+        val localPart = email.substringBefore("@")
+        return localPart.replace(Regex("[._-]"), " ")
+            .split(" ")
+            .filter { it.isNotBlank() }
+            .joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+            .ifEmpty { "MedMarg User" }
+    }
+
+    fun generateDefaultAvatar(name: String): String {
+        val initial = name.trim().firstOrNull()?.uppercase() ?: "M"
+        return "https://ui-avatars.com/api/?name=$initial&background=006B70&color=fff&size=128"
+    }
+
     fun mapRoleFromString(roleStr: String): UserRole {
         return when (roleStr.uppercase().trim()) {
             "ADMIN", "SUPER_ADMIN" -> UserRole.ADMIN
@@ -267,13 +281,22 @@ fun LoginScreen(
         infoMessage = ""
         val emailLower = gUser.email.trim().lowercase()
         val cachedPhone = prefs.getString("medmarg_user_phone_$emailLower", "") ?: ""
+        val cachedRoleStr = prefs.getString("medmarg_user_role_$emailLower", "") ?: ""
+        val cachedName = prefs.getString("medmarg_user_name_$emailLower", "") ?: ""
 
-        if (!gUser.picture.isNullOrEmpty()) {
-            prefs.edit().putString("medmarg_user_avatar_$emailLower", gUser.picture).apply()
+        val effectiveName = gUser.name.ifBlank {
+            cachedName.ifBlank { deriveNameFromEmail(emailLower) }
         }
-        val effectiveAvatar = gUser.picture ?: prefs.getString("medmarg_user_avatar_$emailLower", "") ?: ""
 
-        // 1. Check if matches a pre-registered user profile locally
+        val effectiveAvatar = if (!gUser.picture.isNullOrBlank()) {
+            prefs.edit().putString("medmarg_user_avatar_$emailLower", gUser.picture).apply()
+            gUser.picture
+        } else {
+            prefs.getString("medmarg_user_avatar_$emailLower", null)
+                ?: generateDefaultAvatar(effectiveName)
+        }
+
+        // 1. Check if matches a pre-registered system user profile locally
         val existingLocal = registeredUsers.firstOrNull {
             it.email.lowercase() == emailLower ||
                 (emailLower.isNotEmpty() && it.username.lowercase() == emailLower.substringBefore("@"))
@@ -287,13 +310,13 @@ fun LoginScreen(
                     val conn = url.openConnection() as HttpURLConnection
                     conn.requestMethod = "POST"
                     conn.setRequestProperty("Content-Type", "application/json")
-                    conn.connectTimeout = 5000
-                    conn.readTimeout = 5000
+                    conn.connectTimeout = 6000
+                    conn.readTimeout = 6000
                     conn.doOutput = true
 
                     val body = JSONObject().apply {
                         put("email", emailLower)
-                        put("name", gUser.name)
+                        put("name", effectiveName)
                         put("googleId", gUser.googleId)
                         put("picture", effectiveAvatar)
                         put("phone", existingLocal?.phone?.ifEmpty { cachedPhone } ?: cachedPhone)
@@ -313,8 +336,9 @@ fun LoginScreen(
             if (existingLocal != null) {
                 val phoneToUse = existingLocal.phone.ifEmpty { cachedPhone }
                 val updated = existingLocal.copy(
+                    name = effectiveName.ifBlank { existingLocal.name },
                     phone = phoneToUse,
-                    avatarUrl = existingLocal.avatarUrl.ifEmpty { effectiveAvatar }
+                    avatarUrl = effectiveAvatar
                 )
                 completeLoginAndPersist(updated)
                 return@launch
@@ -323,22 +347,38 @@ fun LoginScreen(
             // Parse backend response if available
             val backendUserObj = backendResult?.optJSONObject("user")
             val backendPhone = backendUserObj?.optString("phone", "") ?: ""
-            val resolvedPhone = if (cleanDigitsOnly(backendPhone).length >= 10) backendPhone else cachedPhone
-            val resolvedRole = if (backendUserObj != null) {
+            val resolvedPhone = if (cleanDigitsOnly(backendPhone).length >= 10) {
+                backendPhone
+            } else if (cleanDigitsOnly(cachedPhone).length >= 10) {
+                cachedPhone
+            } else {
+                ""
+            }
+
+            val resolvedRole = if (backendUserObj != null && backendUserObj.has("role")) {
                 mapRoleFromString(backendUserObj.optString("role", "PATIENT"))
+            } else if (cachedRoleStr.isNotBlank()) {
+                mapRoleFromString(cachedRoleStr)
             } else {
                 UserRole.PATIENT
             }
+
             val resolvedId = backendUserObj?.optString("id")?.takeIf { it.isNotEmpty() }
                 ?: "usr_g_${gUser.googleId.take(8)}"
-            val resolvedName = gUser.name.ifEmpty {
-                backendUserObj?.optString("name")?.takeIf { it.isNotEmpty() } ?: emailLower.substringBefore("@")
-            }
+            val resolvedName = backendUserObj?.optString("name")?.takeIf { it.isNotBlank() }
+                ?: effectiveName
             val resolvedOrg = backendUserObj?.optString("organization")?.takeIf { it.isNotEmpty() }
-                ?: "Care Seeker (Google Verified)"
+                ?: if (resolvedRole == UserRole.PATIENT) "Care Seeker (Google Verified)" else "MedMarg Partner"
 
-            if (cleanDigitsOnly(resolvedPhone).length >= 10) {
-                prefs.edit().putString("medmarg_user_phone_$emailLower", resolvedPhone).apply()
+            if (resolvedPhone.length >= 10) {
+                // Existing account with verified phone -> directly serve respective panel
+                prefs.edit()
+                    .putString("medmarg_user_phone_$emailLower", resolvedPhone)
+                    .putString("medmarg_user_role_$emailLower", resolvedRole.name)
+                    .putString("medmarg_user_name_$emailLower", resolvedName)
+                    .putString("medmarg_user_avatar_$emailLower", effectiveAvatar)
+                    .apply()
+
                 val verifiedUser = UserProfile(
                     id = resolvedId,
                     name = resolvedName,
@@ -352,7 +392,7 @@ fun LoginScreen(
                 )
                 completeLoginAndPersist(verifiedUser)
             } else {
-                // First-time Google user without phone on file -> prompt Mobile Verification Sheet
+                // Account does not exist or phone is missing -> prompt for mobile number
                 val newPatient = UserProfile(
                     id = resolvedId,
                     name = resolvedName,
@@ -1112,8 +1152,13 @@ fun LoginScreen(
                     val user = pendingOAuthUser ?: return@PhoneCollectionModal
                     val emailLower = user.email.lowercase()
 
-                    // Save phone locally in SharedPreferences
-                    prefs.edit().putString("medmarg_user_phone_$emailLower", fullPhone).apply()
+                    // Save phone & Google profile locally in SharedPreferences
+                    prefs.edit()
+                        .putString("medmarg_user_phone_$emailLower", fullPhone)
+                        .putString("medmarg_user_name_$emailLower", confirmedName)
+                        .putString("medmarg_user_role_$emailLower", UserRole.PATIENT.name)
+                        .putString("medmarg_user_avatar_$emailLower", user.avatarUrl)
+                        .apply()
 
                     // Sync phone & Google profile to live backend
                     coroutineScope.launch(Dispatchers.IO) {

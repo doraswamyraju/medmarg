@@ -23,12 +23,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.medmarg.patient.data.PatientSessionStore
 import com.medmarg.patient.model.UserProfile
 import com.medmarg.patient.ui.checkout.AddressPinpointModal
@@ -106,7 +108,10 @@ fun ProfileScreen(
                     horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     // Avatar with Emerald Ring & Verified Seal
-                    Box(contentAlignment = Alignment.BottomEnd) {
+                    Box(
+                        contentAlignment = Alignment.BottomEnd,
+                        modifier = Modifier.clickable { showEditProfileModal = true }
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(66.dp)
@@ -122,12 +127,23 @@ fun ProfileScreen(
                                 .border(2.dp, MedTealPrimary.copy(alpha = 0.35f), CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = user.name.take(1).uppercase(),
-                                fontSize = 26.sp,
-                                fontWeight = FontWeight.Black,
-                                color = MedTealPrimary
-                            )
+                            if (user.avatarUrl.isNotBlank()) {
+                                AsyncImage(
+                                    model = user.avatarUrl,
+                                    contentDescription = user.name,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape)
+                                )
+                            } else {
+                                Text(
+                                    text = user.name.take(1).uppercase(),
+                                    fontSize = 26.sp,
+                                    fontWeight = FontWeight.Black,
+                                    color = MedTealPrimary
+                                )
+                            }
                         }
 
                         Box(

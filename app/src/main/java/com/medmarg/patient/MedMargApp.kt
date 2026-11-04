@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import com.medmarg.patient.data.CatalogStore
 import com.medmarg.patient.data.PatientApiService
 import com.medmarg.patient.data.PatientSessionStore
@@ -81,11 +82,14 @@ fun MedMargApp() {
     // Sync Patient Session & Live Orders on User Login
     LaunchedEffect(loggedInUser?.id, loggedInUser?.phone) {
         val currentUser = loggedInUser
-        if (currentUser != null && currentUser.role == UserRole.PATIENT) {
-            PatientSessionStore.initializeForUser(context, currentUser)
-            val fetchedOrders = PatientApiService.fetchPatientOrders(currentUser)
-            PatientSessionStore.liveOrders.clear()
-            PatientSessionStore.liveOrders.addAll(fetchedOrders)
+        if (currentUser != null) {
+            com.medmarg.patient.data.NotificationStore.initializeForUser(context, currentUser.email.ifEmpty { currentUser.phone })
+            if (currentUser.role == UserRole.PATIENT) {
+                PatientSessionStore.initializeForUser(context, currentUser)
+                val fetchedOrders = PatientApiService.fetchPatientOrders(currentUser)
+                PatientSessionStore.liveOrders.clear()
+                PatientSessionStore.liveOrders.addAll(fetchedOrders)
+            }
         }
     }
 
@@ -595,7 +599,8 @@ fun MedMargApp() {
         AnimatedVisibility(
             visible = showSidebar,
             enter = slideInHorizontally(initialOffsetX = { -it }) + fadeIn(),
-            exit = slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+            exit = slideOutHorizontally(targetOffsetX = { -it }) + fadeOut(),
+            modifier = Modifier.fillMaxSize().zIndex(100f)
         ) {
             Box(
                 modifier = Modifier

@@ -5,6 +5,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.medmarg.patient.R
 import com.medmarg.patient.model.UserProfile
 import com.medmarg.patient.model.UserRole
@@ -107,25 +109,80 @@ fun SidebarView(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                Text(
-                    text = user.role.displayName,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MedTealPrimary
-                )
-                Text(
-                    text = user.email.ifEmpty { user.phone },
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Slate500,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (!user.avatarUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = user.avatarUrl,
+                            contentDescription = user.name,
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .border(1.5.dp, MedTealPrimary.copy(alpha = 0.4f), CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .background(MedTealLight)
+                                .border(1.5.dp, MedTealPrimary.copy(alpha = 0.4f), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = user.name.take(1).uppercase().ifEmpty { "M" },
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Black,
+                                color = MedTealPrimary
+                            )
+                        }
+                    }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = user.name.ifBlank { "MedMarg Member" },
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Slate900,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier.padding(top = 2.dp)
+                        ) {
+                            Surface(
+                                color = MedTealLight,
+                                shape = RoundedCornerShape(4.dp)
+                            ) {
+                                Text(
+                                    text = user.role.displayName.substringBefore(" ("),
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MedTealPrimary,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                                )
+                            }
+                            Text(
+                                text = user.email.ifEmpty { user.phone },
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = Slate500,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
                 HorizontalDivider(color = Slate200)
             }
 
@@ -556,12 +613,24 @@ fun SidebarView(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AccountCircle,
-                        contentDescription = null,
-                        tint = MedTealPrimary,
-                        modifier = Modifier.size(26.dp)
-                    )
+                    if (!user.avatarUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = user.avatarUrl,
+                            contentDescription = user.name,
+                            modifier = Modifier
+                                .size(28.dp)
+                                .clip(CircleShape)
+                                .border(1.dp, MedTealPrimary, CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.AccountCircle,
+                            contentDescription = null,
+                            tint = MedTealPrimary,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
 
                     Column {
                         Text(

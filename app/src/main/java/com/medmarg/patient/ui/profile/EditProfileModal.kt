@@ -1,6 +1,11 @@
 package com.medmarg.patient.ui.profile
 
+import android.content.Context
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -10,12 +15,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -23,12 +31,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import coil.compose.AsyncImage
 import com.medmarg.patient.data.PatientSessionStore
 import com.medmarg.patient.model.UserProfile
 import com.medmarg.patient.ui.theme.*
 
 /**
  * 1-on-1 Replicated Patient & Clinical Collection Preferences Editor (`ios/CareSeekerProfileView.swift` lines 817-926).
+ * Supports photo avatar picker, name, phone, email, and clinical phlebotomy preferences.
  */
 @Composable
 fun EditProfileModal(
@@ -39,6 +49,7 @@ fun EditProfileModal(
     val context = LocalContext.current
     val meta = PatientSessionStore.medicalMeta
 
+    var avatarUrlInput by remember { mutableStateOf(user.avatarUrl) }
     var nameInput by remember { mutableStateOf(user.name) }
     var phoneInput by remember { mutableStateOf(user.phone) }
     var emailInput by remember { mutableStateOf(user.email) }
@@ -53,6 +64,14 @@ fun EditProfileModal(
     var medsInput by remember { mutableStateOf(meta.currentMedications) }
     var emergencyNameInput by remember { mutableStateOf(meta.emergencyContactName) }
     var emergencyPhoneInput by remember { mutableStateOf(meta.emergencyContact.ifEmpty { user.phone }) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        if (uri != null) {
+            avatarUrlInput = uri.toString()
+        }
+    }
 
     val bloodGroups = listOf("O+", "A+", "B+", "AB+", "O-", "A-", "B-", "AB-")
     val needleOptions = listOf("Butterfly 23G (Sensitive)", "Standard 21G", "Pediatric 25G")
@@ -87,7 +106,7 @@ fun EditProfileModal(
                             color = Slate900
                         )
                         Text(
-                            text = "Personal Identity & Phlebotomy Preferences",
+                            text = "Personal Identity, Photo & Phlebotomy Preferences",
                             fontSize = 11.sp,
                             color = Slate500
                         )
@@ -117,8 +136,102 @@ fun EditProfileModal(
                         .weight(1f)
                         .verticalScroll(rememberScrollState())
                         .padding(18.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
+                    // Profile Photo Picker Header
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Slate50)
+                            .border(1.dp, Slate200, RoundedCornerShape(16.dp))
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.BottomEnd,
+                            modifier = Modifier.clickable { photoPickerLauncher.launch("image/*") }
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(68.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        Brush.linearGradient(
+                                            listOf(
+                                                MedTealPrimary.copy(alpha = 0.2f),
+                                                MedTealPrimary.copy(alpha = 0.08f)
+                                            )
+                                        )
+                                    )
+                                    .border(2.dp, MedTealPrimary, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (avatarUrlInput.isNotBlank()) {
+                                    AsyncImage(
+                                        model = avatarUrlInput,
+                                        contentDescription = nameInput,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(CircleShape)
+                                    )
+                                } else {
+                                    Text(
+                                        text = nameInput.take(1).uppercase().ifEmpty { "U" },
+                                        fontSize = 26.sp,
+                                        fontWeight = FontWeight.Black,
+                                        color = MedTealPrimary
+                                    )
+                                }
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(CircleShape)
+                                    .background(MedTealPrimary),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CameraAlt,
+                                    contentDescription = "Upload",
+                                    tint = PureWhite,
+                                    modifier = Modifier.size(13.dp)
+                                )
+                            }
+                        }
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Profile Photo",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Slate900
+                            )
+                            Text(
+                                text = "Tap camera icon to change your photo",
+                                fontSize = 11.sp,
+                                color = Slate500
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Surface(
+                                onClick = { photoPickerLauncher.launch("image/*") },
+                                shape = RoundedCornerShape(8.dp),
+                                color = MedTealLight
+                            ) {
+                                Text(
+                                    text = "Choose from Gallery",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MedTealPrimary,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
+
                     Text(
                         text = "PERSONAL DETAILS",
                         fontSize = 10.sp,
@@ -159,7 +272,7 @@ fun EditProfileModal(
                     OutlinedTextField(
                         value = emailInput,
                         onValueChange = { emailInput = it },
-                        label = { Text("Email Address (For PDF Reports)") },
+                        label = { Text("Email Address (For Reports & Google Sync)") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true
@@ -377,10 +490,12 @@ fun EditProfileModal(
                 Box(modifier = Modifier.padding(16.dp)) {
                     Button(
                         onClick = {
+                            val cleanEmail = emailInput.trim().lowercase().ifEmpty { user.email.lowercase() }
                             val updatedUser = user.copy(
                                 name = nameInput.trim().ifEmpty { user.name },
                                 phone = phoneInput.trim().ifEmpty { user.phone },
-                                email = emailInput.trim().ifEmpty { user.email }
+                                email = cleanEmail,
+                                avatarUrl = avatarUrlInput
                             )
                             val updatedMeta = meta.copy(
                                 age = ageInput.toIntOrNull() ?: 29,
@@ -395,6 +510,17 @@ fun EditProfileModal(
                                 emergencyContactName = emergencyNameInput.ifEmpty { "Family Emergency" },
                                 emergencyContact = emergencyPhoneInput.ifEmpty { updatedUser.phone }
                             )
+
+                            // Persist to SharedPreferences so it survives sessions
+                            val prefs = context.getSharedPreferences("medmarg_auth_prefs", Context.MODE_PRIVATE)
+                            prefs.edit()
+                                .putString("medmarg_user_name_$cleanEmail", updatedUser.name)
+                                .putString("medmarg_user_phone_$cleanEmail", updatedUser.phone)
+                                .putString("medmarg_user_avatar_$cleanEmail", updatedUser.avatarUrl)
+                                .putString("last_logged_in_name", updatedUser.name)
+                                .putString("last_logged_in_phone", updatedUser.phone)
+                                .apply()
+
                             PatientSessionStore.saveMedicalMeta(context, updatedUser, updatedMeta)
                             onUserUpdated(updatedUser)
                             onDismiss()
