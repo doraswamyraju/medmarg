@@ -11,6 +11,7 @@ import StaffDashboard from './pages/StaffDashboard';
 import PhlebotomistDashboard from './pages/PhlebotomistDashboard';
 import FreelanceSignupPage from './pages/FreelanceSignupPage';
 import PartnerSignupPage from './pages/PartnerSignupPage';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState(() => {
@@ -97,6 +98,16 @@ export default function App() {
     setCurrentUser(null);
     navigateToLogin();
   };
+
+  // 0. Public Legal & Compliance Routes (/privacy, /terms, /support) — Always accessible
+  const currentPathname = window.location.pathname.toLowerCase();
+  if (
+    currentPathname.includes('/privacy') ||
+    currentPathname.includes('/terms') ||
+    currentPathname.includes('/support')
+  ) {
+    return <PrivacyPolicyPage />;
+  }
 
   // 1. If user has authenticated, route directly to their specific role dashboard
   if (currentUser) {
