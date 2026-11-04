@@ -47,6 +47,7 @@ fun AgentHomeDashboardScreen(
     onTabSelected: (Int) -> Unit,
     onOpenSidebar: () -> Unit,
     onOpenNotifications: () -> Unit,
+    onOpenOrderDetail: (AgentPickupOrder) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -60,6 +61,7 @@ fun AgentHomeDashboardScreen(
     // Modals & Sheets
     var activeVisitOrder by remember { mutableStateOf<AgentPickupOrder?>(null) }
     var activeQrPaymentOrder by remember { mutableStateOf<AgentPickupOrder?>(null) }
+    var activeAssessKitOrder by remember { mutableStateOf<AgentPickupOrder?>(null) }
     var showManualOrderModal by remember { mutableStateOf(false) }
     var showLabHandoverModal by remember { mutableStateOf(false) }
     var actionBannerMessage by remember { mutableStateOf<String?>(null) }
@@ -208,12 +210,16 @@ fun AgentHomeDashboardScreen(
 
                     AgentNextAssignedCard(
                         order = nextOrder,
-                        onOpenVisit = { activeVisitOrder = nextOrder },
+                        onOpenVisit = { onOpenOrderDetail(nextOrder) },
                         onStartTrip = {
-                            coroutineScope.launch {
-                                AgentRepository.updatePickupStatus(nextOrder.id, "ENROUTE")
-                                refreshLiveRoster()
-                                actionBannerMessage = "Trip started for ${nextOrder.effectivePatientName}"
+                            if (nextOrder.kitAssigned != true && nextOrder.kitNotRequired != true) {
+                                activeAssessKitOrder = nextOrder
+                            } else {
+                                coroutineScope.launch {
+                                    AgentRepository.updatePickupStatus(nextOrder.id, "ENROUTE")
+                                    refreshLiveRoster()
+                                    actionBannerMessage = "Trip started for ${nextOrder.effectivePatientName}"
+                                }
                             }
                         }
                     )
@@ -296,14 +302,18 @@ fun AgentHomeDashboardScreen(
                         filteredOrders.forEach { ord ->
                             AgentOrderTimelineCard(
                                 order = ord,
-                                onOpenVisit = { activeVisitOrder = ord },
+                                onOpenVisit = { onOpenOrderDetail(ord) },
                                 onActionClick = {
                                     when (ord.status) {
                                         "ASSIGNED" -> {
-                                            coroutineScope.launch {
-                                                AgentRepository.updatePickupStatus(ord.id, "ENROUTE")
-                                                refreshLiveRoster()
-                                                actionBannerMessage = "En Route to ${ord.effectivePatientName}"
+                                            if (ord.kitAssigned != true && ord.kitNotRequired != true) {
+                                                activeAssessKitOrder = ord
+                                            } else {
+                                                coroutineScope.launch {
+                                                    AgentRepository.updatePickupStatus(ord.id, "ENROUTE")
+                                                    refreshLiveRoster()
+                                                    actionBannerMessage = "En Route to ${ord.effectivePatientName}"
+                                                }
                                             }
                                         }
                                         "ENROUTE" -> {
@@ -318,6 +328,9 @@ fun AgentHomeDashboardScreen(
                                         }
                                         "SAMPLE_COLLECTED" -> {
                                             showLabHandoverModal = true
+                                        }
+                                        else -> {
+                                            onOpenOrderDetail(ord)
                                         }
                                     }
                                 }
@@ -368,6 +381,19 @@ fun AgentHomeDashboardScreen(
     }
 
     // Modal Overlays
+    activeAssessKitOrder?.let { ord ->
+        com.medmarg.patient.ui.agent.sheets.AgentAssessAssignKitModal(
+            order = ord,
+            agentId = effectiveAgentId,
+            onDismiss = { activeAssessKitOrder = null },
+            onKitAssigned = {
+                activeAssessKitOrder = null
+                refreshLiveRoster()
+                actionBannerMessage = "Field kit assigned to ${ord.effectivePatientName}"
+            }
+        )
+    }
+
     activeVisitOrder?.let { ord ->
         AgentDoorstepVisitModal(
             order = ord,

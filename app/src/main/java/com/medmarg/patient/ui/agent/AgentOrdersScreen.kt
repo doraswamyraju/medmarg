@@ -3,6 +3,7 @@ package com.medmarg.patient.ui.agent
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -17,218 +18,367 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.medmarg.patient.data.AgentRepository
 import com.medmarg.patient.model.AgentPickupOrder
 import com.medmarg.patient.model.UserProfile
+import com.medmarg.patient.ui.agent.sheets.*
 import com.medmarg.patient.ui.theme.*
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
 // =========================================================================
-// 📋 AGENT ORDERS ROSTER SCREEN (TAB 7)
-// 100% Live Backend Roster - Zero Dummy Data
-// Replicated 1-on-1 with iOS AgentOrdersView.swift
+// 📋 AGENT ORDERS SCREEN (100% LIVE BACKEND PARITY WITH iOS AgentOrdersView.swift)
+// - Topbar with ON/OFF Duty switch, Notifications, Avatar
+// - Title + Dynamic Date Selector Pill
+// - 4 Status Summary Metric Cards: Assigned, On the Way, Collection, Handover
+// - 5 Segment Filter Tabs: All Orders | Assigned | On the Way | Collection | Handover
+// - Search + Filter + Sort bar
+// - Proceed to Lab Handover Banner when in Handover tab
+// - Rich Order Cards with Time Box, 5-Step Progress Stepper, View on Map,
+//   Assess Kit, Start Trip, Order Details, and Collect Payment
 // =========================================================================
 
 @Composable
 fun AgentOrdersScreen(
     user: UserProfile,
-    onTabSelected: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    onTabSelected: (Int) -> Unit = {},
+    onOpenSidebar: () -> Unit = {},
+    onOpenNotifications: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    val effectiveAgentId = if (user.username.isNotEmpty()) user.username else if (user.id.isNotEmpty()) user.id else "AG-01"
-
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedFilter by remember { mutableStateOf("ALL") } // ALL, PENDING, ENROUTE, ARRIVED, COLLECTED, COMPLETED
-    var ordersList by remember { mutableStateOf<List<AgentPickupOrder>>(emptyList()) }
+    var isOnDuty by remember { mutableStateOf(true) }
+    var orders by remember { mutableStateOf<List<AgentPickupOrder>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedSegment by remember { mutableStateOf("ALL") } // ALL, ASSIGNED, ON_THE_WAY, COLLECTION, HANDOVER
 
-    var activeVisitOrder by remember { mutableStateOf<AgentPickupOrder?>(null) }
-    var activeQrOrder by remember { mutableStateOf<AgentPickupOrder?>(null) }
-    var bannerMessage by remember { mutableStateOf<String?>(null) }
+    // Sheets & Modals
+    var selectedOrderForDetail by remember { mutableStateOf<AgentPickupOrder?>(null) }
+    var selectedOrderForKit by remember { mutableStateOf<AgentPickupOrder?>(null) }
+    var selectedOrderForQr by remember { mutableStateOf<AgentPickupOrder?>(null) }
+    var selectedOrderForVisit by remember { mutableStateOf<AgentPickupOrder?>(null) }
+    var selectedOrderForMap by remember { mutableStateOf<AgentPickupOrder?>(null) }
+    var showLabHandoverSheet by remember { mutableStateOf(false) }
 
-    fun refreshOrders() {
+    val effectiveAgentId = if (user.username.isNotEmpty()) user.username else if (user.id.isNotEmpty()) user.id else "AG-01"
+    val todayFormatted = remember {
+        SimpleDateFormat("EEE, dd MMM yyyy", Locale.US).format(Date())
+    }
+
+    fun loadOrders() {
         coroutineScope.launch {
             isLoading = true
-            ordersList = AgentRepository.fetchRoster(effectiveAgentId)
+            orders = AgentRepository.fetchRoster(effectiveAgentId)
             isLoading = false
         }
     }
 
-    LaunchedEffect(Unit) {
-        refreshOrders()
+    LaunchedEffect(effectiveAgentId) {
+        loadOrders()
     }
 
-    val filteredOrders = ordersList.filter { ord ->
-        val q = searchQuery.lowercase().trim()
-        val matchSearch = q.isEmpty() ||
-                ord.effectivePatientName.lowercase().contains(q) ||
-                (ord.address ?: "").lowercase().contains(q) ||
-                (ord.items ?: "").lowercase().contains(q) ||
-                ord.id.lowercase().contains(q)
+    val assignedCount = orders.count { it.status == "ASSIGNED" || it.status == "KIT_ASSIGNED" }
+    val onTheWayCount = orders.count { it.status == "ENROUTE" }
+    val collectionCount = orders.count { it.status == "ARRIVED" }
+    val handoverCount = orders.count { it.status == "SAMPLE_COLLECTED" }
 
-        val matchFilter = when (selectedFilter) {
-            "PENDING" -> ord.status == "ASSIGNED"
-            "ENROUTE" -> ord.status == "ENROUTE"
-            "ARRIVED" -> ord.status == "ARRIVED" || ord.status == "KIT_ASSIGNED"
-            "COLLECTED" -> ord.status == "SAMPLE_COLLECTED"
-            "COMPLETED" -> ord.status == "COMPLETED" || ord.status == "DELIVERED"
-            else -> true
+    val filteredOrders = remember(orders, selectedSegment, searchQuery) {
+        var list = when (selectedSegment) {
+            "ASSIGNED" -> orders.filter { it.status == "ASSIGNED" || it.status == "KIT_ASSIGNED" }
+            "ON_THE_WAY" -> orders.filter { it.status == "ENROUTE" }
+            "COLLECTION" -> orders.filter { it.status == "ARRIVED" }
+            "HANDOVER" -> orders.filter { it.status == "SAMPLE_COLLECTED" }
+            else -> orders
         }
-
-        matchSearch && matchFilter
+        if (searchQuery.isNotBlank()) {
+            val q = searchQuery.trim().lowercase()
+            list = list.filter {
+                it.id.lowercase().contains(q) ||
+                    it.effectivePatientName.lowercase().contains(q) ||
+                    (it.address?.lowercase()?.contains(q) == true) ||
+                    (it.items?.lowercase()?.contains(q) == true)
+            }
+        }
+        list
     }
 
-    Box(modifier = modifier.fillMaxSize().background(Slate50)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Slate50)
+    ) {
+        // 1. Agent Topbar
+        AgentTopbarView(
+            agentName = user.name,
+            agentId = effectiveAgentId,
+            isOnDuty = isOnDuty,
+            onToggleDuty = { duty ->
+                isOnDuty = duty
+                coroutineScope.launch { AgentRepository.updateDuty(effectiveAgentId, duty) }
+            },
+            onLogoTap = { onTabSelected(0) },
+            onSidebarTap = onOpenSidebar,
+            onNotificationTap = onOpenNotifications,
+            onProfileTap = { onTabSelected(4) }
+        )
+
+        // 2. Scrollable Content
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(top = 12.dp, bottom = 110.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Header
+            // Header Section
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(PureWhite)
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
-                Text(
-                    text = "Pickups & Orders Roster",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Black,
-                    color = Slate900,
-                    modifier = Modifier.weight(1f)
-                )
-
-                IconButton(onClick = { refreshOrders() }) {
-                    Icon(Icons.Default.Refresh, contentDescription = "Refresh", tint = MedTealPrimary)
+                Column {
+                    Text("Orders", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Slate900)
+                    Text("Manage and track your assigned orders", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Slate500)
                 }
-            }
 
-            bannerMessage?.let { banner ->
                 Row(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MedTealPrimary)
-                        .padding(horizontal = 10.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(PureWhite)
+                        .border(1.dp, Slate200, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 10.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
-                    Text(banner, fontSize = 12.sp, color = PureWhite, modifier = Modifier.weight(1f))
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = PureWhite,
-                        modifier = Modifier.size(16.dp).clickable { bannerMessage = null }
-                    )
+                    Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MedTealPrimary, modifier = Modifier.size(12.dp))
+                    Text("Today, $todayFormatted", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Slate900)
                 }
             }
 
-            // Search Bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Search patient, phone, address, test...", fontSize = 12.sp, color = Slate400) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Slate400) },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = "Clear",
-                            tint = Slate400,
-                            modifier = Modifier.clickable { searchQuery = "" }
-                        )
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = PureWhite,
-                    unfocusedContainerColor = PureWhite,
-                    focusedBorderColor = MedTealPrimary,
-                    unfocusedBorderColor = Slate200
-                ),
-                singleLine = true
-            )
-
-            // Status Filter Chips
+            // 4 Status Summary Metric Cards Row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                val chips = listOf(
-                    "ALL" to "All (${ordersList.size})",
-                    "PENDING" to "Pending",
-                    "ENROUTE" to "En Route",
-                    "ARRIVED" to "Arrived",
-                    "COLLECTED" to "Collected",
-                    "COMPLETED" to "Completed"
+                OrderStatusMetricCard(
+                    count = assignedCount,
+                    title = "Assigned",
+                    subtitle = "Ready to Start",
+                    icon = Icons.Default.ListAlt,
+                    color = Color(0xFF2563EB),
+                    isSelected = selectedSegment == "ASSIGNED",
+                    onClick = { selectedSegment = "ASSIGNED" }
                 )
+                OrderStatusMetricCard(
+                    count = onTheWayCount,
+                    title = "On the Way",
+                    subtitle = "En Route",
+                    icon = Icons.Default.NearMe,
+                    color = EmeraldAccent,
+                    isSelected = selectedSegment == "ON_THE_WAY",
+                    onClick = { selectedSegment = "ON_THE_WAY" }
+                )
+                OrderStatusMetricCard(
+                    count = collectionCount,
+                    title = "Collection",
+                    subtitle = "In Progress",
+                    icon = Icons.Default.Science,
+                    color = Color(0xFFF97316),
+                    isSelected = selectedSegment == "COLLECTION",
+                    onClick = { selectedSegment = "COLLECTION" }
+                )
+                OrderStatusMetricCard(
+                    count = handoverCount,
+                    title = "Handover",
+                    subtitle = "Pending Lab Drop",
+                    icon = Icons.Default.Inventory2,
+                    color = Color(0xFF9333EA),
+                    isSelected = selectedSegment == "HANDOVER",
+                    onClick = { selectedSegment = "HANDOVER" }
+                )
+            }
 
-                chips.forEach { (key, label) ->
-                    val isSelected = selectedFilter == key
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(if (isSelected) MedTealPrimary else PureWhite)
-                            .clickable { selectedFilter = key }
-                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                        contentAlignment = Alignment.Center
+            // 5 Segment Filter Tabs
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                listOf(
+                    "ALL" to "All Orders (${orders.size})",
+                    "ASSIGNED" to "Assigned ($assignedCount)",
+                    "ON_THE_WAY" to "On the Way ($onTheWayCount)",
+                    "COLLECTION" to "Collection ($collectionCount)",
+                    "HANDOVER" to "Handover ($handoverCount)"
+                ).forEach { (key, title) ->
+                    val sel = selectedSegment == key
+                    Column(
+                        modifier = Modifier.clickable { selectedSegment = key },
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = label,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) PureWhite else Slate700
+                            text = title,
+                            fontSize = 13.sp,
+                            fontWeight = if (sel) FontWeight.Black else FontWeight.SemiBold,
+                            color = if (sel) MedTealPrimary else Slate500
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .height(2.5.dp)
+                                .width(64.dp)
+                                .background(if (sel) MedTealPrimary else Color.Transparent)
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            // Search & Sort Bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                    placeholder = { Text("Search by patient name, order ID or test...", fontSize = 12.sp) },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
 
-            // Scrollable Orders List
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(PureWhite)
+                        .border(1.dp, Slate200, RoundedCornerShape(12.dp))
+                        .clickable { orders = orders.reversed() }
+                        .padding(horizontal = 12.dp, vertical = 14.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Icon(Icons.Default.SwapVert, contentDescription = "Sort", tint = Slate700, modifier = Modifier.size(14.dp))
+                        Text("Sort", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Slate700)
+                    }
+                }
+            }
+
+            // Lab Handover Action Banner if in HANDOVER tab
+            if (selectedSegment == "HANDOVER" && handoverCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Brush.horizontalGradient(listOf(MedTealDark, MedTealPrimary)))
+                        .clickable { showLabHandoverSheet = true }
+                        .padding(14.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Icon(Icons.Default.Verified, contentDescription = null, tint = PureWhite, modifier = Modifier.size(26.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Proceed to Lab Handover ($handoverCount Ready)", fontSize = 14.sp, fontWeight = FontWeight.Black, color = PureWhite)
+                            Text("Verify Cold-Chain & transfer specimen custody to NABL Hub", fontSize = 11.sp, color = PureWhite.copy(alpha = 0.85f))
+                        }
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = PureWhite)
+                    }
+                }
+            }
+
+            // Orders List
             if (isLoading) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.fillMaxWidth().padding(40.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MedTealPrimary)
                 }
             } else if (filteredOrders.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No matching orders found", fontSize = 13.sp, color = Slate500)
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = PureWhite)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(32.dp).fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(Icons.Default.AssignmentTurnedIn, contentDescription = null, tint = MedTealPrimary.copy(alpha = 0.5f), modifier = Modifier.size(38.dp))
+                        Text("No Orders in This Section", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                        Text("Try switching filter tabs or clearing your search query.", fontSize = 12.sp, color = Slate500)
+                    }
                 }
             } else {
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = 90.dp),
+                    modifier = Modifier.padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     filteredOrders.forEach { ord ->
-                        RosterOrderCard(
+                        RichAgentOrderCard(
                             order = ord,
-                            onOpenVisit = { activeVisitOrder = ord },
-                            onCollectPayment = { activeQrOrder = ord },
-                            onStatusAction = { nextStatus ->
-                                coroutineScope.launch {
-                                    AgentRepository.updatePickupStatus(ord.id, nextStatus)
-                                    refreshOrders()
-                                    bannerMessage = "Order ${ord.id} updated to $nextStatus"
+                            onOpenDetail = { selectedOrderForDetail = ord },
+                            onAssessKit = { selectedOrderForKit = ord },
+                            onViewOnMap = { selectedOrderForMap = ord },
+                            onCollectQr = { selectedOrderForQr = ord },
+                            onOpenVisit = { selectedOrderForVisit = ord },
+                            onPrimaryStepAction = {
+                                when (ord.status) {
+                                    "ASSIGNED" -> {
+                                        if (ord.kitAssigned == true || ord.kitNotRequired == true) {
+                                            coroutineScope.launch {
+                                                AgentRepository.updatePickupStatus(ord.id, "ENROUTE")
+                                                loadOrders()
+                                                selectedOrderForMap = ord.copy(status = "ENROUTE")
+                                            }
+                                        } else {
+                                            selectedOrderForKit = ord
+                                        }
+                                    }
+                                    "KIT_ASSIGNED" -> {
+                                        coroutineScope.launch {
+                                            AgentRepository.updatePickupStatus(ord.id, "ENROUTE")
+                                            loadOrders()
+                                            selectedOrderForMap = ord.copy(status = "ENROUTE")
+                                        }
+                                    }
+                                    "ENROUTE" -> {
+                                        coroutineScope.launch {
+                                            AgentRepository.updatePickupStatus(ord.id, "ARRIVED")
+                                            loadOrders()
+                                            selectedOrderForVisit = ord.copy(status = "ARRIVED")
+                                        }
+                                    }
+                                    "ARRIVED" -> {
+                                        selectedOrderForVisit = ord
+                                    }
+                                    "SAMPLE_COLLECTED" -> {
+                                        showLabHandoverSheet = true
+                                    }
+                                    else -> {
+                                        selectedOrderForDetail = ord
+                                    }
                                 }
                             }
                         )
@@ -238,196 +388,309 @@ fun AgentOrdersScreen(
         }
     }
 
-    // Modals
-    activeVisitOrder?.let { ord ->
-        AgentDoorstepVisitModal(
+    // Sub-Screens & Modals
+    selectedOrderForDetail?.let { ord ->
+        AgentOrderDetailScreen(
+            initialOrder = ord,
+            agentId = effectiveAgentId,
+            onBack = {
+                selectedOrderForDetail = null
+                loadOrders()
+            },
+            onOrderUpdated = { loadOrders() }
+        )
+    }
+
+    selectedOrderForKit?.let { ord ->
+        AgentAssessAssignKitModal(
             order = ord,
-            onDismiss = { activeVisitOrder = null },
-            onCollectQrPayment = { activeQrOrder = ord },
-            onCompleteVisit = {
-                activeVisitOrder = null
-                refreshOrders()
-                bannerMessage = "Sample collected for ${ord.effectivePatientName}!"
+            agentId = effectiveAgentId,
+            onDismiss = { selectedOrderForKit = null },
+            onKitAssigned = {
+                selectedOrderForKit = null
+                loadOrders()
             }
         )
     }
 
-    activeQrOrder?.let { ord ->
+    selectedOrderForQr?.let { ord ->
         AgentDoorstepQrPaymentModal(
             order = ord,
-            onDismiss = { activeQrOrder = null },
+            onDismiss = { selectedOrderForQr = null },
             onPaymentDone = {
-                activeQrOrder = null
-                refreshOrders()
-                bannerMessage = "Payment recorded successfully!"
+                selectedOrderForQr = null
+                loadOrders()
+            }
+        )
+    }
+
+    selectedOrderForVisit?.let { ord ->
+        AgentDoorstepVisitModal(
+            order = ord,
+            onDismiss = { selectedOrderForVisit = null },
+            onCollectQrPayment = {
+                selectedOrderForVisit = null
+                selectedOrderForQr = ord
+            },
+            onCompleteVisit = {
+                selectedOrderForVisit = null
+                loadOrders()
+            }
+        )
+    }
+
+    selectedOrderForMap?.let { ord ->
+        FullScreenInAppMapModal(
+            order = ord,
+            onDismiss = { selectedOrderForMap = null },
+            onMarkArrived = {
+                coroutineScope.launch {
+                    AgentRepository.updatePickupStatus(ord.id, "ARRIVED")
+                    loadOrders()
+                    selectedOrderForVisit = ord.copy(status = "ARRIVED")
+                }
+            }
+        )
+    }
+
+    if (showLabHandoverSheet) {
+        AgentLabHandoverScreen(
+            agentId = effectiveAgentId,
+            agentName = user.name,
+            collectedOrders = orders.filter { it.status == "SAMPLE_COLLECTED" },
+            onDismiss = { showLabHandoverSheet = false },
+            onHandoverSuccess = {
+                showLabHandoverSheet = false
+                loadOrders()
             }
         )
     }
 }
 
 @Composable
-private fun RosterOrderCard(
+private fun OrderStatusMetricCard(
+    count: Int,
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    color: Color,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .width(120.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
+        border = androidx.compose.foundation.BorderStroke(if (isSelected) 2.dp else 1.dp, if (isSelected) color else Slate200)
+    ) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(28.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(color.copy(alpha = 0.12f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(14.dp))
+            }
+            Text("$count", fontSize = 20.sp, fontWeight = FontWeight.Black, color = Slate900)
+            Text(title, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Slate900, maxLines = 1)
+            Text(subtitle, fontSize = 9.sp, color = Slate500, maxLines = 1)
+        }
+    }
+}
+
+@Composable
+private fun RichAgentOrderCard(
     order: AgentPickupOrder,
+    onOpenDetail: () -> Unit,
+    onAssessKit: () -> Unit,
+    onViewOnMap: () -> Unit,
+    onCollectQr: () -> Unit,
     onOpenVisit: () -> Unit,
-    onCollectPayment: () -> Unit,
-    onStatusAction: (String) -> Unit
+    onPrimaryStepAction: () -> Unit
 ) {
     val context = LocalContext.current
+    val isKitDone = order.kitAssigned == true || order.kitNotRequired == true || order.status != "ASSIGNED"
+
+    val stepIdx = when (order.status) {
+        "ASSIGNED" -> if (isKitDone) 2 else 1
+        "KIT_ASSIGNED" -> 2
+        "ENROUTE" -> 3
+        "ARRIVED" -> 4
+        "SAMPLE_COLLECTED", "DELIVERED", "COMPLETED" -> 5
+        else -> 1
+    }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onOpenVisit() },
+            .clickable { onOpenDetail() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = PureWhite),
-        elevation = CardDefaults.cardElevation(2.dp)
+        border = androidx.compose.foundation.BorderStroke(1.dp, Slate200)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Header Row: Slot, Name, Status Pill
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Top Row: Time Box + Patient Info + Call & Status
+            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                // Time Box
+                Column(
+                    modifier = Modifier
+                        .width(64.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Slate50)
+                        .border(1.dp, Slate200, RoundedCornerShape(12.dp))
+                        .padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(order.slot?.take(5) ?: "07:30", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Slate900)
+                    Text(if (order.slot?.contains("PM") == true) "PM" else "AM", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Slate500)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text("Today", fontSize = 9.sp, fontWeight = FontWeight.SemiBold, color = MedTealPrimary)
+                }
+
+                // Patient & Tests
+                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text("ORD-${order.id}", fontSize = 10.sp, fontWeight = FontWeight.Bold, fontFamily = FontFamily.Monospace, color = Slate500)
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background((if (order.isPaid) Color(0xFF2563EB) else Color(0xFF9333EA)).copy(alpha = 0.1f))
+                                .padding(horizontal = 5.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = if (order.isPaid) "Prepaid (Online)" else "Doorstep Payment",
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (order.isPaid) Color(0xFF2563EB) else Color(0xFF9333EA)
+                            )
+                        }
+                    }
+
+                    Text(order.effectivePatientName, fontSize = 15.sp, fontWeight = FontWeight.Black, color = Slate900, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(order.items ?: "Extensive Full Body Checkup", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = MedTealPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(order.address ?: "Air Bypass Road, Tirupati", fontSize = 10.sp, color = Slate500, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+
+                // Call & Amount
+                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("₹${order.effectiveAmount}", fontSize = 15.sp, fontWeight = FontWeight.Black, color = Slate900)
+                    Box(
+                        modifier = Modifier
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .background(MedTealLight)
+                            .clickable {
+                                context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:${order.effectivePhone}")))
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Phone, contentDescription = "Call", tint = MedTealPrimary, modifier = Modifier.size(15.dp))
+                    }
+                }
+            }
+
+            // 5-Step Progress Stepper Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Slate50)
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                listOf(1 to "Assigned", 2 to "Kit Check", 3 to "En Route", 4 to "Doorstep", 5 to "Collect").forEachIndexed { idx, (num, label) ->
+                    val done = stepIdx > num || order.status == "SAMPLE_COLLECTED"
+                    val active = stepIdx == num
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Box(
+                            modifier = Modifier
+                                .size(16.dp)
+                                .clip(CircleShape)
+                                .background(if (done) EmeraldAccent else if (active) Color(0xFFF97316) else Slate200),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("$num", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = if (done || active) PureWhite else Slate600)
+                        }
+                        Text(label, fontSize = 8.sp, fontWeight = if (active || done) FontWeight.Bold else FontWeight.Medium, color = if (active || done) Slate900 else Slate500)
+                    }
+                }
+            }
+
+            // Action Buttons Footer Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                // View on Map
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Slate100)
+                        .clickable { onViewOnMap() }
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Icon(Icons.Default.Map, contentDescription = null, tint = Slate700, modifier = Modifier.size(13.dp))
+                        Text("Map", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Slate700)
+                    }
+                }
+
+                // Assess Kit
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isKitDone) EmeraldAccent.copy(alpha = 0.12f) else Color(0xFFFFF7ED))
+                        .clickable { onAssessKit() }
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                ) {
                     Text(
-                        text = order.slot ?: "07:30 AM - 08:30 AM",
+                        text = if (isKitDone) "Kit Ready ✓" else "Assess Kit",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Slate500
-                    )
-                    Text(
-                        text = order.effectivePatientName,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Slate900
+                        color = if (isKitDone) EmeraldAccent else Color(0xFFF97316)
                     )
                 }
 
-                val (stColor, stBg) = when (order.status) {
-                    "ENROUTE" -> Pair(Color(0xFF2563EB), Color(0xFFDBEAFE))
-                    "ARRIVED" -> Pair(Color(0xFF8B5CF6), Color(0xFFEDE9FE))
-                    "SAMPLE_COLLECTED" -> Pair(Color(0xFF00B86B), Color(0xFFD1FAE5))
-                    "COMPLETED", "DELIVERED" -> Pair(Color(0xFF059669), Color(0xFFD1FAE5))
-                    else -> Pair(Slate700, Slate100)
+                if (!order.isPaid) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFF9333EA).copy(alpha = 0.12f))
+                            .clickable { onCollectQr() }
+                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                    ) {
+                        Text("QR Pay", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF9333EA))
+                    }
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Primary Step Action Button
+                val primaryLabel = when (order.status) {
+                    "ASSIGNED" -> if (isKitDone) "Start Trip >" else "Assess Kit >"
+                    "KIT_ASSIGNED" -> "Start Trip >"
+                    "ENROUTE" -> "Mark Arrived >"
+                    "ARRIVED" -> "Collect Sample >"
+                    "SAMPLE_COLLECTED" -> "Lab Handover >"
+                    else -> "Details >"
                 }
 
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(stBg)
-                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MedTealPrimary)
+                        .clickable { onPrimaryStepAction() }
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
-                    Text(
-                        text = order.status ?: "ASSIGNED",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Black,
-                        color = stColor
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Address & Phone
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Place, contentDescription = null, tint = Slate400, modifier = Modifier.size(14.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(order.address ?: "Tirupati", fontSize = 12.sp, color = Slate600)
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            // Tests
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Biotech, contentDescription = null, tint = MedTealPrimary, modifier = Modifier.size(14.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(order.items ?: "Diagnostic Blood Tests", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Slate800)
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Divider(color = Slate100, thickness = 1.dp)
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            // Footer Row: Price, Payment Status & Buttons
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "₹${order.effectiveAmount}",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Slate900
-                    )
-                    Text(
-                        text = if (order.isPaid) "PAID" else "PAYMENT DUE",
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (order.isPaid) EmeraldAccent else RoseError
-                    )
-                }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    // Call Button
-                    IconButton(
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${order.effectivePhone}"))
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Slate100)
-                    ) {
-                        Icon(Icons.Default.Phone, contentDescription = "Call", tint = Slate700, modifier = Modifier.size(18.dp))
-                    }
-
-                    // Maps Direction Button
-                    IconButton(
-                        onClick = {
-                            val uri = Uri.parse("geo:0,0?q=${Uri.encode(order.address ?: "Tirupati")}")
-                            val intent = Intent(Intent.ACTION_VIEW, uri)
-                            context.startActivity(intent)
-                        },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MedTealLight)
-                    ) {
-                        Icon(Icons.Default.Navigation, contentDescription = "Navigate", tint = MedTealPrimary, modifier = Modifier.size(18.dp))
-                    }
-
-                    // Primary Step Action Button
-                    val (btnLabel, nextState) = when (order.status) {
-                        "ASSIGNED" -> Pair("Start Trip", "ENROUTE")
-                        "ENROUTE" -> Pair("Arrived", "ARRIVED")
-                        "ARRIVED", "KIT_ASSIGNED" -> Pair("Collect", null)
-                        "SAMPLE_COLLECTED" -> Pair("Handover", null)
-                        else -> Pair("View", null)
-                    }
-
-                    Button(
-                        onClick = {
-                            if (nextState != null) {
-                                onStatusAction(nextState)
-                            } else {
-                                onOpenVisit()
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = MedTealPrimary),
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
-                    ) {
-                        Text(btnLabel, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PureWhite)
-                    }
+                    Text(primaryLabel, fontSize = 11.sp, fontWeight = FontWeight.Black, color = PureWhite)
                 }
             }
         }
     }
 }
-

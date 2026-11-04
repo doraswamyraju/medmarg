@@ -54,7 +54,12 @@ data class AgentPickupOrder(
         get() = amount ?: totalAmount ?: 0
 
     val isPaid: Boolean
-        get() = paymentStatus == "PAID_SUCCESS" || paymentStatus == "PAID_DOORSTEP_QR" || paymentStatus == "PAID_ONLINE" || paymentStatus == "CASH_COLLECTED"
+        get() = paymentStatus == "PAID_SUCCESS" ||
+            paymentStatus == "PAID_DOORSTEP_QR" ||
+            paymentStatus == "PAID_ONLINE" ||
+            paymentStatus == "CASH_COLLECTED" ||
+            paymentStatus == "PAID" ||
+            (paymentMode == "ONLINE" && paymentStatus != "FAILED")
 }
 
 data class PhleboVitalsRecord(
@@ -73,7 +78,20 @@ data class AgentInventoryItem(
     val code: String,
     val stock: Int,
     val unit: String = "Pcs",
-    val minThreshold: Int? = 10
+    val minThreshold: Int? = 5,
+    val category: String = "Consumables"
+)
+
+data class AgentInventoryDetailItem(
+    val id: String,
+    val name: String,
+    val code: String,
+    val category: String,
+    val unit: String,
+    val stock: Int,
+    val maxCapacity: Int,
+    val subtitle: String,
+    val tubeColor: String // "purple", "red", "grey", "yellow", "blue", "green"
 )
 
 data class AgentWarehouseStockItem(
@@ -112,6 +130,54 @@ data class AgentQuotaStats(
     val targetToday: Int? = 10,
     val pendingToday: Int? = 0,
     val incentivesEarned: Int? = 0
+)
+
+data class AgentLiveProfileData(
+    val id: String = "AG-01",
+    val name: String = "Ramesh Kumar",
+    val phleboId: String? = "AP-PMC-89102",
+    val phone: String? = null,
+    val email: String? = null,
+    val avatarUrl: String? = null,
+    val gender: String? = "Male",
+    val age: Int? = 34,
+    val certification: String? = "Certified Phlebotomist (NABL Guidelines)",
+    val vaccinationStatus: String? = "Double Vaccinated",
+    val experience: String? = "3+ Years",
+    val zone: String? = "Tirupati Urban & Bypass (Zone 1)",
+    val bankAccount: String? = "HDFC Bank • **** 4321",
+    val upiId: String? = "ramesh.kumar@hdfcbank",
+    val paymentCycle: String? = "Weekly (Every Monday)",
+    val rating: Double? = 4.9,
+    val totalCollections: Int? = 1,
+    val documents: List<AgentProfileDocumentItem>? = emptyList()
+)
+
+data class AgentProfileDocumentItem(
+    val title: String,
+    val issuer: String,
+    val verified: Boolean = true
+)
+
+data class OrderedTestDisplayItem(
+    val name: String,
+    val category: String,
+    val testsCount: Int,
+    val sampleType: String,
+    val fasting: String,
+    val tat: String,
+    val mrp: Int,
+    val offerPrice: Int,
+    val profiles: List<String>
+)
+
+data class TubeBarcodeItem(
+    val id: String,
+    val name: String,
+    val tubeType: String,
+    val capColorHex: Long,
+    val barcode: String = "",
+    val isScanned: Boolean = false
 )
 
 data class AgentPaymentTxn(
@@ -163,4 +229,3 @@ data class FreelancePayoutRequest(
     val upiId: String,
     val transactionRef: String? = null
 )
-
