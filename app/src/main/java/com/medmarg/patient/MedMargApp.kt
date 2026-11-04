@@ -27,6 +27,7 @@ import com.medmarg.patient.model.UserRole
 import com.medmarg.patient.ui.agent.*
 import com.medmarg.patient.ui.checkout.AddressPinpointModal
 import com.medmarg.patient.ui.components.*
+import com.medmarg.patient.ui.customer.topbar.CustomerTopbarView
 import com.medmarg.patient.ui.freelance.*
 import com.medmarg.patient.ui.screens.*
 import com.medmarg.patient.ui.theme.*
@@ -115,7 +116,40 @@ fun MedMargApp() {
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
-                if (user.role != UserRole.COLLECTION_AGENT && user.role != UserRole.FREELANCE_AGENT) {
+                if (user.role == UserRole.PATIENT) {
+                    val defaultAddr = PatientSessionStore.savedAddresses.firstOrNull { it.isDefault }
+                        ?: PatientSessionStore.savedAddresses.firstOrNull()
+                    val addrText = defaultAddr?.fullAddress ?: user.organization
+
+                    CustomerTopbarView(
+                        user = user,
+                        city = PatientSessionStore.selectedCity,
+                        address = addrText,
+                        onMenuClick = { showSidebar = true },
+                        onLogoClick = {
+                            selectedTab = 0
+                            selectedSubTab = 0
+                            showSidebar = false
+                        },
+                        onLocationClick = { showLocationSheet = true },
+                        onNotificationClick = { showNotificationCenter = true },
+                        onProfileClick = {
+                            selectedTab = 4
+                            selectedSubTab = 0
+                            showSidebar = false
+                        },
+                        onLogoutClick = {
+                            loggedInUser = null
+                            selectedTab = 0
+                            selectedSubTab = 0
+                            cartItems.clear()
+                            PatientSessionStore.liveOrders.clear()
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Signed out of MedMarg")
+                            }
+                        }
+                    )
+                } else if (user.role != UserRole.COLLECTION_AGENT && user.role != UserRole.FREELANCE_AGENT) {
                     TopbarView(
                         user = user,
                         onMenuClick = { showSidebar = true },
