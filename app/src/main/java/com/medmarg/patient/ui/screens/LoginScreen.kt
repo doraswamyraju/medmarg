@@ -44,7 +44,6 @@ import com.medmarg.patient.R
 import com.medmarg.patient.model.UserProfile
 import com.medmarg.patient.model.UserRole
 import com.medmarg.patient.ui.auth.GoogleAuthUser
-import com.medmarg.patient.ui.auth.GoogleSha1HelperModal
 import com.medmarg.patient.ui.auth.GoogleSignInManager
 import com.medmarg.patient.ui.auth.PhoneCollectionModal
 import com.medmarg.patient.ui.auth.deriveNameFromEmail
@@ -172,7 +171,6 @@ fun LoginScreen(
     // Google OAuth State & First-Time Phone Collection Sheet State
     var isGoogleVerifying by remember { mutableStateOf(false) }
     var showPhoneCollectionSheet by remember { mutableStateOf(false) }
-    var showGoogleSha1Helper by remember { mutableStateOf(false) }
     var pendingOAuthUser by remember { mutableStateOf<UserProfile?>(null) }
     var phoneInputForOAuth by remember { mutableStateOf("") }
     var phoneCollectionError by remember { mutableStateOf("") }
@@ -416,15 +414,16 @@ fun LoginScreen(
     val launchGoogleSignIn = GoogleSignInManager.rememberGoogleSignInLauncher(
         onGoogleAuthenticated = { googleUser ->
             isGoogleVerifying = false
-            showGoogleSha1Helper = false
             handleGoogleUserAuthenticated(googleUser)
         },
         onError = { errorMsg ->
             isGoogleVerifying = false
-            if (errorMsg == "DEVELOPER_ERROR_10") {
-                showGoogleSha1Helper = true
-            } else if (!errorMsg.contains("cancel", ignoreCase = true)) {
-                errorMessage = errorMsg
+            if (!errorMsg.contains("cancel", ignoreCase = true)) {
+                errorMessage = if (errorMsg == "DEVELOPER_ERROR_10") {
+                    "Google Sign-In Error 10 (DEVELOPER_ERROR): SHA-1 is not registered in Google Cloud Console (Project 836240579937)."
+                } else {
+                    errorMsg
+                }
             }
         }
     )
@@ -1159,20 +1158,6 @@ fun LoginScreen(
                     showPhoneCollectionSheet = false
                     pendingOAuthUser = null
                     completeLoginAndPersist(updatedUser)
-                }
-            )
-        }
-
-        // ==========================================
-        // 🛠️ MODAL: GOOGLE SIGN-IN SHA-1 HELPER & QUICK SIGN-IN
-        // Shown when Google returns Code 10 (DEVELOPER_ERROR)
-        // ==========================================
-        if (showGoogleSha1Helper) {
-            GoogleSha1HelperModal(
-                onDismiss = { showGoogleSha1Helper = false },
-                onAccountSelected = { gUser ->
-                    showGoogleSha1Helper = false
-                    handleGoogleUserAuthenticated(gUser)
                 }
             )
         }

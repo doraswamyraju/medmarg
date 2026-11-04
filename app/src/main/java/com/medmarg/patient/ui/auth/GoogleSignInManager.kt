@@ -148,19 +148,6 @@ object GoogleSignInManager {
                     onError("Google Sign-In error: ${e.localizedMessage ?: "Unknown error"}")
                     return@rememberLauncherForActivityResult
                 }
-
-                // Failsafe: Extract the chosen account directly from result.data extras
-                val selectedEmail = extractEmailFromIntent(data)
-                    ?: GoogleSignIn.getLastSignedInAccount(context)?.email
-                if (!selectedEmail.isNullOrBlank() && selectedEmail.contains("@")) {
-                    onGoogleAuthenticated(buildAccountFromEmail(selectedEmail))
-                    return@rememberLauncherForActivityResult
-                }
-
-                if (isEmulator) {
-                    onGoogleAuthenticated(createFallbackUser("gid_sim_${System.currentTimeMillis() / 1000}"))
-                    return@rememberLauncherForActivityResult
-                }
             } else if (result.resultCode == Activity.RESULT_CANCELED) {
                 // User dismissed sheet without picking
                 return@rememberLauncherForActivityResult
