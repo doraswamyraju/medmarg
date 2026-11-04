@@ -5,10 +5,6 @@ import android.app.KeyguardManager
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
-import android.util.Base64
-import android.webkit.WebResourceRequest
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -42,15 +38,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.medmarg.patient.R
 import com.medmarg.patient.model.UserProfile
 import com.medmarg.patient.model.UserRole
+import com.medmarg.patient.ui.auth.GoogleAuthUser
+import com.medmarg.patient.ui.auth.GoogleSignInManager
 import com.medmarg.patient.ui.auth.PhoneCollectionModal
-import com.medmarg.patient.ui.auth.rememberGoogleAccountPickerLauncher
+import com.medmarg.patient.ui.auth.deriveNameFromEmail
+import com.medmarg.patient.ui.auth.generateDefaultAvatar
 import com.medmarg.patient.ui.theme.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -58,6 +57,75 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+
+// =========================================================================
+// 🌐 MEDMARG API BASE URLS FOR BACKEND SYNC (1:1 with iOS apiBaseUrls)
+// =========================================================================
+private val apiBaseUrls = listOf(
+    "https://medmarg.com",
+    "http://10.0.2.2:5080",
+    "http://127.0.0.1:5080"
+)
+
+private fun syncGoogleAuthToBackend(
+    email: String,
+    name: String,
+    googleId: String,
+    phone: String,
+    picture: String? = null
+) {
+    CoroutineScope(Dispatchers.IO).launch {
+        for (base in apiBaseUrls) {
+            try {
+                val url = URL("$base/api/v1/auth/google")
+                val conn = url.openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.connectTimeout = 4000
+                conn.readTimeout = 4000
+                conn.doOutput = true
+                val body = JSONObject().apply {
+                    put("email", email)
+                    put("name", name)
+                    put("googleId", googleId)
+                    put("phone", phone)
+                    if (!picture.isNullOrBlank()) put("picture", picture)
+                }
+                conn.outputStream.use { it.write(body.toString().toByteArray()) }
+                conn.responseCode
+            } catch (_: Exception) {}
+        }
+    }
+}
+
+private fun syncPhoneUpdateToBackend(
+    userId: String,
+    phone: String,
+    email: String? = null,
+    name: String? = null
+) {
+    CoroutineScope(Dispatchers.IO).launch {
+        for (base in apiBaseUrls) {
+            try {
+                val url = URL("$base/api/v1/auth/update-phone")
+                val conn = url.openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.connectTimeout = 4000
+                conn.readTimeout = 4000
+                conn.doOutput = true
+                val body = JSONObject().apply {
+                    put("userId", userId)
+                    put("phone", phone)
+                    if (email != null) put("email", email)
+                    if (name != null) put("name", name)
+                }
+                conn.outputStream.use { it.write(body.toString().toByteArray()) }
+                conn.responseCode
+            } catch (_: Exception) {}
+        }
+    }
+}
 import java.util.UUID
 
 // =========================================================================
@@ -73,16 +141,6 @@ import java.util.UUID
 //   Biometric Fingerprint / Face Unlock Button, Create Account modal & Legal sheet
 // =========================================================================
 
-private data class GoogleAuthUser(
-    val email: String,
-    val name: String,
-    val googleId: String,
-    val picture: String? = null
-)
-
-private const val GOOGLE_CLIENT_ID = "836240579937-8tgsbq9sujeunh772eosbrl9l4ccj44o.apps.googleusercontent.com"
-private const val GOOGLE_CUSTOM_SCHEME = "com.googleusercontent.apps.836240579937-8tgsbq9sujeunh772eosbrl9l4ccj44o"
-private const val GOOGLE_REDIRECT_URI = "com.googleusercontent.apps.836240579937-8tgsbq9sujeunh772eosbrl9l4ccj44o:/oauth2redirect"
 
 @Composable
 fun LoginScreen(
@@ -111,8 +169,7 @@ fun LoginScreen(
     var signupErrorMessage by remember { mutableStateOf("") }
     var isSigningUp by remember { mutableStateOf(false) }
 
-    // Google OAuth WebView Modal & First-Time Phone Collection Sheet State
-    var showGoogleOAuthDialog by remember { mutableStateOf(false) }
+    // Google OAuth State & First-Time Phone Collection Sheet State
     var isGoogleVerifying by remember { mutableStateOf(false) }
     var showPhoneCollectionSheet by remember { mutableStateOf(false) }
     var pendingOAuthUser by remember { mutableStateOf<UserProfile?>(null) }
@@ -275,7 +332,7 @@ fun LoginScreen(
         onLoginSuccess(user)
     }
 
-    // Sync Google Auth to Backend & Resolve User + Phone Status (1:1 with iOS handleGoogleSignIn)
+    // Sync Google Auth to Backend & Complete Login (1:1 with iOS CareSeekerLoginView)
     fun handleGoogleUserAuthenticated(gUser: GoogleAuthUser) {
         errorMessage = ""
         infoMessage = ""
@@ -296,138 +353,85 @@ fun LoginScreen(
                 ?: generateDefaultAvatar(effectiveName)
         }
 
-        // 1. Check if matches a pre-registered system user profile locally
+        // 1. Check if matches a pre-registered system user profile locally (1:1 with iOS line 1343)
         val existingLocal = registeredUsers.firstOrNull {
             it.email.lowercase() == emailLower ||
                 (emailLower.isNotEmpty() && it.username.lowercase() == emailLower.substringBefore("@"))
         }
 
+        if (existingLocal != null) {
+            val phoneToUse = existingLocal.phone.ifEmpty { cachedPhone }
+            syncGoogleAuthToBackend(emailLower, effectiveName, gUser.googleId, phoneToUse, effectiveAvatar)
+            var updated = existingLocal.copy(
+                name = effectiveName.ifBlank { existingLocal.name },
+                phone = phoneToUse
+            )
+            if (updated.avatarUrl.isNullOrEmpty()) {
+                updated = updated.copy(avatarUrl = effectiveAvatar)
+            }
+            completeLoginAndPersist(updated)
+            return
+        }
+
+        // 2. Check if phone is already cached locally (1:1 with iOS line 1356)
+        if (cachedPhone.isNotEmpty()) {
+            val patient = UserProfile(
+                id = "usr_g_${gUser.googleId.take(8)}",
+                name = effectiveName.ifEmpty { "Google User" },
+                username = emailLower.substringBefore("@").ifEmpty { "google_user" },
+                email = emailLower,
+                phone = cachedPhone,
+                password = "oauth_google_verified",
+                role = UserRole.PATIENT,
+                organization = "Care Seeker (Google Verified)",
+                status = "Active",
+                avatarUrl = effectiveAvatar
+            )
+            syncGoogleAuthToBackend(emailLower, effectiveName, gUser.googleId, cachedPhone, effectiveAvatar)
+            completeLoginAndPersist(patient)
+            return
+        }
+
+        // 3. New User: prompt for mobile number (1:1 with iOS line 1375)
+        val newPatient = UserProfile(
+            id = "usr_g_${gUser.googleId.take(8)}",
+            name = effectiveName.ifEmpty { "Google User" },
+            username = emailLower.substringBefore("@").ifEmpty { "google_user" },
+            email = emailLower,
+            phone = "",
+            password = "oauth_google_verified",
+            role = UserRole.PATIENT,
+            organization = "Care Seeker (Google ID)",
+            status = "Active",
+            avatarUrl = effectiveAvatar
+        )
+        pendingOAuthUser = newPatient
+        phoneInputForOAuth = ""
+        phoneCollectionError = ""
+        showPhoneCollectionSheet = true
+    }
+
+    // Google Sign-In Handler (1:1 with iOS handleGoogleSignIn)
+    fun handleGoogleSignIn() {
+        if (onGoogleSignInClicked != null) {
+            onGoogleSignInClicked.invoke()
+            return
+        }
+        errorMessage = ""
+        infoMessage = ""
         isGoogleVerifying = true
-        coroutineScope.launch {
-            val backendResult = withContext(Dispatchers.IO) {
-                try {
-                    val url = URL("https://medmarg.com/api/v1/auth/google")
-                    val conn = url.openConnection() as HttpURLConnection
-                    conn.requestMethod = "POST"
-                    conn.setRequestProperty("Content-Type", "application/json")
-                    conn.connectTimeout = 6000
-                    conn.readTimeout = 6000
-                    conn.doOutput = true
-
-                    val body = JSONObject().apply {
-                        put("email", emailLower)
-                        put("name", effectiveName)
-                        put("googleId", gUser.googleId)
-                        put("picture", effectiveAvatar)
-                        put("phone", existingLocal?.phone?.ifEmpty { cachedPhone } ?: cachedPhone)
-                    }
-                    conn.outputStream.use { it.write(body.toString().toByteArray()) }
-
-                    if (conn.responseCode in 200..299) {
-                        val respStr = conn.inputStream.bufferedReader().use { it.readText() }
-                        JSONObject(respStr)
-                    } else null
-                } catch (e: Exception) {
-                    null
-                }
-            }
+        GoogleSignInManager.startGoogleSignIn(context) { result ->
             isGoogleVerifying = false
-
-            if (existingLocal != null) {
-                val phoneToUse = existingLocal.phone.ifEmpty { cachedPhone }
-                val updated = existingLocal.copy(
-                    name = effectiveName.ifBlank { existingLocal.name },
-                    phone = phoneToUse,
-                    avatarUrl = effectiveAvatar
-                )
-                completeLoginAndPersist(updated)
-                return@launch
-            }
-
-            // Parse backend response if available
-            val backendUserObj = backendResult?.optJSONObject("user")
-            val backendPhone = backendUserObj?.optString("phone", "") ?: ""
-            val resolvedPhone = if (cleanDigitsOnly(backendPhone).length >= 10) {
-                backendPhone
-            } else if (cleanDigitsOnly(cachedPhone).length >= 10) {
-                cachedPhone
-            } else {
-                ""
-            }
-
-            val resolvedRole = if (backendUserObj != null && backendUserObj.has("role")) {
-                mapRoleFromString(backendUserObj.optString("role", "PATIENT"))
-            } else if (cachedRoleStr.isNotBlank()) {
-                mapRoleFromString(cachedRoleStr)
-            } else {
-                UserRole.PATIENT
-            }
-
-            val resolvedId = backendUserObj?.optString("id")?.takeIf { it.isNotEmpty() }
-                ?: "usr_g_${gUser.googleId.take(8)}"
-            val resolvedName = backendUserObj?.optString("name")?.takeIf { it.isNotBlank() }
-                ?: effectiveName
-            val resolvedOrg = backendUserObj?.optString("organization")?.takeIf { it.isNotEmpty() }
-                ?: if (resolvedRole == UserRole.PATIENT) "Care Seeker (Google Verified)" else "MedMarg Partner"
-
-            if (resolvedPhone.length >= 10) {
-                // Existing account with verified phone -> directly serve respective panel
-                prefs.edit()
-                    .putString("medmarg_user_phone_$emailLower", resolvedPhone)
-                    .putString("medmarg_user_role_$emailLower", resolvedRole.name)
-                    .putString("medmarg_user_name_$emailLower", resolvedName)
-                    .putString("medmarg_user_avatar_$emailLower", effectiveAvatar)
-                    .apply()
-
-                val verifiedUser = UserProfile(
-                    id = resolvedId,
-                    name = resolvedName,
-                    username = emailLower.substringBefore("@"),
-                    email = emailLower,
-                    phone = resolvedPhone,
-                    password = "oauth_google_verified",
-                    role = resolvedRole,
-                    organization = resolvedOrg,
-                    avatarUrl = effectiveAvatar
-                )
-                completeLoginAndPersist(verifiedUser)
-            } else {
-                // Account does not exist or phone is missing -> prompt for mobile number
-                val newPatient = UserProfile(
-                    id = resolvedId,
-                    name = resolvedName,
-                    username = emailLower.substringBefore("@"),
-                    email = emailLower,
-                    phone = "",
-                    password = "oauth_google_verified",
-                    role = resolvedRole,
-                    organization = "Care Seeker (Google ID)",
-                    avatarUrl = effectiveAvatar
-                )
-                pendingOAuthUser = newPatient
-                phoneInputForOAuth = ""
-                phoneCollectionError = ""
-                showPhoneCollectionSheet = true
+            result.onSuccess { gUser ->
+                handleGoogleUserAuthenticated(gUser)
+            }.onFailure { err ->
+                val msg = err.localizedMessage ?: "Google Sign-In was cancelled or failed."
+                if (!msg.contains("canceled", ignoreCase = true) && !msg.contains("cancelled", ignoreCase = true)) {
+                    errorMessage = "Google Sign-In: $msg"
+                }
             }
         }
     }
-
-    // Native Android System Google Account Picker (Picks from Google accounts already logged in on the phone!)
-    val launchNativeGooglePicker = rememberGoogleAccountPickerLauncher(
-        onAccountPicked = { picked ->
-            handleGoogleUserAuthenticated(
-                GoogleAuthUser(
-                    email = picked.email,
-                    name = picked.displayName,
-                    googleId = picked.googleId,
-                    picture = picked.avatarUrl
-                )
-            )
-        },
-        onFallbackOrCancelled = {
-            showGoogleOAuthDialog = true
-        }
-    )
 
     // Password Login Handler (1:1 with iOS handlePasswordLogin)
     fun handlePasswordLogin() {
@@ -711,12 +715,10 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // 🌐 Continue with Google Button (Full-Width Android Native System Account Picker)
+                    // 🌐 Continue with Google Button (1:1 with iOS googleSignInButton)
                     OutlinedButton(
                         onClick = {
-                            errorMessage = ""
-                            infoMessage = ""
-                            launchNativeGooglePicker()
+                            handleGoogleSignIn()
                         },
                         enabled = !isGoogleVerifying && !isAuthenticating,
                         modifier = Modifier
@@ -1120,26 +1122,8 @@ fun LoginScreen(
         }
 
         // ==========================================
-        // 🌐 MODAL 1: REAL GOOGLE SIGN-IN OAUTH2 DIALOG
-        // (Matches iOS GoogleSignInManager.swift + Custom Scheme Intercept)
-        // ==========================================
-        if (showGoogleOAuthDialog) {
-            GoogleOAuthDialog(
-                onDismiss = { showGoogleOAuthDialog = false },
-                onGoogleAuthenticated = { googleUser ->
-                    showGoogleOAuthDialog = false
-                    handleGoogleUserAuthenticated(googleUser)
-                },
-                onError = { err ->
-                    showGoogleOAuthDialog = false
-                    errorMessage = err
-                }
-            )
-        }
-
-        // ==========================================
-        // 📱 MODAL 2: FIRST-TIME OAUTH MOBILE VERIFICATION SHEET
-        // (Modular PhoneCollectionModal.kt)
+        // 📱 MODAL: FIRST-TIME OAUTH MOBILE VERIFICATION SHEET
+        // (1:1 with iOS showPhoneCollectionSheet)
         // ==========================================
         if (showPhoneCollectionSheet && pendingOAuthUser != null) {
             PhoneCollectionModal(
@@ -1160,42 +1144,9 @@ fun LoginScreen(
                         .putString("medmarg_user_avatar_$emailLower", user.avatarUrl)
                         .apply()
 
-                    // Sync phone & Google profile to live backend
-                    coroutineScope.launch(Dispatchers.IO) {
-                        try {
-                            val updateUrl = URL("https://medmarg.com/api/v1/auth/update-phone")
-                            val conn = updateUrl.openConnection() as HttpURLConnection
-                            conn.requestMethod = "POST"
-                            conn.setRequestProperty("Content-Type", "application/json")
-                            conn.connectTimeout = 5000
-                            conn.doOutput = true
-                            val body = JSONObject().apply {
-                                put("userId", user.id)
-                                put("phone", fullPhone)
-                                put("email", user.email)
-                                put("name", confirmedName)
-                            }
-                            conn.outputStream.use { it.write(body.toString().toByteArray()) }
-                            conn.responseCode
-                        } catch (_: Exception) {}
-
-                        try {
-                            val gUrl = URL("https://medmarg.com/api/v1/auth/google")
-                            val conn2 = gUrl.openConnection() as HttpURLConnection
-                            conn2.requestMethod = "POST"
-                            conn2.setRequestProperty("Content-Type", "application/json")
-                            conn2.connectTimeout = 5000
-                            conn2.doOutput = true
-                            val body2 = JSONObject().apply {
-                                put("email", user.email)
-                                put("name", confirmedName)
-                                put("googleId", user.id)
-                                put("phone", fullPhone)
-                            }
-                            conn2.outputStream.use { it.write(body2.toString().toByteArray()) }
-                            conn2.responseCode
-                        } catch (_: Exception) {}
-                    }
+                    // Sync phone & Google profile to backend (1:1 with iOS lines 1415-1416)
+                    syncPhoneUpdateToBackend(user.id, fullPhone, user.email, confirmedName)
+                    syncGoogleAuthToBackend(user.email, confirmedName, user.id, fullPhone, user.avatarUrl)
 
                     val updatedUser = user.copy(name = confirmedName, phone = fullPhone, role = UserRole.PATIENT)
                     showPhoneCollectionSheet = false
@@ -1762,417 +1713,6 @@ fun LoginScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = MedTealPrimary)
                         ) {
                             Text("I Understand", fontWeight = FontWeight.Bold, color = PureWhite)
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-// =========================================================================
-// 🌐 REAL GOOGLE OAUTH 2.0 AUTHENTICATION DIALOG
-// Uses official accounts.google.com/o/oauth2/v2/auth + Custom Scheme Intercept
-// + Token Exchange at oauth2.googleapis.com/token + JWT / UserInfo decoding
-// =========================================================================
-
-@SuppressLint("SetJavaScriptEnabled")
-@Composable
-private fun GoogleOAuthDialog(
-    onDismiss: () -> Unit,
-    onGoogleAuthenticated: (GoogleAuthUser) -> Unit,
-    onError: (String) -> Unit
-) {
-    val coroutineScope = rememberCoroutineScope()
-    var isLoadingPage by remember { mutableStateOf(true) }
-    var isExchangingToken by remember { mutableStateOf(false) }
-    var showManualEmailFallback by remember { mutableStateOf(false) }
-    var manualGoogleEmail by remember { mutableStateOf("") }
-    var manualGoogleName by remember { mutableStateOf("") }
-
-    val authUrl = remember {
-        Uri.parse("https://accounts.google.com/o/oauth2/v2/auth")
-            .buildUpon()
-            .appendQueryParameter("client_id", GOOGLE_CLIENT_ID)
-            .appendQueryParameter("redirect_uri", GOOGLE_REDIRECT_URI)
-            .appendQueryParameter("response_type", "code")
-            .appendQueryParameter("scope", "openid email profile")
-            .appendQueryParameter("nonce", UUID.randomUUID().toString())
-            .appendQueryParameter("prompt", "select_account")
-            .build()
-            .toString()
-    }
-
-    fun decodeJwtIdToken(idToken: String): GoogleAuthUser? {
-        return try {
-            val parts = idToken.split(".")
-            if (parts.size < 2) return null
-            val payloadBytes = Base64.decode(parts[1], Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
-            val json = JSONObject(String(payloadBytes, Charsets.UTF_8))
-            val email = json.optString("email", "")
-            if (email.isEmpty()) return null
-            val name = json.optString("name").ifEmpty { email.substringBefore("@") }
-            val sub = json.optString("sub").ifEmpty { "gid_${System.currentTimeMillis()}" }
-            val picture = json.optString("picture").takeIf { it.isNotEmpty() }
-            GoogleAuthUser(email = email, name = name, googleId = sub, picture = picture)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    fun exchangeCodeForGoogleUser(code: String) {
-        isExchangingToken = true
-        coroutineScope.launch {
-            val googleUser = withContext(Dispatchers.IO) {
-                try {
-                    val tokenUrl = URL("https://oauth2.googleapis.com/token")
-                    val conn = tokenUrl.openConnection() as HttpURLConnection
-                    conn.requestMethod = "POST"
-                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-                    conn.connectTimeout = 8000
-                    conn.readTimeout = 8000
-                    conn.doOutput = true
-
-                    val bodyParams = listOf(
-                        "client_id" to GOOGLE_CLIENT_ID,
-                        "code" to code,
-                        "grant_type" to "authorization_code",
-                        "redirect_uri" to GOOGLE_REDIRECT_URI
-                    ).joinToString("&") { (k, v) ->
-                        "$k=${URLEncoder.encode(v, "UTF-8")}"
-                    }
-
-                    conn.outputStream.use { it.write(bodyParams.toByteArray()) }
-
-                    if (conn.responseCode in 200..299) {
-                        val respStr = conn.inputStream.bufferedReader().use { it.readText() }
-                        val json = JSONObject(respStr)
-                        val idToken = json.optString("id_token", "")
-                        if (idToken.isNotEmpty()) {
-                            decodeJwtIdToken(idToken)?.let { return@withContext it }
-                        }
-                        val accessToken = json.optString("access_token", "")
-                        if (accessToken.isNotEmpty()) {
-                            val userInfoUrl = URL("https://www.googleapis.com/oauth2/v3/userinfo")
-                            val uConn = userInfoUrl.openConnection() as HttpURLConnection
-                            uConn.setRequestProperty("Authorization", "Bearer $accessToken")
-                            if (uConn.responseCode in 200..299) {
-                                val uJson = JSONObject(uConn.inputStream.bufferedReader().use { it.readText() })
-                                val email = uJson.optString("email", "")
-                                if (email.isNotEmpty()) {
-                                    return@withContext GoogleAuthUser(
-                                        email = email,
-                                        name = uJson.optString("name").ifEmpty { email.substringBefore("@") },
-                                        googleId = uJson.optString("sub").ifEmpty { "gid_${System.currentTimeMillis()}" },
-                                        picture = uJson.optString("picture").takeIf { it.isNotEmpty() }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    null
-                } catch (e: Exception) {
-                    null
-                }
-            }
-
-            isExchangingToken = false
-            if (googleUser != null) {
-                onGoogleAuthenticated(googleUser)
-            } else {
-                onError("Could not verify Google token. Please try again.")
-            }
-        }
-    }
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding(),
-            color = PureWhite
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                // Top Header Bar
-                Surface(
-                    color = PureWhite,
-                    shadowElevation = 4.dp
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(28.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFFEF2F2)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("G", fontSize = 15.sp, fontWeight = FontWeight.Black, color = Color(0xFFDB4437))
-                            }
-                            Column {
-                                Text(
-                                    text = "Sign in with Google",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Slate900
-                                )
-                                Text(
-                                    text = "accounts.google.com • MedMarg Secure OAuth",
-                                    fontSize = 10.sp,
-                                    color = Slate500
-                                )
-                            }
-                        }
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            TextButton(
-                                onClick = { showManualEmailFallback = !showManualEmailFallback }
-                            ) {
-                                Text(
-                                    text = if (showManualEmailFallback) "Use Web OAuth" else "Quick Account",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MedTealPrimary
-                                )
-                            }
-                            IconButton(onClick = onDismiss) {
-                                Icon(Icons.Default.Close, contentDescription = "Close", tint = Slate600)
-                            }
-                        }
-                    }
-                }
-
-                if (isExchangingToken) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator(color = MedTealPrimary)
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = "Verifying Google Account with MedMarg...",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Slate900
-                            )
-                        }
-                    }
-                } else if (showManualEmailFallback) {
-                    // Quick Device Google Account Selector / Direct Gmail Entry (Helpful on Emulators)
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                            .padding(24.dp)
-                            .verticalScroll(rememberScrollState()),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Choose a Google Account",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Slate900
-                        )
-                        Text(
-                            text = "to continue to MedMarg Diagnostics",
-                            fontSize = 13.sp,
-                            color = Slate500,
-                            modifier = Modifier.padding(top = 4.dp, bottom = 20.dp)
-                        )
-
-                        // Detected / Saved Google Accounts on Device
-                        val quickAccounts = listOf(
-                            GoogleAuthUser(
-                                email = "doraswamyrajumeesala@gmail.com",
-                                name = "Doraswamy Raju Meesala",
-                                googleId = "gid_doraswamy_101"
-                            ),
-                            GoogleAuthUser(
-                                email = "patient@medmarg.com",
-                                name = "Rahul Sharma",
-                                googleId = "gid_rahul_102"
-                            )
-                        )
-
-                        quickAccounts.forEach { acc ->
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 10.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .clickable { onGoogleAuthenticated(acc) },
-                                shape = RoundedCornerShape(12.dp),
-                                color = Slate50,
-                                border = BorderStroke(1.dp, Slate200)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(14.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(CircleShape)
-                                            .background(MedTealPrimary),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = acc.name.take(1).uppercase(),
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = PureWhite
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(
-                                            text = acc.name,
-                                            fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Slate900
-                                        )
-                                        Text(
-                                            text = acc.email,
-                                            fontSize = 12.sp,
-                                            color = Slate500,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
-                                        )
-                                    }
-                                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Slate400)
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(14.dp))
-                        HorizontalDivider(color = Slate200)
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        Text(
-                            text = "Or enter another Google Email",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Slate700,
-                            modifier = Modifier.align(Alignment.Start)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        OutlinedTextField(
-                            value = manualGoogleName,
-                            onValueChange = { manualGoogleName = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Your Name", fontSize = 12.sp) },
-                            placeholder = { Text("e.g. Doraswamy Raju", fontSize = 13.sp) },
-                            shape = RoundedCornerShape(10.dp),
-                            singleLine = true
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        OutlinedTextField(
-                            value = manualGoogleEmail,
-                            onValueChange = { manualGoogleEmail = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("Google Email (@gmail.com)", fontSize = 12.sp) },
-                            placeholder = { Text("e.g. name@gmail.com", fontSize = 13.sp) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                            shape = RoundedCornerShape(10.dp),
-                            singleLine = true
-                        )
-                        Spacer(modifier = Modifier.height(14.dp))
-                        Button(
-                            onClick = {
-                                val email = manualGoogleEmail.trim().lowercase()
-                                if (email.isEmpty() || !email.contains("@")) return@Button
-                                val name = manualGoogleName.trim().ifEmpty { email.substringBefore("@") }
-                                onGoogleAuthenticated(
-                                    GoogleAuthUser(
-                                        email = email,
-                                        name = name,
-                                        googleId = "gid_${email.hashCode()}"
-                                    )
-                                )
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(46.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MedTealPrimary)
-                        ) {
-                            Text("Continue with this Google Account", fontWeight = FontWeight.Bold, color = PureWhite)
-                        }
-                    }
-                } else {
-                    // Official Google OAuth 2.0 WebView (Intercepts com.googleusercontent.apps...:/oauth2redirect)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
-                    ) {
-                        AndroidView(
-                            modifier = Modifier.fillMaxSize(),
-                            factory = { ctx ->
-                                WebView(ctx).apply {
-                                    settings.javaScriptEnabled = true
-                                    settings.domStorageEnabled = true
-                                    // Standard Android Chrome Mobile User-Agent so Google OAuth2 permits sign-in
-                                    settings.userAgentString =
-                                        "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Mobile Safari/537.36"
-
-                                    webViewClient = object : WebViewClient() {
-                                        override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
-                                            super.onPageStarted(view, url, favicon)
-                                            isLoadingPage = true
-                                        }
-
-                                        override fun onPageFinished(view: WebView?, url: String?) {
-                                            super.onPageFinished(view, url)
-                                            isLoadingPage = false
-                                        }
-
-                                        override fun shouldOverrideUrlLoading(
-                                            view: WebView?,
-                                            request: WebResourceRequest?
-                                        ): Boolean {
-                                            val reqUri = request?.url ?: return false
-                                            if (reqUri.scheme == GOOGLE_CUSTOM_SCHEME) {
-                                                val code = reqUri.getQueryParameter("code")
-                                                if (!code.isNullOrEmpty()) {
-                                                    exchangeCodeForGoogleUser(code)
-                                                } else {
-                                                    onDismiss()
-                                                }
-                                                return true
-                                            }
-                                            return false
-                                        }
-                                    }
-                                    loadUrl(authUrl)
-                                }
-                            }
-                        )
-
-                        if (isLoadingPage) {
-                            LinearProgressIndicator(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .align(Alignment.TopCenter),
-                                color = MedTealPrimary
-                            )
                         }
                     }
                 }
