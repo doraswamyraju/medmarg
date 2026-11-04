@@ -1,5 +1,6 @@
 package com.medmarg.patient.ui.auth
 
+import android.accounts.Account
 import android.accounts.AccountManager
 import android.app.Activity
 import android.content.Context
@@ -30,7 +31,7 @@ import java.util.UUID
 // =========================================================================
 // 🌐 GOOGLE SIGN-IN MANAGER FOR ANDROID
 // Seamless Native Android Google Account Chooser (No Browser / Zero Stuck Tabs)
-// Matches iOS GoogleSignInManager Architecture with Native Android Dialogs
+// Single-Tap Official Google Dialog (Image 1) with Instant Dismissal & Login
 // =========================================================================
 
 data class GoogleAuthUser(
@@ -41,7 +42,8 @@ data class GoogleAuthUser(
 )
 
 object GoogleSignInManager {
-    // MedMarg Google OAuth Client ID & Custom URL Schemes
+    // MedMarg Google OAuth Client IDs & Custom URL Schemes
+    const val WEB_CLIENT_ID = "836240579937-e35j4q9nn1t43dl3hjdva2lt7evo0jcf.apps.googleusercontent.com"
     const val CLIENT_ID = "836240579937-8tgsbq9sujeunh772eosbrl9l4ccj44o.apps.googleusercontent.com"
     const val CUSTOM_SCHEME = "com.googleusercontent.apps.836240579937-8tgsbq9sujeunh772eosbrl9l4ccj44o"
     const val REDIRECT_URI = "com.googleusercontent.apps.836240579937-8tgsbq9sujeunh772eosbrl9l4ccj44o:/oauth2redirect"
@@ -62,9 +64,9 @@ object GoogleSignInManager {
 
     /**
      * Native Android Google Account Chooser Launcher.
-     * - Pops up the Android native Google account picker sheet directly over the app.
+     * - Pops up the Android native Google account picker sheet directly over the app (Single Tap).
      * - ZERO browser navigation: immediately dismisses upon picking an account and returns to the app.
-     * - Falls back to system AccountManager if GMS or SHA-1 is not mapped.
+     * - NEVER pops a second radio-button dialog over the official Google sheet.
      */
     @Composable
     fun rememberGoogleSignInLauncher(
@@ -73,16 +75,17 @@ object GoogleSignInManager {
     ): () -> Unit {
         val context = LocalContext.current
 
-        // Official Google Play Services Sign-In Client
+        // Official Google Play Services Sign-In Client configured with MedMarg Web Client ID
         val googleSignInClient = GoogleSignIn.getClient(
             context,
             GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .requestProfile()
+                .requestIdToken(WEB_CLIENT_ID)
                 .build()
         )
 
-        // Native System Account Picker Launcher (Supports all device-logged-in Google accounts on any device/emulator)
+        // Native System Account Picker Launcher (Used ONLY if GMS is completely missing on device)
         val systemAccountLauncher = rememberLauncherForActivityResult(
             contract = ActivityResultContracts.StartActivityForResult()
         ) { result ->
@@ -93,67 +96,82 @@ object GoogleSignInManager {
                 } else {
                     onError("No Google account selected.")
                 }
-            } else {
+            }
+        }
+
+        // Google Play Services Sign-In Launcher (Official Google Account Chooser Sheet - Image 1)
+        val gsoLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+                val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                try {
+                    val account = task.getResult(ApiException::class.java)
+                    val email = account?.email?.trim().orEmpty()
+                    if (email.isNotEmpty()) {
+                        val displayName = account?.displayName?.takeIf { it.isNotBlank() }
+                            ?: deriveNameFromEmail(email)
+                        val googleId = account?.id?.takeIf { it.isNotBlank() }
+                            ?: "gid_${email.lowercase(Locale.getDefault()).hashCode().toUInt()}"
+                        val photoUrl = account?.photoUrl?.toString()
+                            ?: generateDefaultAvatar(displayName)
+
+                        onGoogleAuthenticated(
+                            GoogleAuthUser(
+                                email = email.lowercase(Locale.getDefault()),
+                                name = displayName,
+                                googleId = googleId,
+                                picture = photoUrl
+                            )
+                        )
+                        return@rememberLauncherForActivityResult
+                    }
+                } catch (e: ApiException) {
+                    if (e.statusCode == 12501) {
+                        // User cancelled / dismissed the Google sheet -> Do nothing
+                        return@rememberLauncherForActivityResult
+                    }
+                } catch (_: Exception) {}
+
+                // Failsafe: Extract the chosen account directly from result.data extras
+                val selectedEmail = extractEmailFromIntent(result.data)
+                    ?: GoogleSignIn.getLastSignedInAccount(context)?.email
+                if (!selectedEmail.isNullOrBlank() && selectedEmail.contains("@")) {
+                    onGoogleAuthenticated(buildAccountFromEmail(selectedEmail))
+                    return@rememberLauncherForActivityResult
+                }
+
                 if (isEmulator) {
-                    // Friendly emulator test user fallback
                     onGoogleAuthenticated(createFallbackUser("gid_sim_${System.currentTimeMillis() / 1000}"))
                 }
             }
         }
 
-        // Google Play Services Sign-In Launcher
-        val gsoLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.StartActivityForResult()
-        ) { result ->
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            try {
-                val account = task.getResult(ApiException::class.java)
-                val email = account?.email?.trim().orEmpty()
-                if (email.isNotEmpty()) {
-                    val displayName = account?.displayName?.takeIf { it.isNotBlank() }
-                        ?: deriveNameFromEmail(email)
-                    val googleId = account?.id?.takeIf { it.isNotBlank() }
-                        ?: "gid_${email.lowercase(Locale.getDefault()).hashCode().toUInt()}"
-                    val photoUrl = account?.photoUrl?.toString()
-                        ?: generateDefaultAvatar(displayName)
-
-                    onGoogleAuthenticated(
-                        GoogleAuthUser(
-                            email = email.lowercase(Locale.getDefault()),
-                            name = displayName,
-                            googleId = googleId,
-                            picture = photoUrl
-                        )
-                    )
-                } else {
-                    launchSystemAccountPicker(systemAccountLauncher)
-                }
-            } catch (e: ApiException) {
-                if (e.statusCode == 12501) {
-                    // User explicitly cancelled / dismissed dialog
-                } else {
-                    // GMS developer error or SHA-1 mismatch -> Launch native system account picker!
-                    launchSystemAccountPicker(systemAccountLauncher)
-                }
-            } catch (_: Exception) {
-                launchSystemAccountPicker(systemAccountLauncher)
-            }
-        }
-
         return {
             try {
-                // Sign out previous session so account picker sheet is always shown
-                googleSignInClient.signOut().addOnCompleteListener {
-                    try {
-                        gsoLauncher.launch(googleSignInClient.signInIntent)
-                    } catch (_: Exception) {
-                        launchSystemAccountPicker(systemAccountLauncher)
-                    }
+                gsoLauncher.launch(googleSignInClient.signInIntent)
+            } catch (e: Exception) {
+                // If GMS is not installed on device, fallback to system account picker
+                try {
+                    launchSystemAccountPicker(systemAccountLauncher)
+                } catch (_: Exception) {
+                    onError("Google Sign-In is unavailable on this device.")
                 }
-            } catch (_: Exception) {
-                launchSystemAccountPicker(systemAccountLauncher)
             }
         }
+    }
+
+    private fun extractEmailFromIntent(intent: Intent?): String? {
+        val extras = intent?.extras ?: return null
+        for (key in extras.keySet()) {
+            val value = extras.get(key)
+            if (value is Account) {
+                return value.name
+            } else if (value is String && value.contains("@") && (key.contains("account", true) || key.contains("email", true))) {
+                return value
+            }
+        }
+        return null
     }
 
     private fun launchSystemAccountPicker(
