@@ -403,6 +403,30 @@ fun SidebarView(
                         },
                         onSelectSubTab = { sub -> onNavigateTab(4, sub) }
                     )
+                    AccordionTabItem(
+                        index = 8,
+                        icon = Icons.Default.MonitorHeart,
+                        title = "Smart Vitals Hub",
+                        subTabs = listOf(0 to "Health Connect Sync", 1 to "Correlated Tests"),
+                        isExpanded = expandedTabs.contains(8),
+                        onToggle = {
+                            expandedTabs = if (expandedTabs.contains(8)) expandedTabs - 8 else expandedTabs + 8
+                            onNavigateTab(8, 0)
+                        },
+                        onSelectSubTab = { sub -> onNavigateTab(8, sub) }
+                    )
+                    AccordionTabItem(
+                        index = 9,
+                        icon = Icons.Default.ReceiptLong,
+                        title = "My Bookings & Invoices",
+                        subTabs = listOf(0 to "Active Orders", 1 to "Past Bookings"),
+                        isExpanded = expandedTabs.contains(9),
+                        onToggle = {
+                            expandedTabs = if (expandedTabs.contains(9)) expandedTabs - 9 else expandedTabs + 9
+                            onNavigateTab(9, 0)
+                        },
+                        onSelectSubTab = { sub -> onNavigateTab(9, sub) }
+                    )
                 }
             }
 

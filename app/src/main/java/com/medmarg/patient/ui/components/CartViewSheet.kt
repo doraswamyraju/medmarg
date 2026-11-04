@@ -1,39 +1,61 @@
 package com.medmarg.patient.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.medmarg.patient.data.PatientSessionStore
 import com.medmarg.patient.model.CartItem
 import com.medmarg.patient.ui.theme.*
+
+data class PartnerLabOption(
+    val name: String,
+    val accreditation: String,
+    val tatText: String,
+    val priceMultiplier: Double
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartViewSheet(
     cartItems: MutableList<CartItem>,
     onDismissRequest: () -> Unit,
-    onConfirmOrder: () -> Unit
+    onProceedToCheckout: (selectedLabName: String, isExpress60Min: Boolean, finalPayableAmount: Int) -> Unit
 ) {
-    val totalAmount = cartItems.sumOf { it.price }
+    val labOptions = remember {
+        listOf(
+            PartnerLabOption("MedMarg Central NABL Hub", "NABL & ISO 15189 Accredited", "Same-Day 6-12 Hr TAT", 1.0),
+            PartnerLabOption("Thyrocare Accredited Hub", "CAP & NABL Accredited", "24 Hr Digital Report", 1.05),
+            PartnerLabOption("Dr. Lal PathLabs Regional", "NABL & CAP Reference Lab", "18-24 Hr Report", 1.12)
+        )
+    }
+    var selectedLab by remember { mutableStateOf(labOptions.first()) }
+    var isExpress60Min by remember { mutableStateOf(false) }
+
+    val baseTotal = cartItems.sumOf { it.price }
+    val labAdjustedTotal = (baseTotal * selectedLab.priceMultiplier).toInt()
+    val expressFee = if (isExpress60Min) 99 else 0
+    val totalAmount = labAdjustedTotal + expressFee
     val totalMrp = cartItems.sumOf { if (it.mrp > 0) it.mrp else it.price + 500 }
-    val totalSavings = maxOf(0, totalMrp - totalAmount)
+    val totalSavings = maxOf(0, totalMrp - labAdjustedTotal)
+
+    val defaultAddress = PatientSessionStore.savedAddresses.firstOrNull { it.isDefault }
+        ?: PatientSessionStore.savedAddresses.firstOrNull()
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
@@ -56,14 +78,14 @@ fun CartViewSheet(
                 .verticalScroll(rememberScrollState())
                 .padding(bottom = 36.dp)
         ) {
-            // Header (Matching iOS cartViewSheet)
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Healthcare Cart & Checkout",
+                    text = "Healthcare Cart & Lab Selection",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Slate900
@@ -110,13 +132,26 @@ fun CartViewSheet(
                 }
             } else {
                 // 1. Selected Items List
-                Text(
-                    text = "SELECTED DIAGNOSTIC TESTS (${cartItems.size})",
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Slate500,
-                    letterSpacing = 0.5.sp
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "SELECTED DIAGNOSTIC TESTS (${cartItems.size})",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Slate500,
+                        letterSpacing = 0.5.sp
+                    )
+                    Text(
+                        text = "Clear All",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = RoseError,
+                        modifier = Modifier.clickable { cartItems.clear() }
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -175,59 +210,147 @@ fun CartViewSheet(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // 2. Home Collection Details
+                // 2. Multi-Lab Partner Comparison
                 Text(
-                    text = "HOME COLLECTION DETAILS",
+                    text = "SELECT ACCREDITED PROCESSING LAB",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = Slate500,
                     letterSpacing = 0.5.sp
                 )
-
                 Spacer(modifier = Modifier.height(8.dp))
 
+                labOptions.forEach { lab ->
+                    val isSel = selectedLab.name == lab.name
+                    val labPrice = (baseTotal * lab.priceMultiplier).toInt()
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (isSel) MedTealLight else Slate50)
+                            .border(1.dp, if (isSel) MedTealPrimary else Slate200, RoundedCornerShape(10.dp))
+                            .clickable { selectedLab = lab }
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Icon(
+                                imageVector = if (isSel) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
+                                contentDescription = null,
+                                tint = if (isSel) MedTealPrimary else Slate400,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = lab.name,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Slate900
+                                )
+                                Text(
+                                    text = "${lab.accreditation} • ${lab.tatText}",
+                                    fontSize = 10.sp,
+                                    color = Slate500
+                                )
+                            }
+                        }
+                        Text(
+                            text = "₹$labPrice",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Black,
+                            color = MedTealPrimary
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // 3. Express 60-Min Priority Collection Toggle
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(10.dp),
-                    colors = CardDefaults.cardColors(containerColor = MedTealLight)
+                    colors = CardDefaults.cardColors(containerColor = if (isExpress60Min) EmeraldLight else Slate50),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, if (isExpress60Min) EmeraldAccent else Slate200)
                 ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                             Icon(
-                                imageVector = Icons.Default.Schedule,
+                                imageVector = Icons.Default.Bolt,
                                 contentDescription = null,
-                                tint = MedTealPrimary,
-                                modifier = Modifier.size(16.dp)
+                                tint = EmeraldAccent,
+                                modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Morning Fasting Slot: Tomorrow (07:30 AM - 08:30 AM)",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Slate900
-                            )
+                            Column {
+                                Text(
+                                    text = "Express 60-Min Doorstep Collection",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Slate900
+                                )
+                                Text(
+                                    text = "Priority dispatch of nearest certified phlebotomist (+₹99)",
+                                    fontSize = 10.sp,
+                                    color = Slate500
+                                )
+                            }
                         }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Switch(
+                            checked = isExpress60Min,
+                            onCheckedChange = { isExpress60Min = it },
+                            colors = SwitchDefaults.colors(checkedThumbColor = PureWhite, checkedTrackColor = EmeraldAccent)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // 4. Serving Address Preview
+                if (defaultAddress != null) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = CardDefaults.cardColors(containerColor = MedTealLight)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.LocationOn,
                                 contentDescription = null,
                                 tint = MedTealPrimary,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "Plot 42, Air Bypass Road, Tirupati, AP - 517501",
-                                fontSize = 12.sp,
-                                color = Slate700
-                            )
+                            Column {
+                                Text(
+                                    text = "Doorstep Collection Address (${defaultAddress.label})",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MedTealPrimary
+                                )
+                                Text(
+                                    text = defaultAddress.fullAddress,
+                                    fontSize = 12.sp,
+                                    color = Slate700
+                                )
+                            }
                         }
                     }
+                    Spacer(modifier = Modifier.height(14.dp))
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // 3. Bill Summary Card
+                // 5. Bill Summary Card
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -255,10 +378,20 @@ fun CartViewSheet(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Home Sample Collection", fontSize = 12.sp, color = Slate700)
+                            Text("Standard Home Sample Collection", fontSize = 12.sp, color = Slate700)
                             Text("FREE", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = EmeraldAccent)
                         }
-                        Divider(color = Slate200, modifier = Modifier.padding(vertical = 8.dp))
+                        if (isExpress60Min) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Express 60-Min Priority Dispatch", fontSize = 12.sp, color = Slate700)
+                                Text("₹99", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Slate900)
+                            }
+                        }
+                        HorizontalDivider(color = Slate200, modifier = Modifier.padding(vertical = 8.dp))
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -272,9 +405,11 @@ fun CartViewSheet(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // 4. Confirm Free Home Collection Action CTA
+                // 6. Proceed to Slot & Payment Checkout CTA
                 Button(
-                    onClick = onConfirmOrder,
+                    onClick = {
+                        onProceedToCheckout(selectedLab.name, isExpress60Min, totalAmount)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
@@ -282,8 +417,8 @@ fun CartViewSheet(
                     colors = ButtonDefaults.buttonColors(containerColor = MedTealPrimary)
                 ) {
                     Text(
-                        text = "Confirm Free Home Collection • ₹$totalAmount",
-                        fontSize = 15.sp,
+                        text = "Select Slot & Proceed to Checkout • ₹$totalAmount",
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = PureWhite
                     )

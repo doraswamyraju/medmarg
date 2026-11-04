@@ -6,8 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,11 +17,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.medmarg.patient.data.CatalogStore
+import com.medmarg.patient.data.PatientApiService
+import com.medmarg.patient.data.PatientSessionStore
 import com.medmarg.patient.model.CartItem
 import com.medmarg.patient.model.CatalogItem
 import com.medmarg.patient.model.UserProfile
 import com.medmarg.patient.model.UserRole
 import com.medmarg.patient.ui.agent.*
+import com.medmarg.patient.ui.checkout.AddressPinpointModal
 import com.medmarg.patient.ui.components.*
 import com.medmarg.patient.ui.freelance.*
 import com.medmarg.patient.ui.screens.*
@@ -42,12 +43,14 @@ fun MedMargApp() {
         CatalogStore.initialize(context)
     }
 
-    // Authenticated User State (Starts at Login Screen matching iOS ContentView.swift)
+    // Authenticated User State
     var loggedInUser by remember {
         mutableStateOf<UserProfile?>(null)
     }
 
-    // Navigation State: 0: Home, 1: Labs & Tests, 2: Track, 3: Reports, 4: Profile, 5: Doctors, 6: Pharmacy, 7: Scans
+    // Navigation State:
+    // 0: Home, 1: Labs & Tests, 2: Track, 3: Reports, 4: Profile,
+    // 5: Doctors, 6: Pharmacy, 7: Scans, 8: Vitals Hub, 9: Customer Orders
     var selectedTab by remember { mutableIntStateOf(0) }
 
     // Sheets & Overlays State
@@ -55,28 +58,34 @@ fun MedMargApp() {
     var showNotificationCenter by remember { mutableStateOf(false) }
     var showBottomSheetMenu by remember { mutableStateOf(false) }
     var showCartSheet by remember { mutableStateOf(false) }
+    var showCheckoutSheet by remember { mutableStateOf(false) }
     var showRoleSwitchSheet by remember { mutableStateOf(false) }
     var showLocationSheet by remember { mutableStateOf(false) }
     var showGooglePhoneSheet by remember { mutableStateOf(false) }
+    var showPrescriptionModal by remember { mutableStateOf(false) }
+
+    // Checkout Context passed from CartViewSheet -> CheckoutSheet
+    var checkoutLabName by remember { mutableStateOf("MedMarg Central NABL Hub") }
+    var checkoutIsExpress by remember { mutableStateOf(false) }
+    var checkoutPayableAmount by remember { mutableIntStateOf(0) }
 
     // Universal Item Details Sheet State
     var selectedDetailItem by remember { mutableStateOf<CatalogItem?>(null) }
 
-    // Global Cart Items State
+    // Global Cart Items State (Starts EMPTY — zero pre-added dummy tests!)
     val cartItems = remember {
-        mutableStateListOf(
-            CartItem(
-                id = "cart_1",
-                title = "Aarogyam Complete 1.3 (Full Body)",
-                subtitle = "104 Biomarkers • Free Home Collection in Tirupati",
-                provider = "MedMarg Central Diagnostics",
-                price = 1499,
-                mrp = 3500,
-                type = "Health Package",
-                appointmentDate = "Tomorrow, 07:30 AM",
-                isHomeCollection = true
-            )
-        )
+        mutableStateListOf<CartItem>()
+    }
+
+    // Sync Patient Session & Live Orders on User Login
+    LaunchedEffect(loggedInUser?.id, loggedInUser?.phone) {
+        val currentUser = loggedInUser
+        if (currentUser != null && currentUser.role == UserRole.PATIENT) {
+            PatientSessionStore.initializeForUser(context, currentUser)
+            val fetchedOrders = PatientApiService.fetchPatientOrders(currentUser)
+            PatientSessionStore.liveOrders.clear()
+            PatientSessionStore.liveOrders.addAll(fetchedOrders)
+        }
     }
 
     if (loggedInUser == null) {
@@ -108,9 +117,15 @@ fun MedMargApp() {
                         onLogoutClick = {
                             loggedInUser = null
                             selectedTab = 0
+                            cartItems.clear()
+                            PatientSessionStore.liveOrders.clear()
                             coroutineScope.launch {
                                 snackbarHostState.showSnackbar("Signed out of MedMarg")
                             }
+                        },
+                        onLogoClick = {
+                            selectedTab = 0
+                            showSidebar = false
                         }
                     )
                 }
@@ -127,7 +142,7 @@ fun MedMargApp() {
 
                     // Bottom Navigation Bar
                     BottomNavbarView(
-                        selectedTab = selectedTab,
+                        selectedTab = if (selectedTab in 0..4) selectedTab else 0,
                         onTabSelected = { selectedTab = it },
                         userRole = user.role,
                         onOpenMenuSheet = { showBottomSheetMenu = true }
@@ -141,7 +156,7 @@ fun MedMargApp() {
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                // Role-Based Screen Routing (Parity with iOS ContentView)
+                // Role-Based Screen Routing
                 when (user.role) {
                     UserRole.COLLECTION_AGENT -> {
                         AgentDashboardScreen(
@@ -181,16 +196,18 @@ fun MedMargApp() {
                     }
                     else -> {
                         // Patient Main Tab Routing
+                        val activeOrder = PatientSessionStore.liveOrders.firstOrNull { it.isActive }
                         when (selectedTab) {
                             0 -> HomeScreen(
                                 user = user,
-                                currentCity = "Tirupati",
+                                currentCity = PatientSessionStore.selectedCity,
+                                activeOrder = activeOrder,
                                 onNavigateToTab = { selectedTab = it },
                                 onSelectItem = { selectedDetailItem = it },
                                 onAddToCart = { item ->
                                     cartItems.add(
                                         CartItem(
-                                            id = "cart_${System.currentTimeMillis()}",
+                                            id = item.code.ifEmpty { item.id },
                                             title = item.name,
                                             subtitle = "${item.displayItemType} • ${item.displaySample}",
                                             price = item.price,
@@ -202,18 +219,15 @@ fun MedMargApp() {
                                         snackbarHostState.showSnackbar("Added ${item.name} to Cart")
                                     }
                                 },
-                                onOpenPrescription = {
-                                    coroutineScope.launch {
-                                        snackbarHostState.showSnackbar("Prescription Upload Camera Opened")
-                                    }
-                                }
+                                onOpenPrescription = { showPrescriptionModal = true },
+                                onOpenVitals = { selectedTab = 8 }
                             )
                             1 -> DiagnosticsScreen(
                                 onSelectItem = { selectedDetailItem = it },
                                 onAddToCart = { item ->
                                     cartItems.add(
                                         CartItem(
-                                            id = "cart_${System.currentTimeMillis()}",
+                                            id = item.code.ifEmpty { item.id },
                                             title = item.name,
                                             subtitle = "${item.displayItemType} • ${item.displaySample}",
                                             price = item.price,
@@ -226,8 +240,15 @@ fun MedMargApp() {
                                     }
                                 }
                             )
-                            2 -> TrackScreen()
-                            3 -> HealthLockerScreen()
+                            2 -> TrackScreen(
+                                user = user,
+                                onBrowseTests = { selectedTab = 1 },
+                                onOpenAllOrders = { selectedTab = 9 }
+                            )
+                            3 -> HealthLockerScreen(
+                                user = user,
+                                onBrowseTests = { selectedTab = 1 }
+                            )
                             4 -> ProfileScreen(
                                 user = user,
                                 onOpenLocationPicker = { showLocationSheet = true },
@@ -235,8 +256,19 @@ fun MedMargApp() {
                                 onLogout = {
                                     loggedInUser = null
                                     selectedTab = 0
+                                    cartItems.clear()
+                                    PatientSessionStore.liveOrders.clear()
                                     coroutineScope.launch {
                                         snackbarHostState.showSnackbar("Signed out")
+                                    }
+                                },
+                                onOpenMyOrders = { selectedTab = 9 },
+                                onOpenVaultReports = { selectedTab = 3 },
+                                onOpenVitals = { selectedTab = 8 },
+                                onUserUpdated = { updatedUser ->
+                                    loggedInUser = updatedUser
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Profile updated")
                                     }
                                 }
                             )
@@ -283,11 +315,35 @@ fun MedMargApp() {
                                     }
                                 }
                             )
+                            8 -> VitalsTelemetryScreen(
+                                onBackToHome = { selectedTab = 0 },
+                                onAddRecommendedTest = { item ->
+                                    cartItems.add(
+                                        CartItem(
+                                            id = item.code.ifEmpty { item.id },
+                                            title = item.name,
+                                            subtitle = "${item.displayItemType} • ${item.displaySample}",
+                                            price = item.price,
+                                            mrp = if (item.mrp > 0) item.mrp else item.price + 500,
+                                            type = item.displayItemType
+                                        )
+                                    )
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar("Added ${item.name} to Cart")
+                                    }
+                                }
+                            )
+                            9 -> CustomerOrdersScreen(
+                                user = user,
+                                onBack = { selectedTab = 4 },
+                                onOpenLiveTracker = { selectedTab = 2 },
+                                onBrowseTests = { selectedTab = 1 }
+                            )
                         }
                     }
                 }
 
-                // Universal Item Details Sheet (With Smart Package Upgrades & Highlighted Savings)
+                // Universal Item Details Sheet
                 selectedDetailItem?.let { item ->
                     UniversalItemDetailsSheet(
                         item = item,
@@ -295,7 +351,7 @@ fun MedMargApp() {
                         onAddToCart = { selectedItem ->
                             cartItems.add(
                                 CartItem(
-                                    id = "cart_${System.currentTimeMillis()}",
+                                    id = selectedItem.code.ifEmpty { selectedItem.id },
                                     title = selectedItem.name,
                                     subtitle = "${selectedItem.displayItemType} • ${selectedItem.displaySample}",
                                     price = selectedItem.price,
@@ -311,7 +367,7 @@ fun MedMargApp() {
                             cartItems.clear()
                             cartItems.add(
                                 CartItem(
-                                    id = "cart_${System.currentTimeMillis()}",
+                                    id = pkg.code.ifEmpty { pkg.id },
                                     title = pkg.name,
                                     subtitle = "${pkg.testCount ?: 104} Biomarkers • Complete Screening",
                                     price = pkg.price,
@@ -320,29 +376,63 @@ fun MedMargApp() {
                                 )
                             )
                             coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Upgraded to ${pkg.name}! Saved 57% OFF.")
+                                snackbarHostState.showSnackbar("Upgraded to ${pkg.name}!")
                             }
                         }
                     )
                 }
 
-                // Cart View Sheet (Opens when user clicks floating cart bar or cart action)
+                // Step 1: Cart View Sheet -> Opens Step 2: CheckoutSheet
                 if (showCartSheet) {
                     CartViewSheet(
                         cartItems = cartItems,
                         onDismissRequest = { showCartSheet = false },
-                        onConfirmOrder = {
-                            cartItems.clear()
+                        onProceedToCheckout = { labName, isExpress, finalPayable ->
+                            checkoutLabName = labName
+                            checkoutIsExpress = isExpress
+                            checkoutPayableAmount = finalPayable
                             showCartSheet = false
+                            showCheckoutSheet = true
+                        }
+                    )
+                }
+
+                // Step 2: Checkout Sheet (Beneficiary, Address Pinpoint, Slot & Razorpay / Doorstep Payment)
+                if (showCheckoutSheet) {
+                    CheckoutSheet(
+                        user = user,
+                        cartItems = cartItems,
+                        selectedLabName = checkoutLabName,
+                        isExpress60Min = checkoutIsExpress,
+                        payableAmount = checkoutPayableAmount,
+                        onDismissRequest = { showCheckoutSheet = false },
+                        onOrderBooked = { bookedOrder ->
+                            cartItems.clear()
+                            showCheckoutSheet = false
                             selectedTab = 2 // Switch directly to live tracker
                             coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Home Collection Confirmed! Phlebotomist Dispatched.")
+                                snackbarHostState.showSnackbar("Order #${bookedOrder.id} Confirmed! Handover OTP: ${bookedOrder.otp}")
                             }
                         }
                     )
                 }
 
-                // Bottom Sheet Quick Menu (Matching iOS BottomSheetMenuView)
+                // Prescription Upload Modal
+                if (showPrescriptionModal) {
+                    PrescriptionUploadModal(
+                        patientName = user.name,
+                        patientPhone = user.phone,
+                        onDismiss = { showPrescriptionModal = false },
+                        onSubmitted = {
+                            showPrescriptionModal = false
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Prescription received! Our pathologist team will call ${user.phone} shortly.")
+                            }
+                        }
+                    )
+                }
+
+                // Bottom Sheet Quick Menu
                 if (showBottomSheetMenu) {
                     BottomSheetMenuView(
                         user = user,
@@ -355,6 +445,8 @@ fun MedMargApp() {
                             showBottomSheetMenu = false
                             loggedInUser = null
                             selectedTab = 0
+                            cartItems.clear()
+                            PatientSessionStore.liveOrders.clear()
                             coroutineScope.launch {
                                 snackbarHostState.showSnackbar("Signed out")
                             }
@@ -369,14 +461,22 @@ fun MedMargApp() {
                     )
                 }
 
-                // Location Picker Bottom Sheet
+                // Location / Address Pinpoint Modal
                 if (showLocationSheet) {
-                    LocationPickerBottomSheet(
-                        onDismissRequest = { showLocationSheet = false },
-                        onSelectAddress = { address ->
+                    AddressPinpointModal(
+                        defaultPhone = user.phone,
+                        onDismiss = { showLocationSheet = false },
+                        onAddressSaved = { newAddr ->
+                            if (newAddr.isDefault) {
+                                for (i in PatientSessionStore.savedAddresses.indices) {
+                                    PatientSessionStore.savedAddresses[i] = PatientSessionStore.savedAddresses[i].copy(isDefault = false)
+                                }
+                            }
+                            PatientSessionStore.savedAddresses.add(0, newAddr)
+                            PatientSessionStore.saveAddresses(context, user)
                             showLocationSheet = false
                             coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Serving address updated: $address")
+                                snackbarHostState.showSnackbar("Doorstep address saved: ${newAddr.fullAddress}")
                             }
                         }
                     )
@@ -466,7 +566,7 @@ fun MedMargApp() {
                     }
                 }
 
-                // Sidebar Drawer (Animated Slide-In, Matching iOS SidebarView)
+                // Sidebar Drawer
                 AnimatedVisibility(
                     visible = showSidebar,
                     enter = slideInHorizontally(initialOffsetX = { -it }) + fadeIn(),
@@ -488,6 +588,8 @@ fun MedMargApp() {
                                 showSidebar = false
                                 loggedInUser = null
                                 selectedTab = 0
+                                cartItems.clear()
+                                PatientSessionStore.liveOrders.clear()
                                 coroutineScope.launch {
                                     snackbarHostState.showSnackbar("Signed out")
                                 }

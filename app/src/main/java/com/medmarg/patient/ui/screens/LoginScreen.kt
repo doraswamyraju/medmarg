@@ -48,6 +48,8 @@ import androidx.compose.ui.window.DialogProperties
 import com.medmarg.patient.R
 import com.medmarg.patient.model.UserProfile
 import com.medmarg.patient.model.UserRole
+import com.medmarg.patient.ui.auth.PhoneCollectionModal
+import com.medmarg.patient.ui.auth.rememberGoogleAccountPickerLauncher
 import com.medmarg.patient.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -370,6 +372,22 @@ fun LoginScreen(
         }
     }
 
+    // Native Android System Google Account Picker (Picks from Google accounts already logged in on the phone!)
+    val launchNativeGooglePicker = rememberGoogleAccountPickerLauncher(
+        onAccountPicked = { picked ->
+            handleGoogleUserAuthenticated(
+                GoogleAuthUser(
+                    email = picked.email,
+                    name = picked.displayName,
+                    googleId = picked.googleId
+                )
+            )
+        },
+        onFallbackOrCancelled = {
+            showGoogleOAuthDialog = true
+        }
+    )
+
     // Password Login Handler (1:1 with iOS handlePasswordLogin)
     fun handlePasswordLogin() {
         errorMessage = ""
@@ -652,12 +670,12 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // 🌐 Continue with Google Button (Full-Width Android Native Social Sign-In)
+                    // 🌐 Continue with Google Button (Full-Width Android Native System Account Picker)
                     OutlinedButton(
                         onClick = {
                             errorMessage = ""
                             infoMessage = ""
-                            showGoogleOAuthDialog = true
+                            launchNativeGooglePicker()
                         },
                         enabled = !isGoogleVerifying && !isAuthenticating,
                         modifier = Modifier
@@ -1080,187 +1098,65 @@ fun LoginScreen(
 
         // ==========================================
         // 📱 MODAL 2: FIRST-TIME OAUTH MOBILE VERIFICATION SHEET
-        // (1:1 with iOS phoneCollectionModalSheet)
+        // (Modular PhoneCollectionModal.kt)
         // ==========================================
         if (showPhoneCollectionSheet && pendingOAuthUser != null) {
-            Dialog(
-                onDismissRequest = {
+            PhoneCollectionModal(
+                pendingUser = pendingOAuthUser!!,
+                onDismiss = {
                     showPhoneCollectionSheet = false
                     pendingOAuthUser = null
-                }
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .wrapContentHeight(),
-                    shape = RoundedCornerShape(24.dp),
-                    color = PureWhite,
-                    shadowElevation = 24.dp
-                ) {
-                    Column(
-                        modifier = Modifier.padding(22.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(CircleShape)
-                                .background(MedTealLight),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.PhoneCallback,
-                                contentDescription = null,
-                                tint = MedTealPrimary,
-                                modifier = Modifier.size(30.dp)
-                            )
-                        }
+                },
+                onPhoneConfirmed = { confirmedName, fullPhone ->
+                    val user = pendingOAuthUser ?: return@PhoneCollectionModal
+                    val emailLower = user.email.lowercase()
 
-                        Spacer(modifier = Modifier.height(14.dp))
+                    // Save phone locally in SharedPreferences
+                    prefs.edit().putString("medmarg_user_phone_$emailLower", fullPhone).apply()
 
-                        Text(
-                            text = "Complete Your Profile",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Slate900
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Text(
-                            text = "Please provide your 10-digit mobile number for doorstep phlebotomist coordination and live sample tracking OTPs.",
-                            fontSize = 13.sp,
-                            color = Slate500,
-                            textAlign = TextAlign.Center
-                        )
-
-                        if (phoneCollectionError.isNotEmpty()) {
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Text(
-                                text = phoneCollectionError,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFDC2626)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Surface(
-                                color = Slate100,
-                                shape = RoundedCornerShape(10.dp)
-                            ) {
-                                Text(
-                                    text = "+91",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Slate700,
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 15.dp)
-                                )
+                    // Sync phone & Google profile to live backend
+                    coroutineScope.launch(Dispatchers.IO) {
+                        try {
+                            val updateUrl = URL("https://medmarg.com/api/v1/auth/update-phone")
+                            val conn = updateUrl.openConnection() as HttpURLConnection
+                            conn.requestMethod = "POST"
+                            conn.setRequestProperty("Content-Type", "application/json")
+                            conn.connectTimeout = 5000
+                            conn.doOutput = true
+                            val body = JSONObject().apply {
+                                put("userId", user.id)
+                                put("phone", fullPhone)
+                                put("email", user.email)
+                                put("name", confirmedName)
                             }
+                            conn.outputStream.use { it.write(body.toString().toByteArray()) }
+                            conn.responseCode
+                        } catch (_: Exception) {}
 
-                            OutlinedTextField(
-                                value = phoneInputForOAuth,
-                                onValueChange = {
-                                    val digits = it.filter { ch -> ch.isDigit() }.take(10)
-                                    phoneInputForOAuth = digits
-                                    phoneCollectionError = ""
-                                },
-                                modifier = Modifier.weight(1f),
-                                placeholder = { Text("10-digit mobile number", fontSize = 14.sp, color = Slate400) },
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                shape = RoundedCornerShape(10.dp),
-                                singleLine = true,
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MedTealPrimary,
-                                    unfocusedBorderColor = Slate200,
-                                    focusedContainerColor = Slate50,
-                                    unfocusedContainerColor = Slate50
-                                )
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(18.dp))
-
-                        Button(
-                            onClick = {
-                                val clean = cleanDigitsOnly(phoneInputForOAuth)
-                                if (clean.length < 10) {
-                                    phoneCollectionError = "Please enter a valid 10-digit mobile number."
-                                    return@Button
-                                }
-                                val user = pendingOAuthUser ?: return@Button
-                                val fullPhone = "+91 ${clean.takeLast(10)}"
-                                val emailLower = user.email.lowercase()
-
-                                // Save phone locally in SharedPreferences
-                                prefs.edit().putString("medmarg_user_phone_$emailLower", fullPhone).apply()
-
-                                // Sync phone & Google profile to live backend
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    try {
-                                        val updateUrl = URL("https://medmarg.com/api/v1/auth/update-phone")
-                                        val conn = updateUrl.openConnection() as HttpURLConnection
-                                        conn.requestMethod = "POST"
-                                        conn.setRequestProperty("Content-Type", "application/json")
-                                        conn.connectTimeout = 5000
-                                        conn.doOutput = true
-                                        val body = JSONObject().apply {
-                                            put("userId", user.id)
-                                            put("phone", fullPhone)
-                                            put("email", user.email)
-                                            put("name", user.name)
-                                        }
-                                        conn.outputStream.use { it.write(body.toString().toByteArray()) }
-                                        conn.responseCode
-                                    } catch (_: Exception) {}
-
-                                    try {
-                                        val gUrl = URL("https://medmarg.com/api/v1/auth/google")
-                                        val conn2 = gUrl.openConnection() as HttpURLConnection
-                                        conn2.requestMethod = "POST"
-                                        conn2.setRequestProperty("Content-Type", "application/json")
-                                        conn2.connectTimeout = 5000
-                                        conn2.doOutput = true
-                                        val body2 = JSONObject().apply {
-                                            put("email", user.email)
-                                            put("name", user.name)
-                                            put("googleId", user.id)
-                                            put("phone", fullPhone)
-                                        }
-                                        conn2.outputStream.use { it.write(body2.toString().toByteArray()) }
-                                        conn2.responseCode
-                                    } catch (_: Exception) {}
-                                }
-
-                                val updatedUser = user.copy(phone = fullPhone, role = UserRole.PATIENT)
-                                showPhoneCollectionSheet = false
-                                pendingOAuthUser = null
-                                phoneInputForOAuth = ""
-                                phoneCollectionError = ""
-                                completeLoginAndPersist(updatedUser)
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = MedTealPrimary)
-                        ) {
-                            Text(
-                                text = "Save & Continue to Patient Panel",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = PureWhite
-                            )
-                        }
+                        try {
+                            val gUrl = URL("https://medmarg.com/api/v1/auth/google")
+                            val conn2 = gUrl.openConnection() as HttpURLConnection
+                            conn2.requestMethod = "POST"
+                            conn2.setRequestProperty("Content-Type", "application/json")
+                            conn2.connectTimeout = 5000
+                            conn2.doOutput = true
+                            val body2 = JSONObject().apply {
+                                put("email", user.email)
+                                put("name", confirmedName)
+                                put("googleId", user.id)
+                                put("phone", fullPhone)
+                            }
+                            conn2.outputStream.use { it.write(body2.toString().toByteArray()) }
+                            conn2.responseCode
+                        } catch (_: Exception) {}
                     }
+
+                    val updatedUser = user.copy(name = confirmedName, phone = fullPhone, role = UserRole.PATIENT)
+                    showPhoneCollectionSheet = false
+                    pendingOAuthUser = null
+                    completeLoginAndPersist(updatedUser)
                 }
-            }
+            )
         }
 
         // ==========================================

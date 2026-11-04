@@ -36,8 +36,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.medmarg.patient.R
 import com.medmarg.patient.data.CatalogStore
+import com.medmarg.patient.data.LivePatientOrder
 import com.medmarg.patient.model.CatalogItem
 import com.medmarg.patient.model.UserProfile
+import com.medmarg.patient.ui.home.ActiveOrderBanner
+import com.medmarg.patient.ui.home.LiveVitalsDashboardCard
 import com.medmarg.patient.ui.theme.*
 import kotlinx.coroutines.delay
 import java.util.Calendar
@@ -52,10 +55,12 @@ import java.util.Calendar
 fun HomeScreen(
     user: UserProfile? = null,
     currentCity: String = "Tirupati",
+    activeOrder: LivePatientOrder? = null,
     onNavigateToTab: (Int) -> Unit,
     onSelectItem: (CatalogItem) -> Unit,
     onAddToCart: ((CatalogItem) -> Unit)? = null,
-    onOpenPrescription: () -> Unit
+    onOpenPrescription: () -> Unit,
+    onOpenVitals: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var packageTab by remember { mutableStateOf("POPULAR") } // POPULAR, RECOMMENDED, PROFILES
@@ -103,9 +108,18 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 2. Active Phlebotomist Enroute Quick Banner
-            ActiveDispatchQuickBanner(
-                onTrackClick = { onNavigateToTab(2) }
+            // 2. Live Active Order Banner (Only shown when patient has a real active order!)
+            if (activeOrder != null && activeOrder.isActive) {
+                ActiveOrderBanner(
+                    activeOrder = activeOrder,
+                    onTrackClick = { onNavigateToTab(2) }
+                )
+                Spacer(modifier = Modifier.height(14.dp))
+            }
+
+            // 2B. Smart Device & Health Vitals Live Dashboard Card
+            LiveVitalsDashboardCard(
+                onOpenVitalsScreen = onOpenVitals
             )
 
             Spacer(modifier = Modifier.height(18.dp))

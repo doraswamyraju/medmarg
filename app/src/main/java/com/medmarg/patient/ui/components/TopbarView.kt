@@ -33,6 +33,7 @@ fun TopbarView(
     onMenuClick: () -> Unit,
     onNotificationClick: () -> Unit,
     onLogoutClick: () -> Unit,
+    onLogoClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -65,20 +66,23 @@ fun TopbarView(
                 )
             }
 
-            // 2. Horizontal Logo & Welcome User Label (Single Line Scrollable, Matching iOS)
+            // 2. Horizontal Logo & Welcome User Label (Clickable to return to Home Tab)
             Column(
                 modifier = Modifier
                     .weight(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onLogoClick() }
                     .padding(vertical = 2.dp),
                 verticalArrangement = Arrangement.Center
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.logo),
-                    contentDescription = "MedMarg",
+                    contentDescription = "MedMarg Home",
                     contentScale = ContentScale.Fit,
                     modifier = Modifier
                         .height(24.dp)
                         .width(100.dp)
+                        .clickable { onLogoClick() }
                 )
 
                 // Single line scrollable full name (no truncation)
