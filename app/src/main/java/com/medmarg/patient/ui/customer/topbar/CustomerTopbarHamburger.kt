@@ -26,8 +26,8 @@ fun CustomerTopbarHamburger(
 ) {
     Box(
         modifier = modifier
-            .size(38.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .size(34.dp)
+            .clip(RoundedCornerShape(8.dp))
             .background(MedTealLight)
             .clickable { onClick() },
         contentAlignment = Alignment.Center
@@ -36,8 +36,7 @@ fun CustomerTopbarHamburger(
             imageVector = Icons.Default.Menu,
             contentDescription = "Open Sidebar Navigation",
             tint = MedTealPrimary,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(18.dp)
         )
     }
 }
-

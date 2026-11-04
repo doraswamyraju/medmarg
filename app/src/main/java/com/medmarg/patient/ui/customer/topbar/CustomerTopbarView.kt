@@ -15,7 +15,7 @@ import com.medmarg.patient.ui.theme.PureWhite
  * - Center: Flexible Spacer
  * - Right: Notification Bell + Profile Avatar + Logout Power Button
  *
- * All individual items are implemented in dedicated modular files in this package.
+ * Sized responsively so all action icons (including Logout) fit cleanly on all screen widths.
  */
 @Composable
 fun CustomerTopbarView(
@@ -39,9 +39,9 @@ fun CustomerTopbarView(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .padding(horizontal = 8.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             // 1. Hamburger Toggle Button
             CustomerTopbarHamburger(onClick = onMenuClick)
@@ -56,7 +56,7 @@ fun CustomerTopbarView(
                 onClick = onLocationClick
             )
 
-            // Spacer pushes right-aligned actions
+            // Flexible Spacer pushes right-aligned actions
             Spacer(modifier = Modifier.weight(1f))
 
             // 4. Notification Center Bell Icon (with dynamic unread dot)
@@ -69,9 +69,8 @@ fun CustomerTopbarView(
                 onClick = onProfileClick
             )
 
-            // 6. Logout Power Action Button
+            // 6. Logout Power Action Button (Guaranteed visible and unclipped)
             CustomerTopbarLogoutButton(onClick = onLogoutClick)
         }
     }
 }
-

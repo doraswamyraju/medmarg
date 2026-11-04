@@ -15,7 +15,7 @@ import com.medmarg.patient.R
 /**
  * 2. MedMarg Brand Logo.
  * - Clicking navigates the user back to the Home tab.
- * - Contains ZERO role badges or user greeting labels, keeping the header clean and spacious.
+ * - Sized cleanly to preserve topbar action button real estate.
  */
 @Composable
 fun CustomerTopbarLogo(
@@ -28,9 +28,8 @@ fun CustomerTopbarLogo(
         contentScale = ContentScale.Fit,
         alignment = Alignment.CenterStart,
         modifier = modifier
-            .height(26.dp)
-            .width(108.dp)
+            .height(22.dp)
+            .width(82.dp)
             .clickable { onClick() }
     )
 }
-

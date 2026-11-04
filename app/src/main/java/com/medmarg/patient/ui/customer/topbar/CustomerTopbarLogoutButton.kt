@@ -27,8 +27,8 @@ fun CustomerTopbarLogoutButton(
 ) {
     Box(
         modifier = modifier
-            .size(38.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .size(34.dp)
+            .clip(RoundedCornerShape(8.dp))
             .background(RoseError.copy(alpha = 0.08f))
             .clickable { onClick() },
         contentAlignment = Alignment.Center
@@ -37,8 +37,7 @@ fun CustomerTopbarLogoutButton(
             imageVector = Icons.Default.PowerSettingsNew,
             contentDescription = "Logout",
             tint = RoseError,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(17.dp)
         )
     }
 }
-

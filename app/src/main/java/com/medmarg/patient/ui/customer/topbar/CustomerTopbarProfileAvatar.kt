@@ -41,8 +41,8 @@ fun CustomerTopbarProfileAvatar(
 
     Box(
         modifier = modifier
-            .size(36.dp)
-            .shadow(4.dp, CircleShape, spotColor = MedTealPrimary.copy(alpha = 0.3f))
+            .size(32.dp)
+            .shadow(3.dp, CircleShape, spotColor = MedTealPrimary.copy(alpha = 0.3f))
             .clip(CircleShape)
             .border(1.5.dp, EmeraldAccent, CircleShape)
             .background(
@@ -56,20 +56,19 @@ fun CustomerTopbarProfileAvatar(
         if (!avatarUrl.isNullOrBlank()) {
             AsyncImage(
                 model = avatarUrl,
-                contentDescription = "Profile Settings",
+                contentDescription = "Profile Photo",
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
+                    .clip(CircleShape)
             )
         } else {
             Text(
                 text = initial,
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Black,
                 color = PureWhite
             )
         }
     }
 }
-

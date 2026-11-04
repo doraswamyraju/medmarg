@@ -36,8 +36,8 @@ fun CustomerTopbarNotificationButton(
 
     Box(
         modifier = modifier
-            .size(38.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .size(34.dp)
+            .clip(RoundedCornerShape(8.dp))
             .background(Slate50)
             .clickable { onClick() },
         contentAlignment = Alignment.Center
@@ -46,19 +46,18 @@ fun CustomerTopbarNotificationButton(
             imageVector = Icons.Default.Notifications,
             contentDescription = "Notifications",
             tint = Slate700,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(17.dp)
         )
 
         if (unreadCount > 0) {
             Box(
                 modifier = Modifier
                     .size(8.dp)
+                    .align(Alignment.TopEnd)
+                    .offset(x = (-3).dp, y = 3.dp)
                     .clip(CircleShape)
                     .background(RoseError)
-                    .align(Alignment.TopEnd)
-                    .offset(x = (-4).dp, y = 4.dp)
             )
         }
     }
 }
-

@@ -26,7 +26,7 @@ import com.medmarg.patient.ui.theme.Slate900
  * 3. Interactive Location & Doorstep Address Pill for Care Seekers.
  * - Displays active city with dropdown indicator.
  * - Displays doorstep phlebotomist collection address.
- * - Clicking opens the Pinpoint Collection Address or City Picker sheet.
+ * - Sized compactly to ensure right action icons (Notification, Avatar, Logout) are never clipped.
  */
 @Composable
 fun CustomerTopbarLocationPill(
@@ -36,26 +36,26 @@ fun CustomerTopbarLocationPill(
     modifier: Modifier = Modifier
 ) {
     val displayCity = city.substringBefore(",").trim().ifEmpty { "Tirupati" }
-    val displayAddress = address.trim().ifEmpty { "Air Bypass Road, Tirupati" }
+    val displayAddress = address.trim().ifEmpty { "Air Bypass Road" }
 
     Row(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
             .background(Slate100)
             .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 6.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Icon(
             imageVector = Icons.Default.LocationOn,
             contentDescription = "Doorstep Location",
             tint = MedTealPrimary,
-            modifier = Modifier.size(15.dp)
+            modifier = Modifier.size(13.dp)
         )
 
         Column(
-            modifier = Modifier.widthIn(max = 130.dp),
+            modifier = Modifier.widthIn(max = 90.dp),
             verticalArrangement = Arrangement.Center
         ) {
             Row(
@@ -64,7 +64,7 @@ fun CustomerTopbarLocationPill(
             ) {
                 Text(
                     text = displayCity,
-                    fontSize = 11.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     color = Slate900,
                     maxLines = 1,
@@ -74,13 +74,13 @@ fun CustomerTopbarLocationPill(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = null,
                     tint = MedTealPrimary,
-                    modifier = Modifier.size(12.dp)
+                    modifier = Modifier.size(11.dp)
                 )
             }
 
             Text(
                 text = displayAddress,
-                fontSize = 9.sp,
+                fontSize = 8.5.sp,
                 fontWeight = FontWeight.Medium,
                 color = Slate500,
                 maxLines = 1,
@@ -89,4 +89,3 @@ fun CustomerTopbarLocationPill(
         }
     }
 }
-

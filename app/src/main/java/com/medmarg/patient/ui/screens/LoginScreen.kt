@@ -126,7 +126,6 @@ private fun syncPhoneUpdateToBackend(
         }
     }
 }
-import java.util.UUID
 
 // =========================================================================
 // 📱 DEDICATED CARE SEEKER & CLIENT LOGIN SCREEN (ANDROID JETPACK COMPOSE)
