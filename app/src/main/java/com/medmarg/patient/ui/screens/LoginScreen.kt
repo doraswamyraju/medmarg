@@ -379,7 +379,8 @@ fun LoginScreen(
                 GoogleAuthUser(
                     email = picked.email,
                     name = picked.displayName,
-                    googleId = picked.googleId
+                    googleId = picked.googleId,
+                    picture = picked.avatarUrl
                 )
             )
         },

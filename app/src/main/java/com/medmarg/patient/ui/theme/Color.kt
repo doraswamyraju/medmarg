@@ -9,6 +9,7 @@ val MedTealContainer = Color(0xFFC7ECEE)
 val MedTealOnContainer = Color(0xFF002022)
 
 val EmeraldAccent = Color(0xFF10B981)
+val EmeraldSuccess = Color(0xFF10B981)
 val EmeraldLight = Color(0xFFD1FAE5)
 
 val CyanAccent = Color(0xFF06B6D4)

@@ -50,8 +50,9 @@ fun MedMargApp() {
 
     // Navigation State:
     // 0: Home, 1: Labs & Tests, 2: Track, 3: Reports, 4: Profile,
-    // 5: Doctors, 6: Pharmacy, 7: Scans, 8: Vitals Hub, 9: Customer Orders
+    // 5: Doctors, 6: Pharmacy, 7: Scans, 8: Vitals Hub, 9: Customer Orders, 10: Refer & Corporate
     var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedSubTab by remember { mutableIntStateOf(0) }
 
     // Sheets & Overlays State
     var showSidebar by remember { mutableStateOf(false) }
@@ -106,6 +107,7 @@ fun MedMargApp() {
         // ==========================================
         val user = loggedInUser!!
 
+        Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
@@ -117,6 +119,7 @@ fun MedMargApp() {
                         onLogoutClick = {
                             loggedInUser = null
                             selectedTab = 0
+                            selectedSubTab = 0
                             cartItems.clear()
                             PatientSessionStore.liveOrders.clear()
                             coroutineScope.launch {
@@ -125,6 +128,7 @@ fun MedMargApp() {
                         },
                         onLogoClick = {
                             selectedTab = 0
+                            selectedSubTab = 0
                             showSidebar = false
                         }
                     )
@@ -143,7 +147,10 @@ fun MedMargApp() {
                     // Bottom Navigation Bar
                     BottomNavbarView(
                         selectedTab = if (selectedTab in 0..4) selectedTab else 0,
-                        onTabSelected = { selectedTab = it },
+                        onTabSelected = {
+                            selectedTab = it
+                            selectedSubTab = 0
+                        },
                         userRole = user.role,
                         onOpenMenuSheet = { showBottomSheetMenu = true }
                     )
@@ -202,7 +209,10 @@ fun MedMargApp() {
                                 user = user,
                                 currentCity = PatientSessionStore.selectedCity,
                                 activeOrder = activeOrder,
-                                onNavigateToTab = { selectedTab = it },
+                                onNavigateToTab = {
+                                    selectedTab = it
+                                    selectedSubTab = 0
+                                },
                                 onSelectItem = { selectedDetailItem = it },
                                 onAddToCart = { item ->
                                     cartItems.add(
@@ -238,7 +248,9 @@ fun MedMargApp() {
                                     coroutineScope.launch {
                                         snackbarHostState.showSnackbar("Added ${item.name} to Cart")
                                     }
-                                }
+                                },
+                                initialSubTab = selectedSubTab,
+                                onOpenScans = { selectedTab = 7 }
                             )
                             2 -> TrackScreen(
                                 user = user,
@@ -256,6 +268,7 @@ fun MedMargApp() {
                                 onLogout = {
                                     loggedInUser = null
                                     selectedTab = 0
+                                    selectedSubTab = 0
                                     cartItems.clear()
                                     PatientSessionStore.liveOrders.clear()
                                     coroutineScope.launch {
@@ -265,12 +278,17 @@ fun MedMargApp() {
                                 onOpenMyOrders = { selectedTab = 9 },
                                 onOpenVaultReports = { selectedTab = 3 },
                                 onOpenVitals = { selectedTab = 8 },
+                                onOpenReferralCorporate = {
+                                    selectedTab = 10
+                                    selectedSubTab = 0
+                                },
                                 onUserUpdated = { updatedUser ->
                                     loggedInUser = updatedUser
                                     coroutineScope.launch {
                                         snackbarHostState.showSnackbar("Profile updated")
                                     }
-                                }
+                                },
+                                initialSubTab = selectedSubTab
                             )
                             5 -> DoctorsScreen(
                                 onBookDoctor = { doctor ->
@@ -338,6 +356,11 @@ fun MedMargApp() {
                                 onBack = { selectedTab = 4 },
                                 onOpenLiveTracker = { selectedTab = 2 },
                                 onBrowseTests = { selectedTab = 1 }
+                            )
+                            10 -> ReferralCorporateScreen(
+                                user = user,
+                                initialSubTab = selectedSubTab,
+                                onNavigateToCatalog = { selectedTab = 1 }
                             )
                         }
                     }
@@ -565,40 +588,45 @@ fun MedMargApp() {
                         }
                     }
                 }
-
-                // Sidebar Drawer
-                AnimatedVisibility(
-                    visible = showSidebar,
-                    enter = slideInHorizontally(initialOffsetX = { -it }) + fadeIn(),
-                    exit = slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.5f))
-                            .clickable { showSidebar = false }
-                    ) {
-                        SidebarView(
-                            user = user,
-                            onNavigateTab = { tabIndex, _ ->
-                                selectedTab = tabIndex
-                                showSidebar = false
-                            },
-                            onLogout = {
-                                showSidebar = false
-                                loggedInUser = null
-                                selectedTab = 0
-                                cartItems.clear()
-                                PatientSessionStore.liveOrders.clear()
-                                coroutineScope.launch {
-                                    snackbarHostState.showSnackbar("Signed out")
-                                }
-                            },
-                            onClose = { showSidebar = false }
-                        )
-                    }
-                }
             }
+        }
+
+        // Full-Screen Slide-Out Sidebar Drawer (Overlays Topbar & Bottom Navbar 1-on-1 with iOS)
+        AnimatedVisibility(
+            visible = showSidebar,
+            enter = slideInHorizontally(initialOffsetX = { -it }) + fadeIn(),
+            exit = slideOutHorizontally(targetOffsetX = { -it }) + fadeOut()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.45f))
+                    .clickable { showSidebar = false }
+            ) {
+                SidebarView(
+                    user = user,
+                    selectedTab = selectedTab,
+                    selectedSubTab = selectedSubTab,
+                    onNavigateTab = { tabIndex, subTabIndex ->
+                        selectedTab = tabIndex
+                        selectedSubTab = subTabIndex
+                        showSidebar = false
+                    },
+                    onLogout = {
+                        showSidebar = false
+                        loggedInUser = null
+                        selectedTab = 0
+                        selectedSubTab = 0
+                        cartItems.clear()
+                        PatientSessionStore.liveOrders.clear()
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Signed out")
+                        }
+                    },
+                    onClose = { showSidebar = false }
+                )
+            }
+        }
         }
     }
 }

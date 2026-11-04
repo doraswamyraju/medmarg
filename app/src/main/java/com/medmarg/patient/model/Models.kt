@@ -78,6 +78,9 @@ data class CatalogItem(
     val requiresFasting: Boolean
         get() = fasting?.equals("YES", ignoreCase = true) == true
 
+    val displayTat: String
+        get() = "${tatHours ?: 24}h"
+
     val calculatedDiscount: Int
         get() {
             if (discountPercent != null && discountPercent > 0) return discountPercent

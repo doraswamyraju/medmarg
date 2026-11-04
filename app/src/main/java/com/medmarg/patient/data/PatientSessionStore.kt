@@ -17,10 +17,16 @@ data class PatientMedicalMeta(
     val bloodGroup: String = "O+",
     val heightWeight: String = "174cm / 70kg",
     val abhaId: String = "91-4829-1042-8831",
+    val preferredLanguage: String = "Telugu & English",
+    val needleSensitivity: String = "Butterfly 23G (Sensitive)",
     val allergies: String = "None reported",
     val chronicConditions: String = "None reported",
     val currentMedications: String = "None",
-    val emergencyContact: String = ""
+    val emergencyContactName: String = "Family Emergency",
+    val emergencyContact: String = "",
+    val biometricsEnabled: Boolean = true,
+    val whatsAppNotifications: Boolean = true,
+    val smsOrderUpdates: Boolean = true
 )
 
 data class LiveVitalsSnapshot(
@@ -147,10 +153,16 @@ object PatientSessionStore {
                     bloodGroup = o.optString("bloodGroup", "O+"),
                     heightWeight = o.optString("heightWeight", "174cm / 70kg"),
                     abhaId = o.optString("abhaId", "91-4829-1042-8831"),
+                    preferredLanguage = o.optString("preferredLanguage", "Telugu & English"),
+                    needleSensitivity = o.optString("needleSensitivity", "Butterfly 23G (Sensitive)"),
                     allergies = o.optString("allergies", "None reported"),
                     chronicConditions = o.optString("chronicConditions", "None reported"),
                     currentMedications = o.optString("currentMedications", "None"),
-                    emergencyContact = o.optString("emergencyContact", user.phone)
+                    emergencyContactName = o.optString("emergencyContactName", "Family Emergency"),
+                    emergencyContact = o.optString("emergencyContact", user.phone),
+                    biometricsEnabled = o.optBoolean("biometricsEnabled", true),
+                    whatsAppNotifications = o.optBoolean("whatsAppNotifications", true),
+                    smsOrderUpdates = o.optBoolean("smsOrderUpdates", true)
                 )
             } catch (_: Exception) {}
         } else {
@@ -210,10 +222,16 @@ object PatientSessionStore {
             put("bloodGroup", updated.bloodGroup)
             put("heightWeight", updated.heightWeight)
             put("abhaId", updated.abhaId)
+            put("preferredLanguage", updated.preferredLanguage)
+            put("needleSensitivity", updated.needleSensitivity)
             put("allergies", updated.allergies)
             put("chronicConditions", updated.chronicConditions)
             put("currentMedications", updated.currentMedications)
+            put("emergencyContactName", updated.emergencyContactName)
             put("emergencyContact", updated.emergencyContact)
+            put("biometricsEnabled", updated.biometricsEnabled)
+            put("whatsAppNotifications", updated.whatsAppNotifications)
+            put("smsOrderUpdates", updated.smsOrderUpdates)
         }
         prefs.edit().putString("meta_$userKey", obj.toString()).apply()
     }
