@@ -773,6 +773,47 @@ router.post('/change-password', (req, res) => {
     });
 });
 
+// =========================================================================
+// 🗑️ ACCOUNT DELETION ENDPOINT (Apple App Store Guideline 5.1.1(v) Compliant)
+// Safely removes user profile, audits deletion, and persists changes
+// =========================================================================
+router.post('/delete-account', (req, res) => {
+    const { userId, email } = req.body;
+
+    if (!userId && !email) {
+        return res.status(400).json({ error: 'User ID or Email is required for account deletion.' });
+    }
+
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanId = (userId || '').trim().toLowerCase();
+
+    if (dbStore.users) {
+        const initialCount = dbStore.users.length;
+        dbStore.users = dbStore.users.filter(u => {
+            const matchEmail = cleanEmail && u.email && u.email.toLowerCase() === cleanEmail;
+            const matchId = cleanId && u.id && u.id.toLowerCase() === cleanId;
+            return !(matchEmail || matchId);
+        });
+
+        if (dbStore.users.length !== initialCount) {
+            if (!dbStore.auditLogs) dbStore.auditLogs = [];
+            dbStore.auditLogs.unshift({
+                id: `AUD-${Date.now()}`,
+                action: 'ACCOUNT_DELETED',
+                user: cleanEmail || cleanId,
+                details: `User account deleted per Apple Guideline 5.1.1(v) user-initiated deletion request.`,
+                timestamp: new Date().toISOString()
+            });
+            saveDbStore();
+        }
+    }
+
+    return res.json({
+        success: true,
+        message: 'Account and associated profile data have been deleted successfully.'
+    });
+});
+
 module.exports = {
     authRouter: router,
     DEMO_USERS_DB

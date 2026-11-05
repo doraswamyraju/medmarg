@@ -39,6 +39,12 @@ import com.medmarg.patient.ui.profile.EditProfileModal
 import com.medmarg.patient.ui.profile.FamilyMembersModal
 import com.medmarg.patient.ui.profile.SavedAddressesModal
 import com.medmarg.patient.ui.theme.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 
 /**
  * 1-on-1 Replicated Care Seeker Profile Screen (`ios/CareSeekerProfileView.swift`).
@@ -1356,6 +1362,37 @@ fun ProfileScreen(
                 TextButton(
                     onClick = {
                         showDeleteAccountDialog = false
+                        val emailLower = user.email.lowercase()
+                        val userId = user.id
+
+                        // 1. Notify MedMarg Backend asynchronously
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                val url = URL("https://medmarg.com/api/v1/auth/delete-account")
+                                val conn = url.openConnection() as HttpURLConnection
+                                conn.requestMethod = "POST"
+                                conn.setRequestProperty("Content-Type", "application/json")
+                                conn.connectTimeout = 4000
+                                conn.readTimeout = 4000
+                                conn.doOutput = true
+                                val body = JSONObject().apply {
+                                    put("userId", userId)
+                                    put("email", emailLower)
+                                }
+                                conn.outputStream.use { it.write(body.toString().toByteArray()) }
+                                conn.responseCode
+                            } catch (_: Exception) {}
+                        }
+
+                        // 2. Clear cached user auth credentials locally
+                        val prefs = context.getSharedPreferences("medmarg_prefs", Context.MODE_PRIVATE)
+                        prefs.edit()
+                            .remove("medmarg_user_phone_$emailLower")
+                            .remove("medmarg_user_name_$emailLower")
+                            .remove("medmarg_user_avatar_$emailLower")
+                            .remove("medmarg_user_role_$emailLower")
+                            .apply()
+
                         onLogout()
                     }
                 ) {

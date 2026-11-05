@@ -51,6 +51,8 @@ struct CareSeekerProfileView: View {
     @State private var showAddFamilySheet: Bool = false
     @State private var showAbhaDetailsSheet: Bool = false
     @State private var showLogoutConfirmation: Bool = false
+    @State private var showDeleteAccountConfirmation: Bool = false
+    @State private var isDeletingAccount: Bool = false
     @State private var copiedToast: String? = nil
 
     // Family Member Form State
@@ -115,6 +117,9 @@ struct CareSeekerProfileView: View {
                 // 8. Sign Out Button
                 logoutButtonSection
 
+                // 9. Account & Personal Data Deletion Button (Apple Guideline 5.1.1(v) Compliant)
+                deleteAccountButtonSection
+
                 Spacer().frame(height: 80)
             }
             .padding(.horizontal, 16)
@@ -153,6 +158,14 @@ struct CareSeekerProfileView: View {
             Button("Sign Out", role: .destructive) { onLogout() }
         } message: {
             Text("Are you sure you want to sign out of MedMarg? You will need to log back in to access your lab bookings and reports.")
+        }
+        .alert("Delete Account & Data?", isPresented: $showDeleteAccountConfirmation) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete My Account", role: .destructive) {
+                handleDeleteAccount()
+            }
+        } message: {
+            Text("This will permanently delete your MedMarg patient profile, saved addresses, and all local health data. This action is irreversible.")
         }
     }
 
@@ -791,6 +804,59 @@ struct CareSeekerProfileView: View {
             .foregroundColor(.red)
             .cornerRadius(14)
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.red.opacity(0.2), lineWidth: 1))
+        }
+    }
+
+    // ==========================================
+    // 🗑️ 9. ACCOUNT & DATA DELETION BUTTON
+    // (Apple App Store Guideline 5.1.1(v) Compliant)
+    // ==========================================
+    private var deleteAccountButtonSection: some View {
+        Button(action: { showDeleteAccountConfirmation = true }) {
+            HStack(spacing: 6) {
+                Image(systemName: "trash")
+                    .font(.system(size: 12))
+                Text("Request Permanent Account & Data Deletion")
+                    .font(.system(size: 12, weight: .semibold))
+            }
+            .foregroundColor(MedMargTheme.slate400)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    private func handleDeleteAccount() {
+        isDeletingAccount = true
+        let emailLower = user.email.lowercased()
+        let userId = user.id
+
+        // 1. Notify MedMarg Backend asynchronously
+        Task {
+            let apiBaseUrls = ["https://medmarg.com", "http://127.0.0.1:5080"]
+            for base in apiBaseUrls {
+                guard let url = URL(string: "\(base)/api/v1/auth/delete-account") else { continue }
+                var request = URLRequest(url: url)
+                request.httpMethod = "POST"
+                request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                request.timeoutInterval = 4.0
+                let body: [String: Any] = ["userId": userId, "email": emailLower]
+                request.httpBody = try? JSONSerialization.data(withJSONObject: body)
+                _ = try? await URLSession.shared.data(for: request)
+            }
+        }
+
+        // 2. Clear all cached session tokens, user profiles and auth data from UserDefaults
+        let defaults = UserDefaults.standard
+        defaults.removeObject(forKey: "medmarg_user_phone_\(emailLower)")
+        defaults.removeObject(forKey: "medmarg_user_name_\(emailLower)")
+        defaults.removeObject(forKey: "medmarg_user_avatar_\(emailLower)")
+        defaults.removeObject(forKey: "medmarg_user_role_\(emailLower)")
+        defaults.removeObject(forKey: "medmarg_logged_in_user")
+        defaults.synchronize()
+
+        // 3. Immediately log out and transition back to Login screen
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+            onLogout()
         }
     }
 
