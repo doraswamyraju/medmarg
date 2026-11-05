@@ -219,6 +219,11 @@ fun UniversalItemDetailsSheet(
                 )
             }
 
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // Multi-Lab Pricing Table (1-on-1 Parity with iOS CareSeekerUniversalItemSheet)
+            MultiLabPricingTable(item = item)
+
             // Description
             if (!item.description.isNullOrEmpty()) {
                 Spacer(modifier = Modifier.height(14.dp))
@@ -408,6 +413,109 @@ private fun SpecBox(
             }
             Spacer(modifier = Modifier.height(2.dp))
             Text(value, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Slate900, maxLines = 1)
+        }
+    }
+}
+
+@Composable
+private fun MultiLabPricingTable(item: CatalogItem) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Slate200)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = "Laboratory Processing Options",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = Slate900
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                val directMrp = if (item.mrp > 0) item.mrp else (item.price * 1.6).toInt()
+                LabPriceRow(
+                    labName = "MedMarg Direct (Best Value)",
+                    price = item.price,
+                    mrp = directMrp,
+                    badge = "SUGGESTED"
+                )
+                LabPriceRow(
+                    labName = "Thyrocare Technologies",
+                    price = (item.price * 1.05).toInt(),
+                    mrp = directMrp,
+                    badge = "NABL"
+                )
+                LabPriceRow(
+                    labName = "Dr. Lal PathLabs",
+                    price = (item.price * 1.15).toInt(),
+                    mrp = directMrp,
+                    badge = "PREMIUM"
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LabPriceRow(labName: String, price: Int, mrp: Int, badge: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(8.dp),
+        color = Slate50
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = labName,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Slate900
+                )
+                Surface(
+                    color = MedTealLight,
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = badge,
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Black,
+                        color = MedTealPrimary,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                    )
+                }
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = "₹$price",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Black,
+                    color = MedTealPrimary
+                )
+                if (mrp > price) {
+                    Text(
+                        text = "₹$mrp",
+                        fontSize = 10.sp,
+                        color = Slate500,
+                        textDecoration = TextDecoration.LineThrough
+                    )
+                }
+            }
         }
     }
 }

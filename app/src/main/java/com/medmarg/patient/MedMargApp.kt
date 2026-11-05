@@ -260,7 +260,8 @@ fun MedMargApp() {
                                             subtitle = "${item.displayItemType} • ${item.displaySample}",
                                             price = item.price,
                                             mrp = if (item.mrp > 0) item.mrp else item.price + 500,
-                                            type = item.displayItemType
+                                            type = item.displayItemType,
+                                            requiresFasting = item.requiresFasting
                                         )
                                     )
                                     coroutineScope.launch {
@@ -280,7 +281,8 @@ fun MedMargApp() {
                                             subtitle = "${item.displayItemType} • ${item.displaySample}",
                                             price = item.price,
                                             mrp = if (item.mrp > 0) item.mrp else item.price + 500,
-                                            type = item.displayItemType
+                                            type = item.displayItemType,
+                                            requiresFasting = item.requiresFasting
                                         )
                                     )
                                     coroutineScope.launch {
@@ -381,7 +383,8 @@ fun MedMargApp() {
                                             subtitle = "${item.displayItemType} • ${item.displaySample}",
                                             price = item.price,
                                             mrp = if (item.mrp > 0) item.mrp else item.price + 500,
-                                            type = item.displayItemType
+                                            type = item.displayItemType,
+                                            requiresFasting = item.requiresFasting
                                         )
                                     )
                                     coroutineScope.launch {
@@ -417,7 +420,8 @@ fun MedMargApp() {
                                     subtitle = "${selectedItem.displayItemType} • ${selectedItem.displaySample}",
                                     price = selectedItem.price,
                                     mrp = if (selectedItem.mrp > 0) selectedItem.mrp else selectedItem.price + 500,
-                                    type = selectedItem.displayItemType
+                                    type = selectedItem.displayItemType,
+                                    requiresFasting = selectedItem.requiresFasting
                                 )
                             )
                             coroutineScope.launch {

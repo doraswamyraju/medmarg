@@ -103,7 +103,8 @@ data class CartItem(
     val type: String = "Lab Test",
     val serviceType: ServiceType = ServiceType.LAB_TEST,
     val appointmentDate: String = "Tomorrow, 07:30 AM",
-    val isHomeCollection: Boolean = true
+    val isHomeCollection: Boolean = true,
+    val requiresFasting: Boolean = false
 )
 
 data class SavedAddress(

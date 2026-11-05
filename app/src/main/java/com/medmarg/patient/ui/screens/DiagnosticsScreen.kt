@@ -1,5 +1,10 @@
 package com.medmarg.patient.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,6 +23,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -202,159 +208,197 @@ fun DiagnosticsScreen(
             .fillMaxSize()
             .background(Color(0xFFF8FAFC))
     ) {
-        if (viewMode == "DISCOVERY" && searchQuery.isEmpty() && selectedCategoryId == "ALL") {
-            // ==========================================
-            // 🌟 MODERN MULTI-CATEGORY DISCOVERY PORTAL
-            // ==========================================
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(bottom = 110.dp)
-            ) {
-                // 1. Header Title & Subtitle + Matrix View Switcher
+        Column(modifier = Modifier.fillMaxSize()) {
+            // 1. Header (Switches title / back button, but search bar below is permanent)
+            if (viewMode == "DISCOVERY" && searchQuery.isEmpty() && selectedCategoryId == "ALL") {
                 DiscoveryHeaderTitleRow(
                     totalCount = totalCatalogSize,
                     viewMode = viewMode,
                     onToggleViewMode = {
-                        viewMode = if (viewMode == "DISCOVERY") "ALL_CATALOG" else "DISCOVERY"
-                    }
-                )
-
-                // 2. Compact 48dp Single-Line Top Search Bar (Never wraps placeholder onto 2 lines!)
-                TopSearchField(
-                    searchQuery = searchQuery,
-                    onSearchChange = { searchQuery = it },
-                    onVoiceSearch = {
-                        searchQuery = "CBC"
                         viewMode = "ALL_CATALOG"
                     }
                 )
-
-                // 3. Recently Searched / Popular Biomarker Chips
-                RecentlySearchedBar(
-                    searches = recentSearches,
-                    onSelectSearch = {
-                        searchQuery = it
-                        viewMode = "ALL_CATALOG"
-                    }
-                )
-
-                // 4. Quick 4 Service Hub Cards (Clean 2x2 Grid — Zero Text Truncation)
-                QuickServiceHubCards(
-                    onSelectBloodTests = {
-                        catalogSubTab = "TESTS"
-                        viewMode = "ALL_CATALOG"
-                    },
-                    onSelectPackages = {
-                        catalogSubTab = "PACKAGES"
-                        viewMode = "ALL_CATALOG"
-                    },
-                    onSelectScans = {
-                        catalogSubTab = "PROFILES"
-                        viewMode = "ALL_CATALOG"
-                    },
-                    onSelectPopular = {
-                        catalogSubTab = "ALL"
-                        viewMode = "ALL_CATALOG"
-                    }
-                )
-
-                // 5. Test Categories 4x3 Grid (11 Categories + "More (24)" — Zero Text Truncation!)
-                TestCategoriesGridSection(
-                    categories = all24Categories.take(11),
+            } else {
+                MatrixHeaderTitleRow(
+                    filteredCount = filteredItems.size,
+                    totalCatalogSize = totalCatalogSize,
                     selectedCategoryId = selectedCategoryId,
-                    onSelectCategory = { cat ->
-                        selectedCategoryId = cat.id
-                        viewMode = "ALL_CATALOG"
-                    },
-                    onViewAllClick = { showAllCategoriesSheet = true }
-                )
-
-                // 6. Taxonomy Dimension Pills Row
-                TaxonomyDimensionPillsRow(
-                    dimensions = taxonomyDimensions,
-                    selectedFilter = selectedTaxonomyFilter,
-                    onSelectFilter = { dim ->
-                        selectedTaxonomyFilter = dim.id
-                        when (dim.id) {
-                            "PACKAGES" -> {
-                                catalogSubTab = "PACKAGES"
-                                viewMode = "ALL_CATALOG"
-                            }
-                            "PROFILES" -> {
-                                catalogSubTab = "PROFILES"
-                                viewMode = "ALL_CATALOG"
-                            }
-                            "ORGAN", "CONCERN", "LIFE" -> {
-                                showAllCategoriesSheet = true
-                            }
-                            "DEPT" -> {
-                                viewMode = "ALL_CATALOG"
-                            }
-                        }
-                    }
-                )
-
-                // 7. Popular Health Packages Horizontal Carousel
-                PopularHealthPackagesSection(
-                    packages = packages,
-                    onViewAll = {
-                        catalogSubTab = "PACKAGES"
-                        viewMode = "ALL_CATALOG"
-                    },
-                    onSelectPackage = { onSelectItem(it) },
-                    onAddPackage = { pkg ->
-                        onAddToCart(pkg)
-                        addedToastName = pkg.name
-                    }
-                )
-
-                // 8. Frequently Booked Lab Tests List
-                FeaturedTestsSection(
-                    tests = tests,
-                    onViewAll = {
-                        catalogSubTab = "TESTS"
-                        viewMode = "ALL_CATALOG"
-                    },
-                    onSelectTest = { onSelectItem(it) },
-                    onAddTest = { test ->
-                        onAddToCart(test)
-                        addedToastName = test.name
+                    onClearCategory = { selectedCategoryId = "ALL" },
+                    onSwitchToDiscovery = {
+                        searchQuery = ""
+                        selectedCategoryId = "ALL"
+                        catalogSubTab = "ALL"
+                        fastingFilter = "ALL"
+                        sampleFilter = "ALL"
+                        viewMode = "DISCOVERY"
                     }
                 )
             }
-        } else {
-            // ==========================================
-            // 📊 DETAILED CATALOG MATRIX VIEW
-            // ==========================================
-            DetailedCatalogMatrixView(
-                totalCatalogSize = totalCatalogSize,
+
+            // 2. Persistent Single Search Bar (NEVER unmounted, cursor & keyboard stay connected)
+            TopSearchField(
                 searchQuery = searchQuery,
                 onSearchChange = { searchQuery = it },
-                catalogSubTab = catalogSubTab,
-                onSubTabChange = { catalogSubTab = it },
-                selectedCategoryId = selectedCategoryId,
-                onClearCategory = { selectedCategoryId = "ALL" },
-                fastingFilter = fastingFilter,
-                onFastingFilterChange = { fastingFilter = it },
-                sampleFilter = sampleFilter,
-                onSampleFilterChange = { sampleFilter = it },
-                filteredItems = filteredItems,
-                onSelectItem = onSelectItem,
-                onAddToCart = {
-                    onAddToCart(it)
-                    addedToastName = it.name
-                },
-                onSwitchToDiscovery = {
-                    searchQuery = ""
-                    selectedCategoryId = "ALL"
-                    catalogSubTab = "ALL"
-                    fastingFilter = "ALL"
-                    sampleFilter = "ALL"
-                    viewMode = "DISCOVERY"
+                onVoiceSearch = {
+                    searchQuery = "CBC"
                 }
             )
+
+            // 3. Body: Discovery vs Matrix View
+            if (viewMode == "DISCOVERY" && searchQuery.isEmpty() && selectedCategoryId == "ALL") {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = 110.dp)
+                ) {
+                    // 3. Recently Searched / Popular Biomarker Chips
+                    RecentlySearchedBar(
+                        searches = recentSearches,
+                        onSelectSearch = {
+                            searchQuery = it
+                        }
+                    )
+
+                    // 4. Quick 4 Service Hub Cards (Clean 2x2 Grid — Zero Text Truncation)
+                    QuickServiceHubCards(
+                        onSelectBloodTests = {
+                            catalogSubTab = "TESTS"
+                            viewMode = "ALL_CATALOG"
+                        },
+                        onSelectPackages = {
+                            catalogSubTab = "PACKAGES"
+                            viewMode = "ALL_CATALOG"
+                        },
+                        onSelectScans = {
+                            catalogSubTab = "PROFILES"
+                            viewMode = "ALL_CATALOG"
+                        },
+                        onSelectPopular = {
+                            catalogSubTab = "ALL"
+                            viewMode = "ALL_CATALOG"
+                        }
+                    )
+
+                    // 5. Test Categories 4x3 Grid (11 Categories + "More (24)" — Zero Text Truncation!)
+                    TestCategoriesGridSection(
+                        categories = all24Categories.take(11),
+                        selectedCategoryId = selectedCategoryId,
+                        onSelectCategory = { cat ->
+                            selectedCategoryId = cat.id
+                            viewMode = "ALL_CATALOG"
+                        },
+                        onViewAllClick = { showAllCategoriesSheet = true }
+                    )
+
+                    // 6. Taxonomy Dimension Pills Row
+                    TaxonomyDimensionPillsRow(
+                        dimensions = taxonomyDimensions,
+                        selectedFilter = selectedTaxonomyFilter,
+                        onSelectFilter = { dim ->
+                            selectedTaxonomyFilter = dim.id
+                            when (dim.id) {
+                                "PACKAGES" -> {
+                                    catalogSubTab = "PACKAGES"
+                                    viewMode = "ALL_CATALOG"
+                                }
+                                "PROFILES" -> {
+                                    catalogSubTab = "PROFILES"
+                                    viewMode = "ALL_CATALOG"
+                                }
+                                "ORGAN", "CONCERN", "LIFE" -> {
+                                    showAllCategoriesSheet = true
+                                }
+                                "DEPT" -> {
+                                    viewMode = "ALL_CATALOG"
+                                }
+                            }
+                        }
+                    )
+
+                    // 7. Popular Health Packages Horizontal Carousel
+                    PopularHealthPackagesSection(
+                        packages = packages,
+                        onViewAll = {
+                            catalogSubTab = "PACKAGES"
+                            viewMode = "ALL_CATALOG"
+                        },
+                        onSelectPackage = { onSelectItem(it) },
+                        onAddPackage = { pkg ->
+                            onAddToCart(pkg)
+                            addedToastName = pkg.name
+                        }
+                    )
+
+                    // 8. Frequently Booked Lab Tests List
+                    FeaturedTestsSection(
+                        tests = tests,
+                        onViewAll = {
+                            catalogSubTab = "TESTS"
+                            viewMode = "ALL_CATALOG"
+                        },
+                        onSelectTest = { onSelectItem(it) },
+                        onAddTest = { test ->
+                            onAddToCart(test)
+                            addedToastName = test.name
+                        }
+                    )
+                }
+            } else {
+                // ==========================================
+                // 📊 DETAILED CATALOG MATRIX BODY
+                // ==========================================
+                DetailedCatalogMatrixBody(
+                    catalogSubTab = catalogSubTab,
+                    onSubTabChange = { catalogSubTab = it },
+                    fastingFilter = fastingFilter,
+                    onFastingFilterChange = { fastingFilter = it },
+                    sampleFilter = sampleFilter,
+                    onSampleFilterChange = { sampleFilter = it },
+                    filteredItems = filteredItems,
+                    onSelectItem = onSelectItem,
+                    onAddToCart = {
+                        onAddToCart(it)
+                        addedToastName = it.name
+                    }
+                )
+            }
+        }
+
+        // Cart Add Toast Notification
+        AnimatedVisibility(
+            visible = addedToastName != null,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { -40 }),
+            exit = fadeOut() + slideOutVertically(targetOffsetY = { -40 }),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 16.dp)
+                .zIndex(10f)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = Slate900,
+                shadowElevation = 6.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = EmeraldAccent,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "${addedToastName.orEmpty()} added to cart",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PureWhite
+                    )
+                }
+            }
         }
     }
 
@@ -1400,25 +1444,98 @@ private fun All24CategoriesSheetContent(
 }
 
 // =========================================================================
-// 10. DETAILED CATALOG MATRIX VIEW
+// 10. MATRIX HEADER TITLE ROW & MATRIX BODY
 // =========================================================================
 @Composable
-private fun DetailedCatalogMatrixView(
+private fun MatrixHeaderTitleRow(
+    filteredCount: Int,
     totalCatalogSize: Int,
-    searchQuery: String,
-    onSearchChange: (String) -> Unit,
-    catalogSubTab: String,
-    onSubTabChange: (String) -> Unit,
     selectedCategoryId: String,
     onClearCategory: () -> Unit,
+    onSwitchToDiscovery: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(top = 14.dp, bottom = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Surface(
+                onClick = onSwitchToDiscovery,
+                shape = CircleShape,
+                color = Slate100,
+                modifier = Modifier.size(34.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Back",
+                        tint = Slate800,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+            Column {
+                Text(
+                    text = "Multi-Lab Diagnostic Matrix",
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Black,
+                    color = Slate900
+                )
+                Text(
+                    text = "Showing $filteredCount of ${maxOf(totalCatalogSize, 913)} NABL items",
+                    fontSize = 11.sp,
+                    color = Slate500
+                )
+            }
+        }
+
+        if (selectedCategoryId != "ALL") {
+            Surface(
+                onClick = onClearCategory,
+                shape = RoundedCornerShape(50),
+                color = MedTealLight
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = selectedCategoryId,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MedTealPrimary
+                    )
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Clear",
+                        tint = MedTealPrimary,
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetailedCatalogMatrixBody(
+    catalogSubTab: String,
+    onSubTabChange: (String) -> Unit,
     fastingFilter: String,
     onFastingFilterChange: (String) -> Unit,
     sampleFilter: String,
     onSampleFilterChange: (String) -> Unit,
     filteredItems: List<CatalogItem>,
     onSelectItem: (CatalogItem) -> Unit,
-    onAddToCart: (CatalogItem) -> Unit,
-    onSwitchToDiscovery: () -> Unit
+    onAddToCart: (CatalogItem) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -1427,145 +1544,14 @@ private fun DetailedCatalogMatrixView(
     ) {
         Surface(
             color = PureWhite,
-            shadowElevation = 2.dp
+            shadowElevation = 1.dp
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Surface(
-                            onClick = onSwitchToDiscovery,
-                            shape = CircleShape,
-                            color = Slate100,
-                            modifier = Modifier.size(34.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Default.ArrowBack,
-                                    contentDescription = "Back",
-                                    tint = Slate800,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                        Column {
-                            Text(
-                                text = "Multi-Lab Diagnostic Matrix",
-                                fontSize = 17.sp,
-                                fontWeight = FontWeight.Black,
-                                color = Slate900
-                            )
-                            Text(
-                                text = "Showing ${filteredItems.size} of ${maxOf(totalCatalogSize, 913)} NABL items",
-                                fontSize = 11.sp,
-                                color = Slate500
-                            )
-                        }
-                    }
-
-                    if (selectedCategoryId != "ALL") {
-                        Surface(
-                            onClick = onClearCategory,
-                            shape = RoundedCornerShape(50),
-                            color = MedTealLight
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = selectedCategoryId,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MedTealPrimary
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Clear",
-                                    tint = MedTealPrimary,
-                                    modifier = Modifier.size(13.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Compact 44dp Search Box inside Matrix Header
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(44.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    color = Slate50,
-                    border = BorderStroke(1.dp, Slate200)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            tint = MedTealPrimary,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Box(
-                            modifier = Modifier.weight(1f),
-                            contentAlignment = Alignment.CenterStart
-                        ) {
-                            if (searchQuery.isEmpty()) {
-                                Text(
-                                    text = "Filter ${filteredItems.size} tests, packages or codes...",
-                                    fontSize = 12.sp,
-                                    color = Slate400,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-                            BasicTextField(
-                                value = searchQuery,
-                                onValueChange = onSearchChange,
-                                singleLine = true,
-                                textStyle = TextStyle(
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Slate900
-                                ),
-                                cursorBrush = SolidColor(MedTealPrimary),
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(
-                                onClick = { onSearchChange("") },
-                                modifier = Modifier.size(24.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Clear",
-                                    tint = Slate500,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
                 // SubTab & Fasting Filter Pills Row
                 Row(
                     modifier = Modifier
@@ -1625,22 +1611,53 @@ private fun DetailedCatalogMatrixView(
             }
         }
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(
-                start = 16.dp,
-                end = 16.dp,
-                top = 12.dp,
-                bottom = 110.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            items(filteredItems, key = { it.id + it.code }) { item ->
-                CatalogMatrixItemCard(
-                    item = item,
-                    onSelectItem = { onSelectItem(item) },
-                    onAddToCart = { onAddToCart(item) }
-                )
+        if (filteredItems.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 40.dp, start = 20.dp, end = 20.dp),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.SearchOff,
+                        contentDescription = null,
+                        tint = Slate400,
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "No diagnostic tests or packages found",
+                        fontWeight = FontWeight.Bold,
+                        color = Slate900,
+                        fontSize = 15.sp
+                    )
+                    Text(
+                        text = "Try searching by test name, short code (e.g. CBC), or health category",
+                        color = Slate500,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 12.dp,
+                    bottom = 110.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(filteredItems, key = { it.id + it.code }) { item ->
+                    CatalogMatrixItemCard(
+                        item = item,
+                        onSelectItem = { onSelectItem(item) },
+                        onAddToCart = { onAddToCart(item) }
+                    )
+                }
             }
         }
     }

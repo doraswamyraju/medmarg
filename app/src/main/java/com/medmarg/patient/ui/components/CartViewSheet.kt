@@ -3,6 +3,7 @@ package com.medmarg.patient.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +31,15 @@ data class PartnerLabOption(
     val priceMultiplier: Double
 )
 
+data class QuickAddOn(
+    val code: String,
+    val name: String,
+    val price: Int,
+    val mrp: Int,
+    val sample: String,
+    val requiresFasting: Boolean = false
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CartViewSheet(
@@ -46,6 +56,23 @@ fun CartViewSheet(
     }
     var selectedLab by remember { mutableStateOf(labOptions.first()) }
     var isExpress60Min by remember { mutableStateOf(false) }
+
+    val hasFasting = cartItems.any {
+        it.requiresFasting ||
+        it.title.contains("Fasting", ignoreCase = true) ||
+        it.title.contains("Lipid", ignoreCase = true) ||
+        it.title.contains("Glucose", ignoreCase = true)
+    }
+
+    val quickAddOns = remember {
+        listOf(
+            QuickAddOn("VIT_D", "Vitamin D3 (25-OH)", 499, 1200, "SERUM"),
+            QuickAddOn("VIT_B12", "Vitamin B12 (Active)", 449, 1100, "SERUM"),
+            QuickAddOn("THYROID_T", "Thyroid Profile Total (T3/T4/TSH)", 299, 650, "SERUM"),
+            QuickAddOn("HBA1C", "HbA1c Glycated Hemoglobin", 299, 600, "EDTA"),
+            QuickAddOn("CBC", "Complete Blood Count CBC", 249, 500, "EDTA")
+        )
+    }
 
     val baseTotal = cartItems.sumOf { it.price }
     val labAdjustedTotal = (baseTotal * selectedLab.priceMultiplier).toInt()
@@ -131,6 +158,43 @@ fun CartViewSheet(
                     }
                 }
             } else {
+                // Fasting Requirement Banner (100% Parity with iOS CareSeekerCartDrawer)
+                if (hasFasting) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = AmberWarningLight.copy(alpha = 0.5f)),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, AmberWarning.copy(alpha = 0.4f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = null,
+                                tint = AmberWarning,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(
+                                    text = "10-12 Hours Fasting Required",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AmberWarning
+                                )
+                                Text(
+                                    text = "One or more tests in your cart require overnight fasting (water is permitted). Please schedule an early morning slot.",
+                                    fontSize = 11.sp,
+                                    color = Slate700
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(14.dp))
+                }
+
                 // 1. Selected Items List
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -203,6 +267,130 @@ fun CartViewSheet(
                                         cartItems.remove(item)
                                     }
                                 )
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Quick Add-on Tests Carousel (100% Parity with iOS CareSeekerCartDrawer)
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "FREQUENTLY ADDED BIOMARKERS",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Slate500,
+                            letterSpacing = 0.5.sp
+                        )
+                        Text(
+                            text = "NABL Certified",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MedTealPrimary
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        quickAddOns.forEach { addon ->
+                            val isAlreadyInCart = cartItems.any { it.id == addon.code || it.title.contains(addon.name.take(10), ignoreCase = true) }
+                            Card(
+                                modifier = Modifier.width(170.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(containerColor = Slate50),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Slate200)
+                            ) {
+                                Column(modifier = Modifier.padding(10.dp)) {
+                                    Text(
+                                        text = addon.name,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Slate900,
+                                        maxLines = 2,
+                                        lineHeight = 15.sp,
+                                        modifier = Modifier.height(30.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = addon.sample,
+                                        fontSize = 9.sp,
+                                        color = Slate500,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column {
+                                            Text(
+                                                text = "₹${addon.price}",
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.Black,
+                                                color = MedTealPrimary
+                                            )
+                                            Text(
+                                                text = "₹${addon.mrp}",
+                                                fontSize = 10.sp,
+                                                color = Slate400,
+                                                textDecoration = TextDecoration.LineThrough
+                                            )
+                                        }
+                                        if (isAlreadyInCart) {
+                                            Surface(
+                                                shape = RoundedCornerShape(6.dp),
+                                                color = EmeraldLight
+                                            ) {
+                                                Text(
+                                                    text = "Added",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = EmeraldAccent,
+                                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                                )
+                                            }
+                                        } else {
+                                            Surface(
+                                                onClick = {
+                                                    cartItems.add(
+                                                        CartItem(
+                                                            id = addon.code,
+                                                            title = addon.name,
+                                                            subtitle = "Quick Add-on • ${addon.sample}",
+                                                            price = addon.price,
+                                                            mrp = addon.mrp,
+                                                            type = "Lab Test",
+                                                            requiresFasting = addon.requiresFasting
+                                                        )
+                                                    )
+                                                },
+                                                shape = RoundedCornerShape(6.dp),
+                                                color = MedTealLight
+                                            ) {
+                                                Text(
+                                                    text = "+ Add",
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MedTealPrimary,
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
