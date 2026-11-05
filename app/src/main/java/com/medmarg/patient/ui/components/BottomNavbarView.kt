@@ -284,7 +284,7 @@ private fun StandardBottomNavbar(
             } else {
                 // ==========================================
                 // 📱 PATIENT / DEFAULT 5 CORE TABS
-                // 1. Home, 2. Labs & Tests, 3. Track, 4. Reports, 5. Profile
+                // 1. Home, 2. Labs & Tests, 3. Track, 4. Orders, 5. Reports
                 // ==========================================
                 NavTabItem(index = 0, selectedIndex = selectedTab, icon = Icons.Default.Home, label = "Home", onClick = { onTabSelected(0) })
                 NavTabItem(index = 1, selectedIndex = selectedTab, icon = Icons.Default.Science, label = "Labs & Tests", onClick = { onTabSelected(1) })
@@ -335,8 +335,8 @@ private fun StandardBottomNavbar(
                     }
                 }
 
+                NavTabItem(index = 9, selectedIndex = selectedTab, icon = Icons.Default.ShoppingBag, label = "Orders", onClick = { onTabSelected(9) })
                 NavTabItem(index = 3, selectedIndex = selectedTab, icon = Icons.Default.Description, label = "Reports", onClick = { onTabSelected(3) })
-                NavTabItem(index = 4, selectedIndex = selectedTab, icon = Icons.Default.Person, label = "Profile", onClick = { onTabSelected(4) })
             }
         }
     }

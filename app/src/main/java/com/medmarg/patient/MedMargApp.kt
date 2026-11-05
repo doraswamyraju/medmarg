@@ -184,7 +184,7 @@ fun MedMargApp() {
 
                     // Bottom Navigation Bar
                     BottomNavbarView(
-                        selectedTab = if (selectedTab in 0..4) selectedTab else 0,
+                        selectedTab = selectedTab,
                         onTabSelected = {
                             selectedTab = it
                             selectedSubTab = 0
@@ -295,7 +295,8 @@ fun MedMargApp() {
                             2 -> TrackScreen(
                                 user = user,
                                 onBrowseTests = { selectedTab = 1 },
-                                onOpenAllOrders = { selectedTab = 9 }
+                                onOpenAllOrders = { selectedTab = 9 },
+                                onOpenReports = { selectedTab = 3 }
                             )
                             3 -> HealthLockerScreen(
                                 user = user,

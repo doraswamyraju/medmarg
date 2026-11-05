@@ -45,7 +45,8 @@ import kotlinx.coroutines.launch
 fun TrackScreen(
     user: UserProfile? = null,
     onBrowseTests: () -> Unit = {},
-    onOpenAllOrders: () -> Unit = {}
+    onOpenAllOrders: () -> Unit = {},
+    onOpenReports: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
@@ -202,9 +203,9 @@ fun TrackScreen(
 
     val statusUpper = currentOrder.status.uppercase()
     val currentStepIndex = when (statusUpper) {
-        "PENDING_DISPATCH" -> 0
+        "PENDING_DISPATCH", "BOOKED", "CONFIRMED" -> 0
         "ASSIGNED" -> 1
-        "ENROUTE" -> 2
+        "ENROUTE", "EN_ROUTE" -> 2
         "SAMPLE_COLLECTED" -> 3
         "IN_LAB" -> 4
         "COMPLETED" -> 5
@@ -361,10 +362,39 @@ fun TrackScreen(
                     Icon(Icons.Default.AcUnit, contentDescription = null, tint = Color(0xFF0284C7), modifier = Modifier.size(15.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Cold-Chain Carrier: 4.2°C • Vacutainer Sealed",
+                        text = "Cold-Chain: 4.2°C • Sealed",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = Slate800
+                    )
+                }
+            }
+
+            // ETA & Distance Telemetry Badge (1-on-1 Parity with iOS CareSeekerTrackingView)
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(14.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = Slate900.copy(alpha = 0.92f),
+                shadowElevation = 4.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DirectionsBike,
+                        contentDescription = null,
+                        tint = EmeraldAccent,
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Text(
+                        text = "ETA: ~14 Mins • 1.8 km",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PureWhite
                     )
                 }
             }
@@ -512,7 +542,8 @@ fun TrackScreen(
                     Triple("Certified Phlebotomist Assigned", currentOrder.assignedAgentName, 1),
                     Triple("Phlebotomist En Route to Doorstep", currentOrder.address, 2),
                     Triple("Vacutainer Sample Collected & Barcoded", "Verified via Handover OTP ${currentOrder.otp}", 3),
-                    Triple("Processing in NABL Automated Analyzer", currentOrder.labName, 4)
+                    Triple("Processing in NABL Automated Analyzer", currentOrder.labName, 4),
+                    Triple("Diagnostic Report Generated", if (currentStepIndex >= 5) "Digital PDF Ready in Health Vault" else "Available within 6-12 hours of collection", 5)
                 )
 
                 stages.forEach { (title, subtitle, stepIdx) ->
@@ -558,6 +589,20 @@ fun TrackScreen(
                                 color = if (isDone) Slate600 else Slate400
                             )
                         }
+                    }
+                }
+
+                if (currentStepIndex >= 5) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Button(
+                        onClick = onOpenReports,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldAccent)
+                    ) {
+                        Icon(Icons.Default.Description, contentDescription = null, tint = PureWhite, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("View Digital Report in Health Vault", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = PureWhite)
                     }
                 }
             }
