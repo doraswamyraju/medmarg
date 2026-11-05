@@ -46,7 +46,8 @@ data class RazorpayOrderInfo(
     val orderId: String,
     val keyId: String,
     val amountPaise: Int,
-    val currency: String = "INR"
+    val currency: String = "INR",
+    val paymentUrl: String = ""
 )
 
 object PatientApiService {
@@ -178,16 +179,21 @@ object PatientApiService {
                 val respStr = conn.inputStream.bufferedReader().use { it.readText() }
                 val json = JSONObject(respStr)
                 if (json.optBoolean("success", false)) {
-                    val orderId = json.optString("order_id", "")
-                    val keyId = json.optString("key_id", "rzp_live_SbltbfPK4G8bU5")
-                    val amountPaise = json.optInt("amount", amountInRupees * 100)
-                    if (orderId.isNotEmpty()) {
-                        return@withContext RazorpayOrderInfo(
-                            orderId = orderId,
-                            keyId = keyId,
-                            amountPaise = amountPaise
-                        )
-                    }
+                    val dataObj = json.optJSONObject("data")
+                    val orderId = dataObj?.optString("orderId", "")?.ifEmpty { null }
+                        ?: json.optString("order_id", "")
+                    val keyId = dataObj?.optString("keyId", "")?.ifEmpty { null }
+                        ?: json.optString("key_id", "rzp_live_Tno7dmuqnwn1YS")
+                    val amountPaise = dataObj?.optInt("amount", 0)?.takeIf { it > 0 }
+                        ?: json.optInt("amount", amountInRupees * 100)
+                    val paymentUrl = dataObj?.optString("paymentUrl", "") ?: ""
+
+                    return@withContext RazorpayOrderInfo(
+                        orderId = orderId,
+                        keyId = if (keyId.isNotEmpty()) keyId else "rzp_live_Tno7dmuqnwn1YS",
+                        amountPaise = if (amountPaise > 0) amountPaise else amountInRupees * 100,
+                        paymentUrl = paymentUrl
+                    )
                 }
             }
             null

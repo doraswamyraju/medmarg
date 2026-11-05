@@ -88,7 +88,7 @@ fun RazorpayPaymentModal(
         )
         orderInfo = created ?: RazorpayOrderInfo(
             orderId = "",
-            keyId = "rzp_live_SbltbfPK4G8bU5",
+            keyId = "rzp_live_Tno7dmuqnwn1YS",
             amountPaise = maxOf(1, amountInRupees) * 100
         )
         isLoadingOrder = false
