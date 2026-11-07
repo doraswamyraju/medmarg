@@ -236,6 +236,10 @@ fun RazorpayPaymentModal(
                             <script>
                                 function openRazorpay() {
                                     try {
+                                        if (typeof Razorpay === 'undefined') {
+                                            setTimeout(openRazorpay, 200);
+                                            return;
+                                        }
                                         var options = {
                                             "key": "${info.keyId}",
                                             "amount": "${info.amountPaise}",
@@ -305,13 +309,14 @@ fun RazorpayPaymentModal(
                                     settings.javaScriptEnabled = true
                                     settings.domStorageEnabled = true
                                     settings.javaScriptCanOpenWindowsAutomatically = true
-                                    settings.setSupportMultipleWindows(true)
+                                    settings.setSupportMultipleWindows(false)
                                     settings.databaseEnabled = true
                                     settings.allowFileAccess = true
                                     settings.allowContentAccess = true
                                     settings.useWideViewPort = true
                                     settings.loadWithOverviewMode = true
                                     settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                                    settings.userAgentString = "Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
                                     CookieManager.getInstance().setAcceptCookie(true)
                                     CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
 
@@ -326,20 +331,8 @@ fun RazorpayPaymentModal(
                                         "RazorpayAndroid"
                                     )
 
-                                    // 3. WebChromeClient with window.open (target="_blank" / popup) handling
-                                    webChromeClient = object : WebChromeClient() {
-                                        override fun onCreateWindow(
-                                            view: WebView?,
-                                            isDialog: Boolean,
-                                            isUserGesture: Boolean,
-                                            resultMsg: Message?
-                                        ): Boolean {
-                                            val transport = resultMsg?.obj as? WebView.WebViewTransport
-                                            transport?.webView = view
-                                            resultMsg?.sendToTarget()
-                                            return true
-                                        }
-                                    }
+                                    // 3. WebChromeClient
+                                    webChromeClient = WebChromeClient()
 
                                     // 4. WebViewClient intercepting UPI intents & payment completion
                                     webViewClient = object : WebViewClient() {
