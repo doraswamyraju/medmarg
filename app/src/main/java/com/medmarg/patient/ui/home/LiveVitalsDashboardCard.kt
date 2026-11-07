@@ -70,7 +70,7 @@ fun LiveVitalsDashboardCard(
                             color = Slate900
                         )
                         Text(
-                            text = vitals.deviceSource,
+                            text = if (vitals.isConnected) vitals.deviceSource else "No wearable or health device paired",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Medium,
                             color = Slate500
@@ -79,7 +79,7 @@ fun LiveVitalsDashboardCard(
                 }
 
                 Surface(
-                    color = EmeraldLight,
+                    color = if (vitals.isConnected) EmeraldLight else Color(0xFFEFF6FF),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.clickable { onOpenVitalsScreen() }
                 ) {
@@ -91,14 +91,14 @@ fun LiveVitalsDashboardCard(
                             modifier = Modifier
                                 .size(6.dp)
                                 .clip(CircleShape)
-                                .background(EmeraldAccent)
+                                .background(if (vitals.isConnected) EmeraldAccent else Color(0xFF2563EB))
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "Live Hub",
+                            text = if (vitals.isConnected) "Live Hub" else "Connect",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = EmeraldAccent
+                            color = if (vitals.isConnected) EmeraldAccent else Color(0xFF2563EB)
                         )
                     }
                 }
@@ -106,55 +106,124 @@ fun LiveVitalsDashboardCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 2x2 Vitals Grid
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                VitalTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Favorite,
-                    iconTint = Color(0xFFEF4444),
-                    label = "Heart Rate",
-                    value = "${vitals.heartRateBpm}",
-                    unit = "BPM",
-                    badgeText = "Normal"
-                )
-                VitalTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.WaterDrop,
-                    iconTint = Color(0xFF0284C7),
-                    label = "Blood Oxygen",
-                    value = "${vitals.spo2Percent}%",
-                    unit = "SpO2",
-                    badgeText = "Optimal"
-                )
-            }
+            if (!vitals.isConnected) {
+                // Blank / Connect Device State
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    color = Slate50,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Slate200.copy(alpha = 0.7f))
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(38.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFE0E7FF)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Watch,
+                                    contentDescription = null,
+                                    tint = Color(0xFF4F46E5),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "Connect Health Connect / Wearable",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Slate900
+                                )
+                                Text(
+                                    text = "Sync real-time heart rate, SpO2 & BP with your lab tests",
+                                    fontSize = 10.sp,
+                                    color = Slate500
+                                )
+                            }
+                        }
 
-            Spacer(modifier = Modifier.height(10.dp))
+                        Button(
+                            onClick = onOpenVitalsScreen,
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = MedTealPrimary),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "Pair Device",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PureWhite
+                            )
+                        }
+                    }
+                }
+            } else {
+                // 2x2 Vitals Grid (Live readings only)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    VitalTile(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.Favorite,
+                        iconTint = Color(0xFFEF4444),
+                        label = "Heart Rate",
+                        value = vitals.heartRateBpm?.toString() ?: "--",
+                        unit = "BPM",
+                        badgeText = if (vitals.heartRateBpm != null) "Normal" else "Waiting"
+                    )
+                    VitalTile(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.WaterDrop,
+                        iconTint = Color(0xFF0284C7),
+                        label = "Blood Oxygen",
+                        value = vitals.spo2Percent?.let { "$it%" } ?: "--",
+                        unit = "SpO2",
+                        badgeText = if (vitals.spo2Percent != null) "Optimal" else "Waiting"
+                    )
+                }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                VitalTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.MonitorHeart,
-                    iconTint = Color(0xFF8B5CF6),
-                    label = "Blood Pressure",
-                    value = "${vitals.bpSystolic}/${vitals.bpDiastolic}",
-                    unit = "mmHg",
-                    badgeText = "Normal"
-                )
-                VitalTile(
-                    modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Bloodtype,
-                    iconTint = Color(0xFFF59E0B),
-                    label = "Fasting Glucose",
-                    value = "${vitals.fastingGlucoseMgDl}",
-                    unit = "mg/dL",
-                    badgeText = "Non-Diabetic"
-                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    val bpText = if (vitals.bpSystolic != null && vitals.bpDiastolic != null) {
+                        "${vitals.bpSystolic}/${vitals.bpDiastolic}"
+                    } else "--/--"
+                    VitalTile(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.MonitorHeart,
+                        iconTint = Color(0xFF8B5CF6),
+                        label = "Blood Pressure",
+                        value = bpText,
+                        unit = "mmHg",
+                        badgeText = if (vitals.bpSystolic != null) "Normal" else "Waiting"
+                    )
+                    VitalTile(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Default.Bloodtype,
+                        iconTint = Color(0xFFF59E0B),
+                        label = "Fasting Glucose",
+                        value = vitals.fastingGlucoseMgDl?.toString() ?: "--",
+                        unit = "mg/dL",
+                        badgeText = if (vitals.fastingGlucoseMgDl != null) "Active" else "Waiting"
+                    )
+                }
             }
         }
     }

@@ -16,7 +16,8 @@ data class PatientMedicalMeta(
     val gender: String = "Male",
     val bloodGroup: String = "O+",
     val heightWeight: String = "174cm / 70kg",
-    val abhaId: String = "91-4829-1042-8831",
+    val abhaId: String = "",
+    val abhaLinked: Boolean = false,
     val preferredLanguage: String = "Telugu & English",
     val needleSensitivity: String = "Butterfly 23G (Sensitive)",
     val allergies: String = "None reported",
@@ -30,14 +31,15 @@ data class PatientMedicalMeta(
 )
 
 data class LiveVitalsSnapshot(
-    val heartRateBpm: Int = 74,
-    val spo2Percent: Int = 98,
-    val bpSystolic: Int = 118,
-    val bpDiastolic: Int = 78,
-    val fastingGlucoseMgDl: Int = 94,
-    val stepsToday: Int = 6420,
-    val sleepHours: String = "7h 25m",
-    val deviceSource: String = "Health Connect • Synced Just Now"
+    val isConnected: Boolean = false,
+    val heartRateBpm: Int? = null,
+    val spo2Percent: Int? = null,
+    val bpSystolic: Int? = null,
+    val bpDiastolic: Int? = null,
+    val fastingGlucoseMgDl: Int? = null,
+    val stepsToday: Int? = null,
+    val sleepHours: String? = null,
+    val deviceSource: String = "No device connected"
 )
 
 object PatientSessionStore {
@@ -152,7 +154,8 @@ object PatientSessionStore {
                     gender = o.optString("gender", "Male"),
                     bloodGroup = o.optString("bloodGroup", "O+"),
                     heightWeight = o.optString("heightWeight", "174cm / 70kg"),
-                    abhaId = o.optString("abhaId", "91-4829-1042-8831"),
+                    abhaId = o.optString("abhaId", ""),
+                    abhaLinked = o.optBoolean("abhaLinked", false),
                     preferredLanguage = o.optString("preferredLanguage", "Telugu & English"),
                     needleSensitivity = o.optString("needleSensitivity", "Butterfly 23G (Sensitive)"),
                     allergies = o.optString("allergies", "None reported"),
@@ -167,6 +170,27 @@ object PatientSessionStore {
             } catch (_: Exception) {}
         } else {
             medicalMeta = PatientMedicalMeta(emergencyContact = user.phone)
+        }
+
+        // 4. Load Live Vitals Connection State
+        val vitalsStr = prefs.getString("vitals_$userKey", null)
+        if (!vitalsStr.isNullOrEmpty()) {
+            try {
+                val vo = JSONObject(vitalsStr)
+                vitals = LiveVitalsSnapshot(
+                    isConnected = vo.optBoolean("isConnected", false),
+                    heartRateBpm = if (vo.has("heartRateBpm")) vo.optInt("heartRateBpm") else null,
+                    spo2Percent = if (vo.has("spo2Percent")) vo.optInt("spo2Percent") else null,
+                    bpSystolic = if (vo.has("bpSystolic")) vo.optInt("bpSystolic") else null,
+                    bpDiastolic = if (vo.has("bpDiastolic")) vo.optInt("bpDiastolic") else null,
+                    fastingGlucoseMgDl = if (vo.has("fastingGlucoseMgDl")) vo.optInt("fastingGlucoseMgDl") else null,
+                    stepsToday = if (vo.has("stepsToday")) vo.optInt("stepsToday") else null,
+                    sleepHours = vo.optString("sleepHours", null),
+                    deviceSource = vo.optString("deviceSource", "No device connected")
+                )
+            } catch (_: Exception) {}
+        } else {
+            vitals = LiveVitalsSnapshot(isConnected = false, deviceSource = "No device connected")
         }
     }
 
@@ -222,6 +246,7 @@ object PatientSessionStore {
             put("bloodGroup", updated.bloodGroup)
             put("heightWeight", updated.heightWeight)
             put("abhaId", updated.abhaId)
+            put("abhaLinked", updated.abhaLinked)
             put("preferredLanguage", updated.preferredLanguage)
             put("needleSensitivity", updated.needleSensitivity)
             put("allergies", updated.allergies)
@@ -234,6 +259,24 @@ object PatientSessionStore {
             put("smsOrderUpdates", updated.smsOrderUpdates)
         }
         prefs.edit().putString("meta_$userKey", obj.toString()).apply()
+    }
+
+    fun saveVitals(context: Context, user: UserProfile, updated: LiveVitalsSnapshot) {
+        vitals = updated
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val userKey = user.email.ifEmpty { user.phone }.lowercase().trim()
+        val obj = JSONObject().apply {
+            put("isConnected", updated.isConnected)
+            updated.heartRateBpm?.let { put("heartRateBpm", it) }
+            updated.spo2Percent?.let { put("spo2Percent", it) }
+            updated.bpSystolic?.let { put("bpSystolic", it) }
+            updated.bpDiastolic?.let { put("bpDiastolic", it) }
+            updated.fastingGlucoseMgDl?.let { put("fastingGlucoseMgDl", it) }
+            updated.stepsToday?.let { put("stepsToday", it) }
+            updated.sleepHours?.let { put("sleepHours", it) }
+            put("deviceSource", updated.deviceSource)
+        }
+        prefs.edit().putString("vitals_$userKey", obj.toString()).apply()
     }
 }
 

@@ -172,15 +172,15 @@ fun AbhaDigitalIdModal(
                             }
 
                             Surface(
-                                color = Color(0xFF10B981).copy(alpha = 0.2f),
+                                color = Color(0xFFF59E0B).copy(alpha = 0.2f),
                                 shape = RoundedCornerShape(50),
-                                border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.5f))
+                                border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.5f))
                             ) {
                                 Text(
-                                    text = "KYC VERIFIED",
+                                    text = "COMING SOON",
                                     fontSize = 9.sp,
                                     fontWeight = FontWeight.Black,
-                                    color = Color(0xFF34D399),
+                                    color = Color(0xFFFBBF24),
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                                 )
                             }

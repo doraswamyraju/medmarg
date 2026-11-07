@@ -389,9 +389,9 @@ fun ProfileScreen(
                     }
 
                     Surface(
-                        color = Color(0xFF10B981).copy(alpha = 0.2f),
+                        color = Color(0xFFF59E0B).copy(alpha = 0.2f),
                         shape = RoundedCornerShape(50),
-                        border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.45f))
+                        border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.5f))
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
@@ -402,10 +402,10 @@ fun ProfileScreen(
                                 modifier = Modifier
                                     .size(6.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF34D399))
+                                    .background(Color(0xFFF59E0B))
                             )
                             Text(
-                                text = "LINKED",
+                                text = "COMING SOON",
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.Black,
                                 color = PureWhite
@@ -414,7 +414,7 @@ fun ProfileScreen(
                     }
                 }
 
-                // ABHA Number + Copy + QR Code Actions
+                // ABHA Number / Status + Actions
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -422,14 +422,14 @@ fun ProfileScreen(
                 ) {
                     Column {
                         Text(
-                            text = "ABHA NUMBER",
+                            text = "ABHA REGISTRATION",
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             color = PureWhite.copy(alpha = 0.55f)
                         )
                         Text(
-                            text = meta.abhaId,
-                            fontSize = 16.sp,
+                            text = if (meta.abhaId.isNotBlank()) meta.abhaId else "Government ABDM Pending",
+                            fontSize = 15.sp,
                             fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Black,
                             color = PureWhite,
@@ -440,51 +440,28 @@ fun ProfileScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Surface(
                             onClick = {
-                                val cb = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                cb.setPrimaryClip(ClipData.newPlainText("ABHA ID", meta.abhaId))
-                                Toast.makeText(context, "ABHA ID Copied", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "ABDM Health Locker integration is in sandbox certification & launching soon.",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             },
                             shape = RoundedCornerShape(10.dp),
                             color = PureWhite.copy(alpha = 0.14f)
                         ) {
                             Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.ContentCopy,
-                                    contentDescription = "Copy",
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = "Info",
                                     tint = PureWhite,
                                     modifier = Modifier.size(13.dp)
                                 )
                                 Text(
-                                    text = "Copy",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = PureWhite
-                                )
-                            }
-                        }
-
-                        Surface(
-                            onClick = { showAbhaQrModal = true },
-                            shape = RoundedCornerShape(10.dp),
-                            color = Color(0xFF10B981)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(5.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.QrCode2,
-                                    contentDescription = "QR Code",
-                                    tint = PureWhite,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Text(
-                                    text = "QR Card",
+                                    text = "Coming Soon",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = PureWhite
@@ -502,16 +479,16 @@ fun ProfileScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "ABHA Address: $abhaAddress",
+                        text = "Official ABDM M1/M2/M3 Sandbox in Progress",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
                         color = PureWhite.copy(alpha = 0.8f)
                     )
                     Text(
-                        text = "NABL Auto-Sync Active",
+                        text = "Phase 2 Launch",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF34D399)
+                        color = Color(0xFFFBBF24)
                     )
                 }
             }
