@@ -2,11 +2,14 @@ package com.medmarg.patient.ui.checkout
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.os.Message
 import android.webkit.CookieManager
 import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -78,6 +81,7 @@ fun RazorpayPaymentModal(
     val context = LocalContext.current
     var isLoadingOrder by remember { mutableStateOf(true) }
     var orderInfo by remember { mutableStateOf<RazorpayOrderInfo?>(null) }
+    var webViewLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(amountInRupees) {
         isLoadingOrder = true
@@ -162,39 +166,52 @@ fun RazorpayPaymentModal(
                     }
                 } else {
                     val info = orderInfo!!
-                    val cleanDigits = patientPhone.filter { it.isDigit() }.takeLast(10).ifEmpty { "9876543210" }
+                    val cleanDigits = patientPhone.filter { it.isDigit() }.takeLast(10).ifEmpty { "7997991101" }
+                    val safeContact = if (cleanDigits.startsWith("+")) cleanDigits else "+91$cleanDigits"
                     val safeName = patientName.replace("'", "").ifEmpty { "MedMarg Patient" }
-                    val safeEmail = patientEmail.replace("'", "").ifEmpty { "care@medmarg.com" }
+                    val safeEmail = patientEmail.replace("'", "").ifEmpty { "patient@medmarg.com" }
                     val orderFieldJs = if (info.orderId.isNotEmpty()) "\"order_id\": \"${info.orderId}\"," else ""
 
+                    // 1:1 Parity HTML matching iOS CareSeekerCheckoutModal.swift
                     val checkoutHtml = remember(info) {
                         """
                         <!DOCTYPE html>
                         <html>
                         <head>
                             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                            <title>Razorpay Checkout</title>
                             <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
                             <style>
+                                * { box-sizing: border-box; }
                                 body {
                                     margin: 0;
-                                    padding: 24px;
-                                    background: #F8FAFC;
-                                    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+                                    padding: 0;
+                                    background: #0B132B;
+                                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
                                     display: flex;
-                                    flex-direction: column;
                                     align-items: center;
                                     justify-content: center;
-                                    min-height: 85vh;
+                                    min-height: 100vh;
+                                    color: #FFFFFF;
+                                }
+                                .loader-container {
                                     text-align: center;
-                                }
-                                .card {
-                                    background: white;
-                                    border-radius: 16px;
                                     padding: 24px;
-                                    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-                                    max-width: 340px;
-                                    width: 100%;
                                 }
+                                .spinner {
+                                    width: 44px;
+                                    height: 44px;
+                                    border: 4px solid rgba(255, 255, 255, 0.15);
+                                    border-radius: 50%;
+                                    border-top-color: #006B70;
+                                    animation: spin 0.8s linear infinite;
+                                    margin: 0 auto 16px;
+                                }
+                                @keyframes spin {
+                                    to { transform: rotate(360deg); }
+                                }
+                                h3 { margin: 0 0 8px; font-size: 16px; font-weight: 700; color: #FFFFFF; }
+                                p { margin: 0; font-size: 13px; color: #94A3B8; }
                                 .btn {
                                     background: #006B70;
                                     color: white;
@@ -205,67 +222,73 @@ fun RazorpayPaymentModal(
                                     font-size: 14px;
                                     width: 100%;
                                     margin-top: 16px;
+                                    cursor: pointer;
                                 }
                             </style>
                         </head>
                         <body>
-                            <div class="card">
-                                <h3 style="margin:0 0 6px 0;color:#0F172A;">Medcare Health Services</h3>
-                                <p style="margin:0 0 12px 0;color:#64748B;font-size:13px;">Diagnostic Home Sample Collection</p>
-                                <div style="font-size:26px;font-weight:900;color:#006B70;">₹$amountInRupees</div>
-                                <button class="btn" onclick="openRazorpay()">Open Razorpay Payment Options</button>
+                            <div class="loader-container">
+                                <div class="spinner"></div>
+                                <h3>Connecting to Razorpay</h3>
+                                <p>Opening official payment gateway (₹$amountInRupees)...</p>
+                                <button class="btn" onclick="openRazorpay()">Proceed to Pay</button>
                             </div>
                             <script>
-                                var options = {
-                                    "key": "${info.keyId}",
-                                    "amount": "${info.amountPaise}",
-                                    "currency": "INR",
-                                    "name": "Medcare Health Services",
-                                    "description": "MedMarg Diagnostic Home Collection",
-                                    $orderFieldJs
-                                    "prefill": {
-                                        "name": "$safeName",
-                                        "email": "$safeEmail",
-                                        "contact": "$cleanDigits"
-                                    },
-                                    "theme": {
-                                        "color": "#006B70"
-                                    },
-                                    "handler": function (response) {
-                                        if (window.RazorpayAndroid) {
-                                            window.RazorpayAndroid.onPaymentSuccess(
-                                                response.razorpay_payment_id || "",
-                                                response.razorpay_order_id || "",
-                                                response.razorpay_signature || ""
-                                            );
-                                        }
-                                    },
-                                    "modal": {
-                                        "ondismiss": function () {
-                                            if (window.RazorpayAndroid) {
-                                                window.RazorpayAndroid.onModalDismiss();
-                                            }
-                                        }
-                                    }
-                                };
                                 function openRazorpay() {
                                     try {
+                                        var options = {
+                                            "key": "${info.keyId}",
+                                            "amount": "${info.amountPaise}",
+                                            "currency": "INR",
+                                            "name": "Medcare Health Services",
+                                            "description": "MedMarg Diagnostic Home Collection",
+                                            $orderFieldJs
+                                            "image": "https://medmarg.com/logo-icon.png",
+                                            "prefill": {
+                                                "name": "$safeName",
+                                                "email": "$safeEmail",
+                                                "contact": "$safeContact"
+                                            },
+                                            "theme": {
+                                                "color": "#006B70",
+                                                "backdrop_color": "#0B132B"
+                                            },
+                                            "modal": {
+                                                "backdropclose": false,
+                                                "escape": false,
+                                                "handleback": true,
+                                                "ondismiss": function() {
+                                                    if (window.RazorpayAndroid) {
+                                                        window.RazorpayAndroid.onModalDismiss();
+                                                    }
+                                                }
+                                            },
+                                            "handler": function (response) {
+                                                if (window.RazorpayAndroid) {
+                                                    window.RazorpayAndroid.onPaymentSuccess(
+                                                        response.razorpay_payment_id || "",
+                                                        response.razorpay_order_id || "",
+                                                        response.razorpay_signature || ""
+                                                    );
+                                                }
+                                            }
+                                        };
                                         var rzp = new Razorpay(options);
-                                        rzp.on('payment.failed', function (resp) {
+                                        rzp.on('payment.failed', function (response){
                                             if (window.RazorpayAndroid) {
-                                                var desc = (resp && resp.error && resp.error.description) ? resp.error.description : "Payment declined";
+                                                var desc = (response && response.error && response.error.description) ? response.error.description : "Payment could not be processed";
                                                 window.RazorpayAndroid.onPaymentError(desc);
                                             }
                                         });
                                         rzp.open();
                                     } catch (e) {
                                         if (window.RazorpayAndroid) {
-                                            window.RazorpayAndroid.onPaymentError(e.message || "Razorpay initialization failed");
+                                            window.RazorpayAndroid.onPaymentError(e.message || "Failed to launch Razorpay");
                                         }
                                     }
                                 }
                                 window.onload = function() {
-                                    setTimeout(openRazorpay, 250);
+                                    setTimeout(openRazorpay, 300);
                                 };
                             </script>
                         </body>
@@ -273,73 +296,118 @@ fun RazorpayPaymentModal(
                         """.trimIndent()
                     }
 
-                    AndroidView(
-                        modifier = Modifier.fillMaxSize(),
-                        factory = { ctx ->
-                            WebView(ctx).apply {
-                                settings.javaScriptEnabled = true
-                                settings.domStorageEnabled = true
-                                settings.javaScriptCanOpenWindowsAutomatically = true
-                                settings.setSupportMultipleWindows(true)
-                                settings.databaseEnabled = true
-                                settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                                CookieManager.getInstance().setAcceptCookie(true)
-                                CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AndroidView(
+                            modifier = Modifier.fillMaxSize(),
+                            factory = { ctx ->
+                                WebView(ctx).apply {
+                                    // 1. Full web settings configuration
+                                    settings.javaScriptEnabled = true
+                                    settings.domStorageEnabled = true
+                                    settings.javaScriptCanOpenWindowsAutomatically = true
+                                    settings.setSupportMultipleWindows(true)
+                                    settings.databaseEnabled = true
+                                    settings.allowFileAccess = true
+                                    settings.allowContentAccess = true
+                                    settings.useWideViewPort = true
+                                    settings.loadWithOverviewMode = true
+                                    settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                                    CookieManager.getInstance().setAcceptCookie(true)
+                                    CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
 
-                                addJavascriptInterface(
-                                    AndroidRazorpayBridge(
-                                        mainHandler = Handler(Looper.getMainLooper()),
-                                        onSuccess = { payId -> onPaymentSuccess(payId) },
-                                        onError = { err -> onPaymentFailed(err) },
-                                        onCancelled = { onDismiss() }
-                                    ),
-                                    "RazorpayAndroid"
-                                )
+                                    // 2. JavaScript Interface
+                                    addJavascriptInterface(
+                                        AndroidRazorpayBridge(
+                                            mainHandler = Handler(Looper.getMainLooper()),
+                                            onSuccess = { payId -> onPaymentSuccess(payId) },
+                                            onError = { err -> onPaymentFailed(err) },
+                                            onCancelled = { onDismiss() }
+                                        ),
+                                        "RazorpayAndroid"
+                                    )
 
-                                webViewClient = object : WebViewClient() {
-                                    override fun shouldOverrideUrlLoading(
-                                        view: WebView?,
-                                        request: WebResourceRequest?
-                                    ): Boolean {
-                                        val urlStr = request?.url?.toString() ?: return false
-                                        // Handle native UPI apps (GPay, PhonePe, Paytm, etc.)
-                                        if (urlStr.startsWith("upi://") ||
-                                            urlStr.startsWith("tez://") ||
-                                            urlStr.startsWith("phonepe://") ||
-                                            urlStr.startsWith("paytmmp://") ||
-                                            urlStr.startsWith("intent://")
-                                        ) {
-                                            return try {
-                                                val intent = if (urlStr.startsWith("intent://")) {
-                                                    Intent.parseUri(urlStr, Intent.URI_INTENT_SCHEME)
-                                                } else {
-                                                    Intent(Intent.ACTION_VIEW, Uri.parse(urlStr))
-                                                }
-                                                ctx.startActivity(intent)
-                                                true
-                                            } catch (e: Exception) {
-                                                true
-                                            }
-                                        }
-
-                                        // Intercept payment success redirect
-                                        if (urlStr.contains("payment_id=") || urlStr.contains("razorpay_payment_id=")) {
-                                            val uri = Uri.parse(urlStr)
-                                            val paymentId = uri.getQueryParameter("razorpay_payment_id")
-                                                ?: uri.getQueryParameter("payment_id")
-                                                ?: "pay_live_${System.currentTimeMillis()}"
-                                            onPaymentSuccess(paymentId)
+                                    // 3. WebChromeClient with window.open (target="_blank" / popup) handling
+                                    webChromeClient = object : WebChromeClient() {
+                                        override fun onCreateWindow(
+                                            view: WebView?,
+                                            isDialog: Boolean,
+                                            isUserGesture: Boolean,
+                                            resultMsg: Message?
+                                        ): Boolean {
+                                            val transport = resultMsg?.obj as? WebView.WebViewTransport
+                                            transport?.webView = view
+                                            resultMsg?.sendToTarget()
                                             return true
                                         }
-
-                                        return false
                                     }
-                                }
 
-                                // If the backend generated a direct hosted payment link (e.g. https://rzp.io/rzp/...), load it directly
-                                if (info.paymentUrl.isNotEmpty() && info.paymentUrl.startsWith("http")) {
-                                    loadUrl(info.paymentUrl)
-                                } else {
+                                    // 4. WebViewClient intercepting UPI intents & payment completion
+                                    webViewClient = object : WebViewClient() {
+                                        override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
+                                            super.onPageStarted(view, url, favicon)
+                                            webViewLoading = false
+                                        }
+
+                                        override fun shouldOverrideUrlLoading(
+                                            view: WebView?,
+                                            request: WebResourceRequest?
+                                        ): Boolean {
+                                            val urlStr = request?.url?.toString() ?: return false
+
+                                            // A. Deep-link to Native UPI Apps (GPay, PhonePe, Paytm, BHIM, Cred)
+                                            if (urlStr.startsWith("upi://") ||
+                                                urlStr.startsWith("tez://") ||
+                                                urlStr.startsWith("phonepe://") ||
+                                                urlStr.startsWith("paytmmp://") ||
+                                                urlStr.startsWith("bhim://") ||
+                                                urlStr.startsWith("credpay://") ||
+                                                urlStr.startsWith("intent://")
+                                            ) {
+                                                return try {
+                                                    val intent = if (urlStr.startsWith("intent://")) {
+                                                        Intent.parseUri(urlStr, Intent.URI_INTENT_SCHEME)
+                                                    } else {
+                                                        Intent(Intent.ACTION_VIEW, Uri.parse(urlStr))
+                                                    }
+                                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                    ctx.startActivity(intent)
+                                                    true
+                                                } catch (e: Exception) {
+                                                    // Fallback if app not installed: try browser
+                                                    try {
+                                                        val fallbackUrl = if (urlStr.startsWith("intent://")) {
+                                                            val parsed = Intent.parseUri(urlStr, Intent.URI_INTENT_SCHEME)
+                                                            parsed.getStringExtra("browser_fallback_url")
+                                                        } else null
+                                                        if (!fallbackUrl.isNullOrEmpty()) {
+                                                            view?.loadUrl(fallbackUrl)
+                                                        }
+                                                    } catch (_: Exception) {}
+                                                    true
+                                                }
+                                            }
+
+                                            // B. Intercept payment success redirect
+                                            if (urlStr.contains("payment_id=") || urlStr.contains("razorpay_payment_id=")) {
+                                                val uri = Uri.parse(urlStr)
+                                                val paymentId = uri.getQueryParameter("razorpay_payment_id")
+                                                    ?: uri.getQueryParameter("payment_id")
+                                                    ?: "pay_live_${System.currentTimeMillis()}"
+                                                onPaymentSuccess(paymentId)
+                                                return true
+                                            }
+
+                                            // C. Intercept payment failure or cancel
+                                            if (urlStr.contains("/payment/cancel") || urlStr.contains("status=failed")) {
+                                                onPaymentFailed("Payment was cancelled or failed.")
+                                                return true
+                                            }
+
+                                            return false
+                                        }
+                                    }
+
+                                    // 5. Load official Razorpay Checkout HTML
                                     loadDataWithBaseURL(
                                         "https://medmarg.com",
                                         checkoutHtml,
@@ -349,11 +417,10 @@ fun RazorpayPaymentModal(
                                     )
                                 }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
     }
 }
-

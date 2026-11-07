@@ -36,3 +36,4 @@ data class AgentProfileSummary(
     val upiId: String = "9848022338@upi",
     val avatarUrl: String = ""
 )
+
