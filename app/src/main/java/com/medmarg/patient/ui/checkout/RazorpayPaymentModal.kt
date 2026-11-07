@@ -280,6 +280,8 @@ fun RazorpayPaymentModal(
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true
                                 settings.javaScriptCanOpenWindowsAutomatically = true
+                                settings.setSupportMultipleWindows(true)
+                                settings.databaseEnabled = true
                                 settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                                 CookieManager.getInstance().setAcceptCookie(true)
                                 CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
@@ -300,6 +302,7 @@ fun RazorpayPaymentModal(
                                         request: WebResourceRequest?
                                     ): Boolean {
                                         val urlStr = request?.url?.toString() ?: return false
+                                        // Handle native UPI apps (GPay, PhonePe, Paytm, etc.)
                                         if (urlStr.startsWith("upi://") ||
                                             urlStr.startsWith("tez://") ||
                                             urlStr.startsWith("phonepe://") ||
@@ -318,17 +321,33 @@ fun RazorpayPaymentModal(
                                                 true
                                             }
                                         }
+
+                                        // Intercept payment success redirect
+                                        if (urlStr.contains("payment_id=") || urlStr.contains("razorpay_payment_id=")) {
+                                            val uri = Uri.parse(urlStr)
+                                            val paymentId = uri.getQueryParameter("razorpay_payment_id")
+                                                ?: uri.getQueryParameter("payment_id")
+                                                ?: "pay_live_${System.currentTimeMillis()}"
+                                            onPaymentSuccess(paymentId)
+                                            return true
+                                        }
+
                                         return false
                                     }
                                 }
 
-                                loadDataWithBaseURL(
-                                    "https://medmarg.com",
-                                    checkoutHtml,
-                                    "text/html",
-                                    "UTF-8",
-                                    null
-                                )
+                                // If the backend generated a direct hosted payment link (e.g. https://rzp.io/rzp/...), load it directly
+                                if (info.paymentUrl.isNotEmpty() && info.paymentUrl.startsWith("http")) {
+                                    loadUrl(info.paymentUrl)
+                                } else {
+                                    loadDataWithBaseURL(
+                                        "https://medmarg.com",
+                                        checkoutHtml,
+                                        "text/html",
+                                        "UTF-8",
+                                        null
+                                    )
+                                }
                             }
                         }
                     )
