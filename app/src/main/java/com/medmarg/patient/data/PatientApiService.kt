@@ -50,6 +50,40 @@ data class RazorpayOrderInfo(
     val paymentUrl: String = ""
 )
 
+data class BookingResult(
+    val order: LivePatientOrder,
+    val orderAccessToken: String = ""
+)
+
+data class NativeVerificationResult(
+    val success: Boolean,
+    val verified: Boolean,
+    val paymentStatus: String,
+    val paymentId: String?,
+    val errorMessage: String? = null
+)
+
+data class SwitchToHostedResult(
+    val success: Boolean,
+    val alreadyPaid: Boolean,
+    val paymentStatus: String = "",
+    val paymentId: String? = null,
+    val paymentUrl: String = "",
+    val paymentLinkId: String = "",
+    val errorMessage: String? = null
+)
+
+data class OrderStatusResult(
+    val success: Boolean,
+    val orderId: String,
+    val isPaid: Boolean,
+    val paymentStatus: String,
+    val paymentMode: String,
+    val paymentId: String? = null,
+    val amount: Int = 0,
+    val errorMessage: String? = null
+)
+
 object PatientApiService {
     private const val BASE_URL = "https://medmarg.com/api/v1"
 
@@ -264,9 +298,9 @@ object PatientApiService {
             if (conn.responseCode in 200..299) {
                 val respStr = conn.inputStream.bufferedReader().use { it.readText() }
                 val json = JSONObject(respStr)
-                val dataObj = json.optJSONObject("data")
-                val orderId = dataObj?.optString("id") ?: "MM-${(10000..99999).random()}"
-                val otp = dataObj?.optString("otp") ?: "${(1000..9999).random()}"
+                val orderObj = json.optJSONObject("order") ?: json.optJSONObject("data")
+                val orderId = orderObj?.optString("id") ?: "MM-${(10000..99999).random()}"
+                val otp = orderObj?.optString("otp") ?: "${(1000..9999).random()}"
                 return@withContext LivePatientOrder(
                     id = orderId,
                     patientName = patientName,
@@ -276,20 +310,289 @@ object PatientApiService {
                     address = address,
                     slot = slot,
                     date = date,
-                    status = dataObj?.optString("status") ?: "PENDING_DISPATCH",
+                    status = orderObj?.optString("status") ?: "PENDING_DISPATCH",
                     tests = tests,
                     totalAmount = totalAmount,
                     paymentMode = paymentMode,
                     paymentStatus = if (paymentMode == "ONLINE_PREPAID") "PAID" else "PENDING_DOORSTEP",
                     labName = labName,
                     otp = otp,
-                    assignedAgentName = dataObj?.optString("assignedAgentName") ?: "Awaiting Phlebotomist Assignment",
+                    assignedAgentName = orderObj?.optString("assignedAgentName") ?: "Awaiting Phlebotomist Assignment",
                     isExpress60Min = isExpress60Min
                 )
             }
             null
         } catch (e: Exception) {
             null
+        }
+    }
+
+    /**
+     * Books an order and captures both the created order and its secret per-order access token.
+     */
+    suspend fun bookPatientOrderWithToken(
+        patientName: String,
+        phone: String,
+        email: String,
+        beneficiaryRelation: String,
+        address: String,
+        slot: String,
+        date: String,
+        tests: List<LiveOrderTestItem>,
+        totalAmount: Int,
+        paymentMode: String,
+        paymentId: String?,
+        labName: String,
+        isExpress60Min: Boolean
+    ): BookingResult? = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("$BASE_URL/patient/orders/book")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("Content-Type", "application/json")
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.doOutput = true
+
+            val testsJson = JSONArray()
+            tests.forEach { t ->
+                testsJson.put(
+                    JSONObject().apply {
+                        put("code", t.code)
+                        put("name", t.name)
+                        put("price", t.price)
+                        put("sampleType", t.sampleType)
+                    }
+                )
+            }
+
+            val payload = JSONObject().apply {
+                put("patientName", patientName)
+                put("phone", phone)
+                put("email", email)
+                put("beneficiaryRelation", beneficiaryRelation)
+                put("address", address)
+                put("slot", slot)
+                put("date", date)
+                put("tests", testsJson)
+                put("totalAmount", totalAmount)
+                put("paymentMode", paymentMode)
+                if (!paymentId.isNullOrEmpty()) {
+                    put("paymentStatus", "PAID_SUCCESS")
+                    put("razorpayPaymentId", paymentId)
+                }
+                put("labName", labName)
+                put("isExpress60Min", isExpress60Min)
+            }
+
+            conn.outputStream.use { it.write(payload.toString().toByteArray()) }
+
+            if (conn.responseCode in 200..299) {
+                val respStr = conn.inputStream.bufferedReader().use { it.readText() }
+                val json = JSONObject(respStr)
+                val orderObj = json.optJSONObject("order") ?: json.optJSONObject("data")
+                val orderAccessToken = json.optString("orderAccessToken", "")
+                val orderId = orderObj?.optString("id") ?: "MM-${(10000..99999).random()}"
+                val otp = orderObj?.optString("otp") ?: "${(1000..9999).random()}"
+                val order = LivePatientOrder(
+                    id = orderId,
+                    patientName = patientName,
+                    phone = phone,
+                    email = email,
+                    beneficiaryRelation = beneficiaryRelation,
+                    address = address,
+                    slot = slot,
+                    date = date,
+                    status = orderObj?.optString("status") ?: "PENDING_DISPATCH",
+                    tests = tests,
+                    totalAmount = totalAmount,
+                    paymentMode = paymentMode,
+                    paymentStatus = if (paymentMode == "ONLINE_PREPAID") "PENDING_ONLINE" else "PENDING_DOORSTEP",
+                    labName = labName,
+                    otp = otp,
+                    assignedAgentName = orderObj?.optString("assignedAgentName") ?: "Awaiting Phlebotomist Assignment",
+                    isExpress60Min = isExpress60Min
+                )
+                return@withContext BookingResult(order = order, orderAccessToken = orderAccessToken)
+            }
+            null
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Authoritatively verifies Native Razorpay payment on MedMarg backend.
+     */
+    suspend fun verifyNativePayment(
+        orderId: String,
+        razorpayOrderId: String,
+        razorpayPaymentId: String,
+        razorpaySignature: String,
+        orderAccessToken: String
+    ): NativeVerificationResult = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("$BASE_URL/payments/verify-native")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("Content-Type", "application/json")
+            if (orderAccessToken.isNotEmpty()) {
+                conn.setRequestProperty("x-order-token", orderAccessToken)
+            }
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.doOutput = true
+
+            val payload = JSONObject().apply {
+                put("orderId", orderId)
+                put("razorpayOrderId", razorpayOrderId)
+                put("razorpayPaymentId", razorpayPaymentId)
+                put("razorpaySignature", razorpaySignature)
+            }
+
+            conn.outputStream.use { it.write(payload.toString().toByteArray()) }
+
+            val stream = if (conn.responseCode in 200..299) conn.inputStream else conn.errorStream
+            val respStr = stream?.bufferedReader()?.use { it.readText() } ?: "{}"
+            val json = JSONObject(respStr)
+
+            if (conn.responseCode in 200..299 && json.optBoolean("success", false)) {
+                NativeVerificationResult(
+                    success = true,
+                    verified = json.optBoolean("verified", false),
+                    paymentStatus = json.optString("paymentStatus", "PAID_SUCCESS"),
+                    paymentId = json.optString("paymentId").ifEmpty { null }
+                )
+            } else {
+                NativeVerificationResult(
+                    success = false,
+                    verified = false,
+                    paymentStatus = json.optString("paymentStatus", "FAILED"),
+                    paymentId = null,
+                    errorMessage = json.optString("message", json.optString("error", "Verification rejected"))
+                )
+            }
+        } catch (e: Exception) {
+            NativeVerificationResult(
+                success = false,
+                verified = false,
+                paymentStatus = "NETWORK_ERROR",
+                paymentId = null,
+                errorMessage = e.message ?: "Network error during verification"
+            )
+        }
+    }
+
+    /**
+     * Safely checks prior payment attempts and switches to hosted checkout without duplicate payments.
+     */
+    suspend fun switchToHostedCheckout(
+        orderId: String,
+        patientName: String,
+        patientPhone: String,
+        orderAccessToken: String
+    ): SwitchToHostedResult = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("$BASE_URL/payments/switch-to-hosted")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "POST"
+            conn.setRequestProperty("Content-Type", "application/json")
+            if (orderAccessToken.isNotEmpty()) {
+                conn.setRequestProperty("x-order-token", orderAccessToken)
+            }
+            conn.connectTimeout = 8000
+            conn.readTimeout = 8000
+            conn.doOutput = true
+
+            val payload = JSONObject().apply {
+                put("orderId", orderId)
+                put("patientName", patientName)
+                put("patientPhone", patientPhone)
+            }
+
+            conn.outputStream.use { it.write(payload.toString().toByteArray()) }
+
+            val stream = if (conn.responseCode in 200..299) conn.inputStream else conn.errorStream
+            val respStr = stream?.bufferedReader()?.use { it.readText() } ?: "{}"
+            val json = JSONObject(respStr)
+
+            if (conn.responseCode in 200..299 && json.optBoolean("success", false)) {
+                SwitchToHostedResult(
+                    success = true,
+                    alreadyPaid = json.optBoolean("alreadyPaid", false),
+                    paymentStatus = json.optString("paymentStatus", ""),
+                    paymentId = json.optString("paymentId").ifEmpty { null },
+                    paymentUrl = json.optString("paymentUrl", ""),
+                    paymentLinkId = json.optString("paymentLinkId", "")
+                )
+            } else {
+                SwitchToHostedResult(
+                    success = false,
+                    alreadyPaid = false,
+                    errorMessage = json.optString("message", json.optString("error", "Switch request failed"))
+                )
+            }
+        } catch (e: Exception) {
+            SwitchToHostedResult(
+                success = false,
+                alreadyPaid = false,
+                errorMessage = e.message ?: "Network error during gateway switch"
+            )
+        }
+    }
+
+    /**
+     * Authoritatively checks live order payment status on MedMarg backend.
+     */
+    suspend fun verifyOrderStatus(
+        orderId: String,
+        orderAccessToken: String
+    ): OrderStatusResult = withContext(Dispatchers.IO) {
+        try {
+            val url = URL("$BASE_URL/payments/order-status/$orderId")
+            val conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            if (orderAccessToken.isNotEmpty()) {
+                conn.setRequestProperty("x-order-token", orderAccessToken)
+            }
+            conn.connectTimeout = 7000
+            conn.readTimeout = 7000
+
+            val stream = if (conn.responseCode in 200..299) conn.inputStream else conn.errorStream
+            val respStr = stream?.bufferedReader()?.use { it.readText() } ?: "{}"
+            val json = JSONObject(respStr)
+
+            if (conn.responseCode in 200..299 && json.optBoolean("success", false)) {
+                OrderStatusResult(
+                    success = true,
+                    orderId = json.optString("orderId", orderId),
+                    isPaid = json.optBoolean("isPaid", false),
+                    paymentStatus = json.optString("paymentStatus", "PENDING"),
+                    paymentMode = json.optString("paymentMode", "ONLINE_PREPAID"),
+                    paymentId = json.optString("paymentId").ifEmpty { null },
+                    amount = json.optInt("amount", 0)
+                )
+            } else {
+                OrderStatusResult(
+                    success = false,
+                    orderId = orderId,
+                    isPaid = false,
+                    paymentStatus = "FAILED",
+                    paymentMode = "",
+                    paymentId = null,
+                    errorMessage = json.optString("error", json.optString("message", "Status lookup failed"))
+                )
+            }
+        } catch (e: Exception) {
+            OrderStatusResult(
+                success = false,
+                orderId = orderId,
+                isPaid = false,
+                paymentStatus = "NETWORK_ERROR",
+                paymentMode = "",
+                paymentId = null,
+                errorMessage = e.message ?: "Network error"
+            )
         }
     }
 

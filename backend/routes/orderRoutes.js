@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const crypto = require('crypto');
 const { dbStore, saveDbStore } = require('../models/dataStore');
 const { uploadFileToGoogleDrive } = require('../services/googleDriveService');
 
@@ -92,6 +93,7 @@ const handleOrderBooking = (req, res) => {
         labName: labName || 'MedMarg',
         amount: Number(totalAmount) || 1499,
         totalAmount: Number(totalAmount) || 1499,
+        amountPaise: Math.round((Number(totalAmount) || 1499) * 100),
         status: 'ASSIGNED',
         assignedAgent: `${primaryAgent.name} (${primaryAgent.id})`,
         phleboName: `${primaryAgent.name} (Certified Phlebotomist)`,
@@ -104,10 +106,15 @@ const handleOrderBooking = (req, res) => {
         eta: isExpress ? '12 Mins' : 'At scheduled slot',
         tempTelemetry: '3.9°C (Optimal 2-8°C IoT Cold-Chain)',
         paymentMode: paymentMode,
-        paymentStatus: paymentStatus || (paymentMode === 'PREPAID_UPI' || paymentMode === 'ONLINE_PREPAID' ? 'PAID_SUCCESS' : 'PENDING_DOORSTEP'),
+        paymentStatus: paymentStatus || (paymentMode === 'PREPAID_UPI' ? 'PAID_SUCCESS' : (paymentMode === 'ONLINE_PREPAID' ? 'PENDING_ONLINE' : 'PENDING_DOORSTEP')),
         createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         notes: notes || ''
     };
+
+    // Generate cryptographically secure per-order access token
+    const rawOrderToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawOrderToken).digest('hex');
+    newOrder.orderTokenHash = tokenHash;
 
     if (!dbStore.orders) dbStore.orders = [];
     dbStore.orders.unshift(newOrder);
@@ -116,6 +123,7 @@ const handleOrderBooking = (req, res) => {
     res.status(201).json({
         success: true,
         order: newOrder,
+        orderAccessToken: rawOrderToken,
         message: 'Order booked successfully! Certified phlebotomist assigned.'
     });
 };

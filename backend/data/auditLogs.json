@@ -1,5 +1,65 @@
 [
   {
+    "id": "audit_1794061047982_a38ay",
+    "timestamp": "2026-11-07T14:17:27.982Z",
+    "user": "System",
+    "role": "Admin",
+    "module": "Backup Engine",
+    "action": "SNAPSHOT_CREATED",
+    "entityCode": "backup_auto_2026-11-07T14-17-27-978Z.json",
+    "details": "AUTO backup created. Tests: 1, Inventory: 2"
+  },
+  {
+    "id": "audit_1794061019652_i6e2o",
+    "timestamp": "2026-11-07T14:16:59.652Z",
+    "user": "System",
+    "role": "Admin",
+    "module": "Backup Engine",
+    "action": "SNAPSHOT_CREATED",
+    "entityCode": "backup_auto_2026-11-07T14-16-59-646Z.json",
+    "details": "AUTO backup created. Tests: 1, Inventory: 2"
+  },
+  {
+    "id": "audit_1794059682340_we7u8",
+    "timestamp": "2026-11-07T13:54:42.340Z",
+    "user": "System",
+    "role": "Admin",
+    "module": "Backup Engine",
+    "action": "SNAPSHOT_CREATED",
+    "entityCode": "backup_auto_2026-11-07T13-54-42-333Z.json",
+    "details": "AUTO backup created. Tests: 1, Inventory: 2"
+  },
+  {
+    "id": "audit_1794059481123_6xrd2",
+    "timestamp": "2026-11-07T13:51:21.123Z",
+    "user": "System",
+    "role": "Admin",
+    "module": "Backup Engine",
+    "action": "SNAPSHOT_CREATED",
+    "entityCode": "backup_auto_2026-11-07T13-51-21-118Z.json",
+    "details": "AUTO backup created. Tests: 1, Inventory: 2"
+  },
+  {
+    "id": "audit_1794059435308_klef3",
+    "timestamp": "2026-11-07T13:50:35.308Z",
+    "user": "System",
+    "role": "Admin",
+    "module": "Backup Engine",
+    "action": "SNAPSHOT_CREATED",
+    "entityCode": "backup_auto_2026-11-07T13-50-35-301Z.json",
+    "details": "AUTO backup created. Tests: 1, Inventory: 2"
+  },
+  {
+    "id": "audit_1794059359353_hb42p",
+    "timestamp": "2026-11-07T13:49:19.353Z",
+    "user": "System",
+    "role": "Admin",
+    "module": "Backup Engine",
+    "action": "SNAPSHOT_CREATED",
+    "entityCode": "backup_auto_2026-11-07T13-49-19-336Z.json",
+    "details": "AUTO backup created. Tests: 1, Inventory: 2"
+  },
+  {
     "id": "audit_1792240374538_8p9nc",
     "timestamp": "2026-10-17T12:32:54.538Z",
     "user": "System",

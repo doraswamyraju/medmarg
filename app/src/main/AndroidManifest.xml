@@ -12,6 +12,9 @@
         <package android:name="com.phonepe.app" /> <!-- PhonePe -->
         <package android:name="net.one97.paytm" /> <!-- Paytm -->
         <package android:name="in.org.npci.upiapp" /> <!-- BHIM -->
+        <package android:name="com.cred.android" /> <!-- CRED -->
+        <package android:name="com.whatsapp" /> <!-- WhatsApp Pay -->
+        <package android:name="in.amazon.mShop.android.shopping" /> <!-- Amazon Pay -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="upi" />
@@ -52,6 +55,14 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="com.googleusercontent.apps.836240579937-8tgsbq9sujeunh772eosbrl9l4ccj44o" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="medmarg"
+                    android:host="payment-callback" />
             </intent-filter>
         </activity>
     </application>

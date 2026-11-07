@@ -27,7 +27,12 @@ const app = express();
 const PORT = process.env.PORT || 5080;
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({
+    limit: '50mb',
+    verify: (req, res, buf, encoding) => {
+        req.rawBody = buf;
+    }
+}));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // STATIC UPLOADS SERVING (Category icons & images)

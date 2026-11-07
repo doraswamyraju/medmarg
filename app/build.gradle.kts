@@ -53,6 +53,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.play.services.auth)
     implementation(libs.coil.compose)
+    implementation("androidx.browser:browser:1.8.0")
+    implementation("com.razorpay:checkout:1.6.40")
 
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)

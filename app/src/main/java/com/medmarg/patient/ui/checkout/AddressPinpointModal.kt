@@ -2,6 +2,7 @@ package com.medmarg.patient.ui.checkout
 
 import android.annotation.SuppressLint
 import android.webkit.JavascriptInterface
+import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -237,8 +238,18 @@ fun AddressPinpointModal(
                             WebView(ctx).apply {
                                 settings.javaScriptEnabled = true
                                 settings.domStorageEnabled = true
+                                settings.databaseEnabled = true
+                                settings.allowFileAccess = true
+                                settings.allowContentAccess = true
+                                settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                                 settings.cacheMode = WebSettings.LOAD_DEFAULT
-                                webViewClient = WebViewClient()
+                                webChromeClient = WebChromeClient()
+                                webViewClient = object : WebViewClient() {
+                                    override fun onPageFinished(view: WebView?, url: String?) {
+                                        super.onPageFinished(view, url)
+                                        view?.evaluateJavascript("if (typeof map !== 'undefined') { map.invalidateSize(); }", null)
+                                    }
+                                }
                                 addJavascriptInterface(
                                     object {
                                         @JavascriptInterface

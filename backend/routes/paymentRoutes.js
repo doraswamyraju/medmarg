@@ -4,6 +4,37 @@ const crypto = require('crypto');
 const Razorpay = require('razorpay');
 const { dbStore, saveDbStore } = require('../models/dataStore');
 
+// Helper to verify order ownership via per-order access token
+function verifyOrderToken(order, req, strictHeaderOnly = false) {
+    if (!order) return false;
+    
+    // For strict payment endpoints, orders MUST have an access token and it MUST be in x-order-token header
+    if (strictHeaderOnly) {
+        if (!order.orderTokenHash) return false;
+        const headerToken = req.headers['x-order-token'];
+        if (!headerToken || typeof headerToken !== 'string') return false;
+        const providedHash = crypto.createHash('sha256').update(headerToken).digest('hex');
+        try {
+            return crypto.timingSafeEqual(Buffer.from(providedHash, 'hex'), Buffer.from(order.orderTokenHash, 'hex'));
+        } catch (e) {
+            return false;
+        }
+    }
+
+    // Legacy fallback for read-only general endpoints if order was created before token system
+    if (!order.orderTokenHash) return true;
+
+    const providedToken = req.headers['x-order-token'];
+    if (!providedToken || typeof providedToken !== 'string') return false;
+
+    const providedHash = crypto.createHash('sha256').update(providedToken).digest('hex');
+    try {
+        return crypto.timingSafeEqual(Buffer.from(providedHash, 'hex'), Buffer.from(order.orderTokenHash, 'hex'));
+    } catch (e) {
+        return false;
+    }
+}
+
 // RAZORPAY INSTANCE INITIALIZATION
 let razorpay = null;
 try {
@@ -265,6 +296,7 @@ router.post('/create-order', async (req, res) => {
             if (existingOrder) {
                 existingOrder.razorpayOrderId = razorpayOrder.id;
                 if (paymentLinkId) existingOrder.razorpayPaymentLinkId = paymentLinkId;
+                existingOrder.canonicalAmountPaise = amountInPaise;
                 saveDbStore();
             }
         }
@@ -370,29 +402,372 @@ router.post('/generate-doorstep-qr', async (req, res) => {
     }
 });
 
-// 6. Razorpay Webhook Handler (Auto-Verifies Payments & Settlements)
+// 5A. Authoritative Native Razorpay Payment Verification
+router.post('/verify-native', async (req, res) => {
+    const { orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+
+    if (!orderId || !razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+        return res.status(400).json({
+            success: false,
+            code: 400,
+            message: 'Missing required parameters: orderId, razorpayOrderId, razorpayPaymentId, razorpaySignature',
+            error: 'Missing parameters'
+        });
+    }
+
+    const order = (dbStore.orders || []).find(o => o.id === orderId);
+    if (!order) {
+        return res.status(404).json({ success: false, code: 404, message: 'Internal order not found', error: 'Order not found' });
+    }
+
+    // Verify order token authorization (Strict: requires x-order-token header)
+    if (!verifyOrderToken(order, req, true)) {
+        return res.status(403).json({ success: false, code: 403, message: 'Unauthorized: Invalid order access token header', error: 'Forbidden' });
+    }
+
+    // Idempotent check: if already verified and marked paid with same payment ID
+    if (order.paymentStatus === 'PAID_SUCCESS' && order.razorpayPaymentId === razorpayPaymentId) {
+        return res.json({
+            success: true,
+            verified: true,
+            paymentStatus: 'PAID_SUCCESS',
+            paymentId: order.razorpayPaymentId,
+            message: 'Payment already verified and captured (idempotent)'
+        });
+    }
+
+    // Verify razorpayOrderId matches stored order
+    if (order.razorpayOrderId && order.razorpayOrderId !== razorpayOrderId) {
+        return res.status(400).json({
+            success: false,
+            code: 400,
+            message: 'Razorpay order ID mismatch with internal order record',
+            error: 'Order mismatch'
+        });
+    }
+
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keySecret) {
+        return res.status(500).json({ success: false, code: 500, message: 'Server Razorpay credentials not configured', error: 'Server configuration error' });
+    }
+
+    // Step 1: HMAC-SHA256 constant-time signature verification
+    try {
+        const payload = `${razorpayOrderId}|${razorpayPaymentId}`;
+        const expectedSignature = crypto
+            .createHmac('sha256', keySecret)
+            .update(payload)
+            .digest('hex');
+
+        const expectedBuf = Buffer.from(expectedSignature, 'utf8');
+        const signatureBuf = Buffer.from(razorpaySignature, 'utf8');
+
+        if (expectedBuf.length !== signatureBuf.length || !crypto.timingSafeEqual(expectedBuf, signatureBuf)) {
+            return res.status(400).json({
+                success: false,
+                code: 400,
+                message: 'Invalid Razorpay payment signature',
+                error: 'Signature verification failed'
+            });
+        }
+    } catch (sigErr) {
+        return res.status(400).json({ success: false, code: 400, message: 'Error verifying signature: ' + sigErr.message, error: 'Signature error' });
+    }
+
+    // Step 2: Server-side Razorpay SDK payment entity fetch & status validation
+    if (!razorpay) {
+        return res.status(500).json({ success: false, code: 500, message: 'Razorpay client unavailable', error: 'Payment client error' });
+    }
+
+    try {
+        const payment = await razorpay.payments.fetch(razorpayPaymentId);
+        if (!payment) {
+            return res.status(404).json({ success: false, code: 404, message: 'Payment record not found on Razorpay server', error: 'Payment not found' });
+        }
+
+        // Verify payment belongs to Razorpay order
+        if (payment.order_id !== razorpayOrderId) {
+            return res.status(400).json({
+                success: false,
+                code: 400,
+                message: `Payment entity belongs to order ${payment.order_id}, expected ${razorpayOrderId}`,
+                error: 'Order ID mismatch'
+            });
+        }
+
+        // Verify canonical amount in paise
+        const expectedPaise = order.amountPaise || order.canonicalAmountPaise || Math.round(Number(order.amount || order.totalAmount) * 100);
+        if (Number(payment.amount) !== expectedPaise) {
+            return res.status(400).json({
+                success: false,
+                code: 400,
+                message: `Payment amount (${payment.amount}) does not match expected order amount (${expectedPaise})`,
+                error: 'Amount mismatch'
+            });
+        }
+
+        // Verify currency
+        if (payment.currency !== 'INR') {
+            return res.status(400).json({
+                success: false,
+                code: 400,
+                message: `Invalid currency: ${payment.currency}. Expected INR`,
+                error: 'Currency mismatch'
+            });
+        }
+
+        // Check payment status
+        if (payment.status === 'captured') {
+            order.paymentStatus = 'PAID_SUCCESS';
+            order.paymentCollected = true;
+            order.razorpayPaymentId = payment.id;
+            order.paymentMode = 'ONLINE_PREPAID';
+            saveDbStore();
+
+            return res.json({
+                success: true,
+                verified: true,
+                paymentStatus: 'PAID_SUCCESS',
+                paymentId: payment.id,
+                message: 'Payment verified and captured successfully'
+            });
+        } else if (payment.status === 'authorized') {
+            order.paymentStatus = 'PAYMENT_AUTHORIZED';
+            order.razorpayPaymentId = payment.id;
+            saveDbStore();
+
+            return res.json({
+                success: true,
+                verified: false,
+                paymentStatus: 'PAYMENT_AUTHORIZED',
+                paymentId: payment.id,
+                message: 'Payment is authorized by bank but awaiting capture'
+            });
+        } else {
+            return res.status(400).json({
+                success: false,
+                verified: false,
+                paymentStatus: payment.status || 'FAILED',
+                paymentId: payment.id,
+                error: `Payment is in ${payment.status} state, not captured`
+            });
+        }
+    } catch (fetchErr) {
+        console.error('[Verify Native Fetch Error]:', fetchErr);
+        return res.status(500).json({
+            success: false,
+            code: 500,
+            message: 'Failed to fetch payment details from Razorpay: ' + fetchErr.message,
+            error: fetchErr.message
+        });
+    }
+});
+
+// 5B. Safe Switching to Hosted Checkout (Checks existing attempts before creating/returning Payment Link)
+router.post('/switch-to-hosted', async (req, res) => {
+    const { orderId, patientName, patientPhone } = req.body;
+
+    if (!orderId) {
+        return res.status(400).json({ success: false, code: 400, message: 'orderId is required', error: 'Missing parameters' });
+    }
+
+    const order = (dbStore.orders || []).find(o => o.id === orderId);
+    if (!order) {
+        return res.status(404).json({ success: false, code: 404, message: 'Order not found', error: 'Order not found' });
+    }
+
+    if (!verifyOrderToken(order, req, true)) {
+        return res.status(403).json({ success: false, code: 403, message: 'Unauthorized: Invalid order access token header', error: 'Forbidden' });
+    }
+
+    // Step 1: If order is already paid, return immediately
+    if (order.paymentStatus === 'PAID_SUCCESS') {
+        return res.json({
+            success: true,
+            alreadyPaid: true,
+            paymentStatus: 'PAID_SUCCESS',
+            paymentId: order.razorpayPaymentId,
+            message: 'Order is already paid.'
+        });
+    }
+
+    // Step 2: Check if an existing native order payment was captured
+    if (order.razorpayOrderId && razorpay) {
+        try {
+            const orderPayments = await razorpay.orders.fetchPayments(order.razorpayOrderId);
+            const items = orderPayments?.items || [];
+            const captured = items.find(p => p.status === 'captured');
+            if (captured) {
+                order.paymentStatus = 'PAID_SUCCESS';
+                order.paymentCollected = true;
+                order.razorpayPaymentId = captured.id;
+                order.paymentMode = 'ONLINE_PREPAID';
+                saveDbStore();
+
+                return res.json({
+                    success: true,
+                    alreadyPaid: true,
+                    paymentStatus: 'PAID_SUCCESS',
+                    paymentId: captured.id,
+                    message: 'Payment on native checkout was already captured.'
+                });
+            }
+
+            const authorized = items.find(p => p.status === 'authorized');
+            if (authorized) {
+                order.paymentStatus = 'PAYMENT_AUTHORIZED';
+                order.razorpayPaymentId = authorized.id;
+                saveDbStore();
+
+                return res.json({
+                    success: true,
+                    alreadyPaid: false,
+                    paymentStatus: 'PAYMENT_AUTHORIZED',
+                    paymentId: authorized.id,
+                    message: 'Payment is authorized on previous attempt, awaiting capture.'
+                });
+            }
+        } catch (checkErr) {
+            console.warn('[Switch-to-Hosted Order Check Warning]:', checkErr.message);
+        }
+    }
+
+    // Step 3: Check if existing payment link was already paid before reusing or creating
+    if (order.razorpayPaymentLinkId && razorpay) {
+        try {
+            const existingPlink = await razorpay.paymentLink.fetch(order.razorpayPaymentLinkId);
+            if (existingPlink) {
+                // Check if payment link was actually paid
+                if (existingPlink.status === 'paid' || existingPlink.amount_paid > 0) {
+                    let plinkPayId = null;
+                    if (Array.isArray(existingPlink.payments) && existingPlink.payments.length > 0) {
+                        const captured = existingPlink.payments.find(p => p.status === 'captured') || existingPlink.payments[0];
+                        if (captured && captured.payment_id && captured.payment_id.startsWith('pay_')) {
+                            plinkPayId = captured.payment_id;
+                        }
+                    }
+                    if (plinkPayId) {
+                        order.paymentStatus = 'PAID_SUCCESS';
+                        order.paymentCollected = true;
+                        order.razorpayPaymentId = plinkPayId;
+                        order.paymentMode = 'ONLINE_PREPAID';
+                        saveDbStore();
+
+                        return res.json({
+                            success: true,
+                            alreadyPaid: true,
+                            paymentStatus: 'PAID_SUCCESS',
+                            paymentId: plinkPayId,
+                            message: 'Payment on hosted payment link was already captured.'
+                        });
+                    }
+                }
+
+                if (existingPlink.status !== 'cancelled' && existingPlink.status !== 'expired') {
+                    return res.json({
+                        success: true,
+                        alreadyPaid: false,
+                        paymentUrl: existingPlink.short_url,
+                        paymentLinkId: existingPlink.id
+                    });
+                }
+            }
+        } catch (plinkFetchErr) {
+            console.warn('[Existing Plink Fetch Note]:', plinkFetchErr.message);
+        }
+    }
+
+    // Step 4: Create a new Payment Link safely
+    const amountInPaise = order.amountPaise || order.canonicalAmountPaise || Math.round(Number(order.amount || order.totalAmount || 1499) * 100);
+    const receiptId = `MM_${order.id.replace(/[^a-zA-Z0-9]/g, '').slice(-15)}`;
+
+    try {
+        let cleanPhone = (patientPhone || order.phone || order.patientPhone || '').replace(/[^0-9]/g, '');
+        if (cleanPhone.length === 10) cleanPhone = '+91' + cleanPhone;
+        else if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) cleanPhone = '+' + cleanPhone;
+        else if (!cleanPhone.startsWith('+')) cleanPhone = '+917997991101';
+
+        const plink = await razorpay.paymentLink.create({
+            amount: amountInPaise,
+            currency: 'INR',
+            accept_partial: false,
+            reference_id: receiptId,
+            description: `MedMarg Lab Services (${order.id})`,
+            customer: {
+                name: patientName || order.patientName || 'MedMarg Patient',
+                contact: cleanPhone,
+                email: order.email || 'patient@medmarg.com'
+            },
+            notify: { sms: false, email: false },
+            callback_url: 'https://medmarg.com/api/v1/payments/callback',
+            callback_method: 'get',
+            notes: {
+                orderId: order.id,
+                brand: 'MedMarg Healthcare',
+                merchant: 'Medcare Health Services'
+            }
+        });
+
+        order.razorpayPaymentLinkId = plink.id;
+        saveDbStore();
+
+        return res.json({
+            success: true,
+            alreadyPaid: false,
+            paymentUrl: plink.short_url,
+            paymentLinkId: plink.id
+        });
+    } catch (createErr) {
+        console.error('[Create Payment Link Error]:', createErr);
+        return res.status(500).json({
+            success: false,
+            code: 500,
+            message: 'Failed to create payment link: ' + createErr.message,
+            error: createErr.message
+        });
+    }
+});
+
+// 6. Razorpay Webhook Handler (Auto-Verifies Payments & Settlements with Deduplication)
 router.post('/razorpay/webhook', (req, res) => {
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
     const signature = req.headers['x-razorpay-signature'];
 
-    if (webhookSecret && signature) {
+    if (webhookSecret) {
+        if (!signature) {
+            return res.status(400).json({ success: false, message: 'Missing webhook signature header' });
+        }
         try {
+            // Verify using raw body buffer
+            const rawBody = req.rawBody || Buffer.from(JSON.stringify(req.body));
             const expectedSignature = crypto
                 .createHmac('sha256', webhookSecret)
-                .update(JSON.stringify(req.body))
+                .update(rawBody)
                 .digest('hex');
 
-            if (expectedSignature !== signature) {
+            const expectedBuf = Buffer.from(expectedSignature, 'utf8');
+            const signatureBuf = Buffer.from(signature, 'utf8');
+
+            if (expectedBuf.length !== signatureBuf.length || !crypto.timingSafeEqual(expectedBuf, signatureBuf)) {
                 console.warn('[Razorpay Webhook] Invalid signature received!');
                 return res.status(400).json({ success: false, message: 'Invalid webhook signature' });
             }
         } catch (sigErr) {
             console.error('[Razorpay Webhook Signature Check Error]:', sigErr);
+            return res.status(400).json({ success: false, message: 'Webhook signature validation error: ' + sigErr.message });
         }
     }
 
-    const { event, payload } = req.body;
-    console.log(`[Razorpay Webhook] Event received: ${event}`);
+    const { event, payload, contains } = req.body;
+    const eventId = req.body.event_id || (payload?.payment?.entity?.id ? `${event}_${payload.payment.entity.id}` : null);
+    console.log(`[Razorpay Webhook] Event received: ${event} (ID: ${eventId})`);
+
+    // Durable event deduplication
+    if (!dbStore.processedWebhookEvents) dbStore.processedWebhookEvents = [];
+    if (eventId && dbStore.processedWebhookEvents.includes(eventId)) {
+        console.log(`[Razorpay Webhook] Duplicate event ${eventId} ignored (already processed)`);
+        return res.json({ success: true, message: 'Event already processed' });
+    }
 
     try {
         if (event === 'order.paid' || event === 'payment.captured') {
@@ -403,11 +778,45 @@ router.post('/razorpay/webhook', (req, res) => {
             if (orderId && dbStore.orders) {
                 const targetOrder = dbStore.orders.find(o => o.id === orderId);
                 if (targetOrder) {
-                    targetOrder.paymentStatus = 'PAID_SUCCESS';
-                    targetOrder.paymentCollected = true;
-                    targetOrder.razorpayPaymentId = payment?.id;
+                    // Check if already paid with another payment entity (Duplicate Payment Detection)
+                    if (targetOrder.paymentStatus === 'PAID_SUCCESS' && targetOrder.razorpayPaymentId && targetOrder.razorpayPaymentId !== payment?.id) {
+                        console.warn(`[DUPLICATE_PAYMENT_DETECTED] Order ${orderId} already settled with ${targetOrder.razorpayPaymentId}. Incoming payment: ${payment?.id}`);
+                        if (!dbStore.reconciliationLog) dbStore.reconciliationLog = [];
+                        dbStore.reconciliationLog.unshift({
+                            orderId: orderId,
+                            initialPaymentId: targetOrder.razorpayPaymentId,
+                            duplicatePaymentId: payment?.id,
+                            amount: payment?.amount,
+                            currency: payment?.currency,
+                            detectedAt: new Date().toISOString(),
+                            status: 'EXCESS_PAYMENT_PENDING_REVIEW',
+                            note: 'Duplicate payment detected via webhook for already fulfilled order'
+                        });
+                        saveDbStore();
+                    } else if (payment?.status === 'captured') {
+                        targetOrder.paymentStatus = 'PAID_SUCCESS';
+                        targetOrder.paymentCollected = true;
+                        targetOrder.razorpayPaymentId = payment?.id;
+                        saveDbStore();
+                        console.log(`[Razorpay Webhook] Order ${orderId} marked as PAID_SUCCESS with payment ${payment?.id}.`);
+                    } else if (payment?.status === 'authorized') {
+                        targetOrder.paymentStatus = 'PAYMENT_AUTHORIZED';
+                        targetOrder.razorpayPaymentId = payment?.id;
+                        saveDbStore();
+                        console.log(`[Razorpay Webhook] Order ${orderId} updated to PAYMENT_AUTHORIZED with payment ${payment?.id}.`);
+                    }
+                }
+            }
+        } else if (event === 'payment.failed') {
+            const payment = payload?.payment?.entity;
+            const orderNotes = payment?.notes || {};
+            const orderId = orderNotes.orderId || orderNotes.order_id;
+            if (orderId && dbStore.orders) {
+                const targetOrder = dbStore.orders.find(o => o.id === orderId);
+                if (targetOrder && targetOrder.paymentStatus !== 'PAID_SUCCESS') {
+                    targetOrder.paymentStatus = 'PAYMENT_FAILED';
                     saveDbStore();
-                    console.log(`[Razorpay Webhook] Order ${orderId} marked as PAID_SUCCESS.`);
+                    console.log(`[Razorpay Webhook] Order ${orderId} marked as PAYMENT_FAILED.`);
                 }
             }
         } else if (event === 'qr_code.credited') {
@@ -422,6 +831,14 @@ router.post('/razorpay/webhook', (req, res) => {
                     console.log(`[Razorpay Webhook] Doorstep QR Order ${orderId} marked as PAID_DOORSTEP_QR.`);
                 }
             }
+        }
+
+        if (eventId) {
+            dbStore.processedWebhookEvents.push(eventId);
+            if (dbStore.processedWebhookEvents.length > 2000) {
+                dbStore.processedWebhookEvents = dbStore.processedWebhookEvents.slice(-1000);
+            }
+            saveDbStore();
         }
 
         res.json({ success: true, message: 'Webhook processed successfully' });
@@ -439,15 +856,49 @@ router.get('/order-status/:orderId', async (req, res) => {
         return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
+    // Verify order token authorization if token hash exists
+    if (!verifyOrderToken(order, req)) {
+        return res.status(403).json({ success: false, code: 403, error: 'Unauthorized: Invalid order access token' });
+    }
+
     // If order has a razorpayPaymentLinkId and is not marked paid yet, query Razorpay live
     if (order.razorpayPaymentLinkId && order.paymentStatus !== 'PAID_SUCCESS' && razorpay) {
         try {
             const plink = await razorpay.paymentLink.fetch(order.razorpayPaymentLinkId);
-            if (plink && (plink.status === 'paid' || plink.amount_paid > 0)) {
-                order.paymentStatus = 'PAID_SUCCESS';
-                order.paymentCollected = true;
-                order.razorpayPaymentId = (plink.payments && plink.payments.length > 0) ? plink.payments[0].payment_id : plink.id;
-                saveDbStore();
+            if (plink) {
+                const expectedPaise = order.amountPaise || order.canonicalAmountPaise || Math.round(Number(order.amount || order.totalAmount || 1499) * 100);
+                
+                // Validate plink belongs to order and amount/currency match
+                const plinkAmount = Number(plink.amount);
+                const isAmountMatch = plinkAmount === expectedPaise;
+                const isCurrencyMatch = plink.currency === 'INR';
+
+                if (isAmountMatch && isCurrencyMatch && (plink.status === 'paid' || plink.amount_paid >= expectedPaise)) {
+                    // Extract real payment ID from plink.payments array (never substitute plink.id!)
+                    let realPaymentId = null;
+                    if (Array.isArray(plink.payments) && plink.payments.length > 0) {
+                        const captured = plink.payments.find(p => p.status === 'captured');
+                        if (captured && captured.payment_id && captured.payment_id.startsWith('pay_')) {
+                            realPaymentId = captured.payment_id;
+                        } else {
+                            const first = plink.payments[0];
+                            if (first && first.payment_id && first.payment_id.startsWith('pay_')) {
+                                realPaymentId = first.payment_id;
+                            }
+                        }
+                    }
+
+                    if (realPaymentId) {
+                        order.paymentStatus = 'PAID_SUCCESS';
+                        order.paymentCollected = true;
+                        order.razorpayPaymentId = realPaymentId;
+                        order.paymentMode = 'ONLINE_PREPAID';
+                        saveDbStore();
+                    } else {
+                        // Payment link says paid, but payments list is still propagating
+                        console.log(`[Plink Status Sync] Plink ${plink.id} marked paid, but real paymentId not yet propagated.`);
+                    }
+                }
             }
         } catch (syncErr) {
             console.warn('[Razorpay plink sync]:', syncErr.message);
@@ -465,6 +916,7 @@ router.get('/order-status/:orderId', async (req, res) => {
         isPaid,
         paymentStatus: order.paymentStatus,
         paymentMode: order.paymentMode,
+        paymentId: order.razorpayPaymentId || null,
         amount: order.amount || order.totalAmount
     });
 });

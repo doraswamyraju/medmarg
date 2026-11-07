@@ -28,6 +28,7 @@ import com.medmarg.patient.model.CartItem
 import com.medmarg.patient.model.UserProfile
 import com.medmarg.patient.ui.checkout.AddressPinpointModal
 import com.medmarg.patient.ui.checkout.RazorpayPaymentModal
+import com.medmarg.patient.ui.profile.FamilyMembersModal
 import com.medmarg.patient.ui.theme.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -78,7 +79,10 @@ fun CheckoutSheet(
     var selectedPaymentMode by remember { mutableStateOf("ONLINE_PREPAID") } // ONLINE_PREPAID or PAY_AT_DOORSTEP
 
     var showAddressPinpointModal by remember { mutableStateOf(false) }
+    var showFamilyMembersModal by remember { mutableStateOf(false) }
     var showRazorpayGatewayModal by remember { mutableStateOf(false) }
+    var activeInternalOrderId by remember { mutableStateOf("") }
+    var activeOrderAccessToken by remember { mutableStateOf("") }
     var isBookingOrder by remember { mutableStateOf(false) }
     var errorBanner by remember { mutableStateOf("") }
 
@@ -94,7 +98,7 @@ fun CheckoutSheet(
                     sampleType = if (c.subtitle.contains("URINE", true)) "URINE" else "SERUM"
                 )
             }
-            val booked = PatientApiService.bookPatientOrder(
+            val bookingResult = PatientApiService.bookPatientOrderWithToken(
                 patientName = selectedMember.name,
                 phone = user.phone,
                 email = user.email,
@@ -108,7 +112,9 @@ fun CheckoutSheet(
                 paymentId = razorpayPaymentId,
                 labName = selectedLabName,
                 isExpress60Min = isExpress60Min
-            ) ?: LivePatientOrder(
+            )
+
+            val booked = bookingResult?.order ?: LivePatientOrder(
                 id = "MM-${(10000..99999).random()}",
                 patientName = selectedMember.name,
                 phone = user.phone,
@@ -128,9 +134,20 @@ fun CheckoutSheet(
                 isExpress60Min = isExpress60Min
             )
 
-            PatientSessionStore.liveOrders.add(0, booked)
-            isBookingOrder = false
-            onOrderBooked(booked)
+            if (selectedPaymentMode == "ONLINE_PREPAID" && razorpayPaymentId == null && bookingResult != null) {
+                // Pre-created order for payment authorization binding
+                activeInternalOrderId = bookingResult.order.id
+                activeOrderAccessToken = bookingResult.orderAccessToken
+                isBookingOrder = false
+                showRazorpayGatewayModal = true
+            } else {
+                PatientSessionStore.liveOrders.add(0, booked)
+                isBookingOrder = false
+                // Wipe token from local state upon completion
+                activeOrderAccessToken = ""
+                activeInternalOrderId = ""
+                onOrderBooked(booked)
+            }
         }
     }
 
@@ -203,12 +220,25 @@ fun CheckoutSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             // 1. Select Beneficiary Patient
-            Text(
-                text = "1. Select Beneficiary Patient",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = Slate900
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "1. Select Beneficiary Patient",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Slate900
+                )
+                Text(
+                    text = "+ Add Member",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MedTealPrimary,
+                    modifier = Modifier.clickable { showFamilyMembersModal = true }
+                )
+            }
             Spacer(modifier = Modifier.height(6.dp))
             Row(
                 modifier = Modifier
@@ -232,6 +262,30 @@ fun CheckoutSheet(
                             fontWeight = if (isSel) FontWeight.Bold else FontWeight.Medium,
                             color = if (isSel) MedTealPrimary else Slate700,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+
+                // Inline quick add button pill
+                Surface(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable { showFamilyMembersModal = true },
+                    color = Slate50,
+                    shape = RoundedCornerShape(10.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Slate300)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, tint = MedTealPrimary, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "New Member",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MedTealPrimary
                         )
                     }
                 }
@@ -472,11 +526,7 @@ fun CheckoutSheet(
             // 5. Primary Action CTA
             Button(
                 onClick = {
-                    if (selectedPaymentMode == "ONLINE_PREPAID") {
-                        showRazorpayGatewayModal = true
-                    } else {
-                        finalizeBooking(null)
-                    }
+                    finalizeBooking(null)
                 },
                 enabled = !isBookingOrder,
                 modifier = Modifier
@@ -533,10 +583,26 @@ fun CheckoutSheet(
         )
     }
 
+    // Modular Family Member Addition Modal directly from Checkout
+    if (showFamilyMembersModal) {
+        FamilyMembersModal(
+            user = user,
+            onDismiss = {
+                // If a new member was added to PatientSessionStore.familyMembers, auto-select the latest
+                PatientSessionStore.familyMembers.firstOrNull()?.let {
+                    selectedMember = it
+                }
+                showFamilyMembersModal = false
+            }
+        )
+    }
+
     // Modular Live Razorpay Payment Gateway Modal
     if (showRazorpayGatewayModal) {
         RazorpayPaymentModal(
             amountInRupees = payableAmount,
+            internalOrderId = activeInternalOrderId,
+            orderAccessToken = activeOrderAccessToken,
             patientName = selectedMember.name,
             patientPhone = user.phone,
             patientEmail = user.email,
