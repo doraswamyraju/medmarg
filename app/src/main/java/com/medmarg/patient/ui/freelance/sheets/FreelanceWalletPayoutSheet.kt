@@ -1,5 +1,6 @@
 package com.medmarg.patient.ui.freelance.sheets
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -32,6 +33,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun FreelanceWalletPayoutSheet(
     availableBalance: Int,
+    agentId: String = "FL-502",
     upiVpa: String = "vikram.mlt@oksbi",
     bankAccount: String = "HDFC Bank (A/C: ****4321)",
     ifscCode: String = "HDFC0001824",

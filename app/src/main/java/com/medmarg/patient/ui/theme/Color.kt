@@ -37,3 +37,11 @@ val RoseErrorLight = Color(0xFFFEE2E2)
 
 val PureWhite = Color(0xFFFFFFFF)
 val CardBorder = Color(0xFFE2E8F0)
+
+// Aliases for parity
+val PrimaryTeal = MedTealPrimary
+val DarkTeal = MedTealDark
+val LightTeal = MedTealLight
+val AccentEmerald = EmeraldAccent
+val Slate300 = Color(0xFFCBD5E1)
+

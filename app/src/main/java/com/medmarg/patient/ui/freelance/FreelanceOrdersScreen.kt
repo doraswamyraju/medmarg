@@ -1,9 +1,6 @@
 package com.medmarg.patient.ui.freelance
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -21,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,12 +26,12 @@ import com.medmarg.patient.model.AgentPickupOrder
 import com.medmarg.patient.model.UserProfile
 import com.medmarg.patient.ui.agent.AgentDoorstepQrPaymentModal
 import com.medmarg.patient.ui.agent.AgentDoorstepVisitModal
-import com.medmarg.patient.ui.agent.AgentLabHandoverScreen
+import com.medmarg.patient.ui.agent.AgentLabHandoverModal
 import com.medmarg.patient.ui.agent.AgentOrderDetailScreen
 import com.medmarg.patient.ui.agent.AgentTopbarView
+import com.medmarg.patient.ui.components.NotificationCenterSheet
 import com.medmarg.patient.ui.freelance.sheets.FreelanceAssessAssignKitModal
 import com.medmarg.patient.ui.freelance.sheets.FreelanceBroadcastJobsSheet
-import com.medmarg.patient.ui.notifications.NotificationCenterSheet
 import com.medmarg.patient.ui.theme.*
 import kotlinx.coroutines.launch
 
@@ -128,8 +124,8 @@ fun FreelanceOrdersScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(vertical = 12),
-                verticalArrangement = Arrangement.spacedBy(12)
+                    .padding(vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // Action banner
                 AnimatedVisibility(visible = actionBanner != null) {
@@ -137,17 +133,17 @@ fun FreelanceOrdersScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16)
+                                .padding(horizontal = 16.dp)
                                 .clip(RoundedCornerShape(12.dp))
                                 .background(PrimaryTeal)
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.white, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PureWhite, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text(banner, color = Color.white, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            Text(banner, color = PureWhite, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                             IconButton(onClick = { actionBanner = null }, modifier = Modifier.size(24.dp)) {
-                                Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = Color.white, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = PureWhite, modifier = Modifier.size(16.dp))
                             }
                         }
                     }
@@ -221,8 +217,9 @@ fun FreelanceOrdersScreen(
         // Modals & Sheets
         selectedOrderDetail?.let { order ->
             AgentOrderDetailScreen(
-                order = order,
-                onDismiss = {
+                initialOrder = order,
+                agentId = effectiveAgentId,
+                onBack = {
                     selectedOrderDetail = null
                     fetchLiveRoster()
                 },
@@ -248,14 +245,14 @@ fun FreelanceOrdersScreen(
             AgentDoorstepVisitModal(
                 order = order,
                 onDismiss = { activeVisitModalOrder = null },
-                onVisitCompleted = { duration ->
-                    activeVisitModalOrder = null
-                    actionBanner = "Sample collected for #${order.id} in ${duration}m! Stored in cold bag."
-                    fetchLiveRoster()
-                },
-                onTriggerPaymentModal = {
+                onCollectQrPayment = {
                     activeVisitModalOrder = null
                     activeDoorstepQrOrder = order
+                },
+                onCompleteVisit = {
+                    activeVisitModalOrder = null
+                    actionBanner = "Sample collected for #${order.id}! Stored in cold bag."
+                    fetchLiveRoster()
                 }
             )
         }
@@ -264,7 +261,7 @@ fun FreelanceOrdersScreen(
             AgentDoorstepQrPaymentModal(
                 order = order,
                 onDismiss = { activeDoorstepQrOrder = null },
-                onPaymentRecorded = {
+                onPaymentDone = {
                     activeDoorstepQrOrder = null
                     actionBanner = "Doorstep QR Payment recorded for #${order.id}"
                     fetchLiveRoster()
@@ -284,11 +281,10 @@ fun FreelanceOrdersScreen(
         }
 
         if (showLabHandoverSheet) {
-            AgentLabHandoverScreen(
-                agentId = effectiveAgentId,
-                agentName = user.name,
+            AgentLabHandoverModal(
+                collectedOrders = orders.filter { it.status == "SAMPLE_COLLECTED" },
                 onDismiss = { showLabHandoverSheet = false },
-                onHandoverCompleted = {
+                onHandoverComplete = {
                     showLabHandoverSheet = false
                     actionBanner = "Lab Handover completed successfully!"
                     fetchLiveRoster()
@@ -298,8 +294,7 @@ fun FreelanceOrdersScreen(
 
         if (showNotificationCenter) {
             NotificationCenterSheet(
-                userId = effectiveAgentId,
-                onDismiss = {
+                onDismissRequest = {
                     showNotificationCenter = false
                     fetchLiveRoster()
                 }
@@ -319,7 +314,7 @@ private fun BroadcastGigsShortcutBanner(onClick: () -> Unit) {
             .padding(horizontal = 16.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.white),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -333,7 +328,7 @@ private fun BroadcastGigsShortcutBanner(onClick: () -> Unit) {
                     .background(AccentEmerald),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Bolt, contentDescription = null, tint = Color.white, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Bolt, contentDescription = null, tint = PureWhite, modifier = Modifier.size(18.dp))
             }
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -412,7 +407,7 @@ private fun CounterCard(
                 else Modifier
             ),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.white),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -445,13 +440,12 @@ private fun FreelanceSearchAndFilterSection(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Search bar
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.white),
+            colors = CardDefaults.cardColors(containerColor = PureWhite),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
             Row(
@@ -483,7 +477,6 @@ private fun FreelanceSearchAndFilterSection(
             }
         }
 
-        // Horizontal filter chips
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -517,7 +510,7 @@ private fun FilterSegmentChip(
             text = title,
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
-            color = if (isSelected) Color.white else Slate700,
+            color = if (isSelected) PureWhite else Slate700,
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
         )
     }
@@ -537,14 +530,13 @@ private fun FreelanceOrderCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.white),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Header Row: Time Box, Patient Name, Address & Payment badge
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -609,7 +601,6 @@ private fun FreelanceOrderCard(
                 }
             }
 
-            // Diagnostic Tests
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Medication, contentDescription = null, tint = PrimaryTeal, modifier = Modifier.size(13.dp))
                 Spacer(Modifier.width(6.dp))
@@ -618,7 +609,6 @@ private fun FreelanceOrderCard(
 
             Divider(color = Slate100, thickness = 1.dp)
 
-            // Footer: Payout info & Action Button
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -650,9 +640,9 @@ private fun FreelanceOrderCard(
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryTeal),
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                     ) {
-                        Text("View Visit", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.white)
+                        Text("View Visit", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PureWhite)
                         Spacer(Modifier.width(4.dp))
-                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.white, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = PureWhite, modifier = Modifier.size(14.dp))
                     }
                 }
             }
@@ -686,9 +676,9 @@ private fun FreelanceEmptyGigsView(onBrowseGigs: () -> Unit) {
             colors = ButtonDefaults.buttonColors(containerColor = AccentEmerald),
             contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
         ) {
-            Icon(Icons.Default.Bolt, contentDescription = null, tint = Color.white, modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.Bolt, contentDescription = null, tint = PureWhite, modifier = Modifier.size(16.dp))
             Spacer(Modifier.width(6.dp))
-            Text("Browse Open Gigs", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.white)
+            Text("Browse Open Gigs", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = PureWhite)
         }
     }
 }

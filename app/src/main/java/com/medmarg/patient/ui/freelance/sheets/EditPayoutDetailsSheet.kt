@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -31,13 +32,13 @@ import kotlinx.coroutines.launch
 @Composable
 fun EditPayoutDetailsSheet(
     agentId: String,
-    currentUpi: String,
-    currentBankName: String,
-    currentAccountNo: String,
-    currentIfsc: String,
-    currentHolderName: String,
+    currentUpi: String = "9848022338@upi",
+    currentBankName: String = "HDFC Bank",
+    currentAccountNo: String = "50100492814321",
+    currentIfsc: String = "HDFC0001824",
+    currentHolderName: String = "Doraswamy Raju",
     onDismiss: () -> Unit,
-    onDetailsUpdated: (upi: String, bank: String, acc: String, ifsc: String, holder: String) -> Unit
+    onDetailsUpdated: (upi: String, bank: String, acc: String, ifsc: String) -> Unit = { _, _, _, _ -> }
 ) {
     val coroutineScope = rememberCoroutineScope()
     var upiVpa by remember { mutableStateOf(currentUpi) }
@@ -197,16 +198,13 @@ fun EditPayoutDetailsSheet(
                         isSubmitting = true
                         errorMessage = null
                         coroutineScope.launch {
-                            AgentRepository.updateProfile(
+                            AgentRepository.updateAgentProfile(
                                 agentId = agentId,
-                                upiVpa = upiVpa,
-                                bankName = bankName,
-                                accountNumber = accountNumber,
-                                ifscCode = ifscCode,
-                                accountHolderName = accountHolderName
+                                upiId = upiVpa,
+                                bankAccount = "$bankName • $accountNumber"
                             )
                             isSubmitting = false
-                            onDetailsUpdated(upiVpa, bankName, accountNumber, ifscCode, accountHolderName)
+                            onDetailsUpdated(upiVpa, bankName, accountNumber, ifscCode)
                             onDismiss()
                         }
                     },

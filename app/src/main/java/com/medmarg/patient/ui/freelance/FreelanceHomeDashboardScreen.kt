@@ -29,15 +29,15 @@ import com.medmarg.patient.data.AgentRepository
 import com.medmarg.patient.model.*
 import com.medmarg.patient.ui.agent.AgentDoorstepQrPaymentModal
 import com.medmarg.patient.ui.agent.AgentDoorstepVisitModal
-import com.medmarg.patient.ui.agent.AgentLabHandoverScreen
+import com.medmarg.patient.ui.agent.AgentLabHandoverModal
 import com.medmarg.patient.ui.agent.AgentNextAssignedCard
 import com.medmarg.patient.ui.agent.AgentOrderDetailScreen
 import com.medmarg.patient.ui.agent.AgentTopbarView
+import com.medmarg.patient.ui.components.NotificationCenterSheet
 import com.medmarg.patient.ui.freelance.components.FreelanceMetricCountersRow
 import com.medmarg.patient.ui.freelance.components.FreelanceShortcutsGrid
 import com.medmarg.patient.ui.freelance.sheets.FreelanceAssessAssignKitModal
 import com.medmarg.patient.ui.freelance.sheets.FreelanceBroadcastJobsSheet
-import com.medmarg.patient.ui.notifications.NotificationCenterSheet
 import com.medmarg.patient.ui.theme.*
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -52,7 +52,7 @@ import java.util.Calendar
 @Composable
 fun FreelanceHomeDashboardScreen(
     user: UserProfile,
-    onLogout: () -> Void = {},
+    onLogout: () -> Unit = {},
     selectedTab: Int = 0,
     onTabSelected: (Int) -> Unit = {},
     onOpenSidebar: () -> Unit = {},
@@ -151,7 +151,7 @@ fun FreelanceHomeDashboardScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(vertical = 12),
+                    .padding(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // Action banner
@@ -166,11 +166,11 @@ fun FreelanceHomeDashboardScreen(
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.white, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PureWhite, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text(banner, color = Color.white, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            Text(banner, color = PureWhite, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                             IconButton(onClick = { actionBanner = null }, modifier = Modifier.size(24.dp)) {
-                                Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = Color.white, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = PureWhite, modifier = Modifier.size(16.dp))
                             }
                         }
                     }
@@ -230,15 +230,17 @@ fun FreelanceHomeDashboardScreen(
                     }
 
                     if (nextAssignedOrder != null) {
-                        Box(modifier = Modifier.padding(horizontal = 16.dp)) {
-                            AgentNextAssignedCard(
-                                order = nextAssignedOrder,
-                                onStartTrip = { activeOrderDetailOrder = nextAssignedOrder },
-                                onAssessKit = { activeAssessKitOrder = nextAssignedOrder },
-                                onOpenVisit = { activeOrderDetailOrder = nextAssignedOrder },
-                                onDoorstepQr = { activeDoorstepQrOrder = nextAssignedOrder }
-                            )
-                        }
+                        AgentNextAssignedCard(
+                            order = nextAssignedOrder,
+                            onOpenVisit = { activeOrderDetailOrder = nextAssignedOrder },
+                            onStartTrip = {
+                                if (nextAssignedOrder.kitAssigned != true && nextAssignedOrder.kitNotRequired != true) {
+                                    activeAssessKitOrder = nextAssignedOrder
+                                } else {
+                                    activeOrderDetailOrder = nextAssignedOrder
+                                }
+                            }
+                        )
                     } else {
                         NoAssignedOrdersPlaceholder()
                     }
@@ -299,7 +301,7 @@ fun FreelanceHomeDashboardScreen(
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp),
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.white)
+                            colors = CardDefaults.cardColors(containerColor = PureWhite)
                         ) {
                             Box(modifier = Modifier.padding(20.dp), contentAlignment = Alignment.Center) {
                                 Text("No gigs booked for today yet.", fontSize = 12.sp, color = Slate500)
@@ -318,7 +320,7 @@ fun FreelanceHomeDashboardScreen(
                                         .fillMaxWidth()
                                         .clickable { activeOrderDetailOrder = ord },
                                     shape = RoundedCornerShape(14.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color.white),
+                                    colors = CardDefaults.cardColors(containerColor = PureWhite),
                                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                                 ) {
                                     Row(
@@ -360,8 +362,9 @@ fun FreelanceHomeDashboardScreen(
 
         activeOrderDetailOrder?.let { order ->
             AgentOrderDetailScreen(
-                order = order,
-                onDismiss = {
+                initialOrder = order,
+                agentId = effectiveAgentId,
+                onBack = {
                     activeOrderDetailOrder = null
                     fetchAllData()
                 },
@@ -385,14 +388,14 @@ fun FreelanceHomeDashboardScreen(
             AgentDoorstepVisitModal(
                 order = order,
                 onDismiss = { activeVisitModalOrder = null },
-                onVisitCompleted = { duration ->
-                    activeVisitModalOrder = null
-                    actionBanner = "Sample collected in ${duration}m and stored in cold bag!"
-                    fetchAllData()
-                },
-                onTriggerPaymentModal = {
+                onCollectQrPayment = {
                     activeVisitModalOrder = null
                     activeDoorstepQrOrder = order
+                },
+                onCompleteVisit = {
+                    activeVisitModalOrder = null
+                    actionBanner = "Sample collected and stored in cold bag!"
+                    fetchAllData()
                 }
             )
         }
@@ -401,7 +404,7 @@ fun FreelanceHomeDashboardScreen(
             AgentDoorstepQrPaymentModal(
                 order = order,
                 onDismiss = { activeDoorstepQrOrder = null },
-                onPaymentRecorded = {
+                onPaymentDone = {
                     activeDoorstepQrOrder = null
                     actionBanner = "Payment confirmed for ${order.id}."
                     fetchAllData()
@@ -410,11 +413,10 @@ fun FreelanceHomeDashboardScreen(
         }
 
         if (showLabHandoverSheet) {
-            AgentLabHandoverScreen(
-                agentId = effectiveAgentId,
-                agentName = user.name,
+            AgentLabHandoverModal(
+                collectedOrders = collectedOrdersAwaitingHandover,
                 onDismiss = { showLabHandoverSheet = false },
-                onHandoverCompleted = {
+                onHandoverComplete = {
                     showLabHandoverSheet = false
                     actionBanner = "Lab Handover completed successfully!"
                     fetchAllData()
@@ -424,8 +426,7 @@ fun FreelanceHomeDashboardScreen(
 
         if (showNotificationCenter) {
             NotificationCenterSheet(
-                userId = effectiveAgentId,
-                onDismiss = {
+                onDismissRequest = {
                     showNotificationCenter = false
                     fetchAllData()
                 }
@@ -451,7 +452,6 @@ private fun HeroGreetingCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Background scenic temple banner
             Image(
                 painter = painterResource(id = R.drawable.temple),
                 contentDescription = null,
@@ -459,22 +459,20 @@ private fun HeroGreetingCard(
                 contentScale = ContentScale.Crop
             )
 
-            // Glassmorphic Gradient Overlay
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
                         Brush.horizontalGradient(
                             colors = listOf(
-                                Color.White.copy(alpha = 0.94f),
-                                Color.White.copy(alpha = 0.70f),
-                                Color.White.copy(alpha = 0.15f)
+                                PureWhite.copy(alpha = 0.94f),
+                                PureWhite.copy(alpha = 0.70f),
+                                PureWhite.copy(alpha = 0.15f)
                             )
                         )
                     )
             )
 
-            // Greeting Text
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -528,7 +526,7 @@ private fun OpenBroadcastAlertBanner(
                     .background(AccentEmerald),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Bolt, contentDescription = null, tint = Color.white, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Bolt, contentDescription = null, tint = PureWhite, modifier = Modifier.size(18.dp))
             }
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -543,7 +541,7 @@ private fun OpenBroadcastAlertBanner(
                             "CLAIM NOW",
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color.white,
+                            color = PureWhite,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
@@ -585,7 +583,7 @@ private fun LabHandoverActionBanner(
                     .background(Color(0xFFF59E0B)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.LocalShipping, contentDescription = null, tint = Color.white, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.LocalShipping, contentDescription = null, tint = PureWhite, modifier = Modifier.size(18.dp))
             }
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -600,7 +598,7 @@ private fun LabHandoverActionBanner(
                             "$pendingCount Pending",
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color.white,
+                            color = PureWhite,
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                         )
                     }
@@ -623,7 +621,7 @@ private fun NoAssignedOrdersPlaceholder() {
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.white),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(

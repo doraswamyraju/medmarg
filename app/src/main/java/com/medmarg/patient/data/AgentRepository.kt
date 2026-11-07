@@ -525,6 +525,8 @@ object AgentRepository {
     }
 
     // 15. Fetch Unread Notification Count (/api/v1/notifications/user-stream?userId=...)
+    suspend fun fetchUnreadNotificationCount(userId: String): Int = fetchUnreadNotificationsCount(userId)
+
     suspend fun fetchUnreadNotificationsCount(userId: String): Int = withContext(Dispatchers.IO) {
         val res = makeGetRequest("/api/v1/notifications/user-stream?userId=$userId") ?: return@withContext 0
         try {
@@ -533,12 +535,86 @@ object AgentRepository {
             var unread = 0
             for (i in 0 until arr.length()) {
                 val n = arr.getJSONObject(i)
-                if (!n.optBoolean("read", false)) unread++
+                if (!n.optBoolean("read", false) && !n.optBoolean("isRead", false)) unread++
             }
             unread
         } catch (e: Exception) {
             0
         }
+    }
+
+    // 16. Fetch Wallet Data (/api/v1/agent/wallet?agentId=...)
+    suspend fun fetchWalletData(agentId: String): AgentWalletData = withContext(Dispatchers.IO) {
+        val res = makeGetRequest("/api/v1/agent/wallet?agentId=$agentId") ?: return@withContext AgentWalletData()
+        try {
+            val root = JSONObject(res)
+            val w = root.optJSONObject("wallet") ?: root
+            val payoutsList = mutableListOf<AgentWalletPayoutTxn>()
+            val pArr = w.optJSONArray("recentPayouts")
+            if (pArr != null) {
+                for (i in 0 until pArr.length()) {
+                    val p = pArr.getJSONObject(i)
+                    payoutsList.add(
+                        AgentWalletPayoutTxn(
+                            id = p.optString("id", "PO-$i"),
+                            date = p.optString("date", "Recent"),
+                            amount = p.optInt("amount", 0),
+                            method = p.optString("method", "UPI"),
+                            status = p.optString("status", "SETTLED")
+                        )
+                    )
+                }
+            }
+            AgentWalletData(
+                availableCashoutBalance = w.optInt("availableCashoutBalance", w.optInt("availableBalance", 0)),
+                totalLifetimeEarnings = w.optInt("totalLifetimeEarnings", 0),
+                todayEarnings = w.optInt("todayEarnings", 0),
+                completedTripsToday = w.optInt("completedTripsToday", 0),
+                distancePayout = w.optInt("distancePayout", 0),
+                tipsBonus = w.optInt("tipsBonus", 0),
+                inventoryCredits = w.optInt("inventoryCredits", 2000),
+                recentPayouts = payoutsList
+            )
+        } catch (e: Exception) {
+            AgentWalletData()
+        }
+    }
+
+    // 17. Fetch Profile (/api/v1/agent/profile?agentId=...)
+    suspend fun fetchProfile(agentId: String): AgentProfileSummary = withContext(Dispatchers.IO) {
+        val res = makeGetRequest("/api/v1/agent/profile?agentId=$agentId") ?: return@withContext AgentProfileSummary()
+        try {
+            val root = JSONObject(res)
+            val p = root.optJSONObject("profile") ?: root
+            AgentProfileSummary(
+                name = p.optString("name", "Freelance Partner"),
+                phone = p.optString("phone", "+91 98480 22338"),
+                email = p.optString("email", "freelancer@medmarg.com"),
+                phleboId = p.optString("phleboId", agentId),
+                qualification = p.optString("qualification", "DMLT (Diploma Medical Lab Tech)"),
+                zone = p.optString("zone", "All Zones (Open Broadcast)"),
+                kycStatus = p.optString("kycStatus", "APPROVED"),
+                rating = p.optDouble("rating", 5.0),
+                totalCollections = p.optInt("totalCollections", 0),
+                bankAccount = p.optString("bankAccount", ""),
+                bankName = p.optString("bankName", "HDFC Bank"),
+                ifscCode = p.optString("ifscCode", "HDFC0001824"),
+                accountHolderName = p.optString("accountHolderName", ""),
+                upiId = p.optString("upiId", p.optString("upiVpa", "9848022338@upi")),
+                avatarUrl = p.optString("avatarUrl", "")
+            )
+        } catch (e: Exception) {
+            AgentProfileSummary()
+        }
+    }
+
+    // 18. Update Agent Profile Avatar (/api/v1/agent/profile/update)
+    suspend fun updateAgentProfileAvatar(agentId: String, avatarUrl: String): Boolean = withContext(Dispatchers.IO) {
+        val payload = JSONObject().apply {
+            put("agentId", agentId)
+            put("avatarUrl", avatarUrl)
+        }
+        makePostRequest("/api/v1/agent/profile/update", payload) != null
     }
 
     private fun parseOrder(o: JSONObject): AgentPickupOrder {

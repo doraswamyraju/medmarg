@@ -1,5 +1,6 @@
 package com.medmarg.patient.ui.freelance.sheets
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -21,7 +22,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.medmarg.patient.data.AgentRepository
-import com.medmarg.patient.model.AgentPickupOrder
 import com.medmarg.patient.model.FreelanceBroadcastJobItem
 import com.medmarg.patient.model.UserProfile
 import com.medmarg.patient.ui.freelance.components.FreelanceBroadcastCard
@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 fun FreelanceBroadcastJobsSheet(
     user: UserProfile,
     onDismiss: () -> Unit,
-    onJobClaimed: (AgentPickupOrder) -> Unit
+    onJobClaimed: (FreelanceBroadcastJobItem) -> Unit
 ) {
     val coroutineScope = rememberCoroutineScope()
     var jobs by remember { mutableStateOf<List<FreelanceBroadcastJobItem>>(emptyList()) }
@@ -46,7 +46,7 @@ fun FreelanceBroadcastJobsSheet(
     var selectedFilter by remember { mutableStateOf("ALL") } // "ALL", "FASTING", "HIGH_PRIORITY"
     var bannerMessage by remember { mutableStateOf<String?>(null) }
 
-    val effectiveAgentName = if (user.name.isNotBlank()) user.name else if (user.username.isNotBlank()) user.username else "Freelance Phlebo"
+    val effectiveAgentId = if (user.username.isNotBlank()) user.username else if (user.id.isNotBlank()) user.id else "FL-502"
 
     fun loadJobs() {
         coroutineScope.launch {
@@ -62,8 +62,8 @@ fun FreelanceBroadcastJobsSheet(
 
     val filteredJobs = remember(jobs, selectedFilter) {
         when (selectedFilter) {
-            "FASTING" -> jobs.filter { it.fastingRequired == true }
-            "HIGH_PRIORITY" -> jobs.filter { it.urgency?.uppercase()?.contains("HIGH") == true }
+            "FASTING" -> jobs.filter { it.fastingRequired == true || it.urgency == "FASTING" }
+            "HIGH_PRIORITY" -> jobs.filter { it.effectivePayout >= 400 || it.urgency == "HIGH PAYOUT" }
             else -> jobs
         }
     }
@@ -73,77 +73,80 @@ fun FreelanceBroadcastJobsSheet(
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
-            modifier = Modifier.fillMaxSize().padding(top = 28.dp),
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+            modifier = Modifier.fillMaxSize(),
             color = Slate50
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                // Header Bar
+                // Top header
                 Surface(
                     color = PureWhite,
                     shadowElevation = 2.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp),
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                Icon(Icons.Default.Bolt, contentDescription = null, tint = Color(0xFF00B86B), modifier = Modifier.size(20.dp))
-                                Text("Available Broadcast Gigs", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Slate900)
+                            Column {
+                                Text("Broadcast Overflow Gigs", fontSize = 18.sp, fontWeight = FontWeight.Black, color = Slate900)
+                                Text("Real-time available pickups near you", fontSize = 12.sp, color = Slate500)
                             }
-
-                            IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                            IconButton(onClick = onDismiss) {
                                 Icon(Icons.Default.Close, contentDescription = "Close", tint = Slate500)
                             }
                         }
 
-                        // Filter Chips Bar
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Filter Chips
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState())
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             FilterChipItem("All Gigs (${jobs.size})", "ALL", selectedFilter) { selectedFilter = it }
-                            FilterChipItem("Fasting Req.", "FASTING", selectedFilter) { selectedFilter = it }
-                            FilterChipItem("🔥 High Priority", "HIGH_PRIORITY", selectedFilter) { selectedFilter = it }
+                            FilterChipItem("Fasting (${jobs.count { it.fastingRequired == true || it.urgency == "FASTING" }})", "FASTING", selectedFilter) { selectedFilter = it }
+                            FilterChipItem("High Payout (${jobs.count { it.effectivePayout >= 400 || it.urgency == "HIGH PAYOUT" }})", "HIGH_PRIORITY", selectedFilter) { selectedFilter = it }
                         }
                     }
                 }
 
+                // Banner alert
                 bannerMessage?.let { msg ->
                     Surface(
                         color = Color(0xFF00B86B),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(msg, fontSize = 12.sp, color = PureWhite, fontWeight = FontWeight.Bold, modifier = Modifier.padding(10.dp))
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PureWhite, modifier = Modifier.size(16.dp))
+                            Text(msg, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PureWhite, modifier = Modifier.weight(1f))
+                            IconButton(onClick = { bannerMessage = null }, modifier = Modifier.size(20.dp)) {
+                                Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = PureWhite, modifier = Modifier.size(14.dp))
+                            }
+                        }
                     }
                 }
 
-                // Scrollable Feed
+                // Scrollable Content
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
                         .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Info Announcement Card
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = Color(0xFF00B86B).copy(alpha = 0.08f),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00B86B).copy(alpha = 0.2f)),
-                        modifier = Modifier.fillMaxWidth()
+                    // Marketplace info alert
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = PureWhite)
                     ) {
                         Row(
                             modifier = Modifier.padding(12.dp),
@@ -202,11 +205,11 @@ fun FreelanceBroadcastJobsSheet(
                                 onClaim = {
                                     claimingJobId = job.id
                                     coroutineScope.launch {
-                                        val claimed = AgentRepository.claimBroadcastGig(job.id, effectiveAgentName)
+                                        val claimed = AgentRepository.claimBroadcastGig(effectiveAgentId, job.id)
                                         claimingJobId = null
-                                        if (claimed != null) {
-                                            bannerMessage = "⚡ Gig ${claimed.id} claimed successfully! Added to your schedule."
-                                            onJobClaimed(claimed)
+                                        if (claimed) {
+                                            bannerMessage = "⚡ Gig ${job.id} claimed successfully! Added to your schedule."
+                                            onJobClaimed(job)
                                             loadJobs()
                                         }
                                     }
@@ -244,4 +247,3 @@ private fun FilterChipItem(
         )
     }
 }
-

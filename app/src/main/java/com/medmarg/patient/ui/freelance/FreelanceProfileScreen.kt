@@ -34,12 +34,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.medmarg.patient.data.AgentRepository
-import com.medmarg.patient.model.AgentProfileData
+import com.medmarg.patient.model.AgentProfileSummary
 import com.medmarg.patient.model.UserProfile
-import com.medmarg.patient.ui.agent.AgentChangePasswordModal
+import com.medmarg.patient.ui.agent.AgentChangePasswordScreen
 import com.medmarg.patient.ui.agent.AgentTopbarView
+import com.medmarg.patient.ui.components.NotificationCenterSheet
 import com.medmarg.patient.ui.freelance.sheets.EditPayoutDetailsSheet
-import com.medmarg.patient.ui.notifications.NotificationCenterSheet
 import com.medmarg.patient.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -91,7 +91,6 @@ fun FreelanceProfileScreen(
     var unreadNotificationCount by remember { mutableIntStateOf(0) }
     var actionBanner by remember { mutableStateOf<String?>(null) }
 
-    // Photo picker launcher
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -139,7 +138,7 @@ fun FreelanceProfileScreen(
             totalCollections = p.totalCollections
             if (p.bankAccount.isNotEmpty()) {
                 accountNumber = p.bankAccount
-                bankAccount = "${p.bankName} (A/C: ****${p.bankAccount.takeLast(4)})"
+                bankAccount = "${p.bankName} (A/C: ****${if (p.bankAccount.length >= 4) p.bankAccount.takeLast(4) else p.bankAccount})"
             }
             if (p.bankName.isNotEmpty()) bankName = p.bankName
             if (p.ifscCode.isNotEmpty()) ifscCode = p.ifscCode
@@ -167,7 +166,6 @@ fun FreelanceProfileScreen(
 
     Box(modifier = modifier.fillMaxSize().background(Slate50)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Topbar
             AgentTopbarView(
                 agentName = user.name,
                 agentId = effectiveAgentId,
@@ -177,18 +175,16 @@ fun FreelanceProfileScreen(
                 onLogoTap = { onTabSelected(0) },
                 onSidebarTap = { },
                 onNotificationTap = { showNotificationCenter = true },
-                onProfileTap = { },
-                onLogoutTap = onLogout
+                onProfileTap = { }
             )
 
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(vertical = 12),
+                    .padding(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Action banner
                 AnimatedVisibility(visible = actionBanner != null) {
                     actionBanner?.let { banner ->
                         Row(
@@ -200,17 +196,16 @@ fun FreelanceProfileScreen(
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.white, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PureWhite, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text(banner, color = Color.white, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            Text(banner, color = PureWhite, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                             IconButton(onClick = { actionBanner = null }, modifier = Modifier.size(24.dp)) {
-                                Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = Color.white, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = PureWhite, modifier = Modifier.size(16.dp))
                             }
                         }
                     }
                 }
 
-                // 1. Profile Avatar Card
                 ProfileHeroCard(
                     name = name,
                     phone = phone,
@@ -222,17 +217,14 @@ fun FreelanceProfileScreen(
                     onPickPhoto = { photoPickerLauncher.launch("image/*") }
                 )
 
-                // 2. Paramedical & Professional Qualifications
                 ParamedicalCredentialsCard(
                     paramedicalCouncilNo = paramedicalCouncilNo,
                     qualification = qualification,
                     assignedZone = assignedZone
                 )
 
-                // 3. Document Verification Checklist
                 DocumentsChecklistCard(kycStatus = kycStatus)
 
-                // 4. Payout Accounts Card
                 PayoutAccountsCard(
                     upiVpa = upiVpa,
                     bankAccount = bankAccount,
@@ -245,50 +237,48 @@ fun FreelanceProfileScreen(
                     }
                 )
 
-                // 5. Account Settings & Security
                 SecuritySettingsCard(onChangePassword = { showChangePassword = true })
 
-                // 6. Logout Button
                 LogoutButtonSection(onLogout = onLogout)
 
                 Spacer(modifier = Modifier.height(100.dp))
             }
         }
 
-        // Change Password Modal
         if (showChangePassword) {
-            AgentChangePasswordModal(
+            AgentChangePasswordScreen(
                 user = user,
-                onDismiss = { showChangePassword = false }
+                onBack = { showChangePassword = false },
+                onPasswordUpdated = {
+                    showChangePassword = false
+                    actionBanner = "Password updated successfully!"
+                }
             )
         }
 
-        // Edit Payout Details Sheet
         if (showEditPayoutSheet) {
             EditPayoutDetailsSheet(
                 agentId = effectiveAgentId,
-                initialUpi = upiVpa,
-                initialBank = bankName,
-                initialAccount = accountNumber,
-                initialIfsc = ifscCode,
-                initialHolder = accountHolderName,
+                currentUpi = upiVpa,
+                currentBankName = bankName,
+                currentAccountNo = accountNumber,
+                currentIfsc = ifscCode,
+                currentHolderName = accountHolderName,
                 onDismiss = { showEditPayoutSheet = false },
-                onSaved = { newUpi, newBank, newAcc, newIfsc ->
+                onDetailsUpdated = { newUpi, newBank, newAcc, newIfsc ->
                     upiVpa = newUpi
                     bankName = newBank
                     accountNumber = newAcc
                     ifscCode = newIfsc
-                    bankAccount = "$newBank • **** ${newAcc.takeLast(4)}"
+                    bankAccount = "$newBank • **** ${if (newAcc.length >= 4) newAcc.takeLast(4) else newAcc}"
                     actionBanner = "Payout details updated successfully!"
                 }
             )
         }
 
-        // Notification Center Sheet
         if (showNotificationCenter) {
             NotificationCenterSheet(
-                userId = effectiveAgentId,
-                onDismiss = {
+                onDismissRequest = {
                     showNotificationCenter = false
                     fetchProfileData()
                 }
@@ -316,7 +306,7 @@ private fun ProfileHeroCard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.white),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -354,7 +344,7 @@ private fun ProfileHeroCard(
                             text = name.firstOrNull()?.uppercase() ?: "A",
                             fontSize = 34.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.white
+                            color = PureWhite
                         )
                     }
                 }
@@ -365,7 +355,7 @@ private fun ProfileHeroCard(
                         .clip(CircleShape)
                         .clickable { onPickPhoto() },
                     shape = CircleShape,
-                    color = Color.white,
+                    color = PureWhite,
                     shadowElevation = 4.dp
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -439,7 +429,7 @@ private fun ParamedicalCredentialsCard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.white),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -525,7 +515,7 @@ private fun DocumentsChecklistCard(kycStatus: String) {
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.white),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -600,7 +590,7 @@ private fun PayoutAccountsCard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.white),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -676,7 +666,7 @@ private fun SecuritySettingsCard(onChangePassword: () -> Unit) {
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.white),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(

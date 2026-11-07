@@ -58,7 +58,8 @@ fun FreelanceAssessAssignKitModal(
 
     LaunchedEffect(Unit) {
         isLoading = true
-        liveInventory = AgentRepository.fetchInventory(order.assignedAgent ?: "FL-502")
+        val (items, _) = AgentRepository.fetchInventory(order.assignedAgent ?: "FL-502")
+        liveInventory = items
         isLoading = false
     }
 
@@ -182,7 +183,7 @@ fun FreelanceAssessAssignKitModal(
                         onClick = {
                             isSubmitting = true
                             coroutineScope.launch {
-                                AgentRepository.assignKit(order.id, order.assignedAgent ?: "FL-502", false)
+                                AgentRepository.assignKitToOrder(order.id, order.assignedAgent ?: "FL-502", emptyList(), false)
                                 isSubmitting = false
                                 onAssigned()
                                 onDismiss()
@@ -208,7 +209,7 @@ fun FreelanceAssessAssignKitModal(
                         onClick = {
                             isSubmitting = true
                             coroutineScope.launch {
-                                AgentRepository.assignKit(order.id, order.assignedAgent ?: "FL-502", true)
+                                AgentRepository.assignKitToOrder(order.id, order.assignedAgent ?: "FL-502", emptyList(), true)
                                 isSubmitting = false
                                 onAssigned()
                                 onDismiss()

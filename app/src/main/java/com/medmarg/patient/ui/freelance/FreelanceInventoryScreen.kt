@@ -54,8 +54,8 @@ fun FreelanceInventoryScreen(
     fun loadInventory() {
         coroutineScope.launch {
             isLoading = true
-            val fetched = AgentRepository.fetchInventory(effectiveAgentId)
-            items = if (fetched.isNotEmpty()) fetched else listOf(
+            val (fetchedItems, _) = AgentRepository.fetchInventory(effectiveAgentId)
+            items = if (fetchedItems.isNotEmpty()) fetchedItems else listOf(
                 AgentInventoryItem("f_1", "EDTA K2 Purple Tubes", "EDTA", 20, "Tubes", 10),
                 AgentInventoryItem("f_2", "SST Gel Gold Tubes", "SST", 15, "Tubes", 10),
                 AgentInventoryItem("f_3", "Grey Fluoride Tubes", "FL", 10, "Tubes", 5),
@@ -315,9 +315,8 @@ fun FreelanceInventoryScreen(
         AgentRaiseIndentSheet(
             agentId = effectiveAgentId,
             agentName = user.name,
-            warehouseStock = emptyList(),
             onDismiss = { showIndentSheet = false },
-            onIndentSubmitted = {
+            onSubmitted = {
                 showIndentSheet = false
                 actionBanner = "Refill indent requested successfully from credit balance!"
                 loadInventory()
@@ -330,7 +329,7 @@ fun FreelanceInventoryScreen(
             agentId = effectiveAgentId,
             agentName = user.name,
             onDismiss = { showReportIssueModal = false },
-            onIssueReported = {
+            onReported = {
                 showReportIssueModal = false
                 actionBanner = "Issue reported to Admin store desk."
             }

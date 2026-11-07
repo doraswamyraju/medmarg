@@ -662,7 +662,7 @@ private fun MetricCounterCard(
 }
 
 @Composable
-private fun AgentNextAssignedCard(
+fun AgentNextAssignedCard(
     order: AgentPickupOrder,
     onOpenVisit: () -> Unit,
     onStartTrip: () -> Unit

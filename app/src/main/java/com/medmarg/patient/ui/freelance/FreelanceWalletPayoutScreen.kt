@@ -24,9 +24,9 @@ import com.medmarg.patient.data.AgentRepository
 import com.medmarg.patient.model.AgentWalletPayoutTxn
 import com.medmarg.patient.model.UserProfile
 import com.medmarg.patient.ui.agent.AgentTopbarView
+import com.medmarg.patient.ui.components.NotificationCenterSheet
 import com.medmarg.patient.ui.freelance.sheets.EditPayoutDetailsSheet
 import com.medmarg.patient.ui.freelance.sheets.FreelanceWalletPayoutSheet
-import com.medmarg.patient.ui.notifications.NotificationCenterSheet
 import com.medmarg.patient.ui.theme.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -83,7 +83,10 @@ fun FreelanceWalletPayoutScreen(
 
             val profile = AgentRepository.fetchProfile(effectiveAgentId)
             if (profile.upiId.isNotEmpty()) upiId = profile.upiId
-            if (profile.bankAccount.isNotEmpty()) bankAccount = "${profile.bankName} ••••••${profile.bankAccount.takeLast(4)}"
+            if (profile.bankAccount.isNotEmpty()) {
+                val last4 = if (profile.bankAccount.length >= 4) profile.bankAccount.takeLast(4) else profile.bankAccount
+                bankAccount = "${profile.bankName} ••••••$last4"
+            }
 
             unreadNotificationCount = AgentRepository.fetchUnreadNotificationCount(effectiveAgentId)
             isLoading = false
@@ -113,7 +116,7 @@ fun FreelanceWalletPayoutScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(vertical = 12),
+                    .padding(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // Success Toast Banner
@@ -128,11 +131,11 @@ fun FreelanceWalletPayoutScreen(
                                 .padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.white, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = PureWhite, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text(msg, color = Color.white, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                            Text(msg, color = PureWhite, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                             IconButton(onClick = { toastMessage = null }, modifier = Modifier.size(24.dp)) {
-                                Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = Color.white, modifier = Modifier.size(16.dp))
+                                Icon(Icons.Default.Close, contentDescription = "Dismiss", tint = PureWhite, modifier = Modifier.size(16.dp))
                             }
                         }
                     }
@@ -213,12 +216,13 @@ fun FreelanceWalletPayoutScreen(
         if (showEditBankSheet) {
             EditPayoutDetailsSheet(
                 agentId = effectiveAgentId,
-                initialUpi = upiId,
-                initialBank = bankAccount.split("•").firstOrNull()?.trim() ?: "HDFC Bank",
+                currentUpi = upiId,
+                currentBankName = bankAccount.split("•").firstOrNull()?.trim() ?: "HDFC Bank",
                 onDismiss = { showEditBankSheet = false },
-                onSaved = { newUpi, newBank, newAcc, _ ->
+                onDetailsUpdated = { newUpi, newBank, newAcc, _ ->
                     upiId = newUpi
-                    bankAccount = "$newBank ••••••${newAcc.takeLast(4)}"
+                    val last4 = if (newAcc.length >= 4) newAcc.takeLast(4) else newAcc
+                    bankAccount = "$newBank ••••••$last4"
                     toastMessage = "Payout account details updated successfully."
                 }
             )
@@ -227,8 +231,7 @@ fun FreelanceWalletPayoutScreen(
         // Notification Center Sheet
         if (showNotificationCenter) {
             NotificationCenterSheet(
-                userId = effectiveAgentId,
-                onDismiss = {
+                onDismissRequest = {
                     showNotificationCenter = false
                     fetchWalletData()
                 }
@@ -273,12 +276,12 @@ private fun WalletHeroCard(
                             "AVAILABLE FOR CASHOUT",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color.white.copy(alpha = 0.8f)
+                            color = PureWhite.copy(alpha = 0.8f)
                         )
                         Row(verticalAlignment = Alignment.Bottom) {
-                            Text("₹", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.white)
+                            Text("₹", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = PureWhite)
                             Spacer(Modifier.width(2.dp))
-                            Text("$availableCashout", fontSize = 38.sp, fontWeight = FontWeight.Black, color = Color.white)
+                            Text("$availableCashout", fontSize = 38.sp, fontWeight = FontWeight.Black, color = PureWhite)
                         }
                     }
 
@@ -286,7 +289,7 @@ private fun WalletHeroCard(
                         modifier = Modifier
                             .size(50.dp)
                             .clip(CircleShape)
-                            .background(Color.white.copy(alpha = 0.15f)),
+                            .background(PureWhite.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
@@ -298,7 +301,7 @@ private fun WalletHeroCard(
                     }
                 }
 
-                Divider(color = Color.white.copy(alpha = 0.2f), thickness = 1.dp)
+                Divider(color = PureWhite.copy(alpha = 0.2f), thickness = 1.dp)
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -324,7 +327,7 @@ private fun WalletHeroCard(
                     Button(
                         onClick = onWithdraw,
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.white),
+                        colors = ButtonDefaults.buttonColors(containerColor = PureWhite),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
                     ) {
                         Icon(Icons.Default.Bolt, contentDescription = null, tint = DarkTeal, modifier = Modifier.size(14.dp))
@@ -412,7 +415,7 @@ private fun MetricMiniCard(
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.white),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -444,7 +447,7 @@ private fun PayoutDestinationCard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.white),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -532,7 +535,7 @@ private fun InventoryCreditWalletCard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.white),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -602,7 +605,7 @@ private fun RecentSettlementsSection(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.white),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -626,58 +629,63 @@ private fun RecentSettlementsSection(
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     recentPayouts.forEach { p ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(Slate50)
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val isSettled = p.status == "SETTLED"
-                            Box(
-                                modifier = Modifier
-                                    .size(38.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (isSettled) AccentEmerald.copy(alpha = 0.12f)
-                                        else Color(0xFFF59E0B).copy(alpha = 0.12f)
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = if (isSettled) Icons.Default.CallReceived else Icons.Default.HourglassTop,
-                                    contentDescription = null,
-                                    tint = if (isSettled) AccentEmerald else Color(0xFFD97706),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-
-                            Spacer(Modifier.width(12.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text("Payout ${p.id}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Slate900)
-                                Text("${p.method} • ${p.date}", fontSize = 11.sp, color = Slate500)
-                            }
-
-                            Column(horizontalAlignment = Alignment.End) {
-                                Text("₹${p.amount}", fontSize = 15.sp, fontWeight = FontWeight.Black, color = Slate900)
-                                Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = if (isSettled) AccentEmerald.copy(alpha = 0.12f) else Color(0xFFF59E0B).copy(alpha = 0.12f)
-                                ) {
-                                    Text(
-                                        p.status,
-                                        fontSize = 9.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isSettled) AccentEmerald else Color(0xFFD97706),
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
-                        }
+                        RecentPayoutRow(p = p)
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentPayoutRow(p: AgentWalletPayoutTxn) {
+    val isSettled = p.status == "SETTLED"
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Slate50)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(CircleShape)
+                .background(
+                    if (isSettled) AccentEmerald.copy(alpha = 0.12f)
+                    else Color(0xFFF59E0B).copy(alpha = 0.12f)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (isSettled) Icons.Default.CallReceived else Icons.Default.HourglassTop,
+                contentDescription = null,
+                tint = if (isSettled) AccentEmerald else Color(0xFFD97706),
+                modifier = Modifier.size(16.dp)
+            )
+        }
+
+        Spacer(Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text("Payout ${p.id}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Slate900)
+            Text("${p.method} • ${p.date}", fontSize = 11.sp, color = Slate500)
+        }
+
+        Column(horizontalAlignment = Alignment.End) {
+            Text("₹${p.amount}", fontSize = 15.sp, fontWeight = FontWeight.Black, color = Slate900)
+            Surface(
+                shape = RoundedCornerShape(4.dp),
+                color = if (isSettled) AccentEmerald.copy(alpha = 0.12f) else Color(0xFFF59E0B).copy(alpha = 0.12f)
+            ) {
+                Text(
+                    p.status,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isSettled) AccentEmerald else Color(0xFFD97706),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
             }
         }
     }
@@ -697,7 +705,7 @@ private fun DownloadStatementBanner(
             .padding(horizontal = 16.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.white),
+        colors = CardDefaults.cardColors(containerColor = PureWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
