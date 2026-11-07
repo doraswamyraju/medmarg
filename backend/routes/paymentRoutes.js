@@ -737,12 +737,14 @@ router.post('/razorpay/webhook', (req, res) => {
         if (!signature) {
             return res.status(400).json({ success: false, message: 'Missing webhook signature header' });
         }
+        if (!req.rawBody) {
+            return res.status(400).json({ success: false, message: 'Missing raw request body for webhook signature verification' });
+        }
         try {
-            // Verify using raw body buffer
-            const rawBody = req.rawBody || Buffer.from(JSON.stringify(req.body));
+            // Strictly verify using the original unparsed raw body buffer (no re-serialization fallback)
             const expectedSignature = crypto
                 .createHmac('sha256', webhookSecret)
-                .update(rawBody)
+                .update(req.rawBody)
                 .digest('hex');
 
             const expectedBuf = Buffer.from(expectedSignature, 'utf8');
@@ -856,8 +858,8 @@ router.get('/order-status/:orderId', async (req, res) => {
         return res.status(404).json({ success: false, error: 'Order not found' });
     }
 
-    // Verify order token authorization if token hash exists
-    if (!verifyOrderToken(order, req)) {
+    // Verify order token authorization strictly: x-order-token header only, no legacy tokenless bypass
+    if (!verifyOrderToken(order, req, true)) {
         return res.status(403).json({ success: false, code: 403, error: 'Unauthorized: Invalid order access token' });
     }
 
@@ -972,30 +974,39 @@ router.get('/callback', (req, res) => {
     console.log(`[Payment Link Callback] ID: ${razorpay_payment_id}, Link: ${razorpay_payment_link_id}, Status: ${razorpay_payment_link_status}`);
 
     const isPaid = razorpay_payment_link_status === 'paid' || Boolean(razorpay_payment_id);
-    const paymentId = razorpay_payment_id || `pay_${Date.now()}`;
+    const orderId = razorpay_payment_link_reference_id ? razorpay_payment_link_reference_id.replace(/^MM_/, 'MM-LAB-') : '';
+    const paymentId = razorpay_payment_id || '';
+
+    // Secure App Link / Deep Link redirect to MedMarg Android / iOS App
+    // Note: No secret tokens are exposed in deep-link URL; client will poll /payments/order-status/:orderId
+    const appDeepLink = `medmarg://payment-callback?status=${isPaid ? 'success' : 'failed'}&payment_link_id=${razorpay_payment_link_id || ''}&razorpay_payment_id=${encodeURIComponent(paymentId)}&order_id=${encodeURIComponent(orderId)}`;
 
     res.send(`
         <!DOCTYPE html>
         <html>
         <head>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="refresh" content="1;url=${appDeepLink}">
             <title>MedMarg Payment Complete</title>
             <style>
                 body { background: #0B132B; color: #FFFFFF; font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
                 .card { padding: 32px; background: #1C2541; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); max-width: 90%; }
                 .success { color: #10B981; font-size: 48px; margin-bottom: 12px; }
+                .btn { display: inline-block; margin-top: 18px; padding: 12px 24px; background: #006B70; color: #fff; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 14px; }
             </style>
         </head>
         <body>
             <div class="card">
-                <div class="success">✓</div>
-                <h2 style="margin: 0 0 8px;">Payment Successful!</h2>
-                <p style="color: #94A3B8; font-size: 14px; margin: 0;">Returning to MedMarg app...</p>
+                <div class="success">${isPaid ? '✓' : 'ℹ'}</div>
+                <h2 style="margin: 0 0 8px;">${isPaid ? 'Payment Received!' : 'Processing Payment...'}</h2>
+                <p style="color: #94A3B8; font-size: 14px; margin: 0;">Returning securely to MedMarg app...</p>
+                <a href="${appDeepLink}" class="btn">Tap to Return to MedMarg</a>
             </div>
             <script>
-                if (window.RazorpayAndroid) {
-                    window.RazorpayAndroid.onPaymentSuccess("${paymentId}", "${razorpay_payment_link_id || ''}", "");
-                }
+                // Instant JS redirect to app deep link
+                try {
+                    window.location.href = "${appDeepLink}";
+                } catch(e) {}
             </script>
         </body>
         </html>

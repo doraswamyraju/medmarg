@@ -16,6 +16,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
     companion object {
         var onPaymentSuccessCallback: ((paymentId: String, orderId: String, signature: String) -> Unit)? = null
         var onPaymentErrorCallback: ((code: Int, response: String?) -> Unit)? = null
+        var onPaymentCallbackReceived: ((orderId: String, paymentId: String?, status: String) -> Unit)? = null
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,16 +47,18 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
         if (uri.scheme == "medmarg" && uri.host == "payment-callback") {
             val paymentId = uri.getQueryParameter("razorpay_payment_id")
                 ?: uri.getQueryParameter("payment_id")
-            val orderId = uri.getQueryParameter("razorpay_order_id") ?: ""
+            val orderId = uri.getQueryParameter("razorpay_order_id")
+                ?: uri.getQueryParameter("order_id") ?: ""
             val signature = uri.getQueryParameter("razorpay_signature") ?: ""
             val status = uri.getQueryParameter("status") ?: "success"
+
+            // Notify hosted modal callback receiver if active
+            onPaymentCallbackReceived?.invoke(orderId, paymentId, status)
 
             if (status.contains("fail", ignoreCase = true) || status.contains("cancel", ignoreCase = true)) {
                 onPaymentErrorCallback?.invoke(Checkout.PAYMENT_CANCELED, "Payment was cancelled or failed.")
             } else if (!paymentId.isNullOrEmpty()) {
                 onPaymentSuccessCallback?.invoke(paymentId, orderId, signature)
-            } else {
-                onPaymentErrorCallback?.invoke(Checkout.NETWORK_ERROR, "No payment ID returned from gateway.")
             }
             return
         }

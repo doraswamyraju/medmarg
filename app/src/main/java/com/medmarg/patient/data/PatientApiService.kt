@@ -210,24 +210,27 @@ object PatientApiService {
             conn.outputStream.use { it.write(payload.toString().toByteArray()) }
 
             if (conn.responseCode in 200..299) {
+                val contentType = conn.contentType ?: ""
                 val respStr = conn.inputStream.bufferedReader().use { it.readText() }
-                val json = JSONObject(respStr)
-                if (json.optBoolean("success", false)) {
-                    val dataObj = json.optJSONObject("data")
-                    val orderId = dataObj?.optString("orderId", "")?.ifEmpty { null }
-                        ?: json.optString("order_id", "")
-                    val keyId = dataObj?.optString("keyId", "")?.ifEmpty { null }
-                        ?: json.optString("key_id", "rzp_live_Tno7dmuqnwn1YS")
-                    val amountPaise = dataObj?.optInt("amount", 0)?.takeIf { it > 0 }
-                        ?: json.optInt("amount", amountInRupees * 100)
-                    val paymentUrl = dataObj?.optString("paymentUrl", "") ?: ""
+                if (contentType.contains("application/json", ignoreCase = true) || respStr.trim().startsWith("{")) {
+                    val json = JSONObject(respStr)
+                    if (json.optBoolean("success", false)) {
+                        val dataObj = json.optJSONObject("data")
+                        val orderId = dataObj?.optString("orderId", "")?.ifEmpty { null }
+                            ?: json.optString("order_id", "")
+                        val keyId = dataObj?.optString("keyId", "")?.ifEmpty { null }
+                            ?: json.optString("key_id", "rzp_live_Tno7dmuqnwn1YS")
+                        val amountPaise = dataObj?.optInt("amount", 0)?.takeIf { it > 0 }
+                            ?: json.optInt("amount", amountInRupees * 100)
+                        val paymentUrl = dataObj?.optString("paymentUrl", "") ?: ""
 
-                    return@withContext RazorpayOrderInfo(
-                        orderId = orderId,
-                        keyId = if (keyId.isNotEmpty()) keyId else "rzp_live_Tno7dmuqnwn1YS",
-                        amountPaise = if (amountPaise > 0) amountPaise else amountInRupees * 100,
-                        paymentUrl = paymentUrl
-                    )
+                        return@withContext RazorpayOrderInfo(
+                            orderId = orderId,
+                            keyId = if (keyId.isNotEmpty()) keyId else "rzp_live_Tno7dmuqnwn1YS",
+                            amountPaise = if (amountPaise > 0) amountPaise else amountInRupees * 100,
+                            paymentUrl = paymentUrl
+                        )
+                    }
                 }
             }
             null
@@ -388,8 +391,12 @@ object PatientApiService {
             conn.outputStream.use { it.write(payload.toString().toByteArray()) }
 
             if (conn.responseCode in 200..299) {
+                val contentType = conn.contentType ?: ""
                 val respStr = conn.inputStream.bufferedReader().use { it.readText() }
-                val json = JSONObject(respStr)
+                if (!contentType.contains("application/json", ignoreCase = true) && !respStr.trim().startsWith("{")) {
+                    return@withContext null
+                }
+                val json = try { JSONObject(respStr) } catch (_: Exception) { return@withContext null }
                 val orderObj = json.optJSONObject("order") ?: json.optJSONObject("data")
                 val orderAccessToken = json.optString("orderAccessToken", "")
                 val orderId = orderObj?.optString("id") ?: "MM-${(10000..99999).random()}"
@@ -453,8 +460,22 @@ object PatientApiService {
             conn.outputStream.use { it.write(payload.toString().toByteArray()) }
 
             val stream = if (conn.responseCode in 200..299) conn.inputStream else conn.errorStream
+            val contentType = conn.contentType ?: ""
             val respStr = stream?.bufferedReader()?.use { it.readText() } ?: "{}"
-            val json = JSONObject(respStr)
+
+            // Validate that server returned JSON rather than HTML error page
+            val json = if (contentType.contains("application/json", ignoreCase = true) || respStr.trim().startsWith("{")) {
+                try {
+                    JSONObject(respStr)
+                } catch (e: Exception) {
+                    JSONObject()
+                }
+            } else {
+                JSONObject().apply {
+                    put("success", false)
+                    put("error", "Server returned non-JSON response (${conn.responseCode})")
+                }
+            }
 
             if (conn.responseCode in 200..299 && json.optBoolean("success", false)) {
                 NativeVerificationResult(
@@ -469,7 +490,7 @@ object PatientApiService {
                     verified = false,
                     paymentStatus = json.optString("paymentStatus", "FAILED"),
                     paymentId = null,
-                    errorMessage = json.optString("message", json.optString("error", "Verification rejected"))
+                    errorMessage = json.optString("message", json.optString("error", "Verification rejected (${conn.responseCode})"))
                 )
             }
         } catch (e: Exception) {
@@ -513,8 +534,22 @@ object PatientApiService {
             conn.outputStream.use { it.write(payload.toString().toByteArray()) }
 
             val stream = if (conn.responseCode in 200..299) conn.inputStream else conn.errorStream
+            val contentType = conn.contentType ?: ""
             val respStr = stream?.bufferedReader()?.use { it.readText() } ?: "{}"
-            val json = JSONObject(respStr)
+
+            // Safely validate and parse JSON response, avoiding crash on HTML error pages
+            val json = if (contentType.contains("application/json", ignoreCase = true) || respStr.trim().startsWith("{")) {
+                try {
+                    JSONObject(respStr)
+                } catch (_: Exception) {
+                    JSONObject()
+                }
+            } else {
+                JSONObject().apply {
+                    put("success", false)
+                    put("error", "Gateway endpoint unavailable (${conn.responseCode})")
+                }
+            }
 
             if (conn.responseCode in 200..299 && json.optBoolean("success", false)) {
                 SwitchToHostedResult(
@@ -529,7 +564,7 @@ object PatientApiService {
                 SwitchToHostedResult(
                     success = false,
                     alreadyPaid = false,
-                    errorMessage = json.optString("message", json.optString("error", "Switch request failed"))
+                    errorMessage = json.optString("message", json.optString("error", "Switch request failed (${conn.responseCode})"))
                 )
             }
         } catch (e: Exception) {
@@ -559,8 +594,22 @@ object PatientApiService {
             conn.readTimeout = 7000
 
             val stream = if (conn.responseCode in 200..299) conn.inputStream else conn.errorStream
+            val contentType = conn.contentType ?: ""
             val respStr = stream?.bufferedReader()?.use { it.readText() } ?: "{}"
-            val json = JSONObject(respStr)
+
+            // Safely validate and parse JSON response, avoiding crash on HTML error pages
+            val json = if (contentType.contains("application/json", ignoreCase = true) || respStr.trim().startsWith("{")) {
+                try {
+                    JSONObject(respStr)
+                } catch (_: Exception) {
+                    JSONObject()
+                }
+            } else {
+                JSONObject().apply {
+                    put("success", false)
+                    put("error", "Status service unavailable (${conn.responseCode})")
+                }
+            }
 
             if (conn.responseCode in 200..299 && json.optBoolean("success", false)) {
                 OrderStatusResult(
@@ -580,7 +629,7 @@ object PatientApiService {
                     paymentStatus = "FAILED",
                     paymentMode = "",
                     paymentId = null,
-                    errorMessage = json.optString("error", json.optString("message", "Status lookup failed"))
+                    errorMessage = json.optString("error", json.optString("message", "Status lookup failed (${conn.responseCode})"))
                 )
             }
         } catch (e: Exception) {

@@ -86,6 +86,16 @@ fun CheckoutSheet(
     var isBookingOrder by remember { mutableStateOf(false) }
     var errorBanner by remember { mutableStateOf("") }
 
+    // Restore pending payment session on launch if recovering from process destruction
+    LaunchedEffect(Unit) {
+        val pending = PatientSessionStore.getPendingPayment(context)
+        if (pending != null && activeInternalOrderId.isEmpty()) {
+            activeInternalOrderId = pending.first
+            activeOrderAccessToken = pending.second
+            showRazorpayGatewayModal = true
+        }
+    }
+
     fun finalizeBooking(razorpayPaymentId: String?) {
         isBookingOrder = true
         errorBanner = ""
@@ -138,12 +148,15 @@ fun CheckoutSheet(
                 // Pre-created order for payment authorization binding
                 activeInternalOrderId = bookingResult.order.id
                 activeOrderAccessToken = bookingResult.orderAccessToken
+                // Persist securely to private storage for process death recovery
+                PatientSessionStore.savePendingPayment(context, bookingResult.order.id, bookingResult.orderAccessToken)
                 isBookingOrder = false
                 showRazorpayGatewayModal = true
             } else {
                 PatientSessionStore.liveOrders.add(0, booked)
                 isBookingOrder = false
-                // Wipe token from local state upon completion
+                // Wipe token from local state and private storage upon completion
+                PatientSessionStore.clearPendingPayment(context)
                 activeOrderAccessToken = ""
                 activeInternalOrderId = ""
                 onOrderBooked(booked)
@@ -461,7 +474,7 @@ fun CheckoutSheet(
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "Pay Online via Razorpay",
+                            text = "Pay Online",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             color = Slate900
@@ -478,7 +491,7 @@ fun CheckoutSheet(
                         }
                     }
                     Text(
-                        text = "Google Pay, PhonePe, Paytm UPI, Credit/Debit Cards, NetBanking",
+                        text = "Complete your payment securely using UPI, cards, net banking and other available methods",
                         fontSize = 11.sp,
                         color = Slate600
                     )
@@ -551,7 +564,7 @@ fun CheckoutSheet(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = if (selectedPaymentMode == "ONLINE_PREPAID") {
-                            "Pay ₹$payableAmount Online via Razorpay"
+                            "Continue to Secure Payment • ₹$payableAmount"
                         } else {
                             "Confirm Doorstep Booking • ₹$payableAmount"
                         },
@@ -611,10 +624,13 @@ fun CheckoutSheet(
                 finalizeBooking(paymentId)
             },
             onPaymentFailed = { err ->
+                // Do not clear pending payment on failure or dismissal.
+                // Keep pending credentials until backend confirms a safe terminal payment outcome.
                 showRazorpayGatewayModal = false
-                errorBanner = "Razorpay Payment Incomplete: $err. You can retry or select Pay at Doorstep."
+                errorBanner = "Payment Incomplete: $err. You can tap 'Pay Online' to resume or check status."
             },
             onDismiss = {
+                // Preserve pending payment session so returning user can resume verification
                 showRazorpayGatewayModal = false
             }
         )

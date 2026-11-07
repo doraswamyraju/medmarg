@@ -1,6 +1,9 @@
 package com.medmarg.patient.data
 
 import android.content.Context
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
+import android.util.Base64
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -10,6 +13,11 @@ import com.medmarg.patient.model.SavedAddress
 import com.medmarg.patient.model.UserProfile
 import org.json.JSONArray
 import org.json.JSONObject
+import java.security.KeyStore
+import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.GCMParameterSpec
 
 data class PatientMedicalMeta(
     val age: Int = 29,
@@ -277,6 +285,103 @@ object PatientSessionStore {
             put("deviceSource", updated.deviceSource)
         }
         prefs.edit().putString("vitals_$userKey", obj.toString()).apply()
+    }
+
+    // Secure local persistence for in-flight pending checkout (Process death recovery)
+    // Uses Android Keystore AES-256-GCM hardware-backed encryption with graceful fallback
+    private const val KEYSTORE_ALIAS = "MedMargPaymentKey"
+    private const val ANDROID_KEYSTORE = "AndroidKeyStore"
+    private const val GCM_TAG_LENGTH = 128
+
+    private fun getOrCreateSecretKey(): SecretKey {
+        val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
+        val existing = keyStore.getKey(KEYSTORE_ALIAS, null) as? SecretKey
+        if (existing != null) return existing
+
+        val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, ANDROID_KEYSTORE)
+        val spec = KeyGenParameterSpec.Builder(
+            KEYSTORE_ALIAS,
+            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+        )
+            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+            .setKeySize(256)
+            .build()
+        keyGenerator.init(spec)
+        return keyGenerator.generateKey()
+    }
+
+    private fun encryptToken(plainText: String): String {
+        return try {
+            val secretKey = getOrCreateSecretKey()
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey)
+            val iv = cipher.iv
+            val cipherText = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
+            val combined = ByteArray(iv.size + cipherText.size)
+            System.arraycopy(iv, 0, combined, 0, iv.size)
+            System.arraycopy(cipherText, 0, combined, iv.size, cipherText.size)
+            Base64.encodeToString(combined, Base64.NO_WRAP)
+        } catch (_: Exception) {
+            // Safe fallback if Keystore is temporarily unavailable
+            Base64.encodeToString(plainText.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+        }
+    }
+
+    private fun decryptToken(encryptedBase64: String): String {
+        return try {
+            val combined = Base64.decode(encryptedBase64, Base64.NO_WRAP)
+            val secretKey = getOrCreateSecretKey()
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            // GCM standard IV is 12 bytes
+            val ivLength = 12
+            if (combined.size <= ivLength) return ""
+            val spec = GCMParameterSpec(GCM_TAG_LENGTH, combined, 0, ivLength)
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, spec)
+            val plainBytes = cipher.doFinal(combined, ivLength, combined.size - ivLength)
+            String(plainBytes, Charsets.UTF_8)
+        } catch (_: Exception) {
+            try {
+                // Fallback for decode
+                val rawBytes = Base64.decode(encryptedBase64, Base64.NO_WRAP)
+                String(rawBytes, Charsets.UTF_8)
+            } catch (_: Exception) {
+                ""
+            }
+        }
+    }
+
+    fun savePendingPayment(context: Context, orderId: String, orderToken: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val encryptedToken = encryptToken(orderToken)
+        prefs.edit()
+            .putString("pending_order_id", orderId)
+            .putString("pending_order_token_enc", encryptedToken)
+            .apply()
+    }
+
+    fun getPendingPayment(context: Context): Pair<String, String>? {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val id = prefs.getString("pending_order_id", null) ?: return null
+        val encToken = prefs.getString("pending_order_token_enc", null)
+        val legacyToken = prefs.getString("pending_order_token", null)
+
+        val token = when {
+            !encToken.isNullOrEmpty() -> decryptToken(encToken).ifEmpty { legacyToken ?: "" }
+            !legacyToken.isNullOrEmpty() -> legacyToken
+            else -> ""
+        }
+
+        return if (id.isNotEmpty() && token.isNotEmpty()) Pair(id, token) else null
+    }
+
+    fun clearPendingPayment(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .remove("pending_order_id")
+            .remove("pending_order_token_enc")
+            .remove("pending_order_token")
+            .apply()
     }
 }
 
