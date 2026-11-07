@@ -400,14 +400,18 @@ fun RazorpayPaymentModal(
                                         }
                                     }
 
-                                    // 5. Load official Razorpay Checkout HTML
-                                    loadDataWithBaseURL(
-                                        "https://medmarg.com",
-                                        checkoutHtml,
-                                        "text/html",
-                                        "UTF-8",
-                                        null
-                                    )
+                                    // 5. If hosted payment URL was generated, load it directly; otherwise load official Razorpay Checkout HTML
+                                    if (info.paymentUrl.isNotEmpty() && info.paymentUrl.startsWith("http")) {
+                                        loadUrl(info.paymentUrl)
+                                    } else {
+                                        loadDataWithBaseURL(
+                                            "https://medmarg.com",
+                                            checkoutHtml,
+                                            "text/html",
+                                            "UTF-8",
+                                            null
+                                        )
+                                    }
                                 }
                             }
                         )

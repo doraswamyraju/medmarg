@@ -250,6 +250,8 @@ router.post('/create-order', async (req, res) => {
                     email: (notes && notes.email) || 'patient@medmarg.com'
                 },
                 notify: { sms: false, email: false },
+                callback_url: 'https://medmarg.com/api/v1/payments/callback',
+                callback_method: 'get',
                 notes: options.notes
             });
             hostedPaymentUrl = plink.short_url;
@@ -512,7 +514,43 @@ router.get('/ledger', (req, res) => {
     });
 });
 
-// 9. Manual Doorstep Cash / External Collection Override (Staff / Phlebo)
+// 9. Razorpay Payment Link Callback Endpoint
+router.get('/callback', (req, res) => {
+    const { razorpay_payment_id, razorpay_payment_link_id, razorpay_payment_link_reference_id, razorpay_payment_link_status } = req.query;
+    console.log(`[Payment Link Callback] ID: ${razorpay_payment_id}, Link: ${razorpay_payment_link_id}, Status: ${razorpay_payment_link_status}`);
+
+    const isPaid = razorpay_payment_link_status === 'paid' || Boolean(razorpay_payment_id);
+    const paymentId = razorpay_payment_id || `pay_${Date.now()}`;
+
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>MedMarg Payment Complete</title>
+            <style>
+                body { background: #0B132B; color: #FFFFFF; font-family: -apple-system, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }
+                .card { padding: 32px; background: #1C2541; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); max-width: 90%; }
+                .success { color: #10B981; font-size: 48px; margin-bottom: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <div class="success">✓</div>
+                <h2 style="margin: 0 0 8px;">Payment Successful!</h2>
+                <p style="color: #94A3B8; font-size: 14px; margin: 0;">Returning to MedMarg app...</p>
+            </div>
+            <script>
+                if (window.RazorpayAndroid) {
+                    window.RazorpayAndroid.onPaymentSuccess("${paymentId}", "${razorpay_payment_link_id || ''}", "");
+                }
+            </script>
+        </body>
+        </html>
+    `);
+});
+
+// 10. Manual Doorstep Cash / External Collection Override (Staff / Phlebo)
 router.post('/mark-collected', (req, res) => {
     const { orderId, mode = 'CASH_DOORSTEP', collectedBy = 'Staff' } = req.body;
     if (!orderId) {
