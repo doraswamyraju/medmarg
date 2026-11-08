@@ -6,21 +6,31 @@ plugins {
 
 android {
     namespace = "com.medmarg.patient"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.medmarg.patient"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("../medmarg-release.jks")
+            storePassword = "MedMarg@2026"
+            keyAlias = "medmarg"
+            keyPassword = "MedMarg@2026"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
