@@ -29,7 +29,7 @@ struct CareSeekerVitalsView: View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 20) {
                 
-                // 1. Apple Health Connection & Live Telemetry Banner
+                // 1. Apple Health Connection & Personal Metrics Banner
                 appleHealthHeaderBanner
 
                 // Connect Apple Watch & HealthKit Hero Card (when not yet granted)
@@ -37,22 +37,20 @@ struct CareSeekerVitalsView: View {
                     connectWatchHeroBanner
                 }
 
-                // 2. Critical Health Alerts (if any vitals outside range)
-                if !healthKit.activeAlerts.isEmpty {
-                    vitalAlertsSection
-                }
+                // 2. Medical & Telemetry Disclaimer Banner
+                medicalDisclaimerBanner
 
-                // 3. Recommended Diagnostic Tests Based on Live Vitals
-                recommendedTestsSection
-
-                // 4. Primary Vitals 2x2 Telemetry Grid (Clickable to view past data)
+                // 3. Primary Vitals 2x2 Telemetry Grid (Clickable to view past data)
                 primaryVitalsGrid
 
-                // 5. Activity & Sleep Metrics (Apple Watch / iPhone Sensors)
+                // 4. Activity & Sleep Metrics (Apple Watch / iPhone Sensors)
                 activityAndRecoverySection
 
-                // 6. Manual Vital Reading Logger Trigger
+                // 5. Manual Vital Reading Logger Trigger
                 manualLogActionBar
+
+                // 6. Secondary Medical Disclaimer
+                medicalDisclaimerBanner
 
                 Spacer().frame(height: 30)
             }
@@ -95,17 +93,17 @@ struct CareSeekerVitalsView: View {
                             .scaleEffect(isPulseAnimating ? 1.15 : 1.0)
                             .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isPulseAnimating)
                         
-                        Text("APPLE HEALTH LIVE TELEMETRY")
+                        Text("APPLE HEALTH PERSONAL VITALS")
                             .font(.system(size: 11, weight: .black))
                             .foregroundColor(MedMargTheme.emeraldLight)
                             .tracking(1.0)
                     }
 
-                    Text("Care Seeker Vitals Hub")
+                    Text("Personal Health & Vitals")
                         .font(.system(size: 22, weight: .bold))
                         .foregroundColor(.white)
 
-                    Text("Continuous biometrics from Apple Watch, HealthKit & Connected Sensors.")
+                    Text("Recorded wellness biometrics synced from Apple Health & connected monitors.")
                         .font(.system(size: 12))
                         .foregroundColor(MedMargTheme.lightTeal)
                 }
@@ -244,168 +242,35 @@ struct CareSeekerVitalsView: View {
     }
 
     // ==========================================
-    // ⚠️ 2. VITAL ALERTS & NOTIFICATIONS
+    // ⚠️ MEDICAL & TELEMETRY DISCLAIMER
     // ==========================================
-    private var vitalAlertsSection: some View {
-        VStack(spacing: 8) {
-            ForEach(healthKit.activeAlerts) { alert in
-                HStack(alignment: .top, spacing: 12) {
-                    Image(systemName: alert.severity == .critical ? "exclamationmark.triangle.fill" : "info.circle.fill")
-                        .font(.system(size: 18))
-                        .foregroundColor(alert.severity == .critical ? .red : .orange)
-                        .padding(.top, 2)
+    private var medicalDisclaimerBanner: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "cross.case.fill")
+                .font(.system(size: 18))
+                .foregroundColor(MedMargTheme.primaryTeal)
+                .padding(.top, 2)
 
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(alert.title)
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(MedMargTheme.slate900)
-
-                        Text(alert.message)
-                            .font(.system(size: 12))
-                            .foregroundColor(MedMargTheme.slate700)
-
-                        if let test = alert.relatedTest {
-                            HStack(spacing: 4) {
-                                Text("Recommended Lab Action:")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(MedMargTheme.slate500)
-                                Text(test)
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundColor(MedMargTheme.primaryTeal)
-                            }
-                            .padding(.top, 2)
-                        }
-                    }
-
-                    Spacer()
-                }
-                .padding(12)
-                .background(alert.severity == .critical ? Color.red.opacity(0.08) : Color.orange.opacity(0.08))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(alert.severity == .critical ? Color.red.opacity(0.3) : Color.orange.opacity(0.3), lineWidth: 1)
-                )
-            }
-        }
-    }
-
-    // ==========================================
-    // 🧪 3. RECOMMENDED DIAGNOSTIC TESTS (SMART ENGINE)
-    // ==========================================
-    private var recommendedTestsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Image(systemName: "sparkles")
-                    .foregroundColor(MedMargTheme.amberGold)
-                Text("Vitals-Correlated Lab Tests")
-                    .font(.system(size: 16, weight: .bold))
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Medical Disclaimer")
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundColor(MedMargTheme.slate900)
-                Spacer()
-                Text("AI Telemetry Engine")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(MedMargTheme.primaryTeal)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(MedMargTheme.lightTeal)
-                    .cornerRadius(6)
+
+                Text("The health metrics displayed in MedMarg are synced from Apple Health, paired wearables, or logged during doorstep phlebotomy visits for personal wellness tracking and sample collection records only. MedMarg does not provide medical diagnoses, treatment, or clinical advice. Always seek the advice of a qualified physician or healthcare provider with any questions regarding a medical condition and before making any medical decisions.")
+                    .font(.system(size: 11))
+                    .foregroundColor(MedMargTheme.slate600)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-
-            ForEach(healthKit.recommendedTests, id: \.id) { test in
-                HStack(spacing: 12) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(MedMargTheme.lightTeal)
-                            .frame(width: 46, height: 46)
-                        Image(systemName: "flask.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(MedMargTheme.primaryTeal)
-                    }
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 6) {
-                            Text(test.title)
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(MedMargTheme.slate900)
-                                .lineLimit(1)
-                            
-                            Text(test.urgency)
-                                .font(.system(size: 9, weight: .black))
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.red.opacity(0.1))
-                                .foregroundColor(.red)
-                                .cornerRadius(4)
-                        }
-
-                        Text(test.reason)
-                            .font(.system(size: 11))
-                            .foregroundColor(MedMargTheme.slate500)
-                            .lineLimit(2)
-
-                        HStack(spacing: 6) {
-                            Text("₹\(test.labPrice)")
-                                .font(.system(size: 14, weight: .black))
-                                .foregroundColor(MedMargTheme.primaryTeal)
-                            Text("₹\(test.mrp)")
-                                .font(.system(size: 11))
-                                .strikethrough()
-                                .foregroundColor(MedMargTheme.slate500)
-                            Text("• \(test.labProvider)")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(MedMargTheme.slate500)
-                        }
-                    }
-
-                    Spacer()
-
-                    // Quick Add to Cart Button
-                    Button(action: {
-                        let item = CatalogItem(
-                            id: test.id,
-                            serialNo: nil,
-                            code: test.id,
-                            name: test.title,
-                            sampleType: test.sampleType,
-                            fasting: "NO",
-                            category: "Recommended Diagnostics",
-                            mrp: test.mrp,
-                            price: test.labPrice,
-                            tatHours: 24,
-                            description: test.reason,
-                            active: true,
-                            itemType: "TEST",
-                            profiles: nil,
-                            tests: nil,
-                            testCount: 1,
-                            discountPercent: nil,
-                            tagline: nil,
-                            popular: true,
-                            fastingNote: nil,
-                            sampleTypes: nil
-                        )
-                        onAddToCart(item)
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 12, weight: .bold))
-                            Text("Book")
-                                .font(.system(size: 12, weight: .bold))
-                        }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(MedMargTheme.primaryTeal)
-                        .cornerRadius(10)
-                        .shadow(color: MedMargTheme.primaryTeal.opacity(0.3), radius: 4, x: 0, y: 2)
-                    }
-                }
-                .padding(12)
-                .background(Color.white)
-                .cornerRadius(16)
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(MedMargTheme.slate200, lineWidth: 1))
-            }
+            Spacer()
         }
+        .padding(14)
+        .background(Color.white)
+        .cornerRadius(14)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(MedMargTheme.primaryTeal.opacity(0.3), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
     }
 
     // ==========================================
@@ -433,10 +298,10 @@ struct CareSeekerVitalsView: View {
                         icon: "heart.fill",
                         iconColor: .red,
                         unit: "BPM",
-                        clinicalTarget: "60 - 100 BPM (Resting)",
-                        description: "Monitored via optical photoplethysmography sensor. Tracks pulse variability & tachycardia indicators.",
-                        relatedTest: "Thyroid Profile Total + ECG Risk",
-                        testPrice: 299
+                        clinicalTarget: "Standard Reference: 60 - 100 BPM",
+                        description: "Heart rate biometrics recorded via Apple Watch or connected sensors for personal fitness tracking.",
+                        relatedTest: "",
+                        testPrice: 0
                     )
                 }) {
                     VitalMetricCard(
@@ -447,8 +312,8 @@ struct CareSeekerVitalsView: View {
                         value: "\(Int(healthKit.heartRate))",
                         unit: "BPM",
                         subtitle: "Resting: \(Int(healthKit.restingHeartRate)) BPM",
-                        statusText: healthKit.heartRate < 60 ? "Bradycardia" : (healthKit.heartRate > 100 ? "Tachycardia" : "Optimal (60-100)"),
-                        statusColor: (healthKit.heartRate >= 60 && healthKit.heartRate <= 100) ? .green : .orange
+                        statusText: "Ref: 60-100 BPM",
+                        statusColor: MedMargTheme.primaryTeal
                     )
                 }
 
@@ -460,10 +325,10 @@ struct CareSeekerVitalsView: View {
                         icon: "lungs.fill",
                         iconColor: .blue,
                         unit: "%",
-                        clinicalTarget: "95.0% - 100.0%",
-                        description: "Measures percentage of hemoglobin carrying oxygen in peripheral bloodstream.",
-                        relatedTest: "Complete Blood Count (CBC) + ABG",
-                        testPrice: 299
+                        clinicalTarget: "Standard Reference: ≥ 95%",
+                        description: "Peripheral blood oxygen saturation recorded by connected health sensors for personal fitness tracking.",
+                        relatedTest: "",
+                        testPrice: 0
                     )
                 }) {
                     VitalMetricCard(
@@ -474,8 +339,8 @@ struct CareSeekerVitalsView: View {
                         value: String(format: "%.1f", healthKit.bloodOxygen),
                         unit: "%",
                         subtitle: "Apple Sensor Telemetry",
-                        statusText: healthKit.bloodOxygen >= 95.0 ? "Normal (>95%)" : "Low Oxygen Alert",
-                        statusColor: healthKit.bloodOxygen >= 95.0 ? .green : .red
+                        statusText: "Recorded: \(String(format: "%.1f", healthKit.bloodOxygen))%",
+                        statusColor: MedMargTheme.primaryTeal
                     )
                 }
 
@@ -487,10 +352,10 @@ struct CareSeekerVitalsView: View {
                         icon: "waveform.path.ecg",
                         iconColor: MedMargTheme.primaryTeal,
                         unit: "mmHg",
-                        clinicalTarget: "< 120/80 mmHg",
-                        description: "Systolic & Diastolic arterial pressure. Key indicator for cardiovascular and renal health.",
-                        relatedTest: "Lipid Profile + Renal Function Panel",
-                        testPrice: 699
+                        clinicalTarget: "Standard Reference: < 120/80 mmHg",
+                        description: "Systolic & Diastolic arterial pressure logged from connected monitors or phlebotomy visits.",
+                        relatedTest: "",
+                        testPrice: 0
                     )
                 }) {
                     VitalMetricCard(
@@ -501,8 +366,8 @@ struct CareSeekerVitalsView: View {
                         value: "\(Int(healthKit.systolicBP))/\(Int(healthKit.diastolicBP))",
                         unit: "mmHg",
                         subtitle: "Target: <120/80",
-                        statusText: healthKit.systolicBP < 120 ? "Normal BP" : (healthKit.systolicBP < 130 ? "Elevated" : "Hypertension"),
-                        statusColor: healthKit.systolicBP < 120 ? .green : (healthKit.systolicBP < 130 ? .orange : .red)
+                        statusText: "Recorded: \(Int(healthKit.systolicBP))/\(Int(healthKit.diastolicBP))",
+                        statusColor: MedMargTheme.primaryTeal
                     )
                 }
 
@@ -514,10 +379,10 @@ struct CareSeekerVitalsView: View {
                         icon: "drop.fill",
                         iconColor: .purple,
                         unit: "mg/dL",
-                        clinicalTarget: "< 100 mg/dL (Fasting)",
-                        description: "Plasma glucose level. Critical for diabetes management and metabolic health.",
-                        relatedTest: "HbA1c & Fasting Insulin Combo",
-                        testPrice: 399
+                        clinicalTarget: "Standard Reference: < 100 mg/dL (Fasting)",
+                        description: "Plasma glucose reading recorded from personal glucometer logs or doorstep health visits.",
+                        relatedTest: "",
+                        testPrice: 0
                     )
                 }) {
                     VitalMetricCard(
@@ -528,8 +393,8 @@ struct CareSeekerVitalsView: View {
                         value: "\(Int(healthKit.bloodGlucose))",
                         unit: "mg/dL",
                         subtitle: "Fasting Benchmark",
-                        statusText: healthKit.bloodGlucose < 100 ? "Normal Fasting" : (healthKit.bloodGlucose < 126 ? "Pre-Diabetes" : "High Glucose"),
-                        statusColor: healthKit.bloodGlucose < 100 ? .green : (healthKit.bloodGlucose < 126 ? .orange : .red)
+                        statusText: "Recorded: \(Int(healthKit.bloodGlucose)) mg/dL",
+                        statusColor: MedMargTheme.primaryTeal
                     )
                 }
             }
@@ -554,10 +419,10 @@ struct CareSeekerVitalsView: View {
                         icon: "figure.walk",
                         iconColor: .orange,
                         unit: "steps",
-                        clinicalTarget: "10,000 Steps / Day",
+                        clinicalTarget: "Standard Reference: 10,000 Steps / Day",
                         description: "Daily pedometer step count & active calorie burn from iPhone accelerometer & Apple Watch.",
-                        relatedTest: "Cardiac Risk & Vitamin D3",
-                        testPrice: 499
+                        relatedTest: "",
+                        testPrice: 0
                     )
                 }) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -590,10 +455,10 @@ struct CareSeekerVitalsView: View {
                         icon: "thermometer.medium",
                         iconColor: .pink,
                         unit: "°F",
-                        clinicalTarget: "97.0°F - 99.0°F",
-                        description: "Core basal body temperature readings from connected clinical thermometer or wrist sensor.",
-                        relatedTest: "Inflammatory Markers (hs-CRP + CBC)",
-                        testPrice: 349
+                        clinicalTarget: "Standard Reference: 97.0°F - 99.0°F",
+                        description: "Core basal body temperature readings logged from connected clinical thermometer or personal entry.",
+                        relatedTest: "",
+                        testPrice: 0
                     )
                 }) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -607,9 +472,9 @@ struct CareSeekerVitalsView: View {
                         Text("\(String(format: "%.1f", healthKit.bodyTemperature))°F")
                             .font(.system(size: 20, weight: .black))
                             .foregroundColor(MedMargTheme.slate900)
-                        Text("Normal (97-99°F)")
+                        Text("Ref: 97-99°F")
                             .font(.system(size: 10))
-                            .foregroundColor(.green)
+                            .foregroundColor(MedMargTheme.primaryTeal)
                     }
                     .padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -626,10 +491,10 @@ struct CareSeekerVitalsView: View {
                         icon: "bed.double.fill",
                         iconColor: .indigo,
                         unit: "hrs",
-                        clinicalTarget: "7.0 - 9.0 Hours",
-                        description: "Sleep duration, deep REM cycles, and nighttime heart rate deceleration.",
-                        relatedTest: "Cortisol & Stress Hormone Panel",
-                        testPrice: 599
+                        clinicalTarget: "Standard Reference: 7.0 - 9.0 Hours",
+                        description: "Sleep duration and recovery time recorded by Apple Health and paired Apple Watch sleep tracking.",
+                        relatedTest: "",
+                        testPrice: 0
                     )
                 }) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -643,9 +508,9 @@ struct CareSeekerVitalsView: View {
                         Text("\(String(format: "%.1f", healthKit.sleepHours))h")
                             .font(.system(size: 20, weight: .black))
                             .foregroundColor(MedMargTheme.slate900)
-                        Text("Restorative")
+                        Text("Logged")
                             .font(.system(size: 10))
-                            .foregroundColor(.green)
+                            .foregroundColor(MedMargTheme.primaryTeal)
                     }
                     .padding(14)
                     .frame(maxWidth: .infinity, alignment: .leading)

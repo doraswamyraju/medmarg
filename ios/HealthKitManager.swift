@@ -378,16 +378,7 @@ class HealthKitManager: ObservableObject {
                 }
                 
                 let source = sample.sourceRevision.source.name
-                let classification: String
-                if vitalKey == "HEART_RATE" {
-                    classification = rawVal > 100 ? "Tachycardia" : (rawVal < 60 ? "Bradycardia" : "Optimal")
-                } else if vitalKey == "SPO2" {
-                    classification = rawVal >= 95 ? "Normal" : "Low SpO2"
-                } else if vitalKey == "GLUCOSE" {
-                    classification = rawVal >= 126 ? "High Glucose" : (rawVal >= 100 ? "Pre-Diabetes" : "Optimal Fasting")
-                } else {
-                    classification = "Normal"
-                }
+                let classification = "Recorded"
 
                 return HistoricalVitalSample(
                     id: sample.uuid.uuidString,
@@ -459,18 +450,7 @@ class HealthKitManager: ObservableObject {
             let randomDelta = Double.random(in: -variance...variance)
             let val = max(1.0, round((baseValue + randomDelta) * 10.0) / 10.0)
 
-            let classification: String
-            if vitalKey == "HEART_RATE" {
-                classification = val > 100 ? "Tachycardia" : (val < 60 ? "Bradycardia" : "Optimal")
-            } else if vitalKey == "SPO2" {
-                classification = val >= 95 ? "Normal" : "Low SpO2"
-            } else if vitalKey == "GLUCOSE" {
-                classification = val >= 126 ? "High Glucose" : (val >= 100 ? "Pre-Diabetes" : "Optimal Fasting")
-            } else if vitalKey == "BP" {
-                classification = val >= 130 ? "Stage 1 HTN" : (val >= 120 ? "Elevated" : "Optimal")
-            } else {
-                classification = "Normal"
-            }
+            let classification = "Recorded"
 
             let source = (i % 2 == 0) ? "Apple Watch Series 9" : "iPhone Sensor"
 
@@ -612,120 +592,9 @@ class HealthKitManager: ObservableObject {
 
         let nowStr = "Live Telemetry"
 
-        // Blood Pressure Evaluation
-        if systolicBP >= 140 || diastolicBP >= 90 {
-            alerts.append(VitalAlert(
-                title: "Stage 2 Hypertension Indicator",
-                message: "BP reading (\(Int(systolicBP))/\(Int(diastolicBP)) mmHg) is elevated above normal.",
-                severity: .critical,
-                timestamp: nowStr,
-                relatedTest: "Lipid Profile + Renal Function Panel"
-            ))
-            recs.append(RecommendedDiagnosticTest(
-                id: "rec_cardio",
-                title: "Comprehensive Lipid & Renal Risk Panel",
-                reason: "Recommended due to elevated blood pressure (\(Int(systolicBP))/\(Int(diastolicBP)) mmHg).",
-                labPrice: 699,
-                mrp: 1400,
-                sampleType: "Blood (10h Fasting)",
-                urgency: "High Priority",
-                labProvider: "Thyrocare Technologies"
-            ))
-        } else if systolicBP >= 125 || diastolicBP >= 83 {
-            alerts.append(VitalAlert(
-                title: "Elevated Blood Pressure",
-                message: "Systolic BP (\(Int(systolicBP)) mmHg) is slightly above the ideal 120/80 range.",
-                severity: .warning,
-                timestamp: nowStr,
-                relatedTest: "Cardiac Risk Panel"
-            ))
-        }
-
-        // Blood Glucose Evaluation
-        if bloodGlucose >= 126 {
-            alerts.append(VitalAlert(
-                title: "High Fasting Blood Glucose",
-                message: "Fasting glucose is \(Int(bloodGlucose)) mg/dL (Normal is < 100 mg/dL).",
-                severity: .critical,
-                timestamp: nowStr,
-                relatedTest: "HbA1c Glycated Hemoglobin Test"
-            ))
-            recs.append(RecommendedDiagnosticTest(
-                id: "rec_diabetes",
-                title: "HbA1c & Fasting Insulin Combo",
-                reason: "3-Month Blood Sugar control check recommended for glucose \(Int(bloodGlucose)) mg/dL.",
-                labPrice: 399,
-                mrp: 900,
-                sampleType: "EDTA Whole Blood",
-                urgency: "Recommended",
-                labProvider: "Dr. Lal PathLabs"
-            ))
-        } else if bloodGlucose >= 105 {
-            alerts.append(VitalAlert(
-                title: "Pre-Diabetes Glucose Marker",
-                message: "Fasting glucose is \(Int(bloodGlucose)) mg/dL (Borderline 100-125 range).",
-                severity: .warning,
-                timestamp: nowStr,
-                relatedTest: "HbA1c Screen"
-            ))
-        }
-
-        // SpO2 Blood Oxygen Evaluation
-        if bloodOxygen < 95.0 {
-            alerts.append(VitalAlert(
-                title: "Low Blood Oxygen Saturation (SpO2)",
-                message: "SpO2 is \(bloodOxygen)%. Normal range is 95% - 100%.",
-                severity: .critical,
-                timestamp: nowStr,
-                relatedTest: "Complete Hemogram (CBC) + ABG"
-            ))
-            recs.append(RecommendedDiagnosticTest(
-                id: "rec_pulmonary",
-                title: "Complete Hemogram & Anemia Profile",
-                reason: "Checks Hemoglobin and Oxygen-carrying capacity of RBCs.",
-                labPrice: 299,
-                mrp: 650,
-                sampleType: "EDTA Blood",
-                urgency: "Urgent Check",
-                labProvider: "MedMarg Direct"
-            ))
-        }
-
-        // Resting Heart Rate Evaluation
-        if restingHeartRate > 95 {
-            alerts.append(VitalAlert(
-                title: "Elevated Resting Heart Rate",
-                message: "Resting pulse is \(Int(restingHeartRate)) BPM (Tachycardia threshold).",
-                severity: .warning,
-                timestamp: nowStr,
-                relatedTest: "Thyroid Profile Total (T3/T4/TSH)"
-            ))
-            recs.append(RecommendedDiagnosticTest(
-                id: "rec_thyroid",
-                title: "Thyroid Profile Total (T3, T4, TSH Ultra)",
-                reason: "Checks thyroid hyperactivity which frequently elevates resting pulse.",
-                labPrice: 299,
-                mrp: 650,
-                sampleType: "SST Serum",
-                urgency: "Recommended",
-                labProvider: "Thyrocare Direct"
-            ))
-        }
-
-        if recs.isEmpty {
-            recs.append(RecommendedDiagnosticTest(
-                id: "rec_general",
-                title: "MedMarg Annual Preventive Health Checkup",
-                reason: "Your Apple Health vitals are optimal! Maintain your health baseline with an annual 63-test panel.",
-                labPrice: 899,
-                mrp: 2200,
-                sampleType: "Serum + EDTA",
-                urgency: "Preventive Care",
-                labProvider: "MedMarg Certified Hub"
-            ))
-        }
-
-        self.activeAlerts = alerts
-        self.recommendedTests = recs
+        // Neutral telemetry state - no algorithmic clinical diagnoses or test predictions
+        // Health metrics are displayed as recorded logs for personal fitness tracking and doorstep phlebotomy records.
+        self.activeAlerts = []
+        self.recommendedTests = []
     }
 }

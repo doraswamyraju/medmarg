@@ -330,7 +330,7 @@ struct CareSeekerHomeView: View {
                     title: "Heart Rate",
                     value: "\(Int(healthKit.heartRate))",
                     unit: "BPM",
-                    status: healthKit.heartRate >= 60 && healthKit.heartRate <= 100 ? "Normal" : "Review",
+                    status: "Synced",
                     icon: "heart.fill",
                     color: .red
                 )
@@ -339,7 +339,7 @@ struct CareSeekerHomeView: View {
                     title: "Blood Oxygen",
                     value: String(format: "%.1f", healthKit.bloodOxygen),
                     unit: "SpO2 %",
-                    status: healthKit.bloodOxygen >= 95 ? "Optimal" : "Low",
+                    status: "Synced",
                     icon: "lungs.fill",
                     color: Color(red: 0.05, green: 0.55, blue: 0.95)
                 )
@@ -348,7 +348,7 @@ struct CareSeekerHomeView: View {
                     title: "Blood Pressure",
                     value: "\(Int(healthKit.systolicBP))/\(Int(healthKit.diastolicBP))",
                     unit: "mmHg",
-                    status: healthKit.systolicBP <= 120 && healthKit.diastolicBP <= 80 ? "Target" : "Elevated",
+                    status: "Synced",
                     icon: "gauge.with.needle",
                     color: Color(red: 0.55, green: 0.25, blue: 0.85)
                 )
@@ -357,20 +357,20 @@ struct CareSeekerHomeView: View {
                     title: "Blood Glucose",
                     value: "\(Int(healthKit.bloodGlucose))",
                     unit: "mg/dL",
-                    status: healthKit.bloodGlucose <= 100 ? "Fasting Normal" : "Borderline",
+                    status: "Synced",
                     icon: "drop.fill",
                     color: Color(red: 0.95, green: 0.55, blue: 0.1)
                 )
             }
 
-            // View Detailed Trends & Correlated Tests Button
+            // View Detailed Trends & History Button
             Button(action: {
                 withAnimation {
                     selectedTab = 2 // Tab 2 is CareSeekerVitalsView
                 }
             }) {
                 HStack(spacing: 6) {
-                    Text("View Detailed Vitals Trends & Correlated Tests")
+                    Text("View Detailed Vitals History & Trends")
                         .font(.system(size: 11, weight: .bold))
                     Image(systemName: "arrow.right")
                         .font(.system(size: 10, weight: .bold))

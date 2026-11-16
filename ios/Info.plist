@@ -37,7 +37,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSHealthShareUsageDescription</key>
-	<string>MedMarg accesses Apple HealthKit to display real-time vital biomarkers (Heart Rate, Blood Oxygen, Blood Pressure, Fasting Glucose, Step Count) and deliver correlated diagnostic test suggestions.</string>
+	<string>MedMarg connects to Apple Health to display your recorded health metrics (such as Heart Rate, Blood Oxygen, Blood Pressure, and Activity) for personal wellness tracking and sample collection baseline records.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>MedMarg allows you to log diagnostic vital readings directly into Apple Health.</string>
 	<key>NSFaceIDUsageDescription</key>

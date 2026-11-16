@@ -65,8 +65,8 @@ struct VitalDetailHistorySheet: View {
                     // 4. Interactive Trend Graph
                     trendGraphSection
 
-                    // 5. Correlated Diagnostic Recommendation
-                    diagnosticRecommendationCard
+                    // 5. Medical Disclaimer
+                    detailDisclaimerCard
 
                     // 6. Detailed Chronological Sample Log
                     historicalSampleLogSection
@@ -269,87 +269,25 @@ struct VitalDetailHistorySheet: View {
     }
 
     // ==========================================
-    // 🧪 5. CORRELATED DIAGNOSTIC RECOMMENDATION
+    // ⚠️ 5. MEDICAL DISCLAIMER
     // ==========================================
-    private var diagnosticRecommendationCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Image(systemName: "sparkles")
-                    .foregroundColor(MedMargTheme.amberGold)
-                Text("Correlated Clinical Action")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundColor(MedMargTheme.slate900)
-                Spacer()
-                Text("MedMarg AI")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(MedMargTheme.primaryTeal)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(MedMargTheme.lightTeal)
-                    .cornerRadius(4)
-            }
-
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(MedMargTheme.lightTeal)
-                        .frame(width: 42, height: 42)
-                    Image(systemName: "flask.fill")
-                        .foregroundColor(MedMargTheme.primaryTeal)
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(profile.relatedTest)
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(MedMargTheme.slate900)
-                    Text("Price: ₹\(profile.testPrice) • Free Home Phlebotomy")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(MedMargTheme.slate500)
-                }
-
-                Spacer()
-
-                Button(action: {
-                    let item = CatalogItem(
-                        id: "rec_\(vitalKey)",
-                        serialNo: nil,
-                        code: "REC_\(vitalKey)",
-                        name: profile.relatedTest,
-                        sampleType: "Blood (Serum / EDTA)",
-                        fasting: "YES",
-                        category: "Vitals Correlated",
-                        mrp: profile.testPrice * 2,
-                        price: profile.testPrice,
-                        tatHours: 24,
-                        description: "Recommended based on your Apple Health \(profile.title) telemetry.",
-                        active: true,
-                        itemType: "PACKAGE",
-                        profiles: nil,
-                        tests: nil,
-                        testCount: 12,
-                        discountPercent: 50,
-                        tagline: "VITALS SPECIAL",
-                        popular: true,
-                        fastingNote: "10h Fasting",
-                        sampleTypes: ["SERUM", "EDTA"]
-                    )
-                    onAddToCart(item)
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    Text("Book")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(MedMargTheme.primaryTeal)
-                        .cornerRadius(8)
-                }
-            }
+    private var detailDisclaimerCard: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "cross.case.fill")
+                .foregroundColor(MedMargTheme.primaryTeal)
+                .font(.system(size: 14))
+                .padding(.top, 2)
+            
+            Text("Disclaimer: Health metrics shown are synced from Apple Health or logged during doorstep phlebotomy visits for personal tracking. MedMarg does not provide medical diagnoses or clinical advice. Consult a healthcare provider before making medical decisions.")
+                .font(.system(size: 11))
+                .foregroundColor(MedMargTheme.slate600)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(14)
-        .background(MedMargTheme.lightTeal.opacity(0.5))
-        .cornerRadius(16)
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(MedMargTheme.primaryTeal.opacity(0.3), lineWidth: 1.5))
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.white)
+        .cornerRadius(12)
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(MedMargTheme.primaryTeal.opacity(0.3), lineWidth: 1))
     }
 
     // ==========================================
